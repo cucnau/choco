@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { HexColorPicker } from 'react-colorful';
 import { User as FirebaseUser } from 'firebase/auth';
 import { Story, UserProfile } from '../types';
@@ -315,6 +315,16 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
   const coverFileInputRef = useRef<HTMLInputElement>(null);
   const avatarFileInputRef = useRef<HTMLInputElement>(null);
 
+  // Lock body overflow while live editor is open full screen
+  useEffect(() => {
+    const originalStyle = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    window.scrollTo(0, 0);
+    return () => {
+      document.body.style.overflow = originalStyle;
+    };
+  }, []);
+
   // Compute live visual tokens
   const isCustomTheme = themeTone === 'custom';
   const activePreset = PRESET_THEME_COLORS[themeTone] || PRESET_THEME_COLORS['dark-rose'];
@@ -328,6 +338,9 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
   const currentBtnSecondaryBg = isCustomTheme ? customBtnSecondaryBgColor : (activePreset.btnSecondaryBg || activePreset.btnBg);
   const currentBtnBorder = isCustomTheme ? customBorderColor : activePreset.btnBorder;
   const currentBtnText = isCustomTheme ? customTextColor : activePreset.btnText;
+
+  // Check if background is dark for effect visibility
+  const isDarkTheme = !currentBg.toLowerCase().includes('#fff') && !currentBg.toLowerCase().includes('255, 255, 255');
 
   const currentBorderObj = {
     borderStyle,
@@ -433,14 +446,14 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
 
   return (
     <div
-      className="min-h-screen relative transition-colors duration-200"
+      className="fixed inset-0 z-[100] overflow-y-auto w-full h-full min-h-screen transition-colors duration-200"
       style={{
         background: currentBg,
         color: currentText,
       }}
     >
       {/* Hiệu ứng đọc thời gian thực */}
-      {readingEffect !== 'none' && <ReadingEffects effect={readingEffect} />}
+      {readingEffect !== 'none' && <ReadingEffects effect={readingEffect} isDarkTheme={isDarkTheme} />}
 
       {/* Hidden file inputs */}
       <input
@@ -942,6 +955,9 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                   <option value="snow">Tuyết rơi mùa đông (Snow)</option>
                   <option value="star">Bụi sao lấp lánh (Stars)</option>
                   <option value="leaf">Lá phong bay nhẹ (Leaves)</option>
+                  <option value="cherry_blossom">Cánh hoa đào rơi (Cherry Blossom)</option>
+                  <option value="firefly">Đom đóm bay lấp lánh (Fireflies)</option>
+                  <option value="soap_bubble">Bong bóng xà phòng (Soap Bubbles)</option>
                   <option value="glitch">Nhiễu sóng viễn tưởng (Glitch)</option>
                 </select>
               </div>
@@ -1154,7 +1170,7 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                   placeholder="Nhập tên truyện tại đây..."
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  className={`w-full p-2.5 bg-black/25 rounded border text-lg sm:text-2xl font-bold uppercase tracking-[0.05em] focus:outline-none focus:ring-1 ${customTitleFont}`}
+                  className={`w-full p-2.5 bg-transparent rounded border border-dashed hover:border-solid focus:border-solid transition-all text-lg sm:text-2xl font-bold uppercase tracking-[0.05em] focus:outline-none focus:ring-1 ${customTitleFont}`}
                   style={{
                     borderColor: currentBorder,
                     color: currentText,
@@ -1174,7 +1190,7 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                     placeholder="Tên tác giả..."
                     value={author}
                     onChange={(e) => setAuthor(e.target.value)}
-                    className="flex-1 px-2 py-1 bg-black/25 rounded border text-xs font-semibold focus:outline-none"
+                    className="flex-1 px-2 py-1 bg-transparent rounded border border-dashed hover:border-solid focus:border-solid transition-all text-xs font-semibold focus:outline-none"
                     style={{ borderColor: currentBorder, color: currentText }}
                   />
                 </div>
@@ -1194,7 +1210,7 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                   placeholder="Nhập phần tóm tắt, trích đoạn hoặc giới thiệu nội dung cuốn hút của bộ truyện..."
                   value={synopsis}
                   onChange={(e) => setSynopsis(e.target.value)}
-                  className={`w-full p-3 bg-black/25 rounded border text-sm leading-relaxed focus:outline-none focus:ring-1 resize-y ${customBodyFont}`}
+                  className={`w-full p-3 bg-transparent rounded border border-dashed hover:border-solid focus:border-solid transition-all text-sm leading-relaxed focus:outline-none focus:ring-1 resize-y ${customBodyFont}`}
                   style={{
                     borderColor: currentBorder,
                     color: currentText,
@@ -1344,7 +1360,7 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                         handleAddTag();
                       }
                     }}
-                    className="flex-1 px-2 py-1 bg-black/25 rounded border text-[11px] focus:outline-none"
+                    className="flex-1 px-2 py-1 bg-transparent rounded border border-dashed hover:border-solid focus:border-solid transition-all text-[11px] focus:outline-none"
                     style={{ borderColor: currentBorder, color: currentText }}
                   />
                   <button
