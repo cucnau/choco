@@ -1,0 +1,1682 @@
+import { 
+  collection, 
+  doc, 
+  getDoc,
+  getDocs, 
+  setDoc, 
+  deleteDoc, 
+  onSnapshot, 
+  query, 
+  where,
+  orderBy
+} from 'firebase/firestore';
+import { db, auth } from './firebase';
+import { Story, Chapter, Comment, BookmarkItem, ReadingProgress, LoungeMessage, EditorRequest, UserProfile, Notification } from '../types';
+import { INITIAL_STORIES, INITIAL_CHAPTERS, INITIAL_COMMENTS } from '../data/sampleStories';
+
+const INITIAL_LOUNGE_MESSAGES: LoungeMessage[] = [];
+
+
+export enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
+}
+
+/**
+ * Hàm loại bỏ triệt để các trường undefined trước khi ghi dữ liệu lên Firestore.
+ * Firestore sẽ báo lỗi 'Unsupported field value: undefined' nếu object chứa key có value undefined.
+ */
+export function cleanForFirestore<T>(data: T): T {
+  if (data === null || data === undefined) return data;
+  if (Array.isArray(data)) {
+    return data.map((item) => cleanForFirestore(item)) as unknown as T;
+  }
+  if (typeof data === 'object' && !(data instanceof Date)) {
+    const res: Record<string, any> = {};
+    for (const [key, value] of Object.entries(data as Record<string, any>)) {
+      if (value !== undefined) {
+        res[key] = cleanForFirestore(value);
+      }
+    }
+    return res as T;
+  }
+  return data;
+}
+
+interface FirestoreErrorInfo {
+  error: string;
+  operationType: OperationType;
+  path: string | null;
+  authInfo: {
+    userId?: string | null;
+    email?: string | null;
+  };
+}
+
+function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+  const errInfo: FirestoreErrorInfo = {
+    error: error instanceof Error ? error.message : String(error),
+    authInfo: {
+      userId: auth.currentUser?.uid,
+      email: auth.currentUser?.email,
+    },
+    operationType,
+    path,
+  };
+  console.error('Firestore Error:', JSON.stringify(errInfo));
+  throw new Error(JSON.stringify(errInfo));
+}
+
+const STORAGE_KEYS = {
+  STORIES: 'wp_stories_v4',
+  CHAPTERS: 'wp_chapters_v4',
+  COMMENTS: 'wp_comments_v4',
+  BOOKMARKS: 'wp_bookmarks_v4',
+  READING_HISTORY: 'wp_history_v4',
+  LOUNGE: 'wp_lounge_v4',
+};
+
+// Initialize Local Backup
+export function initStorage(): void {
+  if (!localStorage.getItem(STORAGE_KEYS.STORIES)) {
+    localStorage.setItem(STORAGE_KEYS.STORIES, JSON.stringify(INITIAL_STORIES));
+  }
+  if (!localStorage.getItem(STORAGE_KEYS.CHAPTERS)) {
+    localStorage.setItem(STORAGE_KEYS.CHAPTERS, JSON.stringify(INITIAL_CHAPTERS));
+  }
+  if (!localStorage.getItem(STORAGE_KEYS.COMMENTS)) {
+    localStorage.setItem(STORAGE_KEYS.COMMENTS, JSON.stringify(INITIAL_COMMENTS));
+  }
+  if (!localStorage.getItem(STORAGE_KEYS.BOOKMARKS)) {
+    localStorage.setItem(STORAGE_KEYS.BOOKMARKS, JSON.stringify([]));
+  }
+  if (!localStorage.getItem(STORAGE_KEYS.READING_HISTORY)) {
+    localStorage.setItem(STORAGE_KEYS.READING_HISTORY, JSON.stringify([]));
+  }
+  if (!localStorage.getItem(STORAGE_KEYS.LOUNGE)) {
+    localStorage.setItem(STORAGE_KEYS.LOUNGE, JSON.stringify([]));
+  } else {
+    try {
+      const existing = JSON.parse(localStorage.getItem(STORAGE_KEYS.LOUNGE) || '[]');
+      const filtered = existing.filter((m: LoungeMessage) => m.id !== 'lounge-1' && m.id !== 'lounge-2' && !m.id.startsWith('lounge-'));
+      if (filtered.length !== existing.length) {
+        localStorage.setItem(STORAGE_KEYS.LOUNGE, JSON.stringify(filtered));
+      }
+    } catch {}
+  }
+}
+
+
+// ------------------- REALTIME SUBSCRIPTIONS -------------------
+
+export function subscribeStories(callback: (stories: Story[]) => void, onError?: (error: any) => void) {
+  initStorage();
+  try {
+    const colRef = collection(db, 'stories');
+    return onSnapshot(
+      colRef,
+      (snapshot) => {
+        if (!snapshot.empty) {
+          const list: Story[] = [];
+          snapshot.forEach((doc) => {
+            list.push(doc.data() as Story);
+          });
+          localStorage.setItem(STORAGE_KEYS.STORIES, JSON.stringify(list));
+          callback(list);
+        } else {
+          // If empty, seed Firestore with initial stories
+          INITIAL_STORIES.forEach((story) => {
+            setDoc(doc(db, 'stories', story.id), story).catch(() => {});
+          });
+          callback(getStoriesLocal());
+        }
+      },
+      (error) => {
+        console.warn('Fallback to local stories due to firestore error:', error);
+        callback(getStoriesLocal());
+        if (onError) onError(error);
+      }
+    );
+  } catch (err) {
+    callback(getStoriesLocal());
+    if (onError) onError(err);
+    return () => {};
+  }
+}
+
+export function subscribeChapters(callback: (chapters: Chapter[]) => void, onError?: (error: any) => void) {
+  initStorage();
+  try {
+    const colRef = collection(db, 'chapters');
+    return onSnapshot(
+      colRef,
+      (snapshot) => {
+        if (!snapshot.empty) {
+          const list: Chapter[] = [];
+          snapshot.forEach((doc) => {
+            list.push(doc.data() as Chapter);
+          });
+          localStorage.setItem(STORAGE_KEYS.CHAPTERS, JSON.stringify(list));
+          callback(list);
+        } else {
+          INITIAL_CHAPTERS.forEach((chap) => {
+            setDoc(doc(db, 'chapters', chap.id), chap).catch(() => {});
+          });
+          callback(getChaptersLocal());
+        }
+      },
+      (error) => {
+        console.warn('Fallback to local chapters:', error);
+        callback(getChaptersLocal());
+        if (onError) onError(error);
+      }
+    );
+  } catch (err) {
+    callback(getChaptersLocal());
+    if (onError) onError(err);
+    return () => {};
+  }
+}
+
+export function subscribeComments(callback: (comments: Comment[]) => void, onError?: (error: any) => void) {
+  initStorage();
+  try {
+    const colRef = collection(db, 'comments');
+    return onSnapshot(
+      colRef,
+      (snapshot) => {
+        const list: Comment[] = [];
+        snapshot.forEach((doc) => {
+          list.push(doc.data() as Comment);
+        });
+        if (list.length > 0) {
+          localStorage.setItem(STORAGE_KEYS.COMMENTS, JSON.stringify(list));
+          callback(list);
+        } else {
+          INITIAL_COMMENTS.forEach((c) => {
+            setDoc(doc(db, 'comments', c.id), c).catch(() => {});
+          });
+          callback(getCommentsLocal());
+        }
+      },
+      (error) => {
+        console.warn('Fallback to local comments:', error);
+        callback(getCommentsLocal());
+        if (onError) onError(error);
+      }
+    );
+  } catch (err) {
+    callback(getCommentsLocal());
+    if (onError) onError(err);
+    return () => {};
+  }
+}
+
+// ------------------- LOCAL GETTERS -------------------
+
+export function getStoriesLocal(): Story[] {
+  initStorage();
+  try {
+    const data = localStorage.getItem(STORAGE_KEYS.STORIES);
+    return data ? JSON.parse(data) : INITIAL_STORIES;
+  } catch {
+    return INITIAL_STORIES;
+  }
+}
+
+export function getStories(): Story[] {
+  return getStoriesLocal();
+}
+
+export function getChaptersLocal(storyId?: string): Chapter[] {
+  initStorage();
+  try {
+    const data = localStorage.getItem(STORAGE_KEYS.CHAPTERS);
+    const all: Chapter[] = data ? JSON.parse(data) : INITIAL_CHAPTERS;
+    if (storyId) {
+      return all
+        .filter((c) => c.storyId === storyId)
+        .sort((a, b) => a.chapterNumber - b.chapterNumber);
+    }
+    return all;
+  } catch {
+    return INITIAL_CHAPTERS;
+  }
+}
+
+export function getChapters(storyId?: string): Chapter[] {
+  return getChaptersLocal(storyId);
+}
+
+export function getCommentsLocal(storyId?: string, chapterId?: string): Comment[] {
+  initStorage();
+  try {
+    const data = localStorage.getItem(STORAGE_KEYS.COMMENTS);
+    const all: Comment[] = data ? JSON.parse(data) : INITIAL_COMMENTS;
+    return all.filter((c) => {
+      if (storyId && c.storyId !== storyId) return false;
+      if (chapterId && c.chapterId !== chapterId) return false;
+      return true;
+    });
+  } catch {
+    return INITIAL_COMMENTS;
+  }
+}
+
+export function getComments(storyId?: string, chapterId?: string): Comment[] {
+  return getCommentsLocal(storyId, chapterId);
+}
+
+// ------------------- ACTIONS (WRITE / UPDATE / DELETE) -------------------
+
+export async function saveStory(story: Story): Promise<Story[]> {
+  const stories = getStoriesLocal();
+  const index = stories.findIndex((s) => s.id === story.id);
+  let updated: Story[];
+  const today = new Date().toISOString().split('T')[0];
+
+  // Auto compress cover if it's a huge base64
+  let compressedCover = story.coverUrl;
+  if (story.coverUrl && story.coverUrl.startsWith('data:image') && story.coverUrl.length > 150000) {
+    try {
+      compressedCover = await compressBase64(story.coverUrl);
+    } catch {}
+  }
+
+  const finalStory: Story = index >= 0
+    ? { ...story, coverUrl: compressedCover, updatedAt: today }
+    : { ...story, coverUrl: compressedCover, createdAt: story.createdAt || today, updatedAt: today };
+
+  if (index >= 0) {
+    updated = [...stories];
+    updated[index] = finalStory;
+  } else {
+    updated = [finalStory, ...stories];
+  }
+
+  localStorage.setItem(STORAGE_KEYS.STORIES, JSON.stringify(updated));
+
+  try {
+    await setDoc(doc(db, 'stories', finalStory.id), cleanForFirestore(finalStory));
+  } catch (err) {
+    handleFirestoreError(err, OperationType.WRITE, `stories/${finalStory.id}`);
+  }
+
+  return updated;
+}
+
+export async function deleteStory(storyId: string): Promise<Story[]> {
+  const stories = getStoriesLocal().filter((s) => s.id !== storyId);
+  localStorage.setItem(STORAGE_KEYS.STORIES, JSON.stringify(stories));
+
+  try {
+    await deleteDoc(doc(db, 'stories', storyId));
+  } catch (err) {
+    handleFirestoreError(err, OperationType.DELETE, `stories/${storyId}`);
+  }
+
+  return stories;
+}
+
+export async function incrementStoryViews(storyId: string): Promise<void> {
+  const stories = getStoriesLocal();
+  const updated = stories.map((s) => {
+    if (s.id === storyId) {
+      const newStory = { ...s, viewsCount: (s.viewsCount || 0) + 1 };
+      setDoc(doc(db, 'stories', storyId), cleanForFirestore(newStory)).catch(() => {});
+      return newStory;
+    }
+    return s;
+  });
+  localStorage.setItem(STORAGE_KEYS.STORIES, JSON.stringify(updated));
+}
+
+export async function saveChapter(chapter: Chapter): Promise<Chapter[]> {
+  const allChapters = getChaptersLocal();
+  const index = allChapters.findIndex((c) => c.id === chapter.id);
+  let updated: Chapter[];
+  const today = new Date().toISOString().split('T')[0];
+
+  const finalChapter: Chapter = index >= 0
+    ? { ...chapter, updatedAt: today }
+    : { ...chapter, createdAt: chapter.createdAt || today, updatedAt: today };
+
+  if (index >= 0) {
+    updated = [...allChapters];
+    updated[index] = finalChapter;
+  } else {
+    updated = [...allChapters, finalChapter];
+  }
+
+  localStorage.setItem(STORAGE_KEYS.CHAPTERS, JSON.stringify(updated));
+
+  try {
+    await setDoc(doc(db, 'chapters', finalChapter.id), cleanForFirestore(finalChapter));
+    if (index < 0) {
+      notifyNewChapter(finalChapter.storyId, finalChapter.title, finalChapter.id, finalChapter.chapterNumber).catch(() => {});
+    }
+  } catch (err) {
+    handleFirestoreError(err, OperationType.WRITE, `chapters/${finalChapter.id}`);
+  }
+
+  return updated;
+}
+
+export async function saveMultipleChapters(newChapters: Chapter[]): Promise<Chapter[]> {
+  const allChapters = getChaptersLocal();
+  const today = new Date().toISOString().split('T')[0];
+
+  const preparedChapters = newChapters.map((c) => ({
+    ...c,
+    createdAt: c.createdAt || today,
+    updatedAt: today,
+  }));
+
+  const existingMap = new Map<string, Chapter>();
+  allChapters.forEach((c) => existingMap.set(c.id, c));
+
+  const brandNewChapters: Chapter[] = [];
+  preparedChapters.forEach((c) => {
+    if (!existingMap.has(c.id)) {
+      brandNewChapters.push(c);
+    }
+    existingMap.set(c.id, c);
+  });
+
+  const updated = Array.from(existingMap.values());
+  localStorage.setItem(STORAGE_KEYS.CHAPTERS, JSON.stringify(updated));
+
+  try {
+    await Promise.all(
+      preparedChapters.map((c) => setDoc(doc(db, 'chapters', c.id), cleanForFirestore(c)))
+    );
+    brandNewChapters.forEach((c) => {
+      notifyNewChapter(c.storyId, c.title, c.id, c.chapterNumber).catch(() => {});
+    });
+  } catch (err) {
+    handleFirestoreError(err, OperationType.WRITE, `chapters/batch`);
+  }
+
+  return updated;
+}
+
+export async function deleteChapter(chapterId: string, storyId: string): Promise<Chapter[]> {
+  const allChapters = getChaptersLocal();
+  const updated = allChapters.filter((c) => c.id !== chapterId);
+  localStorage.setItem(STORAGE_KEYS.CHAPTERS, JSON.stringify(updated));
+
+  try {
+    await deleteDoc(doc(db, 'chapters', chapterId));
+  } catch (err) {
+    handleFirestoreError(err, OperationType.DELETE, `chapters/${chapterId}`);
+  }
+
+  return updated;
+}
+
+export async function incrementChapterViews(chapterId: string, storyId: string): Promise<void> {
+  const chapters = getChaptersLocal();
+  const updatedChapters = chapters.map((c) => {
+    if (c.id === chapterId) {
+      const newChap = { ...c, views: (c.views || 0) + 1 };
+      setDoc(doc(db, 'chapters', chapterId), newChap).catch(() => {});
+      return newChap;
+    }
+    return c;
+  });
+  localStorage.setItem(STORAGE_KEYS.CHAPTERS, JSON.stringify(updatedChapters));
+  incrementStoryViews(storyId);
+}
+
+// Bookmarks
+export function getBookmarks(): BookmarkItem[] {
+  initStorage();
+  try {
+    const data = localStorage.getItem(STORAGE_KEYS.BOOKMARKS);
+    return data ? JSON.parse(data) : [];
+  } catch {
+    return [];
+  }
+}
+
+export async function toggleBookmark(storyId: string): Promise<boolean> {
+  const list = getBookmarks();
+  const index = list.findIndex((b) => b.storyId === storyId);
+  let isBookmarked = false;
+  let newList: BookmarkItem[];
+
+  if (index >= 0) {
+    newList = list.filter((b) => b.storyId !== storyId);
+    isBookmarked = false;
+    if (auth.currentUser) {
+      deleteDoc(doc(db, 'bookmarks', `${auth.currentUser.uid}_${storyId}`)).catch(() => {});
+    }
+  } else {
+    newList = [{ storyId, createdAt: new Date().toISOString() }, ...list];
+    isBookmarked = true;
+    if (auth.currentUser) {
+      setDoc(doc(db, 'bookmarks', `${auth.currentUser.uid}_${storyId}`), {
+        id: `${auth.currentUser.uid}_${storyId}`,
+        storyId,
+        userId: auth.currentUser.uid,
+        createdAt: new Date().toISOString(),
+      }).catch(() => {});
+    }
+  }
+
+  localStorage.setItem(STORAGE_KEYS.BOOKMARKS, JSON.stringify(newList));
+  return isBookmarked;
+}
+
+// Reading History
+export function getReadingHistory(): ReadingProgress[] {
+  initStorage();
+  try {
+    const data = localStorage.getItem(STORAGE_KEYS.READING_HISTORY);
+    return data ? JSON.parse(data) : [];
+  } catch {
+    return [];
+  }
+}
+
+export async function saveReadingProgress(storyId: string, chapterId: string, chapterNumber: number): Promise<void> {
+  const history = getReadingHistory();
+  const filtered = history.filter((h) => h.storyId !== storyId);
+  const updated: ReadingProgress[] = [
+    {
+      storyId,
+      chapterId,
+      chapterNumber,
+      updatedAt: new Date().toISOString(),
+    },
+    ...filtered,
+  ];
+  localStorage.setItem(STORAGE_KEYS.READING_HISTORY, JSON.stringify(updated));
+
+  if (auth.currentUser) {
+    setDoc(doc(db, 'reading_history', `${auth.currentUser.uid}_${storyId}`), {
+      id: `${auth.currentUser.uid}_${storyId}`,
+      storyId,
+      chapterId,
+      chapterNumber,
+      userId: auth.currentUser.uid,
+      updatedAt: new Date().toISOString(),
+    }).catch(() => {});
+  }
+}
+
+// Comments
+export async function addComment(comment: Omit<Comment, 'id' | 'createdAt'>): Promise<Comment> {
+  const user = auth.currentUser;
+  const newComment: Comment = {
+    ...comment,
+    id: 'comm-' + Date.now(),
+    userName: user?.displayName || comment.userName || 'Độc giả',
+    userUid: user?.uid || comment.userUid,
+    userPhoto: user?.photoURL || comment.userPhoto,
+    createdAt: new Date().toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' }),
+  };
+
+  // Remove undefined keys before writing to Firestore
+  const firestoreData: Record<string, any> = {};
+  Object.entries(newComment).forEach(([key, value]) => {
+    if (value !== undefined) {
+      firestoreData[key] = value;
+    }
+  });
+
+  const data = localStorage.getItem(STORAGE_KEYS.COMMENTS);
+  const all: Comment[] = data ? JSON.parse(data) : INITIAL_COMMENTS;
+  const updated = [newComment, ...all];
+  localStorage.setItem(STORAGE_KEYS.COMMENTS, JSON.stringify(updated));
+
+  try {
+    await setDoc(doc(db, 'comments', newComment.id), firestoreData);
+  } catch (err) {
+    handleFirestoreError(err, OperationType.WRITE, `comments/${newComment.id}`);
+  }
+
+  // --- TẠO THÔNG BÁO CHO EDITOR HOẶC CHỦ CM CHA ---
+  try {
+    const stories = getStoriesLocal();
+    const targetStory = stories.find(s => s.id === comment.storyId);
+    if (targetStory) {
+      const chaps = getChaptersLocal();
+      const targetChap = comment.chapterId ? chaps.find(c => c.id === comment.chapterId) : null;
+      const chapterTitle = targetChap ? `chương ${targetChap.chapterNumber}` : 'truyện';
+
+      // 1. Nếu đây là một Reply (có bình luận cha) và người trả lời khác với chủ bình luận cha
+      if (comment.parentCommentId && comment.parentCommentAuthorUid && comment.parentCommentAuthorUid !== newComment.userUid) {
+        createNotification({
+          userId: comment.parentCommentAuthorUid,
+          title: 'Có phản hồi mới!',
+          content: `${newComment.userName} đã trả lời bình luận của bạn tại ${chapterTitle} bộ "${targetStory.title}": "${newComment.content.substring(0, 50)}${newComment.content.length > 50 ? '...' : ''}"`,
+          type: 'reply_comment',
+          storyId: comment.storyId,
+          chapterId: comment.chapterId,
+          paragraphIndex: comment.paragraphIndex,
+          commentId: newComment.id,
+          senderName: newComment.userName,
+          senderPhoto: newComment.userPhoto
+        }).catch(() => {});
+      }
+
+      // 2. Thông báo cho Editor/Tác giả (nếu người cmt không phải là tác giả)
+      const authorUid = targetStory.authorUid;
+      if (authorUid && authorUid !== newComment.userUid) {
+        const isReplyToAuthor = comment.parentCommentAuthorUid === authorUid;
+        if (!isReplyToAuthor) {
+          const locationText = comment.paragraphIndex !== undefined 
+            ? `đoạn #${comment.paragraphIndex + 1} ${chapterTitle}`
+            : chapterTitle;
+
+          createNotification({
+            userId: authorUid,
+            title: 'Bình luận mới trên truyện!',
+            content: `${newComment.userName} đã bình luận tại ${locationText} bộ "${targetStory.title}": "${newComment.content.substring(0, 50)}${newComment.content.length > 50 ? '...' : ''}"`,
+            type: 'new_comment',
+            storyId: comment.storyId,
+            chapterId: comment.chapterId,
+            paragraphIndex: comment.paragraphIndex,
+            commentId: newComment.id,
+            senderName: newComment.userName,
+            senderPhoto: newComment.userPhoto
+          }).catch(() => {});
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('Lỗi xử lý gửi thông báo bình luận:', err);
+  }
+
+  // Mỗi khi editor/reader comment sẽ được nhận 1 Chucu
+  const targetUid = user?.uid || comment.userUid;
+  if (targetUid) {
+    try {
+      const userRef = doc(db, 'users', targetUid);
+      const snap = await getDoc(userRef);
+      if (snap.exists()) {
+        const uData = snap.data();
+        const curChucu = typeof uData.chucu === 'number' ? uData.chucu : 0;
+        await setDoc(userRef, {
+          chucu: curChucu + 1,
+          updatedAt: new Date().toISOString(),
+        }, { merge: true });
+      } else {
+        await setDoc(userRef, {
+          chucu: 1,
+          displayName: user?.displayName || comment.userName || 'Độc giả',
+          photoURL: user?.photoURL || comment.userPhoto || '',
+          email: user?.email || '',
+          streak: 0,
+          totalCheckIns: 0,
+          unlockedChapters: [],
+          updatedAt: new Date().toISOString(),
+        }, { merge: true });
+      }
+    } catch (err) {
+      console.warn('Không thể cộng 1 Chucu khi bình luận:', err);
+    }
+  }
+
+  return newComment;
+}
+
+// ------------------- THÔNG BÁO (NOTIFICATIONS) -------------------
+
+export function getNotificationsLocal(): Notification[] {
+  try {
+    const data = localStorage.getItem('wp_notifications_v4');
+    return data ? JSON.parse(data) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function subscribeNotifications(userId: string, callback: (notifications: Notification[]) => void) {
+  if (!userId) {
+    callback([]);
+    return () => {};
+  }
+  
+  callback(getNotificationsLocal().filter(n => n.userId === userId));
+
+  try {
+    const colRef = collection(db, 'notifications');
+    const q = query(
+      colRef,
+      where('userId', '==', userId)
+    );
+    
+    return onSnapshot(
+      q,
+      (snapshot) => {
+        const list: Notification[] = [];
+        snapshot.forEach((docSnap) => {
+          list.push(docSnap.data() as Notification);
+        });
+        
+        list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        
+        const allLocal = getNotificationsLocal().filter(n => n.userId !== userId);
+        localStorage.setItem('wp_notifications_v4', JSON.stringify([...list, ...allLocal]));
+        callback(list);
+      },
+      (error) => {
+        console.warn('Fallback thông báo local do lỗi Firestore:', error);
+        callback(getNotificationsLocal().filter(n => n.userId === userId));
+      }
+    );
+  } catch (err) {
+    console.warn('Lỗi kết nối thông báo:', err);
+    callback(getNotificationsLocal().filter(n => n.userId === userId));
+    return () => {};
+  }
+}
+
+export async function createNotification(notification: Omit<Notification, 'id' | 'createdAt' | 'isRead'>) {
+  const newNotif: Notification = {
+    ...notification,
+    id: 'notif-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6),
+    isRead: false,
+    createdAt: new Date().toISOString()
+  };
+
+  const local = getNotificationsLocal();
+  localStorage.setItem('wp_notifications_v4', JSON.stringify([newNotif, ...local]));
+
+  try {
+    await setDoc(doc(db, 'notifications', newNotif.id), cleanForFirestore(newNotif));
+  } catch (err) {
+    console.warn('Lỗi gửi thông báo lên Firestore:', err);
+  }
+}
+
+export async function markNotificationAsRead(notificationId: string): Promise<void> {
+  const local = getNotificationsLocal();
+  const updated = local.map(n => n.id === notificationId ? { ...n, isRead: true } : n);
+  localStorage.setItem('wp_notifications_v4', JSON.stringify(updated));
+
+  try {
+    await setDoc(doc(db, 'notifications', notificationId), { isRead: true }, { merge: true });
+  } catch (err) {
+    console.warn('Lỗi cập nhật trạng thái đã đọc thông báo:', err);
+  }
+}
+
+export async function markAllNotificationsAsRead(userId: string): Promise<void> {
+  const local = getNotificationsLocal();
+  const updated = local.map(n => n.userId === userId ? { ...n, isRead: true } : n);
+  localStorage.setItem('wp_notifications_v4', JSON.stringify(updated));
+
+  try {
+    const colRef = collection(db, 'notifications');
+    const q = query(colRef, where('userId', '==', userId), where('isRead', '==', false));
+    const snapshot = await getDocs(q);
+    const batchPromises = snapshot.docs.map(docSnap => 
+      setDoc(doc(db, 'notifications', docSnap.id), { isRead: true }, { merge: true })
+    );
+    await Promise.all(batchPromises);
+  } catch (err) {
+    console.warn('Lỗi đọc hết thông báo:', err);
+  }
+}
+
+export async function notifyNewChapter(storyId: string, chapterTitle: string, chapterId: string, chapterNumber: number) {
+  const stories = getStoriesLocal();
+  const story = stories.find(s => s.id === storyId);
+  if (!story) return;
+
+  try {
+    const colRef = collection(db, 'bookmarks');
+    const q = query(colRef, where('storyId', '==', storyId));
+    const snap = await getDocs(q);
+    
+    const promises = snap.docs.map(docSnap => {
+      const bData = docSnap.data();
+      const readerUid = bData.userId;
+      if (readerUid && readerUid !== auth.currentUser?.uid) {
+        return createNotification({
+          userId: readerUid,
+          title: 'Chương mới xuất bản!',
+          content: `Truyện "${story.title}" vừa ra chương mới: ${chapterTitle}`,
+          type: 'new_chapter',
+          storyId: storyId,
+          chapterId: chapterId,
+          chapterNumber: chapterNumber,
+          senderName: story.editorName || story.author || 'Hệ thống'
+        });
+      }
+      return Promise.resolve();
+    });
+    await Promise.all(promises);
+  } catch (err) {
+    console.warn('Lỗi khi gửi thông báo chương mới cho độc giả:', err);
+  }
+}
+
+// ------------------- LOUNGE CHAT -------------------
+
+export function subscribeLoungeMessages(callback: (messages: LoungeMessage[]) => void, onError?: (error: any) => void) {
+  initStorage();
+  try {
+    const colRef = collection(db, 'lounge_messages');
+    return onSnapshot(
+      colRef,
+      (snapshot) => {
+        const list: LoungeMessage[] = [];
+        snapshot.forEach((docSnap) => {
+          const data = docSnap.data() as LoungeMessage;
+          if (data.id === 'lounge-1' || data.id === 'lounge-2' || data.id.startsWith('lounge-')) {
+            deleteDoc(doc(db, 'lounge_messages', data.id)).catch(() => {});
+          } else {
+            list.push(data);
+          }
+        });
+        // Sort by timestamp
+        list.sort((a, b) => (a.id > b.id ? 1 : -1));
+        localStorage.setItem(STORAGE_KEYS.LOUNGE, JSON.stringify(list));
+        callback(list);
+      },
+      (error) => {
+        console.warn('Fallback to local lounge messages:', error);
+        callback(getLoungeMessagesLocal());
+        if (onError) onError(error);
+      }
+    );
+  } catch (err) {
+    callback(getLoungeMessagesLocal());
+    if (onError) onError(err);
+    return () => {};
+  }
+}
+
+export function getLoungeMessagesLocal(): LoungeMessage[] {
+  initStorage();
+  try {
+    const data = localStorage.getItem(STORAGE_KEYS.LOUNGE);
+    if (!data) return [];
+    const list: LoungeMessage[] = JSON.parse(data);
+    const filtered = list.filter((m) => m.id !== 'lounge-1' && m.id !== 'lounge-2' && !m.id.startsWith('lounge-'));
+    if (filtered.length !== list.length) {
+      localStorage.setItem(STORAGE_KEYS.LOUNGE, JSON.stringify(filtered));
+    }
+    return filtered;
+  } catch {
+    return [];
+  }
+}
+
+export async function sendLoungeMessage(content: string, customName?: string, customPhoto?: string): Promise<LoungeMessage> {
+  const user = auth.currentUser;
+  const newMsg: LoungeMessage = {
+    id: 'msg-' + Date.now(),
+    userName: customName || user?.displayName || (user ? user.email?.split('@')[0] : 'Độc giả'),
+    userUid: user?.uid,
+    userPhoto: customPhoto || user?.photoURL || undefined,
+    content,
+    createdAt: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+  };
+
+  const list = getLoungeMessagesLocal();
+  const updated = [...list, newMsg];
+  localStorage.setItem(STORAGE_KEYS.LOUNGE, JSON.stringify(updated));
+
+  try {
+    await setDoc(doc(db, 'lounge_messages', newMsg.id), newMsg);
+  } catch (err) {
+    console.warn('Could not sync lounge message to firestore:', err);
+  }
+
+  return newMsg;
+}
+
+export async function submitEditorRequest(
+  userId: string,
+  email: string,
+  displayName: string,
+  experience: string,
+  contact: string
+): Promise<void> {
+  const newRequest: EditorRequest = {
+    id: userId,
+    userId,
+    email,
+    displayName: displayName || email.split('@')[0],
+    experience,
+    contact,
+    status: 'pending',
+    createdAt: new Date().toISOString().split('T')[0],
+    updatedAt: new Date().toISOString().split('T')[0],
+  };
+
+  try {
+    await setDoc(doc(db, 'editor_requests', userId), newRequest);
+  } catch (err) {
+    handleFirestoreError(err, OperationType.WRITE, `editor_requests/${userId}`);
+  }
+}
+
+export function subscribeMyEditorRequest(userId: string, callback: (request: EditorRequest | null) => void) {
+  try {
+    const docRef = doc(db, 'editor_requests', userId);
+    return onSnapshot(
+      docRef,
+      (snapshot) => {
+        if (snapshot.exists()) {
+          callback(snapshot.data() as EditorRequest);
+        } else {
+          callback(null);
+        }
+      },
+      () => {
+        callback(null);
+      }
+    );
+  } catch {
+    callback(null);
+    return () => {};
+  }
+}
+
+export function subscribeAllEditorRequests(callback: (requests: EditorRequest[]) => void) {
+  try {
+    const colRef = collection(db, 'editor_requests');
+    return onSnapshot(
+      colRef,
+      (snapshot) => {
+        const list: EditorRequest[] = [];
+        snapshot.forEach((doc) => {
+          list.push(doc.data() as EditorRequest);
+        });
+        list.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+        callback(list);
+      },
+      () => {
+        callback([]);
+      }
+    );
+  } catch {
+    callback([]);
+    return () => {};
+  }
+}
+
+export async function approveEditorRequest(userId: string): Promise<void> {
+  try {
+    const docRef = doc(db, 'editor_requests', userId);
+    await setDoc(docRef, { status: 'approved', updatedAt: new Date().toISOString().split('T')[0] }, { merge: true });
+  } catch (err) {
+    handleFirestoreError(err, OperationType.WRITE, `editor_requests/${userId}`);
+  }
+}
+
+export async function rejectEditorRequest(userId: string): Promise<void> {
+  try {
+    const docRef = doc(db, 'editor_requests', userId);
+    await setDoc(docRef, { status: 'rejected', updatedAt: new Date().toISOString().split('T')[0] }, { merge: true });
+  } catch (err) {
+    handleFirestoreError(err, OperationType.WRITE, `editor_requests/${userId}`);
+  }
+}
+
+// Tự động đồng bộ hóa dữ liệu offline từ LocalStorage lên đám mây Firestore khi mạng thông suốt và dán Rules thành công
+export async function syncLocalToCloud(): Promise<void> {
+  initStorage();
+  try {
+    // 1. Đồng bộ Stories
+    const storiesCol = collection(db, 'stories');
+    const storiesSnap = await getDocs(storiesCol);
+    const cloudStoryIds = new Set(storiesSnap.docs.map(doc => doc.id));
+    const localStories = getStoriesLocal();
+    let localStoriesUpdated = false;
+    const syncedLocalStories = [...localStories];
+
+    for (let i = 0; i < syncedLocalStories.length; i++) {
+      const story = syncedLocalStories[i];
+      if (!cloudStoryIds.has(story.id)) {
+        let finalStory = { ...story };
+        // Nếu ảnh bìa quá lớn (> 150KB), nén lại để vượt qua giới hạn 1MB của Firestore document
+        if (story.coverUrl && story.coverUrl.startsWith('data:image') && story.coverUrl.length > 150000) {
+          try {
+            console.log(`[Sync] Phát hiện ảnh bìa lớn (${Math.round(story.coverUrl.length / 1024)} KB) của truyện: ${story.title}. Tiến hành nén...`);
+            const compressed = await compressBase64(story.coverUrl);
+            finalStory.coverUrl = compressed;
+            syncedLocalStories[i] = finalStory;
+            localStoriesUpdated = true;
+            console.log(`[Sync] Đã nén ảnh bìa xuống còn: ${Math.round(compressed.length / 1024)} KB`);
+          } catch (compressErr) {
+            console.warn('[Sync] Không thể nén ảnh bìa:', compressErr);
+          }
+        }
+        
+        await setDoc(doc(db, 'stories', finalStory.id), cleanForFirestore(finalStory));
+        console.log(`[Sync] Đã đồng bộ truyện: ${finalStory.title} (${finalStory.id}) lên Firestore`);
+      }
+    }
+
+    if (localStoriesUpdated) {
+      localStorage.setItem(STORAGE_KEYS.STORIES, JSON.stringify(syncedLocalStories));
+    }
+
+    // 2. Đồng bộ Chapters
+    const chapsCol = collection(db, 'chapters');
+    const chapsSnap = await getDocs(chapsCol);
+    const cloudChapIds = new Set(chapsSnap.docs.map(doc => doc.id));
+    const localChapters = getChaptersLocal();
+    for (const chap of localChapters) {
+      if (!cloudChapIds.has(chap.id)) {
+        await setDoc(doc(db, 'chapters', chap.id), cleanForFirestore(chap));
+        console.log(`[Sync] Đã đồng bộ chương: ${chap.title} (${chap.id}) lên Firestore`);
+      }
+    }
+
+    // 3. Đồng bộ Comments
+    const commentsCol = collection(db, 'comments');
+    const commentsSnap = await getDocs(commentsCol);
+    const cloudCommentIds = new Set(commentsSnap.docs.map(doc => doc.id));
+    const localComments = getCommentsLocal();
+    for (const comment of localComments) {
+      if (!cloudCommentIds.has(comment.id)) {
+        await setDoc(doc(db, 'comments', comment.id), cleanForFirestore(comment));
+        console.log(`[Sync] Đã đồng bộ bình luận: ${comment.id} lên Firestore`);
+      }
+    }
+  } catch (err) {
+    console.warn('[Sync] Chưa thể đồng bộ lên Firestore (có thể do chưa đăng nhập hoặc Rules chặn):', err);
+  }
+}
+
+// Hàm bổ trợ nén ảnh Base64 gọn nhẹ dưới 100KB để vượt qua giới hạn 1MB tài liệu của Firestore
+async function compressBase64(base64: string, maxWidth = 600, maxHeight = 800, quality = 0.85): Promise<string> {
+  if (!base64 || !base64.startsWith('data:image')) return base64;
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.src = base64;
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      let width = img.width;
+      let height = img.height;
+
+      if (width > height) {
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+      } else {
+        if (height > maxHeight) {
+          width = Math.round((width * maxHeight) / height);
+          height = maxHeight;
+        }
+      }
+
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        resolve(base64);
+        return;
+      }
+      ctx.drawImage(img, 0, 0, width, height);
+      const dataUrl = canvas.toDataURL('image/jpeg', quality);
+      resolve(dataUrl);
+    };
+    img.onerror = () => {
+      resolve(base64);
+    };
+  });
+}
+
+// ------------------- TÍNH NĂNG ĐỒNG TIỀN ẢO CHUCU & ĐIỂM DANH THEO STREAK -------------------
+
+/**
+ * Công thức tính số Chucu nhận được theo chuỗi ngày điểm danh liên tiếp (Streak):
+ * - Ngày 1 (streak 1): nhận 1 Chucu
+ * - Ngày 2, 3 (streak 2..3): nhận 2 Chucu
+ * - Ngày 4, 5, 6 (streak 4..6): nhận 3 Chucu
+ * - Ngày 7, 8, 9, 10 (streak 7..10): nhận 4 Chucu
+ * - Cứ thế tiếp tục tăng dần lên!
+ */
+export function calculateStreakReward(streak: number): number {
+  if (streak <= 0) return 0;
+  let k = 1;
+  while ((k * (k + 1)) / 2 < streak) {
+    k++;
+  }
+  return k;
+}
+
+export function getLocalDateString(d: Date = new Date()): string {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+export function getYesterdayDateString(): string {
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  return getLocalDateString(d);
+}
+
+export async function checkInDaily(
+  uid: string,
+  fallbackProfile?: Partial<UserProfile>
+): Promise<{ success: boolean; reward: number; streak: number; message: string; newBalance: number }> {
+  try {
+    const today = getLocalDateString();
+    const yesterday = getYesterdayDateString();
+
+    const userDocRef = doc(db, 'users', uid);
+    const snap = await getDoc(userDocRef);
+
+    let currentChucu = 0;
+    let currentStreak = 0;
+    let lastDate = '';
+    let totalCheckIns = 0;
+    let displayName = fallbackProfile?.displayName || auth.currentUser?.displayName || 'Độc giả';
+    let photoURL = fallbackProfile?.photoURL || auth.currentUser?.photoURL || '';
+
+    if (snap.exists()) {
+      const data = snap.data();
+      currentChucu = typeof data.chucu === 'number' ? data.chucu : 0;
+      currentStreak = typeof data.streak === 'number' ? data.streak : 0;
+      lastDate = data.lastCheckInDate || '';
+      totalCheckIns = typeof data.totalCheckIns === 'number' ? data.totalCheckIns : 0;
+      if (data.displayName) displayName = data.displayName;
+      if (data.photoURL) photoURL = data.photoURL;
+    }
+
+    if (lastDate === today) {
+      return {
+        success: false,
+        reward: 0,
+        streak: currentStreak,
+        newBalance: currentChucu,
+        message: 'Bạn đã điểm danh hôm nay rồi! Hãy quay lại vào ngày mai nhé.',
+      };
+    }
+
+    // Tính streak mới
+    let newStreak = 1;
+    if (lastDate === yesterday) {
+      newStreak = currentStreak + 1;
+    } else {
+      newStreak = 1; // Bị ngắt chuỗi nếu không điểm danh ngày hôm qua
+    }
+
+    const reward = calculateStreakReward(newStreak);
+    const newBalance = currentChucu + reward;
+    const newTotalCheckIns = totalCheckIns + 1;
+
+    const updatedData = {
+      chucu: newBalance,
+      streak: newStreak,
+      lastCheckInDate: today,
+      totalCheckIns: newTotalCheckIns,
+      displayName,
+      photoURL,
+      email: auth.currentUser?.email || '',
+      updatedAt: new Date().toISOString(),
+    };
+
+    await setDoc(userDocRef, cleanForFirestore(updatedData), { merge: true });
+
+    return {
+      success: true,
+      reward,
+      streak: newStreak,
+      newBalance,
+      message: `Điểm danh thành công! Bạn duy trì chuỗi ${newStreak} ngày liên tiếp và nhận được +${reward} Chucu!`,
+    };
+  } catch (err) {
+    console.error('Lỗi khi điểm danh:', err);
+    throw err;
+  }
+}
+
+// ------------------- TÍNH NĂNG MỞ KHÓA CHƯƠNG BẰNG CHUCU -------------------
+
+const UNLOCKED_STORAGE_KEY_PREFIX = 'wp_unlocked_chapters_';
+
+export function getUserUnlockedChaptersLocal(uid: string): string[] {
+  try {
+    const raw = localStorage.getItem(`${UNLOCKED_STORAGE_KEY_PREFIX}${uid}`);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function subscribeUserUnlockedChapters(
+  uid: string,
+  callback: (chapterIds: string[]) => void
+) {
+  if (!uid) {
+    callback([]);
+    return () => {};
+  }
+  const local = getUserUnlockedChaptersLocal(uid);
+  callback(local);
+
+  try {
+    const userDocRef = doc(db, 'users', uid);
+    return onSnapshot(
+      userDocRef,
+      (snap) => {
+        if (snap.exists()) {
+          const data = snap.data();
+          const unlocked = Array.isArray(data.unlockedChapters) ? data.unlockedChapters : [];
+          // Merge local & cloud
+          const merged = Array.from(new Set([...local, ...unlocked]));
+          localStorage.setItem(`${UNLOCKED_STORAGE_KEY_PREFIX}${uid}`, JSON.stringify(merged));
+          callback(merged);
+        } else {
+          callback(local);
+        }
+      },
+      () => {
+        callback(local);
+      }
+    );
+  } catch {
+    callback(local);
+    return () => {};
+  }
+}
+
+export async function unlockChapterWithChucu(
+  userUid: string,
+  chapterId: string,
+  price: number,
+  authorUid?: string
+): Promise<{ success: boolean; message: string; newBalance: number }> {
+  try {
+    const userDocRef = doc(db, 'users', userUid);
+    const snap = await getDoc(userDocRef);
+
+    let currentChucu = 0;
+    let unlockedChapters: string[] = getUserUnlockedChaptersLocal(userUid);
+
+    if (snap.exists()) {
+      const data = snap.data();
+      currentChucu = typeof data.chucu === 'number' ? data.chucu : 0;
+      if (Array.isArray(data.unlockedChapters)) {
+        unlockedChapters = Array.from(new Set([...unlockedChapters, ...data.unlockedChapters]));
+      }
+    }
+
+    // Nếu đã mở khóa từ trước
+    if (unlockedChapters.includes(chapterId)) {
+      return {
+        success: true,
+        message: 'Bạn đã mở khóa chương này rồi!',
+        newBalance: currentChucu,
+      };
+    }
+
+    if (currentChucu < price) {
+      return {
+        success: false,
+        message: `Bạn không đủ Chucu! Cần ${price} Chucu nhưng bạn chỉ có ${currentChucu} Chucu. Hãy điểm danh mỗi ngày để nhận thêm Chucu nhé!`,
+        newBalance: currentChucu,
+      };
+    }
+
+    const newBalance = currentChucu - price;
+    const newUnlocked = [...unlockedChapters, chapterId];
+
+    // Cập nhật người mua
+    await setDoc(
+      userDocRef,
+      cleanForFirestore({
+        chucu: newBalance,
+        unlockedChapters: newUnlocked,
+        updatedAt: new Date().toISOString(),
+      }),
+      { merge: true }
+    );
+
+    // Lưu local
+    localStorage.setItem(`${UNLOCKED_STORAGE_KEY_PREFIX}${userUid}`, JSON.stringify(newUnlocked));
+
+    // Nếu tác giả/Editor có UID khác người mua, cộng thưởng Chucu cho Editor
+    if (authorUid && authorUid !== userUid) {
+      try {
+        const authorDocRef = doc(db, 'users', authorUid);
+        const authorSnap = await getDoc(authorDocRef);
+        if (authorSnap.exists()) {
+          const authorData = authorSnap.data();
+          const authorChucu = typeof authorData.chucu === 'number' ? authorData.chucu : 0;
+          await setDoc(
+            authorDocRef,
+            cleanForFirestore({
+              chucu: authorChucu + price,
+              updatedAt: new Date().toISOString(),
+            }),
+            { merge: true }
+          );
+        }
+      } catch (err) {
+        console.warn('Không thể cộng Chucu cho tác giả:', err);
+      }
+    }
+
+    return {
+      success: true,
+      message: `Mở khóa chương thành công! Đã trừ ${price} Chucu (Số dư còn lại: ${newBalance} Chucu).`,
+      newBalance,
+    };
+  } catch (err) {
+    console.error('Lỗi khi mở khóa chương:', err);
+    throw err;
+  }
+}
+
+// ------------------- GÁN / NHẬN QUYỀN TRUYỆN CŨ (CLAIM STORY) -------------------
+export async function claimStoryOwnership(
+  storyId: string,
+  userUid: string,
+  userEmail: string,
+  displayName?: string
+): Promise<Story[]> {
+  const stories = getStoriesLocal();
+  const index = stories.findIndex((s) => s.id === storyId);
+  if (index === -1) return stories;
+
+  const targetStory = stories[index];
+  const updatedStory: Story = {
+    ...targetStory,
+    authorUid: userUid,
+    authorEmail: userEmail,
+    author: targetStory.author || displayName || userEmail.split('@')[0] || 'Tác giả',
+    updatedAt: new Date().toISOString().split('T')[0],
+  };
+
+  const updated = [...stories];
+  updated[index] = updatedStory;
+  localStorage.setItem(STORAGE_KEYS.STORIES, JSON.stringify(updated));
+
+  try {
+    await setDoc(doc(db, 'stories', storyId), cleanForFirestore(updatedStory), { merge: true });
+  } catch (err) {
+    console.warn('Không thể cập nhật quyền sở hữu lên Firestore:', err);
+  }
+
+  return updated;
+}
+
+// ------------------- CẬP NHẬT TÊN NGƯỜI DÙNG VÀ AVATAR Ở MỌI NƠI -------------------
+export async function updateUserDataEverywhere(
+  uid: string,
+  newDisplayName: string,
+  newPhotoURL?: string,
+  userEmail?: string
+): Promise<void> {
+  const trimmedName = newDisplayName.trim();
+  if (!trimmedName || !uid) return;
+
+  // 1. Cập nhật document users/{uid}
+  try {
+    const userRef = doc(db, 'users', uid);
+    await setDoc(
+      userRef,
+      cleanForFirestore({
+        displayName: trimmedName,
+        photoURL: newPhotoURL || '',
+        email: userEmail || auth.currentUser?.email || '',
+        updatedAt: new Date().toISOString(),
+      }),
+      { merge: true }
+    );
+  } catch (err) {
+    console.warn('Lỗi khi cập nhật users collection:', err);
+  }
+
+  // 2. Cập nhật tên Editor và ảnh đại diện Editor trong tất cả các truyện (stories) do user này sở hữu
+  try {
+    const storiesCol = collection(db, 'stories');
+    const storiesSnap = await getDocs(storiesCol);
+    const localStories = getStoriesLocal();
+    let localStoriesUpdated = false;
+
+    const emailToMatch = userEmail || auth.currentUser?.email;
+
+    for (const docSnap of storiesSnap.docs) {
+      const storyData = docSnap.data() as Story;
+      const isOwner =
+        storyData.authorUid === uid ||
+        (emailToMatch && storyData.authorEmail && storyData.authorEmail.toLowerCase() === emailToMatch.toLowerCase());
+
+      if (isOwner) {
+        await setDoc(
+          doc(db, 'stories', storyData.id),
+          cleanForFirestore({
+            ...storyData,
+            editorName: trimmedName,
+            editorPhoto: newPhotoURL !== undefined ? newPhotoURL : storyData.editorPhoto,
+            authorUid: uid,
+            authorEmail: emailToMatch || storyData.authorEmail,
+            updatedAt: new Date().toISOString().split('T')[0],
+          }),
+          { merge: true }
+        );
+      }
+    }
+
+    const updatedLocalStories = localStories.map((s) => {
+      const isOwner =
+        s.authorUid === uid ||
+        (emailToMatch && s.authorEmail && s.authorEmail.toLowerCase() === emailToMatch.toLowerCase());
+      if (isOwner) {
+        localStoriesUpdated = true;
+        return {
+          ...s,
+          editorName: trimmedName,
+          editorPhoto: newPhotoURL !== undefined ? newPhotoURL : s.editorPhoto,
+          authorUid: uid,
+          authorEmail: emailToMatch || s.authorEmail,
+        };
+      }
+      return s;
+    });
+
+    if (localStoriesUpdated) {
+      localStorage.setItem(STORAGE_KEYS.STORIES, JSON.stringify(updatedLocalStories));
+    }
+  } catch (err) {
+    console.warn('Lỗi khi cập nhật thông tin editor trong stories:', err);
+  }
+
+  // 3. Cập nhật tên người bình luận trong tất cả các comment (comments)
+  try {
+    const commentsCol = collection(db, 'comments');
+    const commentsSnap = await getDocs(commentsCol);
+    const localComments = getCommentsLocal();
+    let localCommentsUpdated = false;
+
+    for (const docSnap of commentsSnap.docs) {
+      const commData = docSnap.data() as Comment;
+      if (commData.userUid === uid) {
+        await setDoc(
+          doc(db, 'comments', commData.id),
+          cleanForFirestore({
+            ...commData,
+            userName: trimmedName,
+            userPhoto: newPhotoURL !== undefined ? newPhotoURL : commData.userPhoto,
+          }),
+          { merge: true }
+        );
+      }
+    }
+
+    const updatedLocalComments = localComments.map((c) => {
+      if (c.userUid === uid) {
+        localCommentsUpdated = true;
+        return {
+          ...c,
+          userName: trimmedName,
+          userPhoto: newPhotoURL !== undefined ? newPhotoURL : c.userPhoto,
+        };
+      }
+      return c;
+    });
+
+    if (localCommentsUpdated) {
+      localStorage.setItem(STORAGE_KEYS.COMMENTS, JSON.stringify(updatedLocalComments));
+    }
+  } catch (err) {
+    console.warn('Lỗi khi cập nhật tên trong comments:', err);
+  }
+
+  // 4. Cập nhật tên trong phòng chat (lounge_messages)
+  try {
+    const loungeCol = collection(db, 'lounge_messages');
+    const loungeSnap = await getDocs(loungeCol);
+    const localLounge = getLoungeMessagesLocal();
+    let localLoungeUpdated = false;
+
+    for (const docSnap of loungeSnap.docs) {
+      const msgData = docSnap.data() as LoungeMessage;
+      if (msgData.userUid === uid) {
+        await setDoc(
+          doc(db, 'lounge_messages', msgData.id),
+          cleanForFirestore({
+            ...msgData,
+            userName: trimmedName,
+            userPhoto: newPhotoURL !== undefined ? newPhotoURL : msgData.userPhoto,
+          }),
+          { merge: true }
+        );
+      }
+    }
+
+    const updatedLocalLounge = localLounge.map((m) => {
+      if (m.userUid === uid) {
+        localLoungeUpdated = true;
+        return {
+          ...m,
+          userName: trimmedName,
+          userPhoto: newPhotoURL !== undefined ? newPhotoURL : m.userPhoto,
+        };
+      }
+      return m;
+    });
+
+    if (localLoungeUpdated) {
+      localStorage.setItem(STORAGE_KEYS.LOUNGE, JSON.stringify(updatedLocalLounge));
+    }
+  } catch (err) {
+    console.warn('Lỗi khi cập nhật tên trong lounge messages:', err);
+  }
+
+  // 5. Cập nhật tên trong đơn xin quyền editor (editor_requests)
+  try {
+    const reqDocRef = doc(db, 'editor_requests', uid);
+    const reqSnap = await getDoc(reqDocRef);
+    if (reqSnap.exists()) {
+      await setDoc(
+        reqDocRef,
+        cleanForFirestore({
+          displayName: trimmedName,
+          updatedAt: new Date().toISOString(),
+        }),
+        { merge: true }
+      );
+    }
+  } catch (err) {
+    console.warn('Lỗi khi cập nhật tên trong editor_requests:', err);
+  }
+
+  // 6. Cập nhật tên trong bảng xếp hạng game Block (block_leaderboard)
+  try {
+    const lbDocRef = doc(db, 'block_leaderboard', uid);
+    const lbSnap = await getDoc(lbDocRef);
+    if (lbSnap.exists()) {
+      await setDoc(
+        lbDocRef,
+        cleanForFirestore({
+          displayName: trimmedName,
+          photoURL: newPhotoURL !== undefined ? newPhotoURL : lbSnap.data()?.photoURL,
+          updatedAt: new Date().toISOString(),
+        }),
+        { merge: true }
+      );
+    }
+  } catch (err) {
+    console.warn('Lỗi khi cập nhật tên trong block_leaderboard:', err);
+  }
+
+  // 7. Cập nhật tên trong bảng xếp hạng game 2048 Vô Tận (game_2048_leaderboard)
+  try {
+    const lb2048DocRef = doc(db, 'game_2048_leaderboard', uid);
+    const lb2048Snap = await getDoc(lb2048DocRef);
+    if (lb2048Snap.exists()) {
+      await setDoc(
+        lb2048DocRef,
+        cleanForFirestore({
+          displayName: trimmedName,
+          photoURL: newPhotoURL !== undefined ? newPhotoURL : lb2048Snap.data()?.photoURL,
+          updatedAt: new Date().toISOString(),
+        }),
+        { merge: true }
+      );
+    }
+  } catch (err) {
+    console.warn('Lỗi khi cập nhật tên trong game_2048_leaderboard:', err);
+  }
+}
+
+/**
+ * LƯU HOẶC CẬP NHẬT KỶ LỤC ĐIỂM GAME BLOCK BLAST
+ */
+export async function saveBlockBlastHighScore(
+  user: { uid: string; displayName?: string | null; photoURL?: string | null },
+  newScore: number
+): Promise<void> {
+  if (!user?.uid || newScore <= 0) return;
+
+  try {
+    const docRef = doc(db, 'block_leaderboard', user.uid);
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+      const currentHighScore = docSnap.data().highScore || 0;
+      if (newScore > currentHighScore) {
+        await setDoc(
+          docRef,
+          cleanForFirestore({
+            uid: user.uid,
+            displayName: user.displayName || 'Vô danh',
+            photoURL: user.photoURL || '',
+            highScore: newScore,
+            updatedAt: new Date().toISOString(),
+          }),
+          { merge: true }
+        );
+      }
+    } else {
+      await setDoc(
+        docRef,
+        cleanForFirestore({
+          uid: user.uid,
+          displayName: user.displayName || 'Vô danh',
+          photoURL: user.photoURL || '',
+          highScore: newScore,
+          updatedAt: new Date().toISOString(),
+        })
+      );
+    }
+  } catch (err) {
+    console.warn('Lỗi khi lưu kỷ lục Block lên Firestore:', err);
+  }
+}
+
+/**
+ * LẤY DANH SÁCH BẢNG XẾP HẠNG KỶ LỤC GAME BLOCK
+ */
+export async function getBlockBlastLeaderboard(): Promise<import('../types').BlockLeaderboardEntry[]> {
+  try {
+    const colRef = collection(db, 'block_leaderboard');
+    const snap = await getDocs(colRef);
+
+    const list: import('../types').BlockLeaderboardEntry[] = [];
+    snap.forEach((d) => {
+      const data = d.data() as import('../types').BlockLeaderboardEntry;
+      list.push(data);
+    });
+
+    // Sắp xếp điểm giảm dần
+    list.sort((a, b) => (b.highScore || 0) - (a.highScore || 0));
+    return list;
+  } catch (err) {
+    console.warn('Lỗi khi lấy bảng xếp hạng Block từ Firestore:', err);
+    return [];
+  }
+}
+
+/**
+ * LƯU HOẶC CẬP NHẬT KỶ LỤC ĐIỂM GAME 2048 VÔ TẬN
+ */
+export async function save2048HighScore(
+  user: { uid: string; displayName?: string | null; photoURL?: string | null },
+  newScore: number,
+  maxTile: number
+): Promise<void> {
+  if (!user?.uid || newScore <= 0) return;
+
+  try {
+    const docRef = doc(db, 'game_2048_leaderboard', user.uid);
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      const currentHighScore = data.highScore || 0;
+      const currentMaxTile = data.maxTile || 0;
+      const shouldUpdate = newScore > currentHighScore || maxTile > currentMaxTile;
+
+      if (shouldUpdate) {
+        await setDoc(
+          docRef,
+          cleanForFirestore({
+            uid: user.uid,
+            displayName: user.displayName || 'Vô danh',
+            photoURL: user.photoURL || '',
+            highScore: Math.max(newScore, currentHighScore),
+            maxTile: Math.max(maxTile, currentMaxTile),
+            updatedAt: new Date().toISOString(),
+          }),
+          { merge: true }
+        );
+      }
+    } else {
+      await setDoc(
+        docRef,
+        cleanForFirestore({
+          uid: user.uid,
+          displayName: user.displayName || 'Vô danh',
+          photoURL: user.photoURL || '',
+          highScore: newScore,
+          maxTile: maxTile || 2,
+          updatedAt: new Date().toISOString(),
+        })
+      );
+    }
+  } catch (err) {
+    console.warn('Lỗi khi lưu kỷ lục 2048 lên Firestore:', err);
+  }
+}
+
+/**
+ * LẤY DANH SÁCH BẢNG XẾP HẠNG KỶ LỤC GAME 2048 VÔ TẬN
+ */
+export async function get2048Leaderboard(): Promise<import('../types').Game2048LeaderboardEntry[]> {
+  try {
+    const colRef = collection(db, 'game_2048_leaderboard');
+    const snap = await getDocs(colRef);
+
+    const list: import('../types').Game2048LeaderboardEntry[] = [];
+    snap.forEach((d) => {
+      const data = d.data() as import('../types').Game2048LeaderboardEntry;
+      list.push(data);
+    });
+
+    // Sắp xếp điểm giảm dần, nếu bằng điểm thì ưu tiên maxTile lớn hơn
+    list.sort((a, b) => {
+      const scoreDiff = (b.highScore || 0) - (a.highScore || 0);
+      if (scoreDiff !== 0) return scoreDiff;
+      return (b.maxTile || 0) - (a.maxTile || 0);
+    });
+    return list;
+  } catch (err) {
+    console.warn('Lỗi khi lấy bảng xếp hạng 2048 từ Firestore:', err);
+    return [];
+  }
+}
+
+
+

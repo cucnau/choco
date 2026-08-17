@@ -1,0 +1,1039 @@
+import React, { useState, useEffect } from 'react';
+import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { auth, logout, db } from './lib/firebase';
+import { Story, Chapter, Comment, BookmarkItem, ReadingProgress, LoungeMessage, EditorRequest, UserProfile, Notification } from './types';
+import { 
+  getStoriesLocal, 
+  getChaptersLocal, 
+  getBookmarks, 
+  getReadingHistory, 
+  getCommentsLocal, 
+  getLoungeMessagesLocal,
+  saveStory, 
+  deleteStory, 
+  saveChapter, 
+  saveMultipleChapters,
+  deleteChapter, 
+  toggleBookmark, 
+  saveReadingProgress, 
+  incrementChapterViews, 
+  addComment,
+  subscribeStories,
+  subscribeChapters,
+  subscribeComments,
+  subscribeLoungeMessages,
+  submitEditorRequest,
+  subscribeMyEditorRequest,
+  subscribeAllEditorRequests,
+  approveEditorRequest,
+  rejectEditorRequest,
+  syncLocalToCloud,
+  unlockChapterWithChucu,
+  subscribeNotifications,
+  markNotificationAsRead,
+  markAllNotificationsAsRead
+} from './lib/storage';
+
+import { Header } from './components/Header';
+import { StoryCard } from './components/StoryCard';
+import { StoryDetail } from './components/StoryDetail';
+import { ChapterReader } from './components/ChapterReader';
+import { StudioManager } from './components/StudioManager';
+import { LibraryView } from './components/LibraryView';
+import { HomeView } from './components/HomeView';
+import { Footer } from './components/Footer';
+import { AuthModal } from './components/AuthModal';
+import { UserSettingsModal } from './components/UserSettingsModal';
+import { GamesHub } from './components/GamesHub';
+
+export default function App() {
+  // Navigation & View States
+  const [activeTab, setActiveTab] = useState<'browse' | 'library' | 'studio' | 'games'>('browse');
+  const [selectedStory, setSelectedStory] = useState<Story | null>(null);
+  const [selectedChapter, setSelectedChapter] = useState<Chapter | null>(null);
+
+  // Search Filter State
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Firebase Auth State
+  const [currentUser, setCurrentUser] = useState<FirebaseUser | null>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+
+  // Editor Request States
+  const [myRequest, setMyRequest] = useState<EditorRequest | null>(null);
+  const [allRequests, setAllRequests] = useState<EditorRequest[]>([]);
+  const [requestExperience, setRequestExperience] = useState('');
+  const [requestContact, setRequestContact] = useState('');
+  const [isSubmittingRequest, setIsSubmittingRequest] = useState(false);
+  const [requestSuccessMessage, setRequestSuccessMessage] = useState('');
+  const [cloudError, setCloudError] = useState<string | null>(null);
+
+  // Main Data States
+  const [stories, setStories] = useState<Story[]>(getStoriesLocal());
+  const [chapters, setChapters] = useState<Chapter[]>(getChaptersLocal());
+  const [bookmarks, setBookmarks] = useState<BookmarkItem[]>(getBookmarks());
+  const [readingHistory, setReadingHistory] = useState<ReadingProgress[]>(getReadingHistory());
+  const [comments, setComments] = useState<Comment[]>(getCommentsLocal());
+  const [loungeMessages, setLoungeMessages] = useState<LoungeMessage[]>(getLoungeMessagesLocal());
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+
+  // Listen to Auth state
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setCurrentUser(user);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Global Anti-Copy Protection
+  useEffect(() => {
+    const isEditableElement = (target: EventTarget | null) => {
+      if (!target || !(target instanceof HTMLElement)) return false;
+      const tagName = target.tagName.toUpperCase();
+      return (
+        tagName === 'INPUT' ||
+        tagName === 'TEXTAREA' ||
+        target.isContentEditable ||
+        target.classList.contains('allow-copy') ||
+        target.classList.contains('allow-select')
+      );
+    };
+
+    const handleCopy = (e: ClipboardEvent) => {
+      if (!isEditableElement(e.target)) {
+        e.preventDefault();
+      }
+    };
+
+    const handleCut = (e: ClipboardEvent) => {
+      if (!isEditableElement(e.target)) {
+        e.preventDefault();
+      }
+    };
+
+    const handleContextMenu = (e: MouseEvent) => {
+      if (!isEditableElement(e.target)) {
+        e.preventDefault();
+      }
+    };
+
+    const handleDragStart = (e: DragEvent) => {
+      if (!isEditableElement(e.target)) {
+        e.preventDefault();
+      }
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const isCtrlOrCmd = e.ctrlKey || e.metaKey;
+      if (!isCtrlOrCmd) return;
+
+      const key = e.key.toLowerCase();
+      // Block Ctrl+C, Ctrl+X, Ctrl+A if outside editable fields
+      if (['c', 'x', 'a'].includes(key) && !isEditableElement(e.target)) {
+        e.preventDefault();
+      }
+      // Block Ctrl+U (View source), Ctrl+S (Save), Ctrl+P (Print) everywhere
+      if (['u', 's', 'p'].includes(key)) {
+        e.preventDefault();
+      }
+    };
+
+    document.addEventListener('copy', handleCopy);
+    document.addEventListener('cut', handleCut);
+    document.addEventListener('contextmenu', handleContextMenu);
+    document.addEventListener('dragstart', handleDragStart);
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('copy', handleCopy);
+      document.removeEventListener('cut', handleCut);
+      document.removeEventListener('contextmenu', handleContextMenu);
+      document.removeEventListener('dragstart', handleDragStart);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
+
+  // Listen to User Profile changes in Firestore
+  useEffect(() => {
+    if (!currentUser) {
+      setUserProfile(null);
+      return;
+    }
+
+    // Set default values from auth object
+    setUserProfile({
+      uid: currentUser.uid,
+      email: currentUser.email || '',
+      displayName: currentUser.displayName || currentUser.email?.split('@')[0] || 'Độc giả',
+      photoURL: currentUser.photoURL || '',
+      chucu: 0,
+      streak: 0,
+    });
+
+    // Realtime subscription to users/{uid} document
+    const unsubscribe = onSnapshot(doc(db, 'users', currentUser.uid), (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        setUserProfile({
+          uid: currentUser.uid,
+          email: currentUser.email || '',
+          displayName: data.displayName || currentUser.displayName || currentUser.email?.split('@')[0] || 'Độc giả',
+          photoURL: data.photoURL || currentUser.photoURL || '',
+          chucu: typeof data.chucu === 'number' ? data.chucu : 0,
+          streak: typeof data.streak === 'number' ? data.streak : 0,
+          lastCheckInDate: data.lastCheckInDate || undefined,
+          totalCheckIns: typeof data.totalCheckIns === 'number' ? data.totalCheckIns : 0,
+          unlockedChapters: Array.isArray(data.unlockedChapters) ? data.unlockedChapters : [],
+        });
+      }
+    }, (err) => {
+      console.warn('Error fetching Firestore user profile:', err);
+    });
+
+    return () => unsubscribe();
+  }, [currentUser]);
+
+  // Listen to single user request or all requests (if admin)
+  useEffect(() => {
+    if (!currentUser) {
+      setMyRequest(null);
+      setAllRequests([]);
+      return;
+    }
+
+    const unsubMyReq = subscribeMyEditorRequest(currentUser.uid, (req) => {
+      setMyRequest(req);
+    });
+
+    const AUTHOR_EMAILS = ['askerhater21@gmail.com'];
+    const isAdmin = currentUser.email && AUTHOR_EMAILS.some((e) => currentUser.email?.toLowerCase() === e.toLowerCase());
+    let unsubAllReq = () => {};
+    if (isAdmin) {
+      unsubAllReq = subscribeAllEditorRequests((reqs) => {
+        setAllRequests(reqs);
+      });
+    }
+
+    return () => {
+      unsubMyReq();
+      unsubAllReq();
+    };
+  }, [currentUser]);
+
+  // Tự động đồng bộ hóa dữ liệu từ LocalStorage lên Firestore khi đăng nhập thành công
+  useEffect(() => {
+    if (currentUser) {
+      syncLocalToCloud();
+    }
+  }, [currentUser]);
+
+  // Realtime Notifications subscription
+  useEffect(() => {
+    if (!currentUser?.uid) {
+      setNotifications([]);
+      return;
+    }
+    const unsub = subscribeNotifications(currentUser.uid, (updatedNotifs) => {
+      setNotifications(updatedNotifs);
+    });
+    return () => unsub();
+  }, [currentUser]);
+
+  // Realtime Firestore Subscriptions
+  useEffect(() => {
+    const handleError = (error: any) => {
+      // Chỉ báo lỗi nếu là lỗi nghiêm trọng như chặn quyền
+      if (error && error.message && (error.message.includes('permission-denied') || error.message.includes('Missing or insufficient permissions'))) {
+        setCloudError('Quyền đọc/ghi dữ liệu bị chặn (Permission Denied). Hãy đảm bảo bạn đã dán quy tắc bảo mật từ file firestore.rules vào tab Rules của Firestore Database trên Firebase Console và nhấn Publish.');
+      } else if (error && error.message) {
+        setCloudError(`Lỗi kết nối Firebase: ${error.message}`);
+      }
+    };
+
+    const unsubStories = subscribeStories((updatedStories) => {
+      setStories(updatedStories);
+    }, handleError);
+    const unsubChapters = subscribeChapters((updatedChapters) => {
+      setChapters(updatedChapters);
+    }, handleError);
+    const unsubComments = subscribeComments((updatedComments) => {
+      setComments(updatedComments);
+    }, handleError);
+    const unsubLounge = subscribeLoungeMessages((updatedLounge) => {
+      setLoungeMessages(updatedLounge);
+    }, handleError);
+
+    return () => {
+      unsubStories();
+      unsubChapters();
+      unsubComments();
+      unsubLounge();
+    };
+  }, []);
+
+  // Đồng bộ selectedStory và selectedChapter khi danh sách dữ liệu cập nhật thời gian thực
+  useEffect(() => {
+    if (selectedStory) {
+      const updated = stories.find(s => s.id === selectedStory.id);
+      if (updated) {
+        setSelectedStory(updated);
+      }
+    }
+  }, [stories]);
+
+  useEffect(() => {
+    if (selectedChapter) {
+      const updated = chapters.find(c => c.id === selectedChapter.id);
+      if (updated) {
+        setSelectedChapter(updated);
+      }
+    }
+  }, [chapters]);
+
+  const refreshData = () => {
+    setStories(getStoriesLocal());
+    setChapters(getChaptersLocal());
+    setBookmarks(getBookmarks());
+    setReadingHistory(getReadingHistory());
+    setComments(getCommentsLocal());
+    setLoungeMessages(getLoungeMessagesLocal());
+  };
+
+
+  // Story Selection Handler
+  const handleSelectStory = (story: Story) => {
+    setSelectedStory(story);
+    setSelectedChapter(null);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Chapter Selection Handler
+  const handleSelectChapter = (chapter: Chapter) => {
+    const story = stories.find(s => s.id === chapter.storyId);
+    if (story) {
+      setSelectedStory(story);
+      setSelectedChapter(chapter);
+      incrementChapterViews(chapter.id, story.id);
+      saveReadingProgress(story.id, chapter.id, chapter.chapterNumber);
+      refreshData();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  // Bookmark Toggle Handler
+  const handleToggleBookmark = async (e: React.MouseEvent | string, storyIdParam?: string) => {
+    const targetStoryId = typeof e === 'string' ? e : storyIdParam;
+    if (typeof e !== 'string') {
+      e.stopPropagation();
+    }
+    if (!targetStoryId) return;
+
+    await toggleBookmark(targetStoryId);
+    refreshData();
+  };
+
+  // Save Story (Studio)
+  const handleSaveStory = async (story: Story) => {
+    try {
+      await saveStory(story);
+      setCloudError(null);
+    } catch (err: any) {
+      console.error(err);
+      setCloudError('Không thể lưu câu chuyện lên Firestore. Hãy chắc chắn bạn đã kích hoạt Firestore Database và dán Rules. Chi tiết: ' + err.message);
+    }
+    refreshData();
+  };
+
+  // Delete Story (Studio)
+  const handleDeleteStory = async (storyId: string) => {
+    try {
+      await deleteStory(storyId);
+      setCloudError(null);
+      if (selectedStory?.id === storyId) {
+        setSelectedStory(null);
+        setSelectedChapter(null);
+      }
+    } catch (err: any) {
+      console.error(err);
+      setCloudError('Không thể xóa câu chuyện trên Firestore. Chi tiết: ' + err.message);
+    }
+    refreshData();
+  };
+
+  // Save Chapter (Studio)
+  const handleSaveChapter = async (chapter: Chapter) => {
+    try {
+      await saveChapter(chapter);
+      setCloudError(null);
+    } catch (err: any) {
+      console.error(err);
+      setCloudError('Không thể lưu chương lên Firestore. Hãy chắc chắn bạn đã kích hoạt Firestore Database và dán Rules. Chi tiết: ' + err.message);
+    }
+    refreshData();
+  };
+
+  // Save Batch Chapters (Bulk Upload)
+  const handleSaveBatchChapters = async (batchChapters: Chapter[]) => {
+    try {
+      await saveMultipleChapters(batchChapters);
+      setCloudError(null);
+    } catch (err: any) {
+      console.error(err);
+      setCloudError('Không thể lưu hàng loạt chương lên Firestore. Chi tiết: ' + err.message);
+    }
+    refreshData();
+  };
+
+  // Delete Chapter (Studio)
+  const handleDeleteChapter = async (chapterId: string, storyId: string) => {
+    try {
+      await deleteChapter(chapterId, storyId);
+      setCloudError(null);
+    } catch (err: any) {
+      console.error(err);
+      setCloudError('Không thể xóa chương trên Firestore. Chi tiết: ' + err.message);
+    }
+    refreshData();
+  };
+
+  // Add Comment Handler
+  const handleAddComment = async (
+    content: string, 
+    chapterId?: string, 
+    paragraphIndex?: number, 
+    paragraphSnippet?: string,
+    parentCommentId?: string,
+    parentCommentAuthorUid?: string
+  ) => {
+    if (!selectedStory) return;
+    await addComment({
+      storyId: selectedStory.id,
+      chapterId,
+      paragraphIndex,
+      paragraphSnippet,
+      parentCommentId,
+      parentCommentAuthorUid,
+      userName: currentUser?.displayName || currentUser?.email?.split('@')[0] || 'Độc giả',
+      userUid: currentUser?.uid,
+      content,
+    });
+    refreshData();
+  };
+
+  const handleMarkNotificationRead = async (id: string) => {
+    await markNotificationAsRead(id);
+  };
+
+  const handleMarkAllNotificationsRead = async () => {
+    if (currentUser?.uid) {
+      await markAllNotificationsAsRead(currentUser.uid);
+    }
+  };
+
+  const handleNavigateNotification = (notif: Notification) => {
+    const targetStory = stories.find(s => s.id === notif.storyId);
+    if (!targetStory) return;
+
+    setSelectedStory(targetStory);
+
+    if (notif.chapterId) {
+      const targetChap = chapters.find(c => c.id === notif.chapterId);
+      if (targetChap) {
+        setSelectedChapter(targetChap);
+        incrementChapterViews(targetChap.id, targetStory.id);
+        saveReadingProgress(targetStory.id, targetChap.id, targetChap.chapterNumber);
+        refreshData();
+
+        // Nếu có vị trí bình luận cụ thể, cuộn đến đó
+        if (notif.paragraphIndex !== undefined) {
+          setTimeout(() => {
+            const element = document.getElementById(`para-${notif.paragraphIndex}`);
+            if (element) {
+              element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              element.classList.add('highlight-flash');
+              setTimeout(() => element.classList.remove('highlight-flash'), 3000);
+            }
+          }, 800);
+        } else if (notif.commentId) {
+          // Cuộn tới mục bình luận chung cuối chương
+          setTimeout(() => {
+            const element = document.getElementById('comments-section');
+            if (element) {
+              element.scrollIntoView({ behavior: 'smooth' });
+            }
+          }, 800);
+        }
+      }
+    } else {
+      setSelectedChapter(null);
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleLogout = async () => {
+    await logout();
+    setCurrentUser(null);
+  };
+
+  const handleProfileUpdated = () => {
+    if (auth.currentUser) {
+      setCurrentUser({ ...auth.currentUser } as FirebaseUser);
+    }
+    refreshData();
+  };
+
+  const handleApplyEditor = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentUser) return;
+    setIsSubmittingRequest(true);
+    try {
+      await submitEditorRequest(
+        currentUser.uid, 
+        currentUser.email || '', 
+        currentUser.displayName || '', 
+        requestExperience,
+        requestContact
+      );
+      setRequestSuccessMessage('Yêu cầu xin quyền Editor của bạn đã được gửi thành công!');
+      setRequestExperience('');
+      setRequestContact('');
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsSubmittingRequest(false);
+    }
+  };
+
+  // Danh sách email Editor/Admin mặc định có quyền không cần xin
+  const AUTHOR_EMAILS = ['askerhater21@gmail.com'];
+
+  // Quyền đăng truyện: Phải là Admin HOẶC đã gửi yêu cầu xin quyền và được duyệt (approved)
+  const canPost = Boolean(
+    currentUser && (
+      (currentUser.email && AUTHOR_EMAILS.some((e) => currentUser.email?.toLowerCase() === e.toLowerCase())) ||
+      myRequest?.status === 'approved'
+    )
+  );
+
+  const isAdmin = Boolean(
+    currentUser &&
+    currentUser.email &&
+    AUTHOR_EMAILS.some((e) => currentUser.email?.toLowerCase() === e.toLowerCase())
+  );
+
+  // Filtered Stories Logic
+  const filteredStories = stories.filter(s => {
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      const matchTitle = s.title.toLowerCase().includes(q);
+      const matchAuthor = s.author.toLowerCase().includes(q);
+      if (!matchTitle && !matchAuthor) return false;
+    }
+    return true;
+  });
+
+  const bookmarkedSet = new Set(bookmarks.map(b => b.storyId));
+
+  const getStoryThemeClass = (story: Story | null) => {
+    if (!story) return 'bg-[#080406] text-[#e0d0d5] selection:bg-[#3d1e2c] selection:text-white';
+    const tone = story.themeTone || 'dark-rose';
+    if (tone === 'custom' || tone.startsWith('gradient-')) return '';
+    if (tone === 'sepia') return 'bg-[#f4ecd8] text-[#4a3525] selection:bg-[#e2d5b6] selection:text-[#4a3525]';
+    if (tone === 'emerald') return 'bg-[#06100c] text-[#d1e7dd] selection:bg-[#163f2d] selection:text-white';
+    if (tone === 'slate') return 'bg-[#0f172a] text-[#f1f5f9] selection:bg-[#334155] selection:text-white';
+    if (tone === 'classic-dark') return 'bg-[#0a0a0a] text-[#e5e5e5] selection:bg-[#262626] selection:text-white';
+    return 'bg-[#080406] text-[#e0d0d5] selection:bg-[#3d1e2c] selection:text-white';
+  };
+
+  const getStoryBgStyle = (story: Story | null) => {
+    if (!story) return undefined;
+    if (story.themeTone === 'custom' && story.customBgColor) {
+      return { background: story.customBgColor, color: story.customTextColor };
+    }
+    const presetGradients: Record<string, string> = {
+      'gradient-rose': 'linear-gradient(135deg, #4a1528 0%, #230b15 50%, #0c0408 100%)',
+      'gradient-midnight': 'linear-gradient(135deg, #2e1065 0%, #160833 50%, #080314 100%)',
+      'gradient-ocean': 'linear-gradient(135deg, #0c4a6e 0%, #07273c 50%, #030d17 100%)',
+      'gradient-emerald': 'linear-gradient(135deg, #064e3b 0%, #04291f 50%, #02120d 100%)',
+      'gradient-sunset': 'linear-gradient(135deg, #681212 0%, #3b0914 50%, #120307 100%)',
+      'gradient-cyber': 'linear-gradient(135deg, #581c87 0%, #2e0854 50%, #100220 100%)',
+    };
+    if (story.themeTone && presetGradients[story.themeTone]) {
+      return { background: presetGradients[story.themeTone] };
+    }
+    return undefined;
+  };
+
+  return (
+    <div 
+      className={`min-h-screen font-['Alegreya',serif] text-base flex flex-col transition-colors duration-300 ${getStoryThemeClass(selectedStory)}`}
+      style={getStoryBgStyle(selectedStory)}
+    >
+      {/* Header */}
+      {!selectedChapter && (
+        <Header
+          activeTab={activeTab}
+          setActiveTab={(tab) => {
+            setActiveTab(tab);
+            setSelectedStory(null);
+            setSelectedChapter(null);
+          }}
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          bookmarkCount={bookmarks.length}
+          currentUser={currentUser}
+          canPost={canPost}
+          onOpenAuthModal={() => setIsAuthModalOpen(true)}
+          onOpenSettingsModal={() => setIsSettingsModalOpen(true)}
+          onLogout={handleLogout}
+          onCheckInSuccess={(reward, newStreak, newBalance) => {
+            if (userProfile) {
+              setUserProfile({
+                ...userProfile,
+                chucu: newBalance,
+                streak: newStreak,
+                lastCheckInDate: new Date().toISOString().split('T')[0],
+                totalCheckIns: (userProfile.totalCheckIns || 0) + 1,
+              });
+            }
+          }}
+          userProfile={userProfile}
+          currentStory={selectedStory}
+          notifications={notifications}
+          onMarkNotificationRead={handleMarkNotificationRead}
+          onMarkAllNotificationsRead={handleMarkAllNotificationsRead}
+          onNavigateNotification={handleNavigateNotification}
+        />
+      )}
+
+      {/* Main Content Area */}
+      <div className="flex-1">
+        {cloudError && (
+          <div className="max-w-6xl mx-auto px-4 mt-4">
+            <div className="bg-[#3e141a] border border-[#a2202f] p-4 text-xs font-mono-code text-[#ffccd1] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="space-y-1">
+                <p className="font-bold uppercase tracking-wider text-[#ff9aa6]">Lỗi đồng bộ đám mây (Firestore):</p>
+                <p className="opacity-95 leading-relaxed">{cloudError}</p>
+                <p className="text-[11px] text-[#ffccd1]/75 leading-relaxed mt-1">
+                  <strong>Hướng dẫn sửa nhanh:</strong> Do bạn sử dụng dự án Firebase riêng (qua config thủ công), hệ thống không thể tự động đẩy mã bảo mật (Rules) lên cho bạn. Hãy copy toàn bộ nội dung tệp <code>firestore.rules</code> trong mã nguồn dự án này, sau đó truy cập <a href="https://console.firebase.google.com/" target="_blank" rel="noreferrer" className="underline font-bold text-white">Firebase Console</a> của bạn → chọn mục <strong>Firestore Database</strong> → chọn tab <strong>Rules</strong> → dán đè nội dung vào và ấn nút <strong>Publish (Xuất bản)</strong> là kết nối sẽ thông suốt ngay lập tức!
+                </p>
+              </div>
+              <button 
+                onClick={() => setCloudError(null)}
+                className="px-3 py-1 border border-[#a2202f] bg-[#230a0d] hover:bg-[#3e141a] transition text-[#ffccd1] text-[10px] uppercase font-bold whitespace-nowrap self-end sm:self-center"
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
+        )}
+
+        {selectedChapter && selectedStory ? (
+          /* Chapter Reader View */
+          <ChapterReader
+            story={selectedStory}
+            chapter={selectedChapter}
+            allChapters={chapters.filter(c => c.storyId === selectedStory.id)}
+            comments={comments.filter(c => c.chapterId === selectedChapter.id)}
+            currentUser={currentUser}
+            userProfile={userProfile}
+            isAdmin={isAdmin}
+            onSelectChapter={handleSelectChapter}
+            onBackToStory={() => setSelectedChapter(null)}
+            onAddComment={handleAddComment}
+            onUnlockChapter={async (chapterId, price, authorUid) => {
+              if (!currentUser) return { success: false, error: 'Chưa đăng nhập' };
+              try {
+                const res = await unlockChapterWithChucu(currentUser.uid, chapterId, price, authorUid);
+                if (res.success && userProfile) {
+                  setUserProfile({
+                    ...userProfile,
+                    chucu: res.newBalance,
+                    unlockedChapters: [...(userProfile.unlockedChapters || []), chapterId],
+                  });
+                }
+                return {
+                  success: res.success,
+                  error: res.success ? undefined : res.message,
+                  remainingChucu: res.newBalance,
+                };
+              } catch (err: any) {
+                return { success: false, error: err.message || 'Lỗi hệ thống khi mở khóa chương.' };
+              }
+            }}
+            onOpenRechargeModal={() => {
+              if (!currentUser) {
+                setIsAuthModalOpen(true);
+              } else {
+                setSelectedChapter(null);
+                setSelectedStory(null);
+                setActiveTab('home');
+              }
+            }}
+          />
+        ) : selectedStory ? (
+          /* Story Detail View */
+          <div 
+            className={`w-full min-h-screen transition-colors duration-300 ${getStoryThemeClass(selectedStory)}`}
+            style={getStoryBgStyle(selectedStory)}
+          >
+            <StoryDetail
+              story={selectedStory}
+              chapters={chapters.filter(c => c.storyId === selectedStory.id)}
+              comments={comments.filter(c => c.storyId === selectedStory.id && !c.chapterId)}
+              isBookmarked={bookmarkedSet.has(selectedStory.id)}
+              userProfile={userProfile}
+              currentUser={currentUser}
+              isAdmin={isAdmin}
+              onToggleBookmark={(id) => handleToggleBookmark(id)}
+              onSelectChapter={handleSelectChapter}
+              onBack={() => setSelectedStory(null)}
+              onAddComment={handleAddComment}
+            />
+          </div>
+        ) : activeTab === 'library' ? (
+          /* Saved Library View */
+          <LibraryView
+            stories={stories}
+            chapters={chapters}
+            bookmarks={bookmarks}
+            readingHistory={readingHistory}
+            onSelectStory={handleSelectStory}
+            onSelectChapter={handleSelectChapter}
+            onToggleBookmark={(e, id) => handleToggleBookmark(e, id)}
+          />
+        ) : activeTab === 'studio' ? (
+          /* WordPress Post Editor / Studio */
+          !currentUser ? (
+            <div className="max-w-xl mx-auto px-4 py-20 text-center space-y-4 font-mono-code">
+              <div className="bg-[#11090c] border border-[#2d1822] p-8 space-y-4">
+                <h2 className="text-xl font-bold font-mono-code text-[#e0c0cc]">
+                  Khu vực dành riêng cho Editor
+                </h2>
+                <p className="text-sm text-[#8a717a] font-mono-code">
+                  Bạn cần đăng nhập bằng tài khoản Editor được cấp quyền để đăng truyện và quản lý.
+                </p>
+                <button
+                  onClick={() => setIsAuthModalOpen(true)}
+                  className="px-5 py-2 bg-[#2b1620] hover:bg-[#3d1e2c] border border-[#5e2f46] text-[#e0c0cc] text-sm font-mono-code font-bold transition"
+                >
+                  Đăng nhập ngay
+                </button>
+              </div>
+            </div>
+          ) : canPost ? (
+            <div className="space-y-6">
+              <StudioManager
+                stories={stories}
+                chapters={chapters}
+                currentUser={currentUser}
+                userProfile={userProfile}
+                isAdmin={isAdmin}
+                onSaveStory={handleSaveStory}
+                onDeleteStory={handleDeleteStory}
+                onSaveChapter={handleSaveChapter}
+                onSaveBatchChapters={handleSaveBatchChapters}
+                onDeleteChapter={handleDeleteChapter}
+                onSelectStoryForDetail={handleSelectStory}
+              />
+              {isAdmin && (
+                <div className="max-w-6xl mx-auto px-4 pb-12 font-mono-code text-[#e0d0d5] space-y-4">
+                  <div className="bg-[#11090c] border border-[#2d1822] p-6 space-y-4">
+                    <h2 className="text-xs sm:text-sm font-bold font-mono-code uppercase tracking-[0.15em] text-[#e0c0cc] border-b border-[#23151b] pb-2">
+                      Hệ thống phê duyệt Editor ({allRequests.filter(r => r.status === 'pending').length} đang chờ)
+                    </h2>
+                    {allRequests.length === 0 ? (
+                      <div className="text-xs text-[#8a717a] py-4 text-center">
+                        Chưa có yêu cầu xin quyền Editor nào được ghi nhận.
+                      </div>
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left text-xs border-collapse">
+                          <thead>
+                            <tr className="border-b border-[#2d1822] text-[#8a717a]">
+                              <th className="py-2 px-3">Tên người dùng</th>
+                              <th className="py-2 px-3">Email</th>
+                              <th className="py-2 px-3">Kinh nghiệm & Liên hệ</th>
+                              <th className="py-2 px-3">Trạng thái</th>
+                              <th className="py-2 px-3 text-right">Thao tác</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {allRequests.map((req) => (
+                              <tr key={req.id} className="border-b border-[#1b0d14] hover:bg-[#150a0f] transition">
+                                <td className="py-2 px-3 font-semibold text-[#e0c0cc]">{req.displayName}</td>
+                                <td className="py-2 px-3 text-[#8a717a]">{req.email}</td>
+                                <td className="py-2 px-3 text-[#8a717a] max-w-xs">
+                                  {req.experience ? (
+                                    <div className="space-y-1">
+                                      <div>
+                                        <span className="text-[#8a717a] text-[10px] uppercase font-bold">Kinh nghiệm:</span>{' '}
+                                        <span className="text-[#ffd6e2] font-semibold">{req.experience}</span>
+                                      </div>
+                                      {req.contact && (
+                                        <div>
+                                          <span className="text-[#8a717a] text-[10px] uppercase font-bold">Liên hệ:</span>{' '}
+                                          <span className="text-[#e0c0cc] bg-[#221019] px-1 py-0.5 border border-[#3e1b2b] select-all">{req.contact}</span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <div>
+                                      <span className="text-[#8a717a] text-[10px] uppercase font-bold">Lý do cũ:</span>{' '}
+                                      <span className="italic text-[#8a717a]">{req.reason || 'Không có'}</span>
+                                    </div>
+                                  )}
+                                </td>
+                                <td className="py-2 px-3">
+                                  <span className={`px-2 py-0.5 border text-[10px] uppercase font-bold ${
+                                    req.status === 'approved' 
+                                      ? 'bg-[#152e20]/40 border-[#285e42] text-[#5eead4]'
+                                      : req.status === 'rejected'
+                                      ? 'bg-[#3b1219]/40 border-[#74222a] text-[#fca5a5]'
+                                      : 'bg-[#2b1b10]/40 border-[#633a10] text-[#fdba74]'
+                                  }`}>
+                                    {req.status === 'approved' ? 'Đã duyệt' : req.status === 'rejected' ? 'Từ chối' : 'Chờ duyệt'}
+                                  </span>
+                                </td>
+                                <td className="py-2 px-3 text-right space-x-2">
+                                  {req.status === 'pending' && (
+                                    <>
+                                      <button
+                                        onClick={() => approveEditorRequest(req.userId)}
+                                        className="px-2.5 py-1 bg-[#1c3b2b] border border-[#2d6648] hover:bg-[#254f3a] text-[#a7f3d0] transition font-bold text-[10px] uppercase tracking-wider"
+                                      >
+                                        Duyệt
+                                      </button>
+                                      <button
+                                        onClick={() => rejectEditorRequest(req.userId)}
+                                        className="px-2.5 py-1 bg-[#471b20] border border-[#7a2e36] hover:bg-[#5a2329] text-[#fecaca] transition font-bold text-[10px] uppercase tracking-wider"
+                                      >
+                                        Từ chối
+                                      </button>
+                                    </>
+                                  )}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="max-w-xl mx-auto px-4 py-12 font-mono-code text-[#e0d0d5]">
+              <div className="bg-[#11090c] border border-[#2d1822] p-8 space-y-6">
+                <div>
+                  <h2 className="text-base sm:text-lg font-bold font-mono-code text-[#e0c0cc] uppercase tracking-wider">
+                    Đăng ký làm Editor
+                  </h2>
+                  <p className="text-xs text-[#8a717a] mt-1">
+                    Tài khoản của bạn hiện là độc giả bình thường và chưa có quyền đăng truyện. Hãy gửi yêu cầu làm Editor dưới đây.
+                  </p>
+                </div>
+
+                {requestSuccessMessage && (
+                  <div className="bg-[#152e20]/40 border border-[#285e42] p-3 text-xs text-[#a7f3d0]">
+                    {requestSuccessMessage}
+                  </div>
+                )}
+
+                {myRequest ? (
+                  <div className="space-y-4 border-t border-[#1f1017] pt-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-[#8a717a]">Trạng thái yêu cầu:</span>
+                      <span className={`px-2.5 py-0.5 border text-[10px] uppercase font-bold ${
+                        myRequest.status === 'approved'
+                          ? 'bg-[#152e20]/40 border-[#285e42] text-[#5eead4]'
+                          : myRequest.status === 'rejected'
+                          ? 'bg-[#3b1219]/40 border-[#74222a] text-[#fca5a5]'
+                          : 'bg-[#2b1b10]/40 border-[#633a10] text-[#fdba74]'
+                      }`}>
+                        {myRequest.status === 'approved' ? 'Đã duyệt' : myRequest.status === 'rejected' ? 'Bị từ chối' : 'Đang chờ duyệt'}
+                      </span>
+                    </div>
+
+                    <div className="bg-[#170d12] p-3 border border-[#2d1822] text-xs space-y-2">
+                      <div>
+                        <span className="text-[#8a717a]">Tài khoản:</span> <span className="text-[#e0c0cc]">{myRequest.displayName} ({myRequest.email})</span>
+                      </div>
+                      {myRequest.experience ? (
+                        <>
+                          <div>
+                            <span className="text-[#8a717a]">Kinh nghiệm:</span> <span className="text-[#ffd6e2] font-semibold">{myRequest.experience}</span>
+                          </div>
+                          {myRequest.contact && (
+                            <div>
+                              <span className="text-[#8a717a]">Liên hệ:</span> <span className="text-[#e0c0cc] bg-[#221019] px-1 py-0.5 border border-[#3e1b2b]">{myRequest.contact}</span>
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        myRequest.reason && (
+                          <div>
+                            <span className="text-[#8a717a]">Lý do gửi cũ:</span> <span className="text-[#e0c0cc]">{myRequest.reason}</span>
+                          </div>
+                        )
+                      )}
+                      <div>
+                        <span className="text-[#8a717a]">Ngày gửi:</span> <span className="text-[#e0c0cc]">{myRequest.createdAt}</span>
+                      </div>
+                    </div>
+
+                    {myRequest.status === 'pending' && (
+                      <p className="text-[11px] text-[#8a717a] italic text-center leading-relaxed">
+                        Yêu cầu của bạn đang được Choco House xem xét. Vui lòng quay lại sau hoặc liên hệ Admin qua email để được duyệt nhanh.
+                      </p>
+                    )}
+
+                    {myRequest.status === 'rejected' && (
+                      <div className="space-y-3 pt-2">
+                        <p className="text-[11px] text-[#fca5a5] italic leading-relaxed">
+                          Yêu cầu của bạn đã bị từ chối. Bạn có thể cập nhật thông tin và gửi lại yêu cầu mới bất kỳ lúc nào.
+                        </p>
+                        <form onSubmit={handleApplyEditor} className="space-y-3">
+                          <div className="space-y-1">
+                            <label className="text-[10px] text-[#8a717a] uppercase font-bold tracking-wider">Bạn đã làm editor được bao lâu rồi?</label>
+                            <input
+                              type="text"
+                              value={requestExperience}
+                              onChange={(e) => setRequestExperience(e.target.value)}
+                              placeholder="Ví dụ: mới bắt đầu, 6 tháng, 1 năm..."
+                              className="w-full bg-[#170d12] border border-[#2d1822] p-2 text-xs text-white focus:outline-none focus:border-[#522d3d] font-mono-code"
+                              required
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[10px] text-[#8a717a] uppercase font-bold tracking-wider">Thông tin liên hệ (Discord/Facebook...):</label>
+                            <input
+                              type="text"
+                              value={requestContact}
+                              onChange={(e) => setRequestContact(e.target.value)}
+                              placeholder="Nhập link Facebook hoặc ID Discord của bạn..."
+                              className="w-full bg-[#170d12] border border-[#2d1822] p-2 text-xs text-white focus:outline-none focus:border-[#522d3d] font-mono-code"
+                              required
+                            />
+                          </div>
+                          <button
+                            type="submit"
+                            disabled={isSubmittingRequest}
+                            className="w-full py-2 bg-[#2b1620] hover:bg-[#3d1e2c] border border-[#5e2f46] text-[#e0c0cc] text-xs font-bold uppercase tracking-wider transition font-mono-code"
+                          >
+                            {isSubmittingRequest ? 'Đang gửi...' : 'Gửi lại yêu cầu xin quyền'}
+                          </button>
+                        </form>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <form onSubmit={handleApplyEditor} className="space-y-4 border-t border-[#1f1017] pt-4">
+                    <div className="space-y-1">
+                      <span className="text-xs text-[#8a717a] block">Tài khoản ứng tuyển:</span>
+                      <span className="text-xs text-[#e0c0cc] font-bold block bg-[#170d12] border border-[#2d1822] p-2">
+                        {currentUser.displayName || currentUser.email?.split('@')[0]} ({currentUser.email})
+                      </span>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-xs text-[#8a717a] block font-mono-code font-bold">Bạn đã làm editor được bao lâu rồi?</label>
+                      <input
+                        type="text"
+                        value={requestExperience}
+                        onChange={(e) => setRequestExperience(e.target.value)}
+                        placeholder="Ví dụ: mới bắt đầu, 6 tháng, 1 năm..."
+                        className="w-full bg-[#170d12] border border-[#2d1822] p-2.5 text-xs text-[#e0c0cc] placeholder-[#6e5860] focus:outline-none focus:border-[#522d3d] font-mono-code"
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-xs text-[#8a717a] block font-mono-code font-bold">Thông tin liên hệ (Discord/Facebook...):</label>
+                      <input
+                        type="text"
+                        value={requestContact}
+                        onChange={(e) => setRequestContact(e.target.value)}
+                        placeholder="Ví dụ: Discord: myusername#1234, FB: facebook.com/myprofile..."
+                        className="w-full bg-[#170d12] border border-[#2d1822] p-2.5 text-xs text-[#e0c0cc] placeholder-[#6e5860] focus:outline-none focus:border-[#522d3d] font-mono-code"
+                        required
+                      />
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={isSubmittingRequest}
+                      className="w-full py-2 bg-[#2b1620] hover:bg-[#3d1e2c] border border-[#5e2f46] text-[#e0c0cc] text-xs font-bold uppercase tracking-wider transition font-mono-code"
+                    >
+                      {isSubmittingRequest ? 'Đang gửi yêu cầu...' : 'Gửi yêu cầu xin quyền Editor'}
+                    </button>
+                  </form>
+                )}
+              </div>
+            </div>
+          )
+        ) : activeTab === 'games' ? (
+          <GamesHub
+            currentUser={currentUser}
+            userProfile={userProfile}
+          />
+        ) : (
+          /* Home Browse View with 4 Sections: Lounge, Ranking, Comments, All Stories */
+          <HomeView
+            stories={stories}
+            chapters={chapters}
+            comments={comments}
+            loungeMessages={loungeMessages}
+            searchQuery={searchQuery}
+            bookmarkedSet={bookmarkedSet}
+            currentUser={currentUser}
+            canPost={canPost}
+            onSelectStory={handleSelectStory}
+            onSelectChapter={handleSelectChapter}
+            onToggleBookmark={(e, id) => handleToggleBookmark(e, id)}
+            onNavigateStudio={() => {
+              setActiveTab('studio');
+              setSelectedStory(null);
+              setSelectedChapter(null);
+            }}
+            onOpenAuthModal={() => setIsAuthModalOpen(true)}
+            onCheckInSuccess={(reward, newStreak, newBalance) => {
+              if (userProfile) {
+                setUserProfile({
+                  ...userProfile,
+                  chucu: newBalance,
+                  streak: newStreak,
+                  lastCheckInDate: new Date().toISOString().split('T')[0],
+                  totalCheckIns: (userProfile.totalCheckIns || 0) + 1,
+                });
+              }
+            }}
+            userProfile={userProfile}
+          />
+        )}
+      </div>
+
+
+      {/* Auth Modal */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+      />
+
+      {/* User Settings Modal */}
+      <UserSettingsModal
+        isOpen={isSettingsModalOpen}
+        onClose={() => setIsSettingsModalOpen(false)}
+        onProfileUpdated={handleProfileUpdated}
+        userProfile={userProfile}
+      />
+
+      {/* Footer */}
+      {!selectedChapter && <Footer />}
+    </div>
+  );
+}

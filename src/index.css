@@ -1,0 +1,264 @@
+@import "tailwindcss";
+
+/* react-colorful custom styles */
+.react-colorful {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 150px;
+  user-select: none;
+  cursor: default;
+}
+
+.react-colorful__saturation {
+  position: relative;
+  flex-grow: 1;
+  border-radius: 4px;
+  border-bottom: 10px solid transparent;
+}
+
+.react-colorful__hue {
+  position: relative;
+  height: 12px;
+  border-radius: 4px;
+  margin-top: 8px;
+}
+
+.react-colorful__saturation-pointer,
+.react-colorful__hue-pointer {
+  position: absolute;
+  z-index: 1;
+  width: 16px;
+  height: 16px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+}
+
+@theme {
+  --font-mono-code: 'JetBrains Mono', monospace;
+  --font-pixel: 'JetBrains Mono', monospace;
+  --font-tech: 'JetBrains Mono', monospace;
+  --font-orbitron: 'JetBrains Mono', monospace;
+}
+
+@layer base {
+  body {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  input, textarea, [contenteditable="true"], .allow-select, .selectable-text {
+    -webkit-user-select: text !important;
+    -moz-user-select: text !important;
+    -ms-user-select: text !important;
+    user-select: text !important;
+  }
+}
+
+@layer utilities {
+  .font-pixel {
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .font-tech {
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .font-orbitron {
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .font-mono-code {
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* Vietnamese Typography Support */
+  .font-bevietnam {
+    font-family: 'Be Vietnam Pro', sans-serif;
+  }
+  .font-times {
+    font-family: 'Times New Roman', Times, serif;
+  }
+  .font-lora {
+    font-family: 'Lora', serif;
+  }
+  .font-garamond {
+    font-family: 'EB Garamond', serif;
+  }
+  .font-merriweather {
+    font-family: 'Merriweather', serif;
+  }
+  .font-playfair {
+    font-family: 'Playfair Display', serif;
+  }
+  .font-notoserif {
+    font-family: 'Noto Serif', serif;
+  }
+  .font-robotoslab {
+    font-family: 'Roboto Slab', serif;
+  }
+  .font-opensans {
+    font-family: 'Open Sans', sans-serif;
+  }
+  .font-roboto {
+    font-family: 'Roboto', sans-serif;
+  }
+  .font-inter {
+    font-family: 'Inter', sans-serif;
+  }
+  .font-montserrat {
+    font-family: 'Montserrat', sans-serif;
+  }
+  .font-nunito {
+    font-family: 'Nunito', sans-serif;
+  }
+  .font-quicksand {
+    font-family: 'Quicksand', sans-serif;
+  }
+  .font-mulish {
+    font-family: 'Mulish', sans-serif;
+  }
+  .font-notosans {
+    font-family: 'Noto Sans', sans-serif;
+  }
+  .font-sourcesans {
+    font-family: 'Source Sans 3', sans-serif;
+  }
+  .font-worksans {
+    font-family: 'Work Sans', sans-serif;
+  }
+  .font-sarabun {
+    font-family: 'Sarabun', sans-serif;
+  }
+  .font-charm {
+    font-family: 'Charm', cursive;
+  }
+  .font-patrick {
+    font-family: 'Patrick Hand', cursive;
+  }
+  .font-pacifico {
+    font-family: 'Pacifico', cursive;
+  }
+  .font-dancing {
+    font-family: 'Dancing Script', cursive;
+  }
+  .font-lobster {
+    font-family: 'Lobster', cursive;
+  }
+  .font-bungee {
+    font-family: 'Bungee', sans-serif;
+  }
+  .font-vt323 {
+    font-family: 'VT323', monospace;
+  }
+  .font-itim {
+    font-family: 'Itim', cursive;
+  }
+  .font-sriracha {
+    font-family: 'Sriracha', cursive;
+  }
+  .font-lexend {
+    font-family: 'Lexend', sans-serif;
+  }
+  .font-baloo {
+    font-family: 'Baloo 2', sans-serif;
+  }
+  .font-cormorant {
+    font-family: 'Cormorant Garamond', serif;
+  }
+  .font-pattaya {
+    font-family: 'Pattaya', sans-serif;
+  }
+  .font-arima {
+    font-family: 'Arima', system-ui;
+  }
+  .font-cabinsketch {
+    font-family: 'Cabin Sketch', cursive;
+  }
+  .font-comfortaa {
+    font-family: 'Comfortaa', sans-serif;
+  }
+
+  .font-title {
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .font-body {
+    font-family: 'JetBrains Mono', monospace;
+  }
+  
+  /* Chocolate Box Theme */
+  .choco-box {
+    background-color: #11090c;
+    border: 1px solid #2d1822;
+  }
+  .choco-box-hover {
+    transition: all 0.2s ease;
+  }
+  .choco-box-hover:hover {
+    border-color: #522d3d;
+    background-color: #160c10;
+  }
+  .choco-header {
+    background-color: #160c10;
+    border-bottom: 1px solid #2d1822;
+  }
+  .choco-input {
+    background-color: #170d12;
+    border: 1px solid #361f2c;
+    color: #e8dadf;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .choco-input:focus {
+    border-color: #783d58;
+    outline: none;
+  }
+  .choco-btn {
+    background-color: #160c10;
+    border: 1px solid #3a1e2d;
+    color: #e0d0d5;
+    font-family: 'JetBrains Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    transition: all 0.2s ease;
+  }
+  .choco-btn:hover {
+    background-color: #2a1621;
+    border-color: #63334a;
+    color: #e8d0d8;
+  }
+  .choco-btn-primary {
+    background-color: #3d1c2b;
+    border: 1px solid #733351;
+    color: #ffd6e2;
+  }
+  .choco-btn-primary:hover {
+    background-color: #57253d;
+    border-color: #9e466f;
+    color: #e8d0d8;
+  }
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #080406;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #2a171f;
+  border: 1px solid #3d202e;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #4a2737;
+}
+
