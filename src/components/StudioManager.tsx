@@ -2188,8 +2188,8 @@ export const INITIAL_COMMENTS: Comment[] = ${JSON.stringify(comments, null, 2)};
                         </div>
 
                         <div className="space-y-1">
-                          <span className={`text-[10px] font-bold uppercase tracking-wider block ${customMutedFont}`} style={{ color: activePreviewColors.textMuted }}>
-                            Giới thiệu tác phẩm:
+                          <span className={`text-[10px] font-bold uppercase tracking-wider block ${customBodyFont}`} style={{ color: activePreviewColors.textMuted }}>
+                            Giới thiệu:
                           </span>
                           <p 
                             className={`text-xs leading-relaxed line-clamp-4 opacity-90 text-justify ${customBodyFont}`}

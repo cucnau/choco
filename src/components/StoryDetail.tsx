@@ -524,7 +524,7 @@ export const StoryDetail: React.FC<StoryDetailProps> = ({
             </div>
 
             <div className="space-y-2">
-              <h4 className={`text-xs font-bold uppercase tracking-wider mb-1 ${storyTitleFont}`} style={customStyles.textMuted}>Giới thiệu:</h4>
+              <h4 className={`text-xs font-bold uppercase tracking-wider mb-1 ${storyBodyFont}`} style={customStyles.textMuted}>Giới thiệu:</h4>
               {story.synopsis ? (
                 <div className="space-y-2">
                   <div 

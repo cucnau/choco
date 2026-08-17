@@ -595,36 +595,61 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
     syncFontsFromCloud();
   }, [currentUser]);
 
-  const handleUploadFontFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const handleUploadFontFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
 
-    // Limit size to 1.5MB for secure localStorage storage
-    if (file.size > 1.5 * 1024 * 1024) {
-      alert("Kích thước font quá lớn! Hãy chọn file font (.ttf, .otf, .woff, .woff2) có dung lượng dưới 1.5MB để tối ưu lưu trữ.");
-      return;
-    }
+    const filesArray = Array.from(files) as File[];
+    let updatedFonts = [...userUploadedFonts];
+    let skippedCount = 0;
+    let successCount = 0;
 
-    const reader = new FileReader();
-    reader.onload = async (event) => {
-      const base64Data = event.target?.result as string;
-      if (!base64Data) return;
+    for (const file of filesArray) {
+      // Limit size to 1.5MB for secure localStorage storage
+      if (file.size > 1.5 * 1024 * 1024) {
+        alert(`Kích thước font "${file.name}" quá lớn! Hãy chọn file dưới 1.5MB.`);
+        continue;
+      }
+
+      // Read file to base64
+      const base64Data = await new Promise<string | null>((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          resolve(event.target?.result as string || null);
+        };
+        reader.onerror = () => resolve(null);
+        reader.readAsDataURL(file);
+      });
+
+      if (!base64Data) continue;
 
       const fontName = file.name.replace(/\.[^/.]+$/, ""); // strip extension
-      const fontValue = `font-user-${Date.now()}`;
+      const label = `${fontName} (Tùy biến)`;
+
+      // Check for duplicates (case insensitive name, or same base64 data)
+      const isDuplicate = updatedFonts.some(f => 
+        f.label.replace(' (Tùy biến)', '').toLowerCase() === fontName.toLowerCase() ||
+        f.fontData === base64Data
+      );
+
+      if (isDuplicate) {
+        skippedCount++;
+        continue;
+      }
+
+      const fontValue = `font-user-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
       const styleId = `style-${fontValue}`;
 
       const newFont = {
         value: fontValue,
-        label: `${fontName} (Tùy biến)`,
+        label,
         styleId,
         fontData: base64Data
       };
 
-      const updated = [...userUploadedFonts, newFont];
-      setUserUploadedFonts(updated);
-      localStorage.setItem('user_uploaded_fonts', JSON.stringify(updated));
+      updatedFonts.push(newFont);
       injectFontFace(newFont);
+      successCount++;
 
       // Lưu lên Firestore nếu người dùng đã đăng nhập
       if (currentUser?.uid) {
@@ -634,8 +659,21 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
           console.warn('[Sync Fonts] Không thể sao lưu font lên Firestore:', err);
         }
       }
-    };
-    reader.readAsDataURL(file);
+    }
+
+    if (successCount > 0) {
+      setUserUploadedFonts(updatedFonts);
+      localStorage.setItem('user_uploaded_fonts', JSON.stringify(updatedFonts));
+    }
+
+    if (filesArray.length > 1) {
+      alert(`Đã tải lên thành công ${successCount} font. Bỏ qua ${skippedCount} font trùng lặp.`);
+    } else if (skippedCount > 0) {
+      alert(`Font "${filesArray[0].name}" đã tồn tại trên hệ thống (đã lọc trùng).`);
+    }
+
+    // Reset input value so same files can be selected again
+    e.target.value = '';
   };
 
   const handleDeleteUploadedFont = async (fontValue: string) => {
@@ -1117,6 +1155,7 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                   <input
                     type="file"
                     accept=".ttf,.otf,.woff,.woff2"
+                    multiple
                     onChange={handleUploadFontFile}
                     className="hidden"
                     id="user-custom-font-upload"
