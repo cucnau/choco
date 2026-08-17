@@ -321,6 +321,139 @@ interface LiveStoryEditorProps {
   onCancel: () => void;
 }
 
+interface LocalColorFieldProps {
+  label: string;
+  value: string;
+  onChange: (val: string) => void;
+  allowGradient?: boolean;
+  currentBg: string;
+  currentBorder: string;
+  currentText: string;
+  currentCardBg: string;
+}
+
+const LocalColorField: React.FC<LocalColorFieldProps> = ({
+  label,
+  value,
+  onChange,
+  allowGradient = false,
+  currentBg,
+  currentBorder,
+  currentText,
+  currentCardBg,
+}) => {
+  const isGradient = allowGradient && value.includes('gradient');
+
+  let color1 = '#080406';
+  let color2 = '#000000';
+
+  if (isGradient) {
+    const colorMatches = value.match(/#(?:[0-9a-fA-F]{3}){1,2}\b/g);
+    if (colorMatches && colorMatches.length >= 2) {
+      color1 = colorMatches[0];
+      color2 = colorMatches[1];
+    } else if (colorMatches && colorMatches.length === 1) {
+      color1 = colorMatches[0];
+    }
+  } else {
+    color1 = value.startsWith('#') ? value : '#080406';
+  }
+
+  const handleToggleGradient = (checked: boolean) => {
+    if (checked) {
+      const c1 = value.startsWith('#') ? value : '#2b1620';
+      const c2 = '#080406';
+      onChange(`linear-gradient(135deg, ${c1} 0%, ${c2} 100%)`);
+    } else {
+      onChange(color1);
+    }
+  };
+
+  const handleUpdateC1 = (newC1: string) => {
+    if (isGradient) {
+      onChange(`linear-gradient(135deg, ${newC1} 0%, ${color2} 100%)`);
+    } else {
+      onChange(newC1);
+    }
+  };
+
+  const handleUpdateC2 = (newC2: string) => {
+    onChange(`linear-gradient(135deg, ${color1} 0%, ${newC2} 100%)`);
+  };
+
+  return (
+    <div className="space-y-1.5 p-2 rounded border" style={{ backgroundColor: currentCardBg, borderColor: currentBorder }}>
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-[10px] font-bold" style={{ color: currentText }}>{label}:</span>
+        {allowGradient && (
+          <label className="flex items-center gap-1 cursor-pointer text-[9px] select-none">
+            <input
+              type="checkbox"
+              checked={isGradient}
+              onChange={(e) => handleToggleGradient(e.target.checked)}
+              className="w-3.5 h-3.5 rounded border accent-[#a8446b]"
+            />
+            <span style={{ color: currentText }}>Gradient</span>
+          </label>
+        )}
+      </div>
+
+      {!isGradient ? (
+        <div className="flex items-center gap-1.5">
+          <input
+            type="color"
+            value={color1.startsWith('#') ? color1 : '#080406'}
+            onChange={(e) => handleUpdateC1(e.target.value)}
+            className="w-5 h-5 rounded cursor-pointer border-0 p-0 shrink-0"
+          />
+          <input
+            type="text"
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            className="w-full px-1.5 py-0.5 border rounded text-[10px] font-mono"
+            style={{ backgroundColor: currentBg, borderColor: currentBorder, color: currentText }}
+          />
+        </div>
+      ) : (
+        <div className="space-y-1">
+          <div className="flex items-center gap-1.5">
+            <span className="text-[9px] shrink-0 w-8" style={{ color: currentText }}>Màu 1:</span>
+            <input
+              type="color"
+              value={color1}
+              onChange={(e) => handleUpdateC1(e.target.value)}
+              className="w-4 h-4 rounded cursor-pointer border-0 p-0 shrink-0"
+            />
+            <input
+              type="text"
+              value={color1}
+              onChange={(e) => handleUpdateC1(e.target.value)}
+              className="w-full px-1.5 py-0.5 border rounded text-[9px] font-mono"
+              style={{ backgroundColor: currentBg, borderColor: currentBorder, color: currentText }}
+            />
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="text-[9px] shrink-0 w-8" style={{ color: currentText }}>Màu 2:</span>
+            <input
+              type="color"
+              value={color2}
+              onChange={(e) => handleUpdateC2(e.target.value)}
+              className="w-4 h-4 rounded cursor-pointer border-0 p-0 shrink-0"
+            />
+            <input
+              type="text"
+              value={color2}
+              onChange={(e) => handleUpdateC2(e.target.value)}
+              className="w-full px-1.5 py-0.5 border rounded text-[9px] font-mono"
+              style={{ backgroundColor: currentBg, borderColor: currentBorder, color: currentText }}
+            />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
   initialStory,
   currentUser,
@@ -750,257 +883,79 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                     <span>Bảng mã màu tùy biến:</span>
                   </div>
 
-                  {/* Quick Gradient Presets Bar */}
-                  <div className="space-y-1.5 pb-2 border-b" style={{ borderColor: currentBorder }}>
-                    <span className="block text-[10px] font-bold" style={{ color: currentTextMuted }}>
-                      Mẫu Gradient chuyển sắc nhanh:
-                    </span>
-                    <div className="grid grid-cols-2 gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setCustomBgColor('linear-gradient(135deg, #4a1528 0%, #230b15 50%, #0c0408 100%)');
-                          setCustomCardBgColor('linear-gradient(135deg, #280c1b 0%, #1c0a13 100%)');
-                          setCustomTextColor('#fce7f0');
-                          setCustomTextMutedColor('#f4a6c1');
-                          setCustomBorderColor('#682542');
-                          setCustomBtnBgColor('#521930');
-                          setCustomBtnSecondaryBgColor('#280c1b');
-                        }}
-                        className="px-2 py-1.5 rounded border text-[10px] font-bold text-white text-left truncate transition hover:scale-[1.02]"
-                        style={{ background: 'linear-gradient(135deg, #4a1528 0%, #230b15 50%, #0c0408 100%)', borderColor: '#682542' }}
-                      >
-                        🌹 Hồng Đen
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setCustomBgColor('linear-gradient(135deg, #2e1065 0%, #160833 50%, #080314 100%)');
-                          setCustomCardBgColor('linear-gradient(135deg, #210f47 0%, #170b33 100%)');
-                          setCustomTextColor('#f3e8ff');
-                          setCustomTextMutedColor('#c084fc');
-                          setCustomBorderColor('#581c87');
-                          setCustomBtnBgColor('#3b1278');
-                          setCustomBtnSecondaryBgColor('#210f47');
-                        }}
-                        className="px-2 py-1.5 rounded border text-[10px] font-bold text-white text-left truncate transition hover:scale-[1.02]"
-                        style={{ background: 'linear-gradient(135deg, #2e1065 0%, #160833 50%, #080314 100%)', borderColor: '#581c87' }}
-                      >
-                        🌌 Đêm Tím
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setCustomBgColor('linear-gradient(135deg, #0c4a6e 0%, #07273c 50%, #030d17 100%)');
-                          setCustomCardBgColor('linear-gradient(135deg, #0c273a 0%, #081d2c 100%)');
-                          setCustomTextColor('#e0f2fe');
-                          setCustomTextMutedColor('#38bdf8');
-                          setCustomBorderColor('#0284c7');
-                          setCustomBtnBgColor('#0369a1');
-                          setCustomBtnSecondaryBgColor('#0c273a');
-                        }}
-                        className="px-2 py-1.5 rounded border text-[10px] font-bold text-white text-left truncate transition hover:scale-[1.02]"
-                        style={{ background: 'linear-gradient(135deg, #0c4a6e 0%, #07273c 50%, #030d17 100%)', borderColor: '#0284c7' }}
-                      >
-                        🌊 Đại Dương
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setCustomBgColor('linear-gradient(135deg, #064e3b 0%, #04291f 50%, #02120d 100%)');
-                          setCustomCardBgColor('linear-gradient(135deg, #0d3327 0%, #082119 100%)');
-                          setCustomTextColor('#ecfdf5');
-                          setCustomTextMutedColor('#34d399');
-                          setCustomBorderColor('#059669');
-                          setCustomBtnBgColor('#047857');
-                          setCustomBtnSecondaryBgColor('#0d3327');
-                        }}
-                        className="px-2 py-1.5 rounded border text-[10px] font-bold text-white text-left truncate transition hover:scale-[1.02]"
-                        style={{ background: 'linear-gradient(135deg, #064e3b 0%, #04291f 50%, #02120d 100%)', borderColor: '#059669' }}
-                      >
-                        🌲 Ngọc Lục Bảo
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setCustomBgColor('linear-gradient(135deg, #681212 0%, #3b0914 50%, #120307 100%)');
-                          setCustomCardBgColor('linear-gradient(135deg, #380b15 0%, #24080e 100%)');
-                          setCustomTextColor('#fff1f2');
-                          setCustomTextMutedColor('#fb7185');
-                          setCustomBorderColor('#9f1239');
-                          setCustomBtnBgColor('#881337');
-                          setCustomBtnSecondaryBgColor('#380b15');
-                        }}
-                        className="px-2 py-1.5 rounded border text-[10px] font-bold text-white text-left truncate transition hover:scale-[1.02]"
-                        style={{ background: 'linear-gradient(135deg, #681212 0%, #3b0914 50%, #120307 100%)', borderColor: '#9f1239' }}
-                      >
-                        🌅 Hoàng Hôn
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setCustomBgColor('linear-gradient(135deg, #78350f 0%, #451a03 50%, #180801 100%)');
-                          setCustomCardBgColor('linear-gradient(135deg, #3d1703 0%, #290e02 100%)');
-                          setCustomTextColor('#fef3c7');
-                          setCustomTextMutedColor('#fbbf24');
-                          setCustomBorderColor('#b45309');
-                          setCustomBtnBgColor('#92400e');
-                          setCustomBtnSecondaryBgColor('#3d1703');
-                        }}
-                        className="px-2 py-1.5 rounded border text-[10px] font-bold text-white text-left truncate transition hover:scale-[1.02]"
-                        style={{ background: 'linear-gradient(135deg, #78350f 0%, #451a03 50%, #180801 100%)', borderColor: '#b45309' }}
-                      >
-                        👑 Hoàng Gia Vàng
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setCustomBgColor('linear-gradient(135deg, #831843 0%, #500724 50%, #1f020d 100%)');
-                          setCustomCardBgColor('linear-gradient(135deg, #42081f 0%, #2e0516 100%)');
-                          setCustomTextColor('#fce7f0');
-                          setCustomTextMutedColor('#f472b6');
-                          setCustomBorderColor('#be185d');
-                          setCustomBtnBgColor('#9d174d');
-                          setCustomBtnSecondaryBgColor('#42081f');
-                        }}
-                        className="px-2 py-1.5 rounded border text-[10px] font-bold text-white text-left truncate transition hover:scale-[1.02]"
-                        style={{ background: 'linear-gradient(135deg, #831843 0%, #500724 50%, #1f020d 100%)', borderColor: '#be185d' }}
-                      >
-                        🌸 Hoa Đào
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setCustomBgColor('linear-gradient(135deg, #581c87 0%, #2e0854 50%, #100220 100%)');
-                          setCustomCardBgColor('linear-gradient(135deg, #320a52 0%, #210638 100%)');
-                          setCustomTextColor('#fae8ff');
-                          setCustomTextMutedColor('#e879f9');
-                          setCustomBorderColor('#a21caf');
-                          setCustomBtnBgColor('#7e22ce');
-                          setCustomBtnSecondaryBgColor('#320a52');
-                        }}
-                        className="px-2 py-1.5 rounded border text-[10px] font-bold text-white text-left truncate transition hover:scale-[1.02]"
-                        style={{ background: 'linear-gradient(135deg, #581c87 0%, #2e0854 50%, #100220 100%)', borderColor: '#a21caf' }}
-                      >
-                        ⚡ Viễn Tưởng
-                      </button>
-                    </div>
-                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <LocalColorField
+                      label="Màu nền chính"
+                      value={customBgColor}
+                      onChange={setCustomBgColor}
+                      allowGradient
+                      currentBg={currentBg}
+                      currentBorder={currentBorder}
+                      currentText={currentText}
+                      currentCardBg={currentCardBg}
+                    />
 
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <span className="block text-[10px] font-semibold" style={{ color: currentText }}>Màu nền chính:</span>
-                      <div className="flex items-center gap-1.5 mt-0.5">
-                        <input
-                          type="color"
-                          value={customBgColor.startsWith('#') ? customBgColor : '#080406'}
-                          onChange={(e) => setCustomBgColor(e.target.value)}
-                          className="w-6 h-6 rounded cursor-pointer border-0 p-0"
-                        />
-                        <input
-                          type="text"
-                          value={customBgColor}
-                          onChange={(e) => setCustomBgColor(e.target.value)}
-                          className="w-full px-1.5 py-0.5 border rounded text-[11px]"
-                          style={{ backgroundColor: currentCardBg, borderColor: currentBorder, color: currentText }}
-                        />
-                      </div>
-                    </div>
+                    <LocalColorField
+                      label="Màu thẻ nội dung"
+                      value={customCardBgColor}
+                      onChange={setCustomCardBgColor}
+                      currentBg={currentBg}
+                      currentBorder={currentBorder}
+                      currentText={currentText}
+                      currentCardBg={currentCardBg}
+                    />
 
-                    <div>
-                      <span className="block text-[10px] font-semibold" style={{ color: currentText }}>Màu thẻ nội dung:</span>
-                      <div className="flex items-center gap-1.5 mt-0.5">
-                        <input
-                          type="color"
-                          value={customCardBgColor.startsWith('#') ? customCardBgColor : '#11090c'}
-                          onChange={(e) => setCustomCardBgColor(e.target.value)}
-                          className="w-6 h-6 rounded cursor-pointer border-0 p-0"
-                        />
-                        <input
-                          type="text"
-                          value={customCardBgColor}
-                          onChange={(e) => setCustomCardBgColor(e.target.value)}
-                          className="w-full px-1.5 py-0.5 border rounded text-[11px]"
-                          style={{ backgroundColor: currentCardBg, borderColor: currentBorder, color: currentText }}
-                        />
-                      </div>
-                    </div>
+                    <LocalColorField
+                      label="Màu nút chính"
+                      value={customBtnBgColor}
+                      onChange={setCustomBtnBgColor}
+                      allowGradient
+                      currentBg={currentBg}
+                      currentBorder={currentBorder}
+                      currentText={currentText}
+                      currentCardBg={currentCardBg}
+                    />
 
-                    <div>
-                      <span className="block text-[10px] font-semibold" style={{ color: currentText }}>Màu chữ chính:</span>
-                      <div className="flex items-center gap-1.5 mt-0.5">
-                        <input
-                          type="color"
-                          value={customTextColor}
-                          onChange={(e) => setCustomTextColor(e.target.value)}
-                          className="w-6 h-6 rounded cursor-pointer border-0 p-0"
-                        />
-                        <input
-                          type="text"
-                          value={customTextColor}
-                          onChange={(e) => setCustomTextColor(e.target.value)}
-                          className="w-full px-1.5 py-0.5 border rounded text-[11px]"
-                          style={{ backgroundColor: currentCardBg, borderColor: currentBorder, color: currentText }}
-                        />
-                      </div>
-                    </div>
+                    <LocalColorField
+                      label="Màu nút phụ & Ô chứa"
+                      value={customBtnSecondaryBgColor}
+                      onChange={setCustomBtnSecondaryBgColor}
+                      allowGradient
+                      currentBg={currentBg}
+                      currentBorder={currentBorder}
+                      currentText={currentText}
+                      currentCardBg={currentCardBg}
+                    />
 
-                    <div>
-                      <span className="block text-[10px] font-semibold" style={{ color: currentText }}>Màu chữ phụ / mờ:</span>
-                      <div className="flex items-center gap-1.5 mt-0.5">
-                        <input
-                          type="color"
-                          value={customTextMutedColor}
-                          onChange={(e) => setCustomTextMutedColor(e.target.value)}
-                          className="w-6 h-6 rounded cursor-pointer border-0 p-0"
-                        />
-                        <input
-                          type="text"
-                          value={customTextMutedColor}
-                          onChange={(e) => setCustomTextMutedColor(e.target.value)}
-                          className="w-full px-1.5 py-0.5 border rounded text-[11px]"
-                          style={{ backgroundColor: currentCardBg, borderColor: currentBorder, color: currentText }}
-                        />
-                      </div>
-                    </div>
+                    <LocalColorField
+                      label="Màu chữ chính"
+                      value={customTextColor}
+                      onChange={setCustomTextColor}
+                      currentBg={currentBg}
+                      currentBorder={currentBorder}
+                      currentText={currentText}
+                      currentCardBg={currentCardBg}
+                    />
 
-                    <div>
-                      <span className="block text-[10px] font-semibold" style={{ color: currentText }}>Màu đường viền:</span>
-                      <div className="flex items-center gap-1.5 mt-0.5">
-                        <input
-                          type="color"
-                          value={customBorderColor}
-                          onChange={(e) => setCustomBorderColor(e.target.value)}
-                          className="w-6 h-6 rounded cursor-pointer border-0 p-0"
-                        />
-                        <input
-                          type="text"
-                          value={customBorderColor}
-                          onChange={(e) => setCustomBorderColor(e.target.value)}
-                          className="w-full px-1.5 py-0.5 border rounded text-[11px]"
-                          style={{ backgroundColor: currentCardBg, borderColor: currentBorder, color: currentText }}
-                        />
-                      </div>
-                    </div>
+                    <LocalColorField
+                      label="Màu chữ phụ / mờ"
+                      value={customTextMutedColor}
+                      onChange={setCustomTextMutedColor}
+                      currentBg={currentBg}
+                      currentBorder={currentBorder}
+                      currentText={currentText}
+                      currentCardBg={currentCardBg}
+                    />
 
-                    <div>
-                      <span className="block text-[10px] font-semibold" style={{ color: currentText }}>Màu nút chính:</span>
-                      <div className="flex items-center gap-1.5 mt-0.5">
-                        <input
-                          type="color"
-                          value={customBtnBgColor}
-                          onChange={(e) => setCustomBtnBgColor(e.target.value)}
-                          className="w-6 h-6 rounded cursor-pointer border-0 p-0"
-                        />
-                        <input
-                          type="text"
-                          value={customBtnBgColor}
-                          onChange={(e) => setCustomBtnBgColor(e.target.value)}
-                          className="w-full px-1.5 py-0.5 border rounded text-[11px]"
-                          style={{ backgroundColor: currentCardBg, borderColor: currentBorder, color: currentText }}
-                        />
-                      </div>
-                    </div>
+                    <LocalColorField
+                      label="Màu đường viền"
+                      value={customBorderColor}
+                      onChange={setCustomBorderColor}
+                      currentBg={currentBg}
+                      currentBorder={currentBorder}
+                      currentText={currentText}
+                      currentCardBg={currentCardBg}
+                    />
                   </div>
                 </div>
               )}
