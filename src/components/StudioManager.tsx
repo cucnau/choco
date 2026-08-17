@@ -687,12 +687,8 @@ export const INITIAL_COMMENTS: Comment[] = ${JSON.stringify(comments, null, 2)};
             const getRes = await fetch(getFileUrl, {
               headers: {
                 'Authorization': `token ${githubToken.trim()}`,
-                'Accept': 'application/vnd.github.v3+json',
-                'Cache-Control': 'no-cache, no-store, must-revalidate',
-                'Pragma': 'no-cache',
-                'Expires': '0'
-              },
-              cache: 'no-store'
+                'Accept': 'application/vnd.github.v3+json'
+              }
             });
             
             if (getRes.ok) {
