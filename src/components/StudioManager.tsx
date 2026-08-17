@@ -671,60 +671,109 @@ export const INITIAL_COMMENTS: Comment[] = ${JSON.stringify(comments, null, 2)};
       }
       const base64Content = window.btoa(binary);
 
-      // 3. Fetch existing file SHA from GitHub (if it exists)
-      if (!isAuto) setSyncMessage('Đang lấy thông tin file từ GitHub...');
       const cleanPath = githubPath.trim().replace(/^\//, ''); // strip leading slash if any
-      const getFileUrl = `https://api.github.com/repos/${githubOwner.trim()}/${githubRepo.trim()}/contents/${cleanPath}?ref=${githubBranch.trim()}`;
-      
-      let currentSha = '';
-      try {
-        const getRes = await fetch(getFileUrl, {
-          headers: {
-            'Authorization': `token ${githubToken.trim()}`,
-            'Accept': 'application/vnd.github.v3+json'
+      let retries = 3;
+      let success = false;
+      let lastErrorMessage = '';
+
+      while (retries > 0 && !success) {
+        try {
+          // 3. Fetch existing file SHA from GitHub (always bypass cache with Date.now() query & cache headers)
+          if (!isAuto) setSyncMessage(`Đang lấy thông tin file từ GitHub (Lần thử ${4 - retries}/3)...`);
+          const getFileUrl = `https://api.github.com/repos/${githubOwner.trim()}/${githubRepo.trim()}/contents/${cleanPath}?ref=${githubBranch.trim()}&_t=${Date.now()}`;
+          
+          let currentSha = '';
+          try {
+            const getRes = await fetch(getFileUrl, {
+              headers: {
+                'Authorization': `token ${githubToken.trim()}`,
+                'Accept': 'application/vnd.github.v3+json',
+                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                'Pragma': 'no-cache',
+                'Expires': '0'
+              },
+              cache: 'no-store'
+            });
+            
+            if (getRes.ok) {
+              const fileData = await getRes.json();
+              currentSha = fileData.sha;
+            } else if (getRes.status !== 404) {
+              throw new Error(`Lỗi kết nối GitHub API: HTTP ${getRes.status}`);
+            }
+          } catch (err: any) {
+            // Check for 404
+            if (err.message && (err.message.includes('404') || err.message.includes('not found'))) {
+              currentSha = '';
+            } else {
+              throw err;
+            }
           }
-        });
-        
-        if (getRes.ok) {
-          const fileData = await getRes.json();
-          currentSha = fileData.sha;
-        } else if (getRes.status !== 404) {
-          throw new Error(`Lỗi kết nối GitHub API: HTTP ${getRes.status}`);
-        }
-      } catch (err: any) {
-        if (err.message && err.message.includes('404')) {
-          // File does not exist yet, which is perfectly fine (will create new)
-        } else {
-          throw err;
+
+          // 4. Push updated content via PUT request to GitHub
+          if (!isAuto) setSyncMessage('Đang commit dữ liệu mới lên repo...');
+          const putRes = await fetch(`https://api.github.com/repos/${githubOwner.trim()}/${githubRepo.trim()}/contents/${cleanPath}`, {
+            method: 'PUT',
+            headers: {
+              'Authorization': `token ${githubToken.trim()}`,
+              'Accept': 'application/vnd.github.v3+json',
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              message: 'Đồng bộ dữ liệu truyện & chương tự động từ Editor Studio',
+              content: base64Content,
+              branch: githubBranch.trim(),
+              sha: currentSha || undefined
+            })
+          });
+
+          if (putRes.ok) {
+            success = true;
+            break;
+          }
+
+          const errorData = await putRes.json();
+          const serverMsg = errorData.message || '';
+          
+          // If 409 Conflict (SHA mismatch) or error contains sha mismatch info, let's retry
+          if (putRes.status === 409 || serverMsg.toLowerCase().includes('sha') || serverMsg.toLowerCase().includes('conflict')) {
+            console.warn(`[GitHub Sync] Phát hiện xung đột SHA (409) từ GitHub. Đang chuẩn bị thử lại sau 1.5s... Còn lại ${retries - 1} lần thử.`);
+            retries--;
+            if (retries > 0) {
+              await new Promise((resolve) => setTimeout(resolve, 1500));
+              continue;
+            }
+          }
+
+          throw new Error(serverMsg || `Lỗi ghi đè file: HTTP ${putRes.status}`);
+
+        } catch (err: any) {
+          lastErrorMessage = err.message || 'Lỗi chưa rõ nguyên nhân.';
+          console.error(`[GitHub Sync] Thử thất bại (Lần ${4 - retries}):`, lastErrorMessage);
+          
+          // Only retry if it looks like a cache/SHA conflict mismatch
+          if (lastErrorMessage.toLowerCase().includes('sha') || lastErrorMessage.toLowerCase().includes('409') || lastErrorMessage.toLowerCase().includes('conflict')) {
+            retries--;
+            if (retries > 0) {
+              await new Promise((resolve) => setTimeout(resolve, 1500));
+              continue;
+            }
+          } else {
+            // Fail immediately for other fatal errors (e.g., Bad Credentials, Repository not found)
+            break;
+          }
         }
       }
 
-      // 4. Push updated content via PUT request to GitHub
-      if (!isAuto) setSyncMessage('Đang commit dữ liệu mới lên repo...');
-      const putRes = await fetch(`https://api.github.com/repos/${githubOwner.trim()}/${githubRepo.trim()}/contents/${cleanPath}`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `token ${githubToken.trim()}`,
-          'Accept': 'application/vnd.github.v3+json',
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          message: 'Đồng bộ dữ liệu truyện & chương tự động từ Editor Studio',
-          content: base64Content,
-          branch: githubBranch.trim(),
-          sha: currentSha || undefined
-        })
-      });
-
-      if (!putRes.ok) {
-        const errorData = await putRes.json();
-        throw new Error(errorData.message || `Lỗi ghi đè file: HTTP ${putRes.status}`);
+      if (success) {
+        setSyncStatus('success');
+        setSyncMessage(isAuto ? 'Tự động đồng bộ lên GitHub thành công!' : 'Đồng bộ thành công! GitHub Pages sẽ tự động rebuild sau 1-2 phút.');
+      } else {
+        throw new Error(lastErrorMessage || 'Xung đột SHA liên tiếp sau 3 lần thử lại. Hãy kiểm tra xem file có bị tác động từ bên ngoài không.');
       }
 
-      setSyncStatus('success');
-      setSyncMessage(isAuto ? 'Tự động đồng bộ lên GitHub thành công!' : 'Đồng bộ thành công! GitHub Pages sẽ tự động rebuild sau 1-2 phút.');
     } catch (err: any) {
-      console.error('GitHub Sync Error:', err);
+      console.error('GitHub Sync Final Error:', err);
       setSyncStatus('error');
       setSyncMessage(err.message || 'Lỗi chưa rõ nguyên nhân khi đồng bộ.');
     } finally {
