@@ -24,6 +24,7 @@ import {
   ChevronUp,
 } from 'lucide-react';
 import { ReadingEffects } from './ReadingEffects';
+import { CardPatternOverlay } from './CardPatternOverlay';
 import {
   BORDER_STYLE_OPTIONS,
   BORDER_WIDTH_OPTIONS,
@@ -34,6 +35,17 @@ import {
   getStoryButtonBorderStyle,
   StoryCornerAccents,
 } from '../lib/borderStyles';
+
+export const CARD_PATTERN_OPTIONS = [
+  { value: 'none', label: 'Trơn (Không họa tiết)' },
+  { value: 'paper', label: 'Kết cấu trang giấy (Paper Texture)' },
+  { value: 'dots', label: 'Chấm bi dịu nhẹ (Polka Dots)' },
+  { value: 'grid', label: 'Lưới ô vuông (Grid Paper)' },
+  { value: 'stripes', label: 'Sọc nghiêng lãng mạn (Stripes)' },
+  { value: 'waves', label: 'Gợn sóng biển (Waves)' },
+  { value: 'hexagons', label: 'Tổ ong lục giác (Hexagons)' },
+  { value: 'crosshatch', label: 'Kẻ caro chéo (Crosshatch)' },
+];
 
 const FONT_OPTIONS = [
   // Serif
@@ -143,6 +155,42 @@ const PRESET_THEME_COLORS: Record<string, {
     btnBorder: '#295480',
     btnText: '#cce2f8',
   },
+  'sepia': {
+    name: 'Sepia (Giấy Cổ Điển)',
+    bg: '#f4ecd8',
+    cardBg: '#fcf8ed',
+    text: '#4a3525',
+    textMuted: '#8c7460',
+    border: '#d3c29f',
+    btnBg: '#e2d5b6',
+    btnSecondaryBg: '#faf6eb',
+    btnBorder: '#bca883',
+    btnText: '#4a3525',
+  },
+  'emerald': {
+    name: 'Emerald (Xanh Ngọc Lục)',
+    bg: '#06100c',
+    cardBg: '#0b1a14',
+    text: '#d1e7dd',
+    textMuted: '#628f7a',
+    border: '#153327',
+    btnBg: '#163f2d',
+    btnSecondaryBg: '#0e251c',
+    btnBorder: '#2a6b4e',
+    btnText: '#d1e7dd',
+  },
+  'slate': {
+    name: 'Slate (Xanh Đá Xám)',
+    bg: '#0f172a',
+    cardBg: '#1e293b',
+    text: '#f1f5f9',
+    textMuted: '#94a3b8',
+    border: '#334155',
+    btnBg: '#334155',
+    btnSecondaryBg: '#1e293b',
+    btnBorder: '#475569',
+    btnText: '#f1f5f9',
+  },
   'cyberpunk': {
     name: 'Cyberpunk (Neon Tím)',
     bg: '#05000a',
@@ -178,6 +226,18 @@ const PRESET_THEME_COLORS: Record<string, {
     btnSecondaryBg: '#21160d',
     btnBorder: '#5c4129',
     btnText: '#fceee1',
+  },
+  'gradient-rose': {
+    name: 'Gradient Rose (Hồng Đen)',
+    bg: 'linear-gradient(135deg, #4a1528 0%, #230b15 50%, #0c0408 100%)',
+    cardBg: 'linear-gradient(135deg, #280c1b 0%, #1c0a13 100%)',
+    text: '#fce7f0',
+    textMuted: '#f4a6c1',
+    border: '#682542',
+    btnBg: '#521930',
+    btnSecondaryBg: '#280c1b',
+    btnBorder: '#832e55',
+    btnText: '#ffc2d4',
   },
   'gradient-midnight': {
     name: 'Gradient Midnight (Đêm Tím)',
@@ -239,6 +299,30 @@ const PRESET_THEME_COLORS: Record<string, {
     btnBorder: '#c084fc',
     btnText: '#f5d0fe',
   },
+  'gradient-gold': {
+    name: 'Gradient Gold (Hoàng Gia Vàng)',
+    bg: 'linear-gradient(135deg, #78350f 0%, #451a03 50%, #180801 100%)',
+    cardBg: 'linear-gradient(135deg, #3d1703 0%, #290e02 100%)',
+    text: '#fef3c7',
+    textMuted: '#fbbf24',
+    border: '#b45309',
+    btnBg: '#92400e',
+    btnSecondaryBg: '#3d1703',
+    btnBorder: '#d97706',
+    btnText: '#fef3c7',
+  },
+  'gradient-cherry': {
+    name: 'Gradient Cherry (Hoa Đào)',
+    bg: 'linear-gradient(135deg, #831843 0%, #500724 50%, #1f020d 100%)',
+    cardBg: 'linear-gradient(135deg, #42081f 0%, #2e0516 100%)',
+    text: '#fce7f0',
+    textMuted: '#f472b6',
+    border: '#be185d',
+    btnBg: '#9d174d',
+    btnSecondaryBg: '#42081f',
+    btnBorder: '#e11d48',
+    btnText: '#ffe4e6',
+  },
 };
 
 interface LiveStoryEditorProps {
@@ -293,12 +377,13 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
   const [customBtnBgColor, setCustomBtnBgColor] = useState(initialStory?.customBtnBgColor || '#2b1620');
   const [customBtnSecondaryBgColor, setCustomBtnSecondaryBgColor] = useState(initialStory?.customBtnSecondaryBgColor || '#1c0f16');
 
-  // Border & Frame
+  // Border & Frame & Card Pattern
   const [borderStyle, setBorderStyle] = useState<NonNullable<Story['borderStyle']>>(initialStory?.borderStyle || 'solid');
   const [borderWidth, setBorderWidth] = useState<NonNullable<Story['borderWidth']>>(initialStory?.borderWidth || 'thin');
   const [borderRadius, setBorderRadius] = useState<NonNullable<Story['borderRadius']>>(initialStory?.borderRadius || 'none');
   const [borderCornerAccent, setBorderCornerAccent] = useState<NonNullable<Story['borderCornerAccent']>>(initialStory?.borderCornerAccent || 'none');
   const [borderGlow, setBorderGlow] = useState<NonNullable<Story['borderGlow']>>(initialStory?.borderGlow || 'none');
+  const [cardPattern, setCardPattern] = useState<NonNullable<Story['cardPattern']>>(initialStory?.cardPattern || 'none');
 
   // Reading Effect
   const [readingEffect, setReadingEffect] = useState<'none' | 'rain' | 'snow' | 'glitch' | 'star' | 'leaf'>(
@@ -440,6 +525,7 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
       borderRadius,
       borderCornerAccent,
       borderGlow,
+      cardPattern,
       readingEffect,
     });
   };
@@ -643,14 +729,20 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                     <option value="navy-blue">Navy Blue (Xanh Đêm)</option>
                     <option value="forest-dark">Forest Dark (Rừng Đêm)</option>
                     <option value="warm-coffee">Warm Coffee (Cà Phê Ấm)</option>
+                    <option value="sepia">Sepia (Giấy Cổ Điển)</option>
+                    <option value="emerald">Emerald (Xanh Ngọc Lục)</option>
+                    <option value="slate">Slate (Xanh Đá Xám)</option>
                     <option value="cyberpunk">Cyberpunk (Neon Tím)</option>
                   </optgroup>
                   <optgroup label="Gradient (Chuyển sắc)">
+                    <option value="gradient-rose">Gradient Rose (Hồng Đen)</option>
                     <option value="gradient-midnight">Gradient Midnight (Đêm Tím)</option>
                     <option value="gradient-ocean">Gradient Ocean (Đại Dương)</option>
                     <option value="gradient-emerald">Gradient Emerald (Ngọc Lục Bảo)</option>
                     <option value="gradient-sunset">Gradient Sunset (Hoàng Hôn)</option>
                     <option value="gradient-cyber">Gradient Cyber (Viễn Tưởng)</option>
+                    <option value="gradient-gold">Gradient Gold (Hoàng Gia Vàng)</option>
+                    <option value="gradient-cherry">Gradient Cherry (Hoa Đào)</option>
                   </optgroup>
                   <optgroup label="Tùy biến tự do">
                     <option value="custom">Tùy biến bảng màu chi tiết (Custom)</option>
@@ -661,8 +753,145 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
               {/* Chi tiết từng mã màu khi chọn Custom */}
               {isCustomTheme && (
                 <div className="p-3 bg-black/30 rounded border space-y-2.5" style={{ borderColor: currentBorder }}>
-                  <div className="text-[11px] font-bold pb-1 border-b opacity-90" style={{ borderColor: currentBorder }}>
-                    Bảng mã màu tùy biến:
+                  <div className="text-[11px] font-bold pb-1 border-b opacity-90 flex items-center justify-between" style={{ borderColor: currentBorder }}>
+                    <span>Bảng mã màu tùy biến:</span>
+                  </div>
+
+                  {/* Quick Gradient Presets Bar */}
+                  <div className="space-y-1.5 pb-2 border-b" style={{ borderColor: currentBorder }}>
+                    <span className="block text-[10px] font-bold opacity-80 text-amber-300">
+                      Mẫu Gradient chuyển sắc nhanh:
+                    </span>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCustomBgColor('linear-gradient(135deg, #4a1528 0%, #230b15 50%, #0c0408 100%)');
+                          setCustomCardBgColor('linear-gradient(135deg, #280c1b 0%, #1c0a13 100%)');
+                          setCustomTextColor('#fce7f0');
+                          setCustomTextMutedColor('#f4a6c1');
+                          setCustomBorderColor('#682542');
+                          setCustomBtnBgColor('#521930');
+                          setCustomBtnSecondaryBgColor('#280c1b');
+                        }}
+                        className="px-2 py-1.5 rounded border text-[10px] font-bold text-white text-left truncate transition hover:scale-[1.02]"
+                        style={{ background: 'linear-gradient(135deg, #4a1528 0%, #230b15 50%, #0c0408 100%)', borderColor: '#682542' }}
+                      >
+                        🌹 Hồng Đen
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCustomBgColor('linear-gradient(135deg, #2e1065 0%, #160833 50%, #080314 100%)');
+                          setCustomCardBgColor('linear-gradient(135deg, #210f47 0%, #170b33 100%)');
+                          setCustomTextColor('#f3e8ff');
+                          setCustomTextMutedColor('#c084fc');
+                          setCustomBorderColor('#581c87');
+                          setCustomBtnBgColor('#3b1278');
+                          setCustomBtnSecondaryBgColor('#210f47');
+                        }}
+                        className="px-2 py-1.5 rounded border text-[10px] font-bold text-white text-left truncate transition hover:scale-[1.02]"
+                        style={{ background: 'linear-gradient(135deg, #2e1065 0%, #160833 50%, #080314 100%)', borderColor: '#581c87' }}
+                      >
+                        🌌 Đêm Tím
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCustomBgColor('linear-gradient(135deg, #0c4a6e 0%, #07273c 50%, #030d17 100%)');
+                          setCustomCardBgColor('linear-gradient(135deg, #0c273a 0%, #081d2c 100%)');
+                          setCustomTextColor('#e0f2fe');
+                          setCustomTextMutedColor('#38bdf8');
+                          setCustomBorderColor('#0284c7');
+                          setCustomBtnBgColor('#0369a1');
+                          setCustomBtnSecondaryBgColor('#0c273a');
+                        }}
+                        className="px-2 py-1.5 rounded border text-[10px] font-bold text-white text-left truncate transition hover:scale-[1.02]"
+                        style={{ background: 'linear-gradient(135deg, #0c4a6e 0%, #07273c 50%, #030d17 100%)', borderColor: '#0284c7' }}
+                      >
+                        🌊 Đại Dương
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCustomBgColor('linear-gradient(135deg, #064e3b 0%, #04291f 50%, #02120d 100%)');
+                          setCustomCardBgColor('linear-gradient(135deg, #0d3327 0%, #082119 100%)');
+                          setCustomTextColor('#ecfdf5');
+                          setCustomTextMutedColor('#34d399');
+                          setCustomBorderColor('#059669');
+                          setCustomBtnBgColor('#047857');
+                          setCustomBtnSecondaryBgColor('#0d3327');
+                        }}
+                        className="px-2 py-1.5 rounded border text-[10px] font-bold text-white text-left truncate transition hover:scale-[1.02]"
+                        style={{ background: 'linear-gradient(135deg, #064e3b 0%, #04291f 50%, #02120d 100%)', borderColor: '#059669' }}
+                      >
+                        🌲 Ngọc Lục Bảo
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCustomBgColor('linear-gradient(135deg, #681212 0%, #3b0914 50%, #120307 100%)');
+                          setCustomCardBgColor('linear-gradient(135deg, #380b15 0%, #24080e 100%)');
+                          setCustomTextColor('#fff1f2');
+                          setCustomTextMutedColor('#fb7185');
+                          setCustomBorderColor('#9f1239');
+                          setCustomBtnBgColor('#881337');
+                          setCustomBtnSecondaryBgColor('#380b15');
+                        }}
+                        className="px-2 py-1.5 rounded border text-[10px] font-bold text-white text-left truncate transition hover:scale-[1.02]"
+                        style={{ background: 'linear-gradient(135deg, #681212 0%, #3b0914 50%, #120307 100%)', borderColor: '#9f1239' }}
+                      >
+                        🌅 Hoàng Hôn
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCustomBgColor('linear-gradient(135deg, #78350f 0%, #451a03 50%, #180801 100%)');
+                          setCustomCardBgColor('linear-gradient(135deg, #3d1703 0%, #290e02 100%)');
+                          setCustomTextColor('#fef3c7');
+                          setCustomTextMutedColor('#fbbf24');
+                          setCustomBorderColor('#b45309');
+                          setCustomBtnBgColor('#92400e');
+                          setCustomBtnSecondaryBgColor('#3d1703');
+                        }}
+                        className="px-2 py-1.5 rounded border text-[10px] font-bold text-white text-left truncate transition hover:scale-[1.02]"
+                        style={{ background: 'linear-gradient(135deg, #78350f 0%, #451a03 50%, #180801 100%)', borderColor: '#b45309' }}
+                      >
+                        👑 Hoàng Gia Vàng
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCustomBgColor('linear-gradient(135deg, #831843 0%, #500724 50%, #1f020d 100%)');
+                          setCustomCardBgColor('linear-gradient(135deg, #42081f 0%, #2e0516 100%)');
+                          setCustomTextColor('#fce7f0');
+                          setCustomTextMutedColor('#f472b6');
+                          setCustomBorderColor('#be185d');
+                          setCustomBtnBgColor('#9d174d');
+                          setCustomBtnSecondaryBgColor('#42081f');
+                        }}
+                        className="px-2 py-1.5 rounded border text-[10px] font-bold text-white text-left truncate transition hover:scale-[1.02]"
+                        style={{ background: 'linear-gradient(135deg, #831843 0%, #500724 50%, #1f020d 100%)', borderColor: '#be185d' }}
+                      >
+                        🌸 Hoa Đào
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCustomBgColor('linear-gradient(135deg, #581c87 0%, #2e0854 50%, #100220 100%)');
+                          setCustomCardBgColor('linear-gradient(135deg, #320a52 0%, #210638 100%)');
+                          setCustomTextColor('#fae8ff');
+                          setCustomTextMutedColor('#e879f9');
+                          setCustomBorderColor('#a21caf');
+                          setCustomBtnBgColor('#7e22ce');
+                          setCustomBtnSecondaryBgColor('#320a52');
+                        }}
+                        className="px-2 py-1.5 rounded border text-[10px] font-bold text-white text-left truncate transition hover:scale-[1.02]"
+                        style={{ background: 'linear-gradient(135deg, #581c87 0%, #2e0854 50%, #100220 100%)', borderColor: '#a21caf' }}
+                      >
+                        ⚡ Viễn Tưởng
+                      </button>
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-2">
@@ -936,6 +1165,22 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                   ))}
                 </select>
               </div>
+
+              <div>
+                <label className="block text-[11px] mb-1 opacity-80">Họa tiết nền thẻ (Card Pattern):</label>
+                <select
+                  value={cardPattern}
+                  onChange={(e) => setCardPattern(e.target.value as any)}
+                  className="w-full p-2 rounded border bg-black/40 text-xs focus:outline-none"
+                  style={{ borderColor: currentBorder, color: currentText }}
+                >
+                  {CARD_PATTERN_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           )}
 
@@ -954,7 +1199,8 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                   <option value="rain">Mưa rơi lãng mạn (Rain)</option>
                   <option value="snow">Tuyết rơi mùa đông (Snow)</option>
                   <option value="star">Bụi sao lấp lánh (Stars)</option>
-                  <option value="leaf">Lá phong bay nhẹ (Leaves)</option>
+                  <option value="leaf">Lá phong thu rơi (Maple Leaves)</option>
+                  <option value="ginkgo">Lá bạch quả vàng rơi (Ginkgo Leaves)</option>
                   <option value="cherry_blossom">Cánh hoa đào rơi (Cherry Blossom)</option>
                   <option value="firefly">Đom đóm bay lấp lánh (Fireflies)</option>
                   <option value="soap_bubble">Bong bóng xà phòng (Soap Bubbles)</option>
@@ -1061,6 +1307,9 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
             ...getStoryBorderStyle(currentBorderObj, currentBorder),
           }}
         >
+          {/* Card Pattern Overlay */}
+          <CardPatternOverlay pattern={cardPattern} />
+
           {/* Corner Accents */}
           <StoryCornerAccents accent={borderCornerAccent} color={currentBorder} />
 

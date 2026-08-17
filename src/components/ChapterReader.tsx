@@ -279,6 +279,48 @@ const THEME_TONES: Record<string, {
     badgeFree: 'bg-[#320a52]',
     badgeFreeBorder: 'border-[#a21caf]',
     badgeFreeText: 'text-[#e879f9]'
+  },
+  'gradient-gold': {
+    containerBg: 'bg-[#180801]',
+    gradientBg: 'linear-gradient(135deg, #78350f 0%, #451a03 50%, #180801 100%)',
+    cardBg: 'bg-[#290e02]/90 backdrop-blur-xs',
+    border: 'border-[#b45309]',
+    text: 'text-[#fef3c7]',
+    textMuted: 'text-[#fbbf24]',
+    inputBg: 'bg-[#3d1703]',
+    buttonBgPrimary: 'bg-[#92400e] hover:bg-[#b45309]',
+    buttonBgSecondary: 'bg-[#3d1703] hover:bg-[#92400e]',
+    buttonBorderPrimary: 'border-[#d97706]',
+    buttonBorderSecondary: 'border-[#b45309]',
+    headerBorder: 'border-[#92400e]',
+    badgeLocked: 'bg-[#92400e]',
+    badgeLockedBorder: 'border-[#d97706]',
+    badgeLockedText: 'text-[#fef3c7]',
+    badgeLockedIcon: 'text-[#fbbf24]',
+    badgeFree: 'bg-[#3d1703]',
+    badgeFreeBorder: 'border-[#b45309]',
+    badgeFreeText: 'text-[#fbbf24]'
+  },
+  'gradient-cherry': {
+    containerBg: 'bg-[#1f020d]',
+    gradientBg: 'linear-gradient(135deg, #831843 0%, #500724 50%, #1f020d 100%)',
+    cardBg: 'bg-[#2e0516]/90 backdrop-blur-xs',
+    border: 'border-[#be185d]',
+    text: 'text-[#fce7f0]',
+    textMuted: 'text-[#f472b6]',
+    inputBg: 'bg-[#42081f]',
+    buttonBgPrimary: 'bg-[#9d174d] hover:bg-[#be185d]',
+    buttonBgSecondary: 'bg-[#42081f] hover:bg-[#9d174d]',
+    buttonBorderPrimary: 'border-[#e11d48]',
+    buttonBorderSecondary: 'border-[#be185d]',
+    headerBorder: 'border-[#9d174d]',
+    badgeLocked: 'bg-[#9d174d]',
+    badgeLockedBorder: 'border-[#e11d48]',
+    badgeLockedText: 'text-[#ffe4e6]',
+    badgeLockedIcon: 'text-[#f472b6]',
+    badgeFree: 'bg-[#42081f]',
+    badgeFreeBorder: 'border-[#be185d]',
+    badgeFreeText: 'text-[#f472b6]'
   }
 };
 

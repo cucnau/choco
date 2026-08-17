@@ -70,12 +70,13 @@ export interface Story {
   customBtnBgColor?: string; // Màu nền nút bấm chính (Màu đơn hoặc Gradient CSS)
   customBtnSecondaryBgColor?: string; // Màu nền nút phụ / ô editor / danh sách chương (Màu đơn hoặc Gradient CSS)
   tags?: string[]; // Danh sách các tag thể loại của truyện
-  readingEffect?: 'none' | 'rain' | 'snow' | 'glitch' | 'star' | 'leaf' | 'cherry_blossom' | 'firefly' | 'soap_bubble'; // Hiệu ứng đọc truyện
+  readingEffect?: 'none' | 'rain' | 'snow' | 'glitch' | 'star' | 'leaf' | 'cherry_blossom' | 'firefly' | 'soap_bubble' | 'ginkgo'; // Hiệu ứng đọc truyện
   borderStyle?: 'solid' | 'double' | 'dashed' | 'dotted' | 'groove' | 'ridge' | 'inset' | 'outset' | 'none'; // Kiểu nét đường viền
   borderWidth?: 'thin' | 'medium' | 'thick' | 'heavy'; // Độ dày đường viền
   borderRadius?: 'none' | 'xs' | 'sm' | 'md' | 'lg' | 'chamfer' | 'leaf' | 'pill'; // Kiểu bo góc viền
   borderCornerAccent?: 'none' | 'brackets' | 'vintage' | 'rivets' | 'dots' | 'crosshairs'; // Trang trí góc viền
   borderGlow?: 'none' | 'soft' | 'neon' | 'shadow'; // Hiệu ứng phát sáng hoặc đổ bóng viền
+  cardPattern?: 'none' | 'dots' | 'grid' | 'paper' | 'stripes' | 'waves' | 'hexagons' | 'crosshatch'; // Họa tiết nền thẻ nội dung
 }
 
 export interface ReadingProgress {

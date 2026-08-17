@@ -560,6 +560,8 @@ export default function App() {
       'gradient-emerald': 'linear-gradient(135deg, #064e3b 0%, #04291f 50%, #02120d 100%)',
       'gradient-sunset': 'linear-gradient(135deg, #681212 0%, #3b0914 50%, #120307 100%)',
       'gradient-cyber': 'linear-gradient(135deg, #581c87 0%, #2e0854 50%, #100220 100%)',
+      'gradient-gold': 'linear-gradient(135deg, #78350f 0%, #451a03 50%, #180801 100%)',
+      'gradient-cherry': 'linear-gradient(135deg, #831843 0%, #500724 50%, #1f020d 100%)',
     };
     if (story.themeTone && presetGradients[story.themeTone]) {
       return { background: presetGradients[story.themeTone] };
