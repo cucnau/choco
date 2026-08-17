@@ -627,7 +627,7 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
                 <option value="font-notosans" className="bg-[#11090c] text-[#e0d0d5]">Noto Sans</option>
                 <option value="font-sourcesans" className="bg-[#11090c] text-[#e0d0d5]">Source Sans 3</option>
                 <option value="font-worksans" className="bg-[#11090c] text-[#e0d0d5]">Work Sans</option>
-                <option value="font-sarabun" className="bg-[#11090c] text-[#e0d0d5]">Sarabun</option>
+                <option value="font-saira" className="bg-[#11090c] text-[#e0d0d5]">Saira</option>
                 <option value="font-charm" className="bg-[#11090c] text-[#e0d0d5]">Charm</option>
                 <option value="font-patrick" className="bg-[#11090c] text-[#e0d0d5]">Patrick Hand</option>
                 <option value="font-times" className="bg-[#11090c] text-[#e0d0d5]">Times New Roman</option>

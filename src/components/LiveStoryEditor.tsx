@@ -1797,7 +1797,7 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
 
               {/* Synopsis Editable Box */}
               <div className="space-y-1.5">
-                <span className={`text-xs font-bold uppercase tracking-wider block ${customTitleFont}`} style={{ color: currentTextMuted }}>
+                <span className={`text-xs font-bold uppercase tracking-wider block ${customBodyFont}`} style={{ color: currentTextMuted }}>
                   Giới thiệu truyện (Nhấp để sửa):
                 </span>
                 <textarea

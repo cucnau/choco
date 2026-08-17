@@ -66,7 +66,7 @@ const FONT_OPTIONS = [
   { value: 'font-notosans', label: 'Noto Sans - Trung tính hoàn hảo' },
   { value: 'font-sourcesans', label: 'Source Sans 3 - Sắc sảo rõ nét' },
   { value: 'font-worksans', label: 'Work Sans - Vững chãi rành mạch' },
-  { value: 'font-sarabun', label: 'Sarabun - Trang nhã thanh lịch' },
+  { value: 'font-saira', label: 'Saira - Trang nhã thanh lịch' },
   { value: 'font-lexend', label: 'Lexend - Siêu sạch thoáng đãng' },
   { value: 'font-comfortaa', label: 'Comfortaa - Tròn xoe đáng yêu' },
   { value: 'font-baloo', label: 'Baloo 2 - Tròn mập nhí nhố' },
@@ -83,11 +83,11 @@ const FONT_OPTIONS = [
   { value: 'font-patrick', label: 'Patrick Hand - Nhật ký tự nhiên' },
   { value: 'font-itim', label: 'Itim - Hoạt họa học đường' },
   { value: 'font-sriracha', label: 'Sriracha - Nét bút lông sắc sảo' },
-  { value: 'font-cabinsketch', label: 'Cabin Sketch - Nét vẽ tay phác thảo' },
+  { value: 'font-pangolin', label: 'Pangolin - Nét vẽ vui tươi' },
 
   // Monospace & Pixel & Display (Công nghệ / Retro game)
   { value: 'font-mono', label: 'JetBrains Mono - Lập trình viên' },
-  { value: 'font-vt323', label: 'VT323 - Máy điện tử 8-bit' },
+  { value: 'font-inconsolata', label: 'Inconsolata - Máy chữ cổ điển' },
   { value: 'font-bungee', label: 'Bungee - Biển hiệu khối đậm' }
 ];
 
