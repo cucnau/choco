@@ -555,8 +555,9 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
       <header
         className="sticky top-0 z-40 px-4 py-2.5 backdrop-blur-md border-b flex items-center justify-between shadow-lg"
         style={{
-          backgroundColor: isCustomTheme ? `${customCardBgColor}cc` : '#0d060acc',
+          backgroundColor: currentCardBg,
           borderColor: currentBorder,
+          color: currentText,
         }}
       >
         <div className="flex items-center gap-3">
@@ -564,8 +565,9 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
             onClick={onCancel}
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono font-bold uppercase tracking-wider rounded border hover:opacity-80 transition"
             style={{
-              borderColor: currentBorder,
-              color: currentTextMuted,
+              backgroundColor: currentBtnSecondaryBg,
+              borderColor: currentBtnBorder,
+              color: currentText,
             }}
           >
             <ArrowLeft className="w-3.5 h-3.5" />
@@ -573,10 +575,11 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
           </button>
 
           <span
-            className="text-xs font-bold uppercase tracking-wider hidden sm:inline-block px-2 py-0.5 rounded font-mono"
+            className="text-xs font-bold uppercase tracking-wider hidden sm:inline-block px-2.5 py-1 rounded font-mono border"
             style={{
-              backgroundColor: isCustomTheme ? `${customBtnBgColor}88` : '#2d1822',
-              color: currentText,
+              backgroundColor: currentBtnBg,
+              borderColor: currentBtnBorder,
+              color: currentBtnText,
             }}
           >
             {initialStory ? 'Chế độ chỉnh sửa trực tiếp' : 'Chế độ tạo truyện trực tiếp'}
@@ -1272,21 +1275,21 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
       <main className={`max-w-4xl mx-auto px-4 py-6 space-y-6 ${customBodyFont}`}>
         {/* Helper Banner */}
         <div
-          className="p-3 rounded border text-xs flex items-center justify-between gap-3 font-mono opacity-90 shadow-sm"
+          className="p-3.5 rounded-lg border text-xs flex items-center justify-between gap-3 font-mono shadow-sm"
           style={{
-            backgroundColor: isCustomTheme ? `${customCardBgColor}bb` : '#1a0b14aa',
+            backgroundColor: currentCardBg,
             borderColor: currentBorder,
-            color: currentTextMuted,
+            color: currentText,
           }}
         >
-          <span>💡 Bạn có thể nhấp chuột trực tiếp vào Tên truyện, Tác giả, Ảnh bìa, Giới thiệu hoặc Tag bên dưới để chỉnh sửa ngay tại chỗ.</span>
+          <span className="font-medium">💡 Bạn có thể nhấp chuột trực tiếp vào Tên truyện, Tác giả, Ảnh bìa, Giới thiệu hoặc Tag bên dưới để chỉnh sửa ngay tại chỗ.</span>
           <button
             onClick={() => setActiveDrawerTab(activeDrawerTab ? null : 'theme')}
-            className="shrink-0 px-2.5 py-1 text-[11px] font-bold rounded border hover:opacity-90 transition"
+            className="shrink-0 px-3 py-1.5 text-[11px] font-bold rounded border hover:opacity-90 transition shadow-xs"
             style={{
-              backgroundColor: currentBtnSecondaryBg,
+              backgroundColor: currentBtnBg,
               borderColor: currentBtnBorder,
-              color: currentText,
+              color: currentBtnText,
             }}
           >
             Mở bảng thiết kế
