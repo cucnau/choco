@@ -24,7 +24,6 @@ import {
   ChevronUp,
 } from 'lucide-react';
 import { ReadingEffects } from './ReadingEffects';
-import { CardPatternOverlay } from './CardPatternOverlay';
 import {
   BORDER_STYLE_OPTIONS,
   BORDER_WIDTH_OPTIONS,
@@ -35,17 +34,6 @@ import {
   getStoryButtonBorderStyle,
   StoryCornerAccents,
 } from '../lib/borderStyles';
-
-export const CARD_PATTERN_OPTIONS = [
-  { value: 'none', label: 'Trơn (Không họa tiết)' },
-  { value: 'paper', label: 'Kết cấu trang giấy (Paper Texture)' },
-  { value: 'dots', label: 'Chấm bi dịu nhẹ (Polka Dots)' },
-  { value: 'grid', label: 'Lưới ô vuông (Grid Paper)' },
-  { value: 'stripes', label: 'Sọc nghiêng lãng mạn (Stripes)' },
-  { value: 'waves', label: 'Gợn sóng biển (Waves)' },
-  { value: 'hexagons', label: 'Tổ ong lục giác (Hexagons)' },
-  { value: 'crosshatch', label: 'Kẻ caro chéo (Crosshatch)' },
-];
 
 const FONT_OPTIONS = [
   // Serif
@@ -383,7 +371,6 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
   const [borderRadius, setBorderRadius] = useState<NonNullable<Story['borderRadius']>>(initialStory?.borderRadius || 'none');
   const [borderCornerAccent, setBorderCornerAccent] = useState<NonNullable<Story['borderCornerAccent']>>(initialStory?.borderCornerAccent || 'none');
   const [borderGlow, setBorderGlow] = useState<NonNullable<Story['borderGlow']>>(initialStory?.borderGlow || 'none');
-  const [cardPattern, setCardPattern] = useState<NonNullable<Story['cardPattern']>>(initialStory?.cardPattern || 'none');
 
   // Reading Effect
   const [readingEffect, setReadingEffect] = useState<'none' | 'rain' | 'snow' | 'glitch' | 'star' | 'leaf'>(
@@ -525,7 +512,6 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
       borderRadius,
       borderCornerAccent,
       borderGlow,
-      cardPattern,
       readingEffect,
     });
   };
@@ -684,13 +670,14 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
         <div
           className="fixed top-14 right-4 z-50 w-full max-w-sm sm:max-w-md p-4 rounded-lg shadow-2xl border backdrop-blur-xl max-h-[80vh] overflow-y-auto space-y-4 font-mono"
           style={{
-            backgroundColor: isCustomTheme ? `${customCardBgColor}f2` : '#12080ef2',
+            backgroundColor: currentCardBg,
             borderColor: currentBorder,
             color: currentText,
+            boxShadow: '0 20px 50px rgba(0, 0, 0, 0.4)',
           }}
         >
           <div className="flex items-center justify-between border-b pb-2" style={{ borderColor: currentBorder }}>
-            <span className="text-xs font-bold uppercase tracking-wider flex items-center gap-2">
+            <span className="text-xs font-bold uppercase tracking-wider flex items-center gap-2" style={{ color: currentText }}>
               {activeDrawerTab === 'theme' && <Palette className="w-4 h-4" />}
               {activeDrawerTab === 'fonts' && <Type className="w-4 h-4" />}
               {activeDrawerTab === 'borders' && <Square className="w-4 h-4" />}
@@ -704,7 +691,8 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
             </span>
             <button
               onClick={() => setActiveDrawerTab(null)}
-              className="p-1 hover:opacity-70 transition"
+              className="p-1 hover:opacity-70 transition rounded"
+              style={{ color: currentText }}
               title="Đóng bảng thiết kế"
             >
               <X className="w-4 h-4" />
@@ -715,51 +703,53 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
           {activeDrawerTab === 'theme' && (
             <div className="space-y-3 text-xs">
               <div>
-                <label className="block text-[11px] mb-1 opacity-80">Chọn bộ màu có sẵn:</label>
+                <label className="block text-[11px] font-semibold mb-1" style={{ color: currentText }}>
+                  Chọn bộ màu có sẵn:
+                </label>
                 <select
                   value={themeTone}
                   onChange={(e) => setThemeTone(e.target.value)}
-                  className="w-full p-2 rounded border bg-black/40 text-xs focus:outline-none"
-                  style={{ borderColor: currentBorder, color: currentText }}
+                  className="w-full p-2 rounded border text-xs focus:outline-none font-semibold"
+                  style={{ backgroundColor: currentBg, borderColor: currentBorder, color: currentText }}
                 >
-                  <optgroup label="Đơn sắc & Trầm ấm">
-                    <option value="dark-rose">Dark Rose (Hồng Đen)</option>
-                    <option value="classic-black">Classic Black (Đen Tuyến)</option>
-                    <option value="dark-violet">Dark Violet (Tím Đêm)</option>
-                    <option value="navy-blue">Navy Blue (Xanh Đêm)</option>
-                    <option value="forest-dark">Forest Dark (Rừng Đêm)</option>
-                    <option value="warm-coffee">Warm Coffee (Cà Phê Ấm)</option>
-                    <option value="sepia">Sepia (Giấy Cổ Điển)</option>
-                    <option value="emerald">Emerald (Xanh Ngọc Lục)</option>
-                    <option value="slate">Slate (Xanh Đá Xám)</option>
-                    <option value="cyberpunk">Cyberpunk (Neon Tím)</option>
+                  <optgroup label="Đơn sắc & Trầm ấm" style={{ backgroundColor: currentCardBg, color: currentText }}>
+                    <option value="dark-rose" style={{ backgroundColor: currentCardBg, color: currentText }}>Dark Rose (Hồng Đen)</option>
+                    <option value="classic-black" style={{ backgroundColor: currentCardBg, color: currentText }}>Classic Black (Đen Tuyến)</option>
+                    <option value="dark-violet" style={{ backgroundColor: currentCardBg, color: currentText }}>Dark Violet (Tím Đêm)</option>
+                    <option value="navy-blue" style={{ backgroundColor: currentCardBg, color: currentText }}>Navy Blue (Xanh Đêm)</option>
+                    <option value="forest-dark" style={{ backgroundColor: currentCardBg, color: currentText }}>Forest Dark (Rừng Đêm)</option>
+                    <option value="warm-coffee" style={{ backgroundColor: currentCardBg, color: currentText }}>Warm Coffee (Cà Phê Ấm)</option>
+                    <option value="sepia" style={{ backgroundColor: currentCardBg, color: currentText }}>Sepia (Giấy Cổ Điển)</option>
+                    <option value="emerald" style={{ backgroundColor: currentCardBg, color: currentText }}>Emerald (Xanh Ngọc Lục)</option>
+                    <option value="slate" style={{ backgroundColor: currentCardBg, color: currentText }}>Slate (Xanh Đá Xám)</option>
+                    <option value="cyberpunk" style={{ backgroundColor: currentCardBg, color: currentText }}>Cyberpunk (Neon Tím)</option>
                   </optgroup>
-                  <optgroup label="Gradient (Chuyển sắc)">
-                    <option value="gradient-rose">Gradient Rose (Hồng Đen)</option>
-                    <option value="gradient-midnight">Gradient Midnight (Đêm Tím)</option>
-                    <option value="gradient-ocean">Gradient Ocean (Đại Dương)</option>
-                    <option value="gradient-emerald">Gradient Emerald (Ngọc Lục Bảo)</option>
-                    <option value="gradient-sunset">Gradient Sunset (Hoàng Hôn)</option>
-                    <option value="gradient-cyber">Gradient Cyber (Viễn Tưởng)</option>
-                    <option value="gradient-gold">Gradient Gold (Hoàng Gia Vàng)</option>
-                    <option value="gradient-cherry">Gradient Cherry (Hoa Đào)</option>
+                  <optgroup label="Gradient (Chuyển sắc)" style={{ backgroundColor: currentCardBg, color: currentText }}>
+                    <option value="gradient-rose" style={{ backgroundColor: currentCardBg, color: currentText }}>Gradient Rose (Hồng Đen)</option>
+                    <option value="gradient-midnight" style={{ backgroundColor: currentCardBg, color: currentText }}>Gradient Midnight (Đêm Tím)</option>
+                    <option value="gradient-ocean" style={{ backgroundColor: currentCardBg, color: currentText }}>Gradient Ocean (Đại Dương)</option>
+                    <option value="gradient-emerald" style={{ backgroundColor: currentCardBg, color: currentText }}>Gradient Emerald (Ngọc Lục Bảo)</option>
+                    <option value="gradient-sunset" style={{ backgroundColor: currentCardBg, color: currentText }}>Gradient Sunset (Hoàng Hôn)</option>
+                    <option value="gradient-cyber" style={{ backgroundColor: currentCardBg, color: currentText }}>Gradient Cyber (Viễn Tưởng)</option>
+                    <option value="gradient-gold" style={{ backgroundColor: currentCardBg, color: currentText }}>Gradient Gold (Hoàng Gia Vàng)</option>
+                    <option value="gradient-cherry" style={{ backgroundColor: currentCardBg, color: currentText }}>Gradient Cherry (Hoa Đào)</option>
                   </optgroup>
-                  <optgroup label="Tùy biến tự do">
-                    <option value="custom">Tùy biến bảng màu chi tiết (Custom)</option>
+                  <optgroup label="Tùy biến tự do" style={{ backgroundColor: currentCardBg, color: currentText }}>
+                    <option value="custom" style={{ backgroundColor: currentCardBg, color: currentText }}>Tùy biến bảng màu chi tiết (Custom)</option>
                   </optgroup>
                 </select>
               </div>
 
               {/* Chi tiết từng mã màu khi chọn Custom */}
               {isCustomTheme && (
-                <div className="p-3 bg-black/30 rounded border space-y-2.5" style={{ borderColor: currentBorder }}>
-                  <div className="text-[11px] font-bold pb-1 border-b opacity-90 flex items-center justify-between" style={{ borderColor: currentBorder }}>
+                <div className="p-3 rounded border space-y-2.5" style={{ backgroundColor: currentBg, borderColor: currentBorder }}>
+                  <div className="text-[11px] font-bold pb-1 border-b flex items-center justify-between" style={{ borderColor: currentBorder, color: currentText }}>
                     <span>Bảng mã màu tùy biến:</span>
                   </div>
 
                   {/* Quick Gradient Presets Bar */}
                   <div className="space-y-1.5 pb-2 border-b" style={{ borderColor: currentBorder }}>
-                    <span className="block text-[10px] font-bold opacity-80 text-amber-300">
+                    <span className="block text-[10px] font-bold" style={{ color: currentTextMuted }}>
                       Mẫu Gradient chuyển sắc nhanh:
                     </span>
                     <div className="grid grid-cols-2 gap-1.5">
@@ -896,7 +886,7 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
 
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <span className="block text-[10px] opacity-75">Màu nền chính:</span>
+                      <span className="block text-[10px] font-semibold" style={{ color: currentText }}>Màu nền chính:</span>
                       <div className="flex items-center gap-1.5 mt-0.5">
                         <input
                           type="color"
@@ -908,14 +898,14 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                           type="text"
                           value={customBgColor}
                           onChange={(e) => setCustomBgColor(e.target.value)}
-                          className="w-full px-1.5 py-0.5 bg-black/50 border rounded text-[11px]"
-                          style={{ borderColor: currentBorder }}
+                          className="w-full px-1.5 py-0.5 border rounded text-[11px]"
+                          style={{ backgroundColor: currentCardBg, borderColor: currentBorder, color: currentText }}
                         />
                       </div>
                     </div>
 
                     <div>
-                      <span className="block text-[10px] opacity-75">Màu thẻ nội dung:</span>
+                      <span className="block text-[10px] font-semibold" style={{ color: currentText }}>Màu thẻ nội dung:</span>
                       <div className="flex items-center gap-1.5 mt-0.5">
                         <input
                           type="color"
@@ -927,14 +917,14 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                           type="text"
                           value={customCardBgColor}
                           onChange={(e) => setCustomCardBgColor(e.target.value)}
-                          className="w-full px-1.5 py-0.5 bg-black/50 border rounded text-[11px]"
-                          style={{ borderColor: currentBorder }}
+                          className="w-full px-1.5 py-0.5 border rounded text-[11px]"
+                          style={{ backgroundColor: currentCardBg, borderColor: currentBorder, color: currentText }}
                         />
                       </div>
                     </div>
 
                     <div>
-                      <span className="block text-[10px] opacity-75">Màu chữ chính:</span>
+                      <span className="block text-[10px] font-semibold" style={{ color: currentText }}>Màu chữ chính:</span>
                       <div className="flex items-center gap-1.5 mt-0.5">
                         <input
                           type="color"
@@ -946,14 +936,14 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                           type="text"
                           value={customTextColor}
                           onChange={(e) => setCustomTextColor(e.target.value)}
-                          className="w-full px-1.5 py-0.5 bg-black/50 border rounded text-[11px]"
-                          style={{ borderColor: currentBorder }}
+                          className="w-full px-1.5 py-0.5 border rounded text-[11px]"
+                          style={{ backgroundColor: currentCardBg, borderColor: currentBorder, color: currentText }}
                         />
                       </div>
                     </div>
 
                     <div>
-                      <span className="block text-[10px] opacity-75">Màu chữ phụ / mờ:</span>
+                      <span className="block text-[10px] font-semibold" style={{ color: currentText }}>Màu chữ phụ / mờ:</span>
                       <div className="flex items-center gap-1.5 mt-0.5">
                         <input
                           type="color"
@@ -965,14 +955,14 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                           type="text"
                           value={customTextMutedColor}
                           onChange={(e) => setCustomTextMutedColor(e.target.value)}
-                          className="w-full px-1.5 py-0.5 bg-black/50 border rounded text-[11px]"
-                          style={{ borderColor: currentBorder }}
+                          className="w-full px-1.5 py-0.5 border rounded text-[11px]"
+                          style={{ backgroundColor: currentCardBg, borderColor: currentBorder, color: currentText }}
                         />
                       </div>
                     </div>
 
                     <div>
-                      <span className="block text-[10px] opacity-75">Màu đường viền:</span>
+                      <span className="block text-[10px] font-semibold" style={{ color: currentText }}>Màu đường viền:</span>
                       <div className="flex items-center gap-1.5 mt-0.5">
                         <input
                           type="color"
@@ -984,14 +974,14 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                           type="text"
                           value={customBorderColor}
                           onChange={(e) => setCustomBorderColor(e.target.value)}
-                          className="w-full px-1.5 py-0.5 bg-black/50 border rounded text-[11px]"
-                          style={{ borderColor: currentBorder }}
+                          className="w-full px-1.5 py-0.5 border rounded text-[11px]"
+                          style={{ backgroundColor: currentCardBg, borderColor: currentBorder, color: currentText }}
                         />
                       </div>
                     </div>
 
                     <div>
-                      <span className="block text-[10px] opacity-75">Màu nút chính:</span>
+                      <span className="block text-[10px] font-semibold" style={{ color: currentText }}>Màu nút chính:</span>
                       <div className="flex items-center gap-1.5 mt-0.5">
                         <input
                           type="color"
@@ -1003,8 +993,8 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                           type="text"
                           value={customBtnBgColor}
                           onChange={(e) => setCustomBtnBgColor(e.target.value)}
-                          className="w-full px-1.5 py-0.5 bg-black/50 border rounded text-[11px]"
-                          style={{ borderColor: currentBorder }}
+                          className="w-full px-1.5 py-0.5 border rounded text-[11px]"
+                          style={{ backgroundColor: currentCardBg, borderColor: currentBorder, color: currentText }}
                         />
                       </div>
                     </div>
@@ -1018,15 +1008,17 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
           {activeDrawerTab === 'fonts' && (
             <div className="space-y-3 text-xs">
               <div>
-                <label className="block text-[11px] mb-1 opacity-80">Font tiêu đề truyện:</label>
+                <label className="block text-[11px] font-semibold mb-1" style={{ color: currentText }}>
+                  Font tiêu đề truyện:
+                </label>
                 <select
                   value={customTitleFont}
                   onChange={(e) => setCustomTitleFont(e.target.value)}
-                  className="w-full p-2 rounded border bg-black/40 text-xs focus:outline-none"
-                  style={{ borderColor: currentBorder, color: currentText }}
+                  className="w-full p-2 rounded border text-xs focus:outline-none"
+                  style={{ backgroundColor: currentBg, borderColor: currentBorder, color: currentText }}
                 >
                   {FONT_OPTIONS.map((f) => (
-                    <option key={f.value} value={f.value}>
+                    <option key={f.value} value={f.value} style={{ backgroundColor: currentCardBg, color: currentText }}>
                       {f.label}
                     </option>
                   ))}
@@ -1034,15 +1026,17 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
               </div>
 
               <div>
-                <label className="block text-[11px] mb-1 opacity-80">Font thân bài & giới thiệu:</label>
+                <label className="block text-[11px] font-semibold mb-1" style={{ color: currentText }}>
+                  Font thân bài & giới thiệu:
+                </label>
                 <select
                   value={customBodyFont}
                   onChange={(e) => setCustomBodyFont(e.target.value)}
-                  className="w-full p-2 rounded border bg-black/40 text-xs focus:outline-none"
-                  style={{ borderColor: currentBorder, color: currentText }}
+                  className="w-full p-2 rounded border text-xs focus:outline-none"
+                  style={{ backgroundColor: currentBg, borderColor: currentBorder, color: currentText }}
                 >
                   {FONT_OPTIONS.map((f) => (
-                    <option key={f.value} value={f.value}>
+                    <option key={f.value} value={f.value} style={{ backgroundColor: currentCardBg, color: currentText }}>
                       {f.label}
                     </option>
                   ))}
@@ -1050,15 +1044,17 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
               </div>
 
               <div>
-                <label className="block text-[11px] mb-1 opacity-80">Font nút bấm:</label>
+                <label className="block text-[11px] font-semibold mb-1" style={{ color: currentText }}>
+                  Font nút bấm:
+                </label>
                 <select
                   value={customBtnFont}
                   onChange={(e) => setCustomBtnFont(e.target.value)}
-                  className="w-full p-2 rounded border bg-black/40 text-xs focus:outline-none"
-                  style={{ borderColor: currentBorder, color: currentText }}
+                  className="w-full p-2 rounded border text-xs focus:outline-none"
+                  style={{ backgroundColor: currentBg, borderColor: currentBorder, color: currentText }}
                 >
                   {FONT_OPTIONS.map((f) => (
-                    <option key={f.value} value={f.value}>
+                    <option key={f.value} value={f.value} style={{ backgroundColor: currentCardBg, color: currentText }}>
                       {f.label}
                     </option>
                   ))}
@@ -1066,15 +1062,17 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
               </div>
 
               <div>
-                <label className="block text-[11px] mb-1 opacity-80">Font thông tin phụ / tác giả:</label>
+                <label className="block text-[11px] font-semibold mb-1" style={{ color: currentText }}>
+                  Font thông tin phụ / tác giả:
+                </label>
                 <select
                   value={customMutedFont}
                   onChange={(e) => setCustomMutedFont(e.target.value)}
-                  className="w-full p-2 rounded border bg-black/40 text-xs focus:outline-none"
-                  style={{ borderColor: currentBorder, color: currentText }}
+                  className="w-full p-2 rounded border text-xs focus:outline-none"
+                  style={{ backgroundColor: currentBg, borderColor: currentBorder, color: currentText }}
                 >
                   {FONT_OPTIONS.map((f) => (
-                    <option key={f.value} value={f.value}>
+                    <option key={f.value} value={f.value} style={{ backgroundColor: currentCardBg, color: currentText }}>
                       {f.label}
                     </option>
                   ))}
@@ -1087,15 +1085,17 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
           {activeDrawerTab === 'borders' && (
             <div className="space-y-3 text-xs">
               <div>
-                <label className="block text-[11px] mb-1 opacity-80">Kiểu nét viền (Stroke Style):</label>
+                <label className="block text-[11px] font-semibold mb-1" style={{ color: currentText }}>
+                  Kiểu nét viền (Stroke Style):
+                </label>
                 <select
                   value={borderStyle}
                   onChange={(e) => setBorderStyle(e.target.value as any)}
-                  className="w-full p-2 rounded border bg-black/40 text-xs focus:outline-none"
-                  style={{ borderColor: currentBorder, color: currentText }}
+                  className="w-full p-2 rounded border text-xs focus:outline-none"
+                  style={{ backgroundColor: currentBg, borderColor: currentBorder, color: currentText }}
                 >
                   {BORDER_STYLE_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
+                    <option key={opt.value} value={opt.value} style={{ backgroundColor: currentCardBg, color: currentText }}>
                       {opt.label}
                     </option>
                   ))}
@@ -1103,15 +1103,17 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
               </div>
 
               <div>
-                <label className="block text-[11px] mb-1 opacity-80">Độ dày nét viền (Width):</label>
+                <label className="block text-[11px] font-semibold mb-1" style={{ color: currentText }}>
+                  Độ dày nét viền (Width):
+                </label>
                 <select
                   value={borderWidth}
                   onChange={(e) => setBorderWidth(e.target.value as any)}
-                  className="w-full p-2 rounded border bg-black/40 text-xs focus:outline-none"
-                  style={{ borderColor: currentBorder, color: currentText }}
+                  className="w-full p-2 rounded border text-xs focus:outline-none"
+                  style={{ backgroundColor: currentBg, borderColor: currentBorder, color: currentText }}
                 >
                   {BORDER_WIDTH_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
+                    <option key={opt.value} value={opt.value} style={{ backgroundColor: currentCardBg, color: currentText }}>
                       {opt.label}
                     </option>
                   ))}
@@ -1119,15 +1121,17 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
               </div>
 
               <div>
-                <label className="block text-[11px] mb-1 opacity-80">Bo góc viền (Radius):</label>
+                <label className="block text-[11px] font-semibold mb-1" style={{ color: currentText }}>
+                  Bo góc viền (Radius):
+                </label>
                 <select
                   value={borderRadius}
                   onChange={(e) => setBorderRadius(e.target.value as any)}
-                  className="w-full p-2 rounded border bg-black/40 text-xs focus:outline-none"
-                  style={{ borderColor: currentBorder, color: currentText }}
+                  className="w-full p-2 rounded border text-xs focus:outline-none"
+                  style={{ backgroundColor: currentBg, borderColor: currentBorder, color: currentText }}
                 >
                   {BORDER_RADIUS_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
+                    <option key={opt.value} value={opt.value} style={{ backgroundColor: currentCardBg, color: currentText }}>
                       {opt.label}
                     </option>
                   ))}
@@ -1135,15 +1139,17 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
               </div>
 
               <div>
-                <label className="block text-[11px] mb-1 opacity-80">Họa tiết 4 góc (Corner Accents):</label>
+                <label className="block text-[11px] font-semibold mb-1" style={{ color: currentText }}>
+                  Họa tiết 4 góc (Corner Accents):
+                </label>
                 <select
                   value={borderCornerAccent}
                   onChange={(e) => setBorderCornerAccent(e.target.value as any)}
-                  className="w-full p-2 rounded border bg-black/40 text-xs focus:outline-none"
-                  style={{ borderColor: currentBorder, color: currentText }}
+                  className="w-full p-2 rounded border text-xs focus:outline-none"
+                  style={{ backgroundColor: currentBg, borderColor: currentBorder, color: currentText }}
                 >
                   {BORDER_CORNER_ACCENT_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
+                    <option key={opt.value} value={opt.value} style={{ backgroundColor: currentCardBg, color: currentText }}>
                       {opt.label}
                     </option>
                   ))}
@@ -1151,31 +1157,17 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
               </div>
 
               <div>
-                <label className="block text-[11px] mb-1 opacity-80">Hiệu ứng viền (Glow / Shadow):</label>
+                <label className="block text-[11px] font-semibold mb-1" style={{ color: currentText }}>
+                  Hiệu ứng viền (Glow / Shadow):
+                </label>
                 <select
                   value={borderGlow}
                   onChange={(e) => setBorderGlow(e.target.value as any)}
-                  className="w-full p-2 rounded border bg-black/40 text-xs focus:outline-none"
-                  style={{ borderColor: currentBorder, color: currentText }}
+                  className="w-full p-2 rounded border text-xs focus:outline-none"
+                  style={{ backgroundColor: currentBg, borderColor: currentBorder, color: currentText }}
                 >
                   {BORDER_GLOW_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-[11px] mb-1 opacity-80">Họa tiết nền thẻ (Card Pattern):</label>
-                <select
-                  value={cardPattern}
-                  onChange={(e) => setCardPattern(e.target.value as any)}
-                  className="w-full p-2 rounded border bg-black/40 text-xs focus:outline-none"
-                  style={{ borderColor: currentBorder, color: currentText }}
-                >
-                  {CARD_PATTERN_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
+                    <option key={opt.value} value={opt.value} style={{ backgroundColor: currentCardBg, color: currentText }}>
                       {opt.label}
                     </option>
                   ))}
@@ -1188,26 +1180,28 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
           {activeDrawerTab === 'effects' && (
             <div className="space-y-3 text-xs">
               <div>
-                <label className="block text-[11px] mb-1 opacity-80">Hiệu ứng rơi / hạt nền:</label>
+                <label className="block text-[11px] font-semibold mb-1" style={{ color: currentText }}>
+                  Hiệu ứng rơi / hạt nền:
+                </label>
                 <select
                   value={readingEffect}
                   onChange={(e) => setReadingEffect(e.target.value as any)}
-                  className="w-full p-2 rounded border bg-black/40 text-xs focus:outline-none"
-                  style={{ borderColor: currentBorder, color: currentText }}
+                  className="w-full p-2 rounded border text-xs focus:outline-none"
+                  style={{ backgroundColor: currentBg, borderColor: currentBorder, color: currentText }}
                 >
-                  <option value="none">Không hiệu ứng</option>
-                  <option value="rain">Mưa rơi lãng mạn (Rain)</option>
-                  <option value="snow">Tuyết rơi mùa đông (Snow)</option>
-                  <option value="star">Bụi sao lấp lánh (Stars)</option>
-                  <option value="leaf">Lá phong thu rơi (Maple Leaves)</option>
-                  <option value="ginkgo">Lá bạch quả vàng rơi (Ginkgo Leaves)</option>
-                  <option value="cherry_blossom">Cánh hoa đào rơi (Cherry Blossom)</option>
-                  <option value="firefly">Đom đóm bay lấp lánh (Fireflies)</option>
-                  <option value="soap_bubble">Bong bóng xà phòng (Soap Bubbles)</option>
-                  <option value="glitch">Nhiễu sóng viễn tưởng (Glitch)</option>
+                  <option value="none" style={{ backgroundColor: currentCardBg, color: currentText }}>Không hiệu ứng</option>
+                  <option value="rain" style={{ backgroundColor: currentCardBg, color: currentText }}>Mưa rơi lãng mạn (Rain)</option>
+                  <option value="snow" style={{ backgroundColor: currentCardBg, color: currentText }}>Tuyết rơi mùa đông (Snow)</option>
+                  <option value="star" style={{ backgroundColor: currentCardBg, color: currentText }}>Bụi sao lấp lánh (Stars)</option>
+                  <option value="leaf" style={{ backgroundColor: currentCardBg, color: currentText }}>Lá phong thu rơi (Maple Leaves)</option>
+                  <option value="ginkgo" style={{ backgroundColor: currentCardBg, color: currentText }}>Lá bạch quả vàng rơi (Ginkgo Leaves)</option>
+                  <option value="cherry_blossom" style={{ backgroundColor: currentCardBg, color: currentText }}>Cánh hoa đào rơi (Cherry Blossom)</option>
+                  <option value="firefly" style={{ backgroundColor: currentCardBg, color: currentText }}>Đom đóm bay lấp lánh (Fireflies)</option>
+                  <option value="soap_bubble" style={{ backgroundColor: currentCardBg, color: currentText }}>Bong bóng xà phòng (Soap Bubbles)</option>
+                  <option value="glitch" style={{ backgroundColor: currentCardBg, color: currentText }}>Nhiễu sóng viễn tưởng (Glitch)</option>
                 </select>
               </div>
-              <p className="text-[10px] opacity-70 leading-relaxed">
+              <p className="text-[10px] leading-relaxed" style={{ color: currentTextMuted }}>
                 Hiệu ứng rơi sẽ tự động kích hoạt ngay trên nền trang đọc và trang chi tiết của bộ truyện này.
               </p>
             </div>
@@ -1234,14 +1228,14 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-[11px] opacity-80">Đường dẫn ảnh (URL):</label>
+              <label className="text-[11px] font-semibold" style={{ color: currentText }}>Đường dẫn ảnh (URL):</label>
               <input
                 type="text"
                 placeholder="https://example.com/cover.jpg"
                 value={tempCoverUrl}
                 onChange={(e) => setTempCoverUrl(e.target.value)}
-                className="w-full p-2.5 rounded border bg-black/50 text-xs focus:outline-none"
-                style={{ borderColor: currentBorder, color: currentText }}
+                className="w-full p-2.5 rounded border text-xs focus:outline-none"
+                style={{ backgroundColor: currentBg, borderColor: currentBorder, color: currentText }}
               />
             </div>
 
@@ -1307,9 +1301,6 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
             ...getStoryBorderStyle(currentBorderObj, currentBorder),
           }}
         >
-          {/* Card Pattern Overlay */}
-          <CardPatternOverlay pattern={cardPattern} />
-
           {/* Corner Accents */}
           <StoryCornerAccents accent={borderCornerAccent} color={currentBorder} />
 

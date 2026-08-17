@@ -55,7 +55,6 @@ export const BORDER_RADIUS_OPTIONS: BorderRadiusOption[] = [
   { value: 'md', label: 'Bo vừa (8px)', desc: 'Chuẩn giao diện hiện đại' },
   { value: 'lg', label: 'Bo tròn lớn (16px)', desc: 'Mềm mại và thân thiện' },
   { value: 'leaf', label: 'Góc lá chéo (Asymmetric)', desc: 'Bo 2 góc chéo bất đối xứng độc đáo' },
-  { value: 'pill', label: 'Bo tròn viên thuốc (Pill)', desc: 'Bo tròn tối đa dạng viên nhộng' },
 ];
 
 export const BORDER_CORNER_ACCENT_OPTIONS: BorderCornerAccentOption[] = [
@@ -98,6 +97,28 @@ export function getStoryBorderStyle(
   // 1. Border Style & Width
   if (bStyle === 'none') {
     style.border = 'none';
+  } else if (bStyle === 'groove') {
+    const grooveWidthMap: Record<string, string> = {
+      thin: '3px',
+      medium: '4px',
+      thick: '5px',
+      heavy: '6px',
+    };
+    style.borderWidth = grooveWidthMap[bWidth] || '3px';
+    style.borderStyle = 'groove';
+    style.borderColor = borderColor;
+    style.boxShadow = `inset 2px 2px 4px rgba(0,0,0,0.45), inset -1px -1px 2px rgba(255,255,255,0.15)`;
+  } else if (bStyle === 'ridge') {
+    const ridgeWidthMap: Record<string, string> = {
+      thin: '3px',
+      medium: '4px',
+      thick: '5px',
+      heavy: '6px',
+    };
+    style.borderWidth = ridgeWidthMap[bWidth] || '3px';
+    style.borderStyle = 'ridge';
+    style.borderColor = borderColor;
+    style.boxShadow = `2px 2px 5px rgba(0,0,0,0.35), inset 1px 1px 2px rgba(255,255,255,0.2)`;
   } else {
     style.borderStyle = bStyle;
     if (bStyle === 'double') {
@@ -109,14 +130,6 @@ export function getStoryBorderStyle(
         heavy: '6px',
       };
       style.borderWidth = doubleWidthMap[bWidth] || '3px';
-    } else if (bStyle === 'groove' || bStyle === 'ridge') {
-      const grooveWidthMap: Record<string, string> = {
-        thin: '2px',
-        medium: '3px',
-        thick: '4px',
-        heavy: '5px',
-      };
-      style.borderWidth = grooveWidthMap[bWidth] || '2px';
     } else {
       const widthMap: Record<string, string> = {
         thin: '1px',
@@ -132,8 +145,6 @@ export function getStoryBorderStyle(
   // 2. Border Radius
   if (bRadius === 'leaf') {
     style.borderRadius = '20px 4px 20px 4px';
-  } else if (bRadius === 'pill') {
-    style.borderRadius = '9999px';
   } else if (bRadius === 'lg') {
     style.borderRadius = '16px';
   } else if (bRadius === 'md') {
@@ -146,13 +157,15 @@ export function getStoryBorderStyle(
     style.borderRadius = '0px';
   }
 
-  // 3. Border Glow / Shadow
-  if (bGlow === 'soft') {
-    style.boxShadow = `0 0 14px ${borderColor}66, inset 0 0 8px ${borderColor}22`;
-  } else if (bGlow === 'neon') {
-    style.boxShadow = `0 0 8px ${borderColor}, 0 0 20px ${borderColor}99, inset 0 0 8px ${borderColor}44`;
-  } else if (bGlow === 'shadow') {
-    style.boxShadow = `4px 4px 0px ${borderColor}`;
+  // 3. Border Glow / Shadow (khi không chọn groove / ridge)
+  if (bStyle !== 'groove' && bStyle !== 'ridge') {
+    if (bGlow === 'soft') {
+      style.boxShadow = `0 0 14px ${borderColor}66, inset 0 0 8px ${borderColor}22`;
+    } else if (bGlow === 'neon') {
+      style.boxShadow = `0 0 8px ${borderColor}, 0 0 20px ${borderColor}99, inset 0 0 8px ${borderColor}44`;
+    } else if (bGlow === 'shadow') {
+      style.boxShadow = `4px 4px 0px ${borderColor}`;
+    }
   }
 
   return style;
@@ -188,8 +201,6 @@ export function getStoryButtonBorderStyle(
 
   if (bRadius === 'leaf') {
     style.borderRadius = '12px 2px 12px 2px';
-  } else if (bRadius === 'pill') {
-    style.borderRadius = '9999px';
   } else if (bRadius === 'lg') {
     style.borderRadius = '12px';
   } else if (bRadius === 'md') {
@@ -268,63 +279,83 @@ export const StoryCornerAccents: React.FC<{
 
   // 2. Hoa văn cổ điển (Hoa văn góc cuộn cổ điển ở 4 góc)
   if (accent === 'vintage') {
-    const svgDim = 20;
+    const svgDim = 32;
     return (
       <div className={`pointer-events-none absolute inset-0 overflow-hidden ${className}`}>
         {/* Top-Left */}
         <svg
           width={svgDim}
           height={svgDim}
-          viewBox="0 0 24 24"
+          viewBox="0 0 40 40"
           fill="none"
           stroke={accentColor}
-          strokeWidth="1.5"
+          strokeWidth="1.2"
           className="absolute top-1 left-1"
         >
-          <path d="M3 3h8c0 3-2 5-5 5M3 3v8c3 0 5-2 5-5M3 3l6 6" strokeLinecap="round" strokeLinejoin="round" />
-          <circle cx="4" cy="4" r="1.5" fill={accentColor} />
+          <path d="M2 2 H38 M2 2 V38" strokeWidth="2" />
+          <path d="M6 6 C16 6 22 12 22 22 C22 32 28 34 38 34" strokeLinecap="round" />
+          <path d="M6 14 C12 14 16 10 16 6 M14 6 C14 12 10 16 6 16" strokeLinecap="round" />
+          <circle cx="6" cy="6" r="2" fill={accentColor} />
+          <circle cx="18" cy="18" r="1.5" fill={accentColor} />
+          <circle cx="28" cy="8" r="1.2" fill={accentColor} />
+          <circle cx="8" cy="28" r="1.2" fill={accentColor} />
         </svg>
         {/* Top-Right */}
         <svg
           width={svgDim}
           height={svgDim}
-          viewBox="0 0 24 24"
+          viewBox="0 0 40 40"
           fill="none"
           stroke={accentColor}
-          strokeWidth="1.5"
+          strokeWidth="1.2"
           className="absolute top-1 right-1"
           style={{ transform: 'scaleX(-1)' }}
         >
-          <path d="M3 3h8c0 3-2 5-5 5M3 3v8c3 0 5-2 5-5M3 3l6 6" strokeLinecap="round" strokeLinejoin="round" />
-          <circle cx="4" cy="4" r="1.5" fill={accentColor} />
+          <path d="M2 2 H38 M2 2 V38" strokeWidth="2" />
+          <path d="M6 6 C16 6 22 12 22 22 C22 32 28 34 38 34" strokeLinecap="round" />
+          <path d="M6 14 C12 14 16 10 16 6 M14 6 C14 12 10 16 6 16" strokeLinecap="round" />
+          <circle cx="6" cy="6" r="2" fill={accentColor} />
+          <circle cx="18" cy="18" r="1.5" fill={accentColor} />
+          <circle cx="28" cy="8" r="1.2" fill={accentColor} />
+          <circle cx="8" cy="28" r="1.2" fill={accentColor} />
         </svg>
         {/* Bottom-Left */}
         <svg
           width={svgDim}
           height={svgDim}
-          viewBox="0 0 24 24"
+          viewBox="0 0 40 40"
           fill="none"
           stroke={accentColor}
-          strokeWidth="1.5"
+          strokeWidth="1.2"
           className="absolute bottom-1 left-1"
           style={{ transform: 'scaleY(-1)' }}
         >
-          <path d="M3 3h8c0 3-2 5-5 5M3 3v8c3 0 5-2 5-5M3 3l6 6" strokeLinecap="round" strokeLinejoin="round" />
-          <circle cx="4" cy="4" r="1.5" fill={accentColor} />
+          <path d="M2 2 H38 M2 2 V38" strokeWidth="2" />
+          <path d="M6 6 C16 6 22 12 22 22 C22 32 28 34 38 34" strokeLinecap="round" />
+          <path d="M6 14 C12 14 16 10 16 6 M14 6 C14 12 10 16 6 16" strokeLinecap="round" />
+          <circle cx="6" cy="6" r="2" fill={accentColor} />
+          <circle cx="18" cy="18" r="1.5" fill={accentColor} />
+          <circle cx="28" cy="8" r="1.2" fill={accentColor} />
+          <circle cx="8" cy="28" r="1.2" fill={accentColor} />
         </svg>
         {/* Bottom-Right */}
         <svg
           width={svgDim}
           height={svgDim}
-          viewBox="0 0 24 24"
+          viewBox="0 0 40 40"
           fill="none"
           stroke={accentColor}
-          strokeWidth="1.5"
+          strokeWidth="1.2"
           className="absolute bottom-1 right-1"
           style={{ transform: 'scale(-1, -1)' }}
         >
-          <path d="M3 3h8c0 3-2 5-5 5M3 3v8c3 0 5-2 5-5M3 3l6 6" strokeLinecap="round" strokeLinejoin="round" />
-          <circle cx="4" cy="4" r="1.5" fill={accentColor} />
+          <path d="M2 2 H38 M2 2 V38" strokeWidth="2" />
+          <path d="M6 6 C16 6 22 12 22 22 C22 32 28 34 38 34" strokeLinecap="round" />
+          <path d="M6 14 C12 14 16 10 16 6 M14 6 C14 12 10 16 6 16" strokeLinecap="round" />
+          <circle cx="6" cy="6" r="2" fill={accentColor} />
+          <circle cx="18" cy="18" r="1.5" fill={accentColor} />
+          <circle cx="28" cy="8" r="1.2" fill={accentColor} />
+          <circle cx="8" cy="28" r="1.2" fill={accentColor} />
         </svg>
       </div>
     );

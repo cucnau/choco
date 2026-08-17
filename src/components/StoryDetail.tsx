@@ -5,7 +5,6 @@ import { Story, Chapter, Comment, UserProfile } from '../types';
 import { ArrowLeft, Bookmark, BookOpen, Send, MessageSquare, Lock, Unlock, CheckCircle2, User, RotateCcw, BookmarkCheck } from 'lucide-react';
 import { getReadingProgress } from '../lib/readingProgress';
 import { ReadingEffects } from './ReadingEffects';
-import { CardPatternOverlay } from './CardPatternOverlay';
 import {
   getStoryBorderStyle,
   getStoryButtonBorderStyle,
@@ -469,9 +468,6 @@ export const StoryDetail: React.FC<StoryDetailProps> = ({
           ...getStoryBorderStyle(storyBorderObj, activeBorderColor),
         }}
       >
-        {/* Card Background Pattern Overlay */}
-        <CardPatternOverlay pattern={story.cardPattern} />
-
         {/* Corner Accents */}
         <StoryCornerAccents
           accent={story.borderCornerAccent}

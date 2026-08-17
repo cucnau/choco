@@ -24,7 +24,7 @@ import {
   Pipette
 } from 'lucide-react';
 import { BulkChapterModal } from './BulkChapterModal';
-import { LiveStoryEditor, CARD_PATTERN_OPTIONS } from './LiveStoryEditor';
+import { LiveStoryEditor } from './LiveStoryEditor';
 import { claimStoryOwnership } from '../lib/storage';
 import {
   BORDER_STYLE_OPTIONS,
@@ -536,7 +536,6 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
   const [storyBorderRadius, setStoryBorderRadius] = useState<NonNullable<Story['borderRadius']>>('none');
   const [storyBorderCornerAccent, setStoryBorderCornerAccent] = useState<NonNullable<Story['borderCornerAccent']>>('none');
   const [storyBorderGlow, setStoryBorderGlow] = useState<NonNullable<Story['borderGlow']>>('none');
-  const [storyCardPattern, setStoryCardPattern] = useState<NonNullable<Story['cardPattern']>>('none');
 
   const handleUpdateGradientBg = (c1: string, c2: string, angle: string, target = gradientApplyTarget) => {
     setCustomGradientColor1(c1);
@@ -663,7 +662,6 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
     setStoryBorderRadius('none');
     setStoryBorderCornerAccent('none');
     setStoryBorderGlow('none');
-    setStoryCardPattern('none');
     setIsCreatingStory(true);
   };
 
@@ -729,7 +727,6 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
     setStoryBorderRadius(story.borderRadius || 'none');
     setStoryBorderCornerAccent(story.borderCornerAccent || 'none');
     setStoryBorderGlow(story.borderGlow || 'none');
-    setStoryCardPattern(story.cardPattern || 'none');
     setIsCreatingStory(true);
   };
 
@@ -791,7 +788,6 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
       borderRadius: storyBorderRadius,
       borderCornerAccent: storyBorderCornerAccent,
       borderGlow: storyBorderGlow,
-      cardPattern: storyCardPattern,
     };
 
     onSaveStory(newStory);
@@ -1618,22 +1614,6 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
                       className="w-full bg-[#10070a] border border-[#2d1822] p-2 text-xs text-[#e0c0cc] focus:outline-none focus:border-[#522d3d] font-mono-code"
                     >
                       {BORDER_GLOW_OPTIONS.map((opt) => (
-                        <option key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* 6. Card Background Pattern */}
-                  <div className="space-y-1">
-                    <label className="text-xs text-[#8a717a] block font-mono-code">Họa tiết nền thẻ (Card Pattern):</label>
-                    <select
-                      value={storyCardPattern}
-                      onChange={(e) => setStoryCardPattern(e.target.value as any)}
-                      className="w-full bg-[#10070a] border border-[#2d1822] p-2 text-xs text-[#e0c0cc] focus:outline-none focus:border-[#522d3d] font-mono-code"
-                    >
-                      {CARD_PATTERN_OPTIONS.map((opt) => (
                         <option key={opt.value} value={opt.value}>
                           {opt.label}
                         </option>
