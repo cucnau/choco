@@ -127,9 +127,27 @@
         "updatedAt": { "type": "string" }
       },
       "required": ["uid", "displayName", "highScore", "maxTile"]
+    },
+    "UserFont": {
+      "title": "UserFont",
+      "description": "Font chữ cá nhân tự tải lên của người dùng",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "name": { "type": "string" },
+        "value": { "type": "string" },
+        "fileData": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "userId", "name", "value", "fileData"]
     }
   },
   "firestore": {
+    "/user_fonts/{fontId}": {
+      "schema": "UserFont",
+      "description": "Danh sách các font chữ cá nhân tự tải lên của người dùng"
+    },
     "/stories/{storyId}": {
       "schema": "Story",
       "description": "Danh sách các tác phẩm truyện/bài viết"

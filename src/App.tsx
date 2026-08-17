@@ -901,17 +901,6 @@ export default function App() {
                         </p>
                         <form onSubmit={handleApplyEditor} className="space-y-3">
                           <div className="space-y-1">
-                            <label className="text-[10px] text-[#8a717a] uppercase font-bold tracking-wider">Bạn đã làm editor được bao lâu rồi?</label>
-                            <input
-                              type="text"
-                              value={requestExperience}
-                              onChange={(e) => setRequestExperience(e.target.value)}
-                              placeholder="Ví dụ: mới bắt đầu, 6 tháng, 1 năm..."
-                              className="w-full bg-[#170d12] border border-[#2d1822] p-2 text-xs text-white focus:outline-none focus:border-[#522d3d] font-mono-code"
-                              required
-                            />
-                          </div>
-                          <div className="space-y-1">
                             <label className="text-[10px] text-[#8a717a] uppercase font-bold tracking-wider">Thông tin liên hệ (Discord/Facebook...):</label>
                             <input
                               type="text"
@@ -940,18 +929,6 @@ export default function App() {
                       <span className="text-xs text-[#e0c0cc] font-bold block bg-[#170d12] border border-[#2d1822] p-2">
                         {currentUser.displayName || currentUser.email?.split('@')[0]} ({currentUser.email})
                       </span>
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="text-xs text-[#8a717a] block font-mono-code font-bold">Bạn đã làm editor được bao lâu rồi?</label>
-                      <input
-                        type="text"
-                        value={requestExperience}
-                        onChange={(e) => setRequestExperience(e.target.value)}
-                        placeholder="Ví dụ: mới bắt đầu, 6 tháng, 1 năm..."
-                        className="w-full bg-[#170d12] border border-[#2d1822] p-2.5 text-xs text-[#e0c0cc] placeholder-[#6e5860] focus:outline-none focus:border-[#522d3d] font-mono-code"
-                        required
-                      />
                     </div>
 
                     <div className="space-y-1">

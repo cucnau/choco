@@ -21,11 +21,17 @@ import {
   Eye,
   BookOpen,
   Bookmark,
-  Pipette
+  Pipette,
+  Download,
+  Github,
+  RefreshCw,
+  Settings
 } from 'lucide-react';
 import { BulkChapterModal } from './BulkChapterModal';
 import { LiveStoryEditor } from './LiveStoryEditor';
 import { claimStoryOwnership } from '../lib/storage';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { db } from '../lib/firebase';
 import {
   BORDER_STYLE_OPTIONS,
   BORDER_WIDTH_OPTIONS,
@@ -558,6 +564,191 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
   const [isChapterLocked, setIsChapterLocked] = useState(false);
   const [chapterUnlockPrice, setChapterUnlockPrice] = useState(1);
 
+  // GitHub Sync State
+  const isOwnerAccount = currentUser?.email?.toLowerCase() === 'askerhater21@gmail.com';
+
+  const [githubOwner, setGithubOwner] = useState(() => typeof window !== 'undefined' ? localStorage.getItem('gh_owner') || '' : '');
+  const [githubRepo, setGithubRepo] = useState(() => typeof window !== 'undefined' ? localStorage.getItem('gh_repo') || '' : '');
+  const [githubBranch, setGithubBranch] = useState(() => typeof window !== 'undefined' ? localStorage.getItem('gh_branch') || 'main' : 'main');
+  const [githubPath, setGithubPath] = useState(() => typeof window !== 'undefined' ? localStorage.getItem('gh_path') || 'src/data/sampleStories.ts' : 'src/data/sampleStories.ts');
+  const [githubToken, setGithubToken] = useState(() => typeof window !== 'undefined' ? localStorage.getItem('gh_token') || '' : '');
+  const [githubAutoSync, setGithubAutoSync] = useState(() => typeof window !== 'undefined' ? localStorage.getItem('gh_auto_sync') === 'true' : false);
+  const [isGithubModalOpen, setIsGithubModalOpen] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncStatus, setSyncStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [syncMessage, setSyncMessage] = useState('');
+
+  // Tải cấu hình từ Firestore (để tất cả Editor đều đồng bộ tự động chạy nền được bằng Token của bạn)
+  useEffect(() => {
+    const loadGHSettings = async () => {
+      try {
+        const docRef = doc(db, 'settings', 'github_sync');
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          if (data.githubOwner) setGithubOwner(data.githubOwner);
+          if (data.githubRepo) setGithubRepo(data.githubRepo);
+          if (data.githubBranch) setGithubBranch(data.githubBranch);
+          if (data.githubPath) setGithubPath(data.githubPath);
+          if (data.githubToken) setGithubToken(data.githubToken);
+          if (data.githubAutoSync !== undefined) setGithubAutoSync(data.githubAutoSync);
+        }
+      } catch (err) {
+        console.warn('[GitHub Sync] Không thể tải cấu hình từ Firestore:', err);
+      }
+    };
+    loadGHSettings();
+  }, [currentUser]);
+
+  // Lưu cấu hình lên Firestore
+  const saveGHSettingsToFirestore = async (owner: string, repo: string, branch: string, pathStr: string, token: string, autoSync: boolean) => {
+    try {
+      const docRef = doc(db, 'settings', 'github_sync');
+      await setDoc(docRef, {
+        githubOwner: owner,
+        githubRepo: repo,
+        githubBranch: branch,
+        githubPath: pathStr,
+        githubToken: token,
+        githubAutoSync: autoSync,
+        updatedAt: new Date().toISOString(),
+        updatedBy: currentUser?.email || 'unknown'
+      });
+      console.log('[GitHub Sync] Đã đồng bộ cấu hình lên Firestore!');
+    } catch (err) {
+      console.error('[GitHub Sync] Lỗi ghi cấu hình lên Firestore:', err);
+    }
+  };
+
+  // Save GitHub configuration to localStorage when it changes
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('gh_owner', githubOwner);
+      localStorage.setItem('gh_repo', githubRepo);
+      localStorage.setItem('gh_branch', githubBranch);
+      localStorage.setItem('gh_path', githubPath);
+      localStorage.setItem('gh_token', githubToken);
+      localStorage.setItem('gh_auto_sync', githubAutoSync ? 'true' : 'false');
+    }
+
+    // Chỉ tài khoản của bạn (isOwnerAccount) mới có quyền cập nhật cấu hình lên Firestore
+    if (isOwnerAccount && githubOwner && githubRepo && githubToken) {
+      saveGHSettingsToFirestore(githubOwner, githubRepo, githubBranch, githubPath, githubToken, githubAutoSync);
+    }
+  }, [githubOwner, githubRepo, githubBranch, githubPath, githubToken, githubAutoSync]);
+
+  const handleSyncToGithub = async (isAuto = false) => {
+    if (!githubOwner.trim() || !githubRepo.trim() || !githubBranch.trim() || !githubPath.trim() || !githubToken.trim()) {
+      if (!isAuto) {
+        setSyncStatus('error');
+        setSyncMessage('Vui lòng điền đầy đủ các thông tin cấu hình GitHub trước khi đồng bộ.');
+      }
+      return;
+    }
+
+    setIsSyncing(true);
+    setSyncStatus('idle');
+    setSyncMessage(isAuto ? 'Đang tự động đồng bộ chạy nền lên GitHub...' : 'Đang chuẩn bị dữ liệu truyện và chương...');
+
+    try {
+      // 1. Generate file content dynamically
+      const comments = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('chucu_comments') || '[]') : [];
+      const fileContent = `import { Story, Chapter, Comment } from '../types';
+
+export const INITIAL_STORIES: Story[] = ${JSON.stringify(stories, null, 2)};
+
+export const INITIAL_CHAPTERS: Chapter[] = ${JSON.stringify(chapters, null, 2)};
+
+export const INITIAL_COMMENTS: Comment[] = ${JSON.stringify(comments, null, 2)};
+`;
+
+      // 2. Base64 encode the content (UTF-8 safe)
+      const utf8Bytes = new TextEncoder().encode(fileContent);
+      let binary = '';
+      const len = utf8Bytes.byteLength;
+      for (let i = 0; i < len; i++) {
+        binary += String.fromCharCode(utf8Bytes[i]);
+      }
+      const base64Content = window.btoa(binary);
+
+      // 3. Fetch existing file SHA from GitHub (if it exists)
+      if (!isAuto) setSyncMessage('Đang lấy thông tin file từ GitHub...');
+      const cleanPath = githubPath.trim().replace(/^\//, ''); // strip leading slash if any
+      const getFileUrl = `https://api.github.com/repos/${githubOwner.trim()}/${githubRepo.trim()}/contents/${cleanPath}?ref=${githubBranch.trim()}`;
+      
+      let currentSha = '';
+      try {
+        const getRes = await fetch(getFileUrl, {
+          headers: {
+            'Authorization': `token ${githubToken.trim()}`,
+            'Accept': 'application/vnd.github.v3+json'
+          }
+        });
+        
+        if (getRes.ok) {
+          const fileData = await getRes.json();
+          currentSha = fileData.sha;
+        } else if (getRes.status !== 404) {
+          throw new Error(`Lỗi kết nối GitHub API: HTTP ${getRes.status}`);
+        }
+      } catch (err: any) {
+        if (err.message && err.message.includes('404')) {
+          // File does not exist yet, which is perfectly fine (will create new)
+        } else {
+          throw err;
+        }
+      }
+
+      // 4. Push updated content via PUT request to GitHub
+      if (!isAuto) setSyncMessage('Đang commit dữ liệu mới lên repo...');
+      const putRes = await fetch(`https://api.github.com/repos/${githubOwner.trim()}/${githubRepo.trim()}/contents/${cleanPath}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `token ${githubToken.trim()}`,
+          'Accept': 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          message: 'Đồng bộ dữ liệu truyện & chương tự động từ Editor Studio',
+          content: base64Content,
+          branch: githubBranch.trim(),
+          sha: currentSha || undefined
+        })
+      });
+
+      if (!putRes.ok) {
+        const errorData = await putRes.json();
+        throw new Error(errorData.message || `Lỗi ghi đè file: HTTP ${putRes.status}`);
+      }
+
+      setSyncStatus('success');
+      setSyncMessage(isAuto ? 'Tự động đồng bộ lên GitHub thành công!' : 'Đồng bộ thành công! GitHub Pages sẽ tự động rebuild sau 1-2 phút.');
+    } catch (err: any) {
+      console.error('GitHub Sync Error:', err);
+      setSyncStatus('error');
+      setSyncMessage(err.message || 'Lỗi chưa rõ nguyên nhân khi đồng bộ.');
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  // Real-time Auto Sync Listener with Debounce
+  const isFirstRender = useRef(true);
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+
+    if (githubAutoSync && githubOwner && githubRepo && githubToken && githubPath) {
+      const delayDebounceFn = setTimeout(() => {
+        handleSyncToGithub(true);
+      }, 1500); // 1.5s debounce to collect continuous edits
+
+      return () => clearTimeout(delayDebounceFn);
+    }
+  }, [stories, chapters, githubAutoSync]);
+
   // Active Preview Colors computed for Live Theme & Font Preview
   const activePreviewColors = themeTone === 'custom' ? {
     bg: customBgColor || '#080406',
@@ -863,6 +1054,32 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
     onSaveStory(updatedStory);
   };
 
+  const handleDownloadCodeFile = () => {
+    try {
+      const comments = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('chucu_comments') || '[]') : [];
+      
+      const fileContent = `import { Story, Chapter, Comment } from '../types';
+
+export const INITIAL_STORIES: Story[] = ${JSON.stringify(stories, null, 2)};
+
+export const INITIAL_CHAPTERS: Chapter[] = ${JSON.stringify(chapters, null, 2)};
+
+export const INITIAL_COMMENTS: Comment[] = ${JSON.stringify(comments, null, 2)};
+`;
+
+      const blob = new Blob([fileContent], { type: 'text/typescript;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'sampleStories.ts');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err) {
+      console.error('Lỗi khi tải file dữ liệu:', err);
+    }
+  };
+
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 space-y-6 font-mono-code text-[#e0d0d5]">
       
@@ -877,7 +1094,41 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
           </p>
         </div>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
+          {/* Real-time Status Indicator - Chỉ hiển thị với tài khoản chính */}
+          {isOwnerAccount && githubAutoSync && githubOwner && githubRepo && githubToken && (
+            <div className="flex items-center gap-1.5 text-[10px] font-mono-code px-2 py-1.5 bg-[#102330]/60 border border-[#233d4f] text-[#7cd3ff] rounded-xs select-none mr-1">
+              <span className={`w-1.5 h-1.5 rounded-full ${isSyncing ? 'bg-amber-400 animate-ping' : syncStatus === 'error' ? 'bg-red-500' : 'bg-emerald-400'}`}></span>
+              <span>
+                {isSyncing ? 'ĐANG AUTO-SYNC...' : syncStatus === 'error' ? 'LỖI AUTO-SYNC' : 'AUTO-SYNC HOẠT ĐỘNG'}
+              </span>
+            </div>
+          )}
+
+          {isOwnerAccount && (
+            <button
+              onClick={() => {
+                setSyncStatus('idle');
+                setSyncMessage('');
+                setIsGithubModalOpen(true);
+              }}
+              className="px-4 py-2 bg-[#102330] hover:bg-[#1a3547] border border-[#2b4c63] text-[#bfe8ff] text-xs font-mono-code font-bold uppercase tracking-wider transition flex items-center gap-2 shrink-0"
+              title="Cấu hình và đồng bộ dữ liệu truyện, chương của bạn trực tiếp lên GitHub"
+            >
+              <Github className="w-4 h-4 text-[#7cd3ff]" />
+              <span>Đồng bộ GitHub</span>
+            </button>
+          )}
+
+          <button
+            onClick={handleDownloadCodeFile}
+            className="px-4 py-2 bg-[#1b2b20] hover:bg-[#253d2c] border border-[#3e5e48] text-[#d6ffe0] text-xs font-mono-code font-bold uppercase tracking-wider transition flex items-center gap-2 shrink-0"
+            title="Tải về file sampleStories.ts chứa toàn bộ dữ liệu truyện và chương mới nhất để ghi đè vào thư mục code của bạn trên máy"
+          >
+            <Download className="w-4 h-4 text-[#a0ffd0]" />
+            <span>Tải file code</span>
+          </button>
+          
           <button
             onClick={handleOpenCreateStory}
             className="px-5 py-2 bg-[#2b1620] hover:bg-[#3d1e2c] border border-[#5e2f46] text-[#e0c0cc] text-xs font-mono-code font-bold uppercase tracking-wider transition flex items-center gap-2 shrink-0"
@@ -1980,6 +2231,184 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
             }
           }}
         />
+      )}
+
+      {/* GitHub Sync Modal - Chỉ hiển thị và cho phép với tài khoản chính */}
+      {isOwnerAccount && isGithubModalOpen && (
+        <div className="fixed inset-0 bg-[#060305]/95 backdrop-blur-md flex items-center justify-center p-4 z-50 overflow-y-auto">
+          <div className="bg-[#12090d] border-2 border-[#5e2f46] w-full max-w-lg rounded-sm shadow-2xl flex flex-col max-h-[90vh] my-8 animate-fade-in">
+            {/* Header */}
+            <div className="p-4 border-b border-[#2d1822] bg-[#1a0c14] flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Github className="w-5 h-5 text-[#7cd3ff]" />
+                <h3 className="text-sm font-bold font-mono-code uppercase tracking-wider text-[#ffd6e2]">
+                  Đồng bộ dữ liệu lên GitHub
+                </h3>
+              </div>
+              <button
+                onClick={() => setIsGithubModalOpen(false)}
+                className="text-[#8a717a] hover:text-[#ffd6e2] transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-6 space-y-4 overflow-y-auto flex-1">
+              <p className="text-xs text-[#a48e97] leading-relaxed">
+                Tính năng này cho phép bạn ghi đè trực tiếp dữ liệu truyện, chương và bình luận hiện tại lên file dữ liệu tĩnh trong kho lưu trữ GitHub của bạn. Khi commit thành công, GitHub Pages sẽ tự động kích hoạt tiến trình dựng lại (rebuild) trang web của bạn chỉ trong ít phút!
+              </p>
+
+              <div className="space-y-3">
+                {/* Owner */}
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-[#e0c0cc] mb-1 font-mono-code">
+                    Tên tài khoản GitHub (Owner) <span className="text-[#ff5555]">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={githubOwner}
+                    onChange={(e) => setGithubOwner(e.target.value)}
+                    placeholder="ví dụ: nva-author"
+                    className="w-full bg-[#0a0508] border border-[#442334] focus:border-[#7cd3ff] focus:outline-none px-3 py-2 text-xs text-[#ffd6e2] font-mono-code rounded-xs"
+                  />
+                </div>
+
+                {/* Repo */}
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-[#e0c0cc] mb-1 font-mono-code">
+                    Tên kho lưu trữ (Repository) <span className="text-[#ff5555]">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={githubRepo}
+                    onChange={(e) => setGithubRepo(e.target.value)}
+                    placeholder="ví dụ: doc-truyen-co-tich"
+                    className="w-full bg-[#0a0508] border border-[#442334] focus:border-[#7cd3ff] focus:outline-none px-3 py-2 text-xs text-[#ffd6e2] font-mono-code rounded-xs"
+                  />
+                </div>
+
+                {/* Branch */}
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-[#e0c0cc] mb-1 font-mono-code">
+                    Nhánh (Branch) <span className="text-[#ff5555]">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={githubBranch}
+                    onChange={(e) => setGithubBranch(e.target.value)}
+                    placeholder="thường là main hoặc master"
+                    className="w-full bg-[#0a0508] border border-[#442334] focus:border-[#7cd3ff] focus:outline-none px-3 py-2 text-xs text-[#ffd6e2] font-mono-code rounded-xs"
+                  />
+                </div>
+
+                {/* File Path */}
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-[#e0c0cc] mb-1 font-mono-code">
+                    Đường dẫn file dữ liệu trong repo <span className="text-[#ff5555]">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={githubPath}
+                    onChange={(e) => setGithubPath(e.target.value)}
+                    placeholder="ví dụ: src/data/sampleStories.ts"
+                    className="w-full bg-[#0a0508] border border-[#442334] focus:border-[#7cd3ff] focus:outline-none px-3 py-2 text-xs text-[#ffd6e2] font-mono-code rounded-xs"
+                  />
+                </div>
+
+                {/* Token */}
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-[#e0c0cc] mb-1 font-mono-code flex items-center justify-between">
+                    <span>GitHub Personal Access Token (PAT) <span className="text-[#ff5555]">*</span></span>
+                    <a
+                      href="https://github.com/settings/tokens/new?scopes=repo&description=TruyenCuStudioSync"
+                      target="_blank"
+                      referrerPolicy="no-referrer"
+                      className="text-[10px] text-[#7cd3ff] hover:underline"
+                    >
+                      Tạo Token mới →
+                    </a>
+                  </label>
+                  <input
+                    type="password"
+                    value={githubToken}
+                    onChange={(e) => setGithubToken(e.target.value)}
+                    placeholder="ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                    className="w-full bg-[#0a0508] border border-[#442334] focus:border-[#7cd3ff] focus:outline-none px-3 py-2 text-xs text-[#ffd6e2] font-mono-code rounded-xs"
+                  />
+                  <p className="text-[10px] text-[#8a717a] mt-1 font-mono-code leading-normal">
+                    * Yêu cầu quyền <strong className="text-[#ffd6e2]">repo</strong> để có thể commit trực tiếp. Token của bạn chỉ được lưu cục bộ trong trình duyệt hiện tại.
+                  </p>
+                </div>
+
+                {/* Auto Sync Toggle */}
+                <div className="pt-2 border-t border-[#2d1822]">
+                  <label className="flex items-start gap-2.5 cursor-pointer text-xs text-[#e0c0cc] hover:text-[#ffffff] font-mono-code select-none bg-[#102330]/20 p-3 border border-[#2b4c63]/40 rounded-xs">
+                    <input
+                      type="checkbox"
+                      checked={githubAutoSync}
+                      onChange={(e) => setGithubAutoSync(e.target.checked)}
+                      className="w-4 h-4 accent-[#7cd3ff] rounded-xs cursor-pointer mt-0.5"
+                    />
+                    <div>
+                      <span className="block font-bold text-[#7cd3ff] uppercase tracking-wider text-[11px] mb-0.5">Kích hoạt Tự động Đồng bộ</span>
+                      <span className="block text-[10px] text-[#8a717a] leading-normal">
+                        Tự động đẩy dữ liệu mới nhất lên GitHub (chạy nền) mỗi khi bạn lưu/chỉnh sửa hoặc xóa truyện và chương.
+                      </span>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              {/* Status Message */}
+              {syncStatus !== 'idle' && (
+                <div className={`p-3 border text-xs font-mono-code rounded-xs leading-relaxed ${
+                  syncStatus === 'success' 
+                    ? 'bg-[#15301b] border-[#347d44] text-[#a6f3b9]' 
+                    : 'bg-[#3b1219] border-[#a0303e] text-[#fca6ae]'
+                }`}>
+                  <strong className="block mb-0.5">{syncStatus === 'success' ? '✔ THÀNH CÔNG:' : '❌ THẤT BẠI:'}</strong>
+                  {syncMessage}
+                </div>
+              )}
+
+              {isSyncing && (
+                <div className="p-3 bg-[#102330] border border-[#2b4c63] text-xs text-[#bfe8ff] font-mono-code rounded-xs flex items-center gap-2.5">
+                  <RefreshCw className="w-4 h-4 text-[#7cd3ff] animate-spin shrink-0" />
+                  <span>{syncMessage}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="p-4 border-t border-[#2d1822] bg-[#1a0c14] flex items-center justify-end gap-3 shrink-0">
+              <button
+                onClick={() => setIsGithubModalOpen(false)}
+                className="px-4 py-2 bg-[#12090c] hover:bg-[#1f1017] border border-[#2d1822] text-xs text-[#8a717a] hover:text-[#e0c0cc] font-mono-code transition cursor-pointer"
+                disabled={isSyncing}
+              >
+                Đóng
+              </button>
+              <button
+                onClick={handleSyncToGithub}
+                disabled={isSyncing}
+                className="px-5 py-2 bg-[#102330] hover:bg-[#1a3547] border border-[#2b4c63] text-xs text-[#bfe8ff] font-mono-code font-bold uppercase tracking-wider transition disabled:opacity-50 flex items-center gap-2 cursor-pointer"
+              >
+                {isSyncing ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>Đang đồng bộ...</span>
+                  </>
+                ) : (
+                  <>
+                    <Github className="w-3.5 h-3.5" />
+                    <span>Bắt đầu đồng bộ</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
     </div>

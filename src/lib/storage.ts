@@ -271,6 +271,33 @@ export function getComments(storyId?: string, chapterId?: string): Comment[] {
   return getCommentsLocal(storyId, chapterId);
 }
 
+/**
+ * GỌI API ĐỒNG BỘ DỮ LIỆU SANG FILE CODE
+ */
+export async function syncDataToCode(): Promise<void> {
+  try {
+    const stories = getStoriesLocal();
+    const chapters = getChaptersLocal();
+    const comments = getCommentsLocal();
+
+    const response = await fetch('/api/sync-code-data', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ stories, chapters, comments })
+    });
+
+    if (!response.ok) {
+      throw new Error(`Server returned code ${response.status}`);
+    }
+    const data = await response.json();
+    console.log('[Sync Code] Đồng bộ file code thành công:', data);
+  } catch (err) {
+    console.warn('[Sync Code] Không thể đồng bộ dữ liệu sang file code:', err);
+  }
+}
+
 // ------------------- ACTIONS (WRITE / UPDATE / DELETE) -------------------
 
 export async function saveStory(story: Story): Promise<Story[]> {
@@ -299,6 +326,7 @@ export async function saveStory(story: Story): Promise<Story[]> {
   }
 
   localStorage.setItem(STORAGE_KEYS.STORIES, JSON.stringify(updated));
+  syncDataToCode().catch(() => {});
 
   try {
     await setDoc(doc(db, 'stories', finalStory.id), cleanForFirestore(finalStory));
@@ -312,6 +340,7 @@ export async function saveStory(story: Story): Promise<Story[]> {
 export async function deleteStory(storyId: string): Promise<Story[]> {
   const stories = getStoriesLocal().filter((s) => s.id !== storyId);
   localStorage.setItem(STORAGE_KEYS.STORIES, JSON.stringify(stories));
+  syncDataToCode().catch(() => {});
 
   try {
     await deleteDoc(doc(db, 'stories', storyId));
@@ -353,6 +382,7 @@ export async function saveChapter(chapter: Chapter): Promise<Chapter[]> {
   }
 
   localStorage.setItem(STORAGE_KEYS.CHAPTERS, JSON.stringify(updated));
+  syncDataToCode().catch(() => {});
 
   try {
     await setDoc(doc(db, 'chapters', finalChapter.id), cleanForFirestore(finalChapter));
@@ -389,6 +419,7 @@ export async function saveMultipleChapters(newChapters: Chapter[]): Promise<Chap
 
   const updated = Array.from(existingMap.values());
   localStorage.setItem(STORAGE_KEYS.CHAPTERS, JSON.stringify(updated));
+  syncDataToCode().catch(() => {});
 
   try {
     await Promise.all(
@@ -408,6 +439,7 @@ export async function deleteChapter(chapterId: string, storyId: string): Promise
   const allChapters = getChaptersLocal();
   const updated = allChapters.filter((c) => c.id !== chapterId);
   localStorage.setItem(STORAGE_KEYS.CHAPTERS, JSON.stringify(updated));
+  syncDataToCode().catch(() => {});
 
   try {
     await deleteDoc(doc(db, 'chapters', chapterId));
@@ -1674,6 +1706,74 @@ export async function get2048Leaderboard(): Promise<import('../types').Game2048L
     return list;
   } catch (err) {
     console.warn('Lỗi khi lấy bảng xếp hạng 2048 từ Firestore:', err);
+    return [];
+  }
+}
+
+/**
+ * LƯU FONT CHỮ CÁ NHÂN LÊN CLOUD FIRESTORE
+ */
+export async function saveUserFontToCloud(
+  userId: string,
+  name: string,
+  value: string,
+  fileData: string
+): Promise<void> {
+  if (!userId || !value || !fileData) return;
+  try {
+    const docId = `${userId}_${value}`;
+    const fontDocRef = doc(db, 'user_fonts', docId);
+    await setDoc(fontDocRef, cleanForFirestore({
+      id: docId,
+      userId,
+      name,
+      value,
+      fileData,
+      createdAt: new Date().toISOString()
+    }));
+    console.log(`[Font Cloud] Đã lưu font chữ "${name}" lên Firestore thành công.`);
+  } catch (err) {
+    console.warn(`[Font Cloud] Không thể lưu font lên Firestore:`, err);
+  }
+}
+
+/**
+ * XÓA FONT CHỮ CÁ NHÂN KHỎI CLOUD FIRESTORE
+ */
+export async function deleteUserFontFromCloud(userId: string, value: string): Promise<void> {
+  if (!userId || !value) return;
+  try {
+    const docId = `${userId}_${value}`;
+    await deleteDoc(doc(db, 'user_fonts', docId));
+    console.log(`[Font Cloud] Đã xóa font chữ "${value}" khỏi Firestore.`);
+  } catch (err) {
+    console.warn(`[Font Cloud] Không thể xóa font khỏi Firestore:`, err);
+  }
+}
+
+/**
+ * LẤY TẤT CẢ FONT CHỮ CÁ NHÂN TỪ CLOUD FIRESTORE CỦA USER
+ */
+export async function getUserFontsFromCloud(userId: string): Promise<{ name: string; value: string; fileData: string }[]> {
+  if (!userId) return [];
+  try {
+    const colRef = collection(db, 'user_fonts');
+    const q = query(colRef, where('userId', '==', userId));
+    const snap = await getDocs(q);
+    const list: { name: string; value: string; fileData: string }[] = [];
+    snap.forEach((d) => {
+      const data = d.data();
+      if (data.name && data.value && data.fileData) {
+        list.push({
+          name: data.name,
+          value: data.value,
+          fileData: data.fileData
+        });
+      }
+    });
+    return list;
+  } catch (err) {
+    console.warn(`[Font Cloud] Không thể tải font từ Firestore:`, err);
     return [];
   }
 }

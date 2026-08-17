@@ -158,6 +158,36 @@ function findUserInDB(query: string, dbData: DBStructure) {
 
 // === CÁC API ENDPOINTS ===
 
+// API đồng bộ dữ liệu truyện, chương vào file code
+app.post('/api/sync-code-data', (req, res) => {
+  const { stories, chapters, comments } = req.body;
+  
+  if (!Array.isArray(stories) || !Array.isArray(chapters)) {
+    return res.status(400).json({ error: "Dữ liệu truyện hoặc chương không hợp lệ" });
+  }
+
+  try {
+    const filePath = path.join(process.cwd(), 'src', 'data', 'sampleStories.ts');
+    const finalComments = Array.isArray(comments) ? comments : [];
+
+    const fileContent = `import { Story, Chapter, Comment } from '../types';
+
+export const INITIAL_STORIES: Story[] = ${JSON.stringify(stories, null, 2)};
+
+export const INITIAL_CHAPTERS: Chapter[] = ${JSON.stringify(chapters, null, 2)};
+
+export const INITIAL_COMMENTS: Comment[] = ${JSON.stringify(finalComments, null, 2)};
+`;
+
+    fs.writeFileSync(filePath, fileContent, 'utf-8');
+    console.log(`[Sync Code] Đã đồng bộ thành công ${stories.length} truyện và ${chapters.length} chương vào file code.`);
+    res.json({ success: true, message: "Đã đồng bộ vào file code thành công" });
+  } catch (err: any) {
+    console.error("[Sync Code] Lỗi khi ghi file code:", err);
+    res.status(500).json({ error: "Lỗi khi ghi dữ liệu vào file code: " + err.message });
+  }
+});
+
 // 1. Đồng bộ / Đăng ký người dùng lên Server
 app.post('/api/sync-profile', (req, res) => {
   const { uid, email, displayName, userAvatar, userCode } = req.body;
