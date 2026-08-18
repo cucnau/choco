@@ -348,28 +348,46 @@ export default function App() {
     };
   }, []);
 
-  // Điều hướng bằng URL Hash tiếng Việt đẹp (ví dụ: #truyen/dem-dong-song-lai/chuong-1)
+  // Helper chuyển trang không dùng dấu # (HTML5 History API)
+  const navigateTo = (path: string) => {
+    const formattedPath = path.startsWith('/') ? path : `/${path}`;
+    if (window.location.pathname !== formattedPath) {
+      window.history.pushState({}, '', formattedPath);
+      window.dispatchEvent(new Event('popstate'));
+    }
+  };
+
+  // Điều hướng URL không có dấu # (ví dụ: /truyen/dem-dong-song-lai/chuong-1)
   useEffect(() => {
     const handleLocationChange = () => {
-      let rawHash = window.location.hash;
+      let cleanRoute = '';
+      const rawPath = window.location.pathname.replace(/^\/+/, '');
+      const rawHash = window.location.hash.replace(/^#\/?/, '');
 
-      // Hỗ trợ trường hợp mở từ query params ?story=123 hoặc ?chapter=456
-      if (!rawHash && window.location.search) {
-        const params = new URLSearchParams(window.location.search);
-        if (params.get('chapter')) {
-          rawHash = `#chapter/${params.get('chapter')}`;
-        } else if (params.get('story')) {
-          rawHash = `#story/${params.get('story')}`;
-        } else if (params.get('tab')) {
-          rawHash = `#${params.get('tab')}`;
+      if (rawPath) {
+        try {
+          cleanRoute = decodeURIComponent(rawPath);
+        } catch {
+          cleanRoute = rawPath;
+        }
+      } else if (rawHash) {
+        try {
+          cleanRoute = decodeURIComponent(rawHash);
+        } catch {
+          cleanRoute = rawHash;
         }
       }
 
-      let cleanRoute = '';
-      try {
-        cleanRoute = decodeURIComponent(rawHash.replace(/^#\/?/, ''));
-      } catch {
-        cleanRoute = rawHash.replace(/^#\/?/, '');
+      // Hỗ trợ trường hợp mở từ query params ?story=123 hoặc ?chapter=456
+      if (!cleanRoute && window.location.search) {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('chapter')) {
+          cleanRoute = `chapter/${params.get('chapter')}`;
+        } else if (params.get('story')) {
+          cleanRoute = `story/${params.get('story')}`;
+        } else if (params.get('tab')) {
+          cleanRoute = `${params.get('tab')}`;
+        }
       }
 
       if (!cleanRoute || cleanRoute === 'browse' || cleanRoute === 'home' || cleanRoute === 'trang-chu') {
@@ -528,7 +546,7 @@ export default function App() {
     setSelectedStory(story);
     setSelectedChapter(null);
     setSelectedGameId(null);
-    window.location.hash = `#truyen/${slugify(story.title)}`;
+    navigateTo(`/truyen/${slugify(story.title)}`);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -542,7 +560,7 @@ export default function App() {
       incrementChapterViews(chapter.id, story.id);
       saveReadingProgress(story.id, chapter.id, chapter.chapterNumber);
       refreshData();
-      window.location.hash = `#truyen/${slugify(story.title)}/chuong-${chapter.chapterNumber}`;
+      navigateTo(`/truyen/${slugify(story.title)}/chuong-${chapter.chapterNumber}`);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
@@ -810,10 +828,10 @@ export default function App() {
             setSelectedStory(null);
             setSelectedChapter(null);
             setSelectedGameId(null);
-            if (tab === 'browse') window.location.hash = '#trang-chu';
-            else if (tab === 'library') window.location.hash = '#tu-sach';
-            else if (tab === 'studio') window.location.hash = '#xuong-viet';
-            else if (tab === 'games') window.location.hash = '#tro-choi';
+            if (tab === 'browse') navigateTo('/trang-chu');
+            else if (tab === 'library') navigateTo('/tu-sach');
+            else if (tab === 'studio') navigateTo('/xuong-viet');
+            else if (tab === 'games') navigateTo('/tro-choi');
           }}
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
@@ -879,9 +897,9 @@ export default function App() {
             onBackToStory={() => {
               setSelectedChapter(null);
               if (selectedStory) {
-                window.location.hash = `#truyen/${slugify(selectedStory.title)}`;
+                navigateTo(`/truyen/${slugify(selectedStory.title)}`);
               } else {
-                window.location.hash = '#trang-chu';
+                navigateTo('/trang-chu');
               }
             }}
             onAddComment={handleAddComment}
@@ -934,10 +952,10 @@ export default function App() {
               onBack={() => {
                 setSelectedStory(null);
                 setSelectedChapter(null);
-                if (activeTab === 'library') window.location.hash = '#tu-sach';
-                else if (activeTab === 'studio') window.location.hash = '#xuong-viet';
-                else if (activeTab === 'games') window.location.hash = '#tro-choi';
-                else window.location.hash = '#trang-chu';
+                if (activeTab === 'library') navigateTo('/tu-sach');
+                else if (activeTab === 'studio') navigateTo('/xuong-viet');
+                else if (activeTab === 'games') navigateTo('/tro-choi');
+                else navigateTo('/trang-chu');
               }}
               onAddComment={handleAddComment}
             />
@@ -1210,9 +1228,9 @@ export default function App() {
               setSelectedGameId(gameId);
               if (gameId) {
                 const gameSlug = gameId === 'block_blast' ? 'xep-gach' : gameId;
-                window.location.hash = `#tro-choi/${gameSlug}`;
+                navigateTo(`/tro-choi/${gameSlug}`);
               } else {
-                window.location.hash = '#tro-choi';
+                navigateTo('/tro-choi');
               }
             }}
           />
@@ -1235,7 +1253,7 @@ export default function App() {
               setSelectedStory(null);
               setSelectedChapter(null);
               setSelectedGameId(null);
-              window.location.hash = '#xuong-viet';
+              navigateTo('/xuong-viet');
             }}
             onOpenAuthModal={() => setIsAuthModalOpen(true)}
             onCheckInSuccess={(reward, newStreak, newBalance) => {
