@@ -42,50 +42,50 @@ import {
 
 const FONT_OPTIONS = [
   // Serif
-  { value: 'font-lora', label: 'Lora - Cổ điển' },
-  { value: 'font-garamond', label: 'EB Garamond - Cổ điển cổ kính' },
-  { value: 'font-merriweather', label: 'Merriweather - Đọc truyện dài' },
-  { value: 'font-playfair', label: 'Playfair Display - Nghệ thuật' },
-  { value: 'font-notoserif', label: 'Noto Serif - Trang nghiêm' },
-  { value: 'font-robotoslab', label: 'Roboto Slab - Khung chắc chắn' },
-  { value: 'font-times', label: 'Times New Roman - Truyền thống' },
-  { value: 'font-cormorant', label: 'Cormorant Garamond - Quý phái' },
+  { value: 'font-lora', label: 'Lora' },
+  { value: 'font-garamond', label: 'EB Garamond' },
+  { value: 'font-merriweather', label: 'Merriweather' },
+  { value: 'font-playfair', label: 'Playfair Display' },
+  { value: 'font-notoserif', label: 'Noto Serif' },
+  { value: 'font-robotoslab', label: 'Roboto Slab' },
+  { value: 'font-times', label: 'Times New Roman' },
+  { value: 'font-cormorant', label: 'Cormorant Garamond' },
 
   // Sans-serif
-  { value: 'font-bevietnam', label: 'Be Vietnam Pro - Hiện đại Việt' },
-  { value: 'font-inter', label: 'Inter - Tối giản công nghệ' },
-  { value: 'font-opensans', label: 'Open Sans - Thư thái dễ nhìn' },
-  { value: 'font-roboto', label: 'Roboto - Phổ thông chuẩn mực' },
-  { value: 'font-montserrat', label: 'Montserrat - Sang trọng đô thị' },
-  { value: 'font-nunito', label: 'Nunito - Thân thiện bo góc' },
-  { value: 'font-quicksand', label: 'Quicksand - Tròn trịa dễ thương' },
-  { value: 'font-mulish', label: 'Mulish - Thanh lịch nhẹ nhàng' },
-  { value: 'font-notosans', label: 'Noto Sans - Trung tính hoàn hảo' },
-  { value: 'font-sourcesans', label: 'Source Sans 3 - Sắc sảo rõ nét' },
-  { value: 'font-worksans', label: 'Work Sans - Vững chãi rành mạch' },
-  { value: 'font-sarabun', label: 'Sarabun - Trang nhã thanh lịch' },
-  { value: 'font-lexend', label: 'Lexend - Siêu sạch thoáng đãng' },
-  { value: 'font-comfortaa', label: 'Comfortaa - Tròn xoe đáng yêu' },
-  { value: 'font-baloo', label: 'Baloo 2 - Tròn mập nhí nhố' },
+  { value: 'font-bevietnam', label: 'Be Vietnam Pro' },
+  { value: 'font-inter', label: 'Inter' },
+  { value: 'font-opensans', label: 'Open Sans' },
+  { value: 'font-roboto', label: 'Roboto' },
+  { value: 'font-montserrat', label: 'Montserrat' },
+  { value: 'font-nunito', label: 'Nunito' },
+  { value: 'font-quicksand', label: 'Quicksand' },
+  { value: 'font-mulish', label: 'Mulish' },
+  { value: 'font-notosans', label: 'Noto Sans' },
+  { value: 'font-sourcesans', label: 'Source Sans 3' },
+  { value: 'font-worksans', label: 'Work Sans' },
+  { value: 'font-sarabun', label: 'Sarabun' },
+  { value: 'font-lexend', label: 'Lexend' },
+  { value: 'font-comfortaa', label: 'Comfortaa' },
+  { value: 'font-baloo', label: 'Baloo 2' },
 
   // Calligraphy & Script
-  { value: 'font-charm', label: 'Charm - Bay bổng dịu dàng' },
-  { value: 'font-dancing', label: 'Dancing Script - Lãng mạn mềm mại' },
-  { value: 'font-pacifico', label: 'Pacifico - Phóng khoáng bãi biển' },
-  { value: 'font-lobster', label: 'Lobster - Phá cách Retro' },
-  { value: 'font-pattaya', label: 'Pattaya - Uốn lượn đầy đặn' },
-  { value: 'font-arima', label: 'Arima - Nghệ thuật cổ trang' },
+  { value: 'font-charm', label: 'Charm' },
+  { value: 'font-dancing', label: 'Dancing Script' },
+  { value: 'font-pacifico', label: 'Pacifico' },
+  { value: 'font-lobster', label: 'Lobster' },
+  { value: 'font-pattaya', label: 'Pattaya' },
+  { value: 'font-arima', label: 'Arima' },
 
   // Comic & Handwritten
-  { value: 'font-patrick', label: 'Patrick Hand - Nhật ký tự nhiên' },
-  { value: 'font-itim', label: 'Itim - Hoạt họa học đường' },
-  { value: 'font-sriracha', label: 'Sriracha - Nét bút lông sắc sảo' },
-  { value: 'font-cabinsketch', label: 'Cabin Sketch - Nét vẽ tay phác thảo' },
+  { value: 'font-patrick', label: 'Patrick Hand' },
+  { value: 'font-itim', label: 'Itim' },
+  { value: 'font-sriracha', label: 'Sriracha' },
+  { value: 'font-cabinsketch', label: 'Cabin Sketch' },
 
   // Monospace
-  { value: 'font-mono', label: 'JetBrains Mono - Lập trình viên' },
-  { value: 'font-vt323', label: 'VT323 - Máy điện tử 8-bit' },
-  { value: 'font-bungee', label: 'Bungee - Biển hiệu khối đậm' },
+  { value: 'font-mono', label: 'JetBrains Mono' },
+  { value: 'font-vt323', label: 'VT323' },
+  { value: 'font-bungee', label: 'Bungee' },
 ];
 
 const PRESET_THEME_COLORS: Record<string, {
@@ -1751,15 +1751,15 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                       style={{ background: currentCardBg, borderColor: currentBorder, color: currentText }}
                     >
                       <option value="none" style={{ background: currentCardBg, color: currentText }}>Không hiệu ứng (Tắt)</option>
-                      <option value="rain" style={{ background: currentCardBg, color: currentText }}>Mưa rơi lãng mạn (Rain)</option>
-                      <option value="snow" style={{ background: currentCardBg, color: currentText }}>Tuyết rơi mùa đông (Snow)</option>
-                      <option value="star" style={{ background: currentCardBg, color: currentText }}>Bụi sao lấp lánh (Stars)</option>
-                      <option value="leaf" style={{ background: currentCardBg, color: currentText }}>Lá phong thu rơi (Maple Leaves)</option>
-                      <option value="ginkgo" style={{ background: currentCardBg, color: currentText }}>Lá bạch quả vàng rơi (Ginkgo Leaves)</option>
-                      <option value="cherry_blossom" style={{ background: currentCardBg, color: currentText }}>Cánh hoa đào rơi (Cherry Blossom)</option>
-                      <option value="firefly" style={{ background: currentCardBg, color: currentText }}>Đom đóm bay lấp lánh (Fireflies)</option>
-                      <option value="soap_bubble" style={{ background: currentCardBg, color: currentText }}>Bong bóng xà phòng (Soap Bubbles)</option>
-                      <option value="glitch" style={{ background: currentCardBg, color: currentText }}>Nhiễu sóng viễn tưởng (Glitch)</option>
+                      <option value="rain" style={{ background: currentCardBg, color: currentText }}>Mưa rơi</option>
+                      <option value="snow" style={{ background: currentCardBg, color: currentText }}>Tuyết rơi</option>
+                      <option value="star" style={{ background: currentCardBg, color: currentText }}>Bụi sao</option>
+                      <option value="leaf" style={{ background: currentCardBg, color: currentText }}>Lá phong rơi</option>
+                      <option value="ginkgo" style={{ background: currentCardBg, color: currentText }}>Lá bạch quả rơi</option>
+                      <option value="cherry_blossom" style={{ background: currentCardBg, color: currentText }}>Cánh hoa đào rơi</option>
+                      <option value="firefly" style={{ background: currentCardBg, color: currentText }}>Đom đóm</option>
+                      <option value="soap_bubble" style={{ background: currentCardBg, color: currentText }}>Bong bóng xà phòng</option>
+                      <option value="glitch" style={{ background: currentCardBg, color: currentText }}>Nhiễu sóng</option>
                     </select>
                   </div>
 
@@ -1788,15 +1788,15 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                       style={{ background: currentCardBg, borderColor: currentBorder, color: currentText }}
                     >
                       <option value="none" style={{ background: currentCardBg, color: currentText }}>Không hiệu ứng (Tắt)</option>
-                      <option value="rain" style={{ background: currentCardBg, color: currentText }}>Mưa rơi lãng mạn (Rain)</option>
-                      <option value="snow" style={{ background: currentCardBg, color: currentText }}>Tuyết rơi mùa đông (Snow)</option>
-                      <option value="star" style={{ background: currentCardBg, color: currentText }}>Bụi sao lấp lánh (Stars)</option>
-                      <option value="leaf" style={{ background: currentCardBg, color: currentText }}>Lá phong thu rơi (Maple Leaves)</option>
-                      <option value="ginkgo" style={{ background: currentCardBg, color: currentText }}>Lá bạch quả vàng rơi (Ginkgo Leaves)</option>
-                      <option value="cherry_blossom" style={{ background: currentCardBg, color: currentText }}>Cánh hoa đào rơi (Cherry Blossom)</option>
-                      <option value="firefly" style={{ background: currentCardBg, color: currentText }}>Đom đóm bay lấp lánh (Fireflies)</option>
-                      <option value="soap_bubble" style={{ background: currentCardBg, color: currentText }}>Bong bóng xà phòng (Soap Bubbles)</option>
-                      <option value="glitch" style={{ background: currentCardBg, color: currentText }}>Nhiễu sóng viễn tưởng (Glitch)</option>
+                      <option value="rain" style={{ background: currentCardBg, color: currentText }}>Mưa rơi</option>
+                      <option value="snow" style={{ background: currentCardBg, color: currentText }}>Tuyết rơi</option>
+                      <option value="star" style={{ background: currentCardBg, color: currentText }}>Bụi sao</option>
+                      <option value="leaf" style={{ background: currentCardBg, color: currentText }}>Lá phong rơi</option>
+                      <option value="ginkgo" style={{ background: currentCardBg, color: currentText }}>Lá bạch quả rơi</option>
+                      <option value="cherry_blossom" style={{ background: currentCardBg, color: currentText }}>Cánh hoa đào rơi</option>
+                      <option value="firefly" style={{ background: currentCardBg, color: currentText }}>Đom đóm</option>
+                      <option value="soap_bubble" style={{ background: currentCardBg, color: currentText }}>Bong bóng xà phòng</option>
+                      <option value="glitch" style={{ background: currentCardBg, color: currentText }}>Nhiễu sóng</option>
                     </select>
                   </div>
                 </div>
@@ -1817,15 +1817,15 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                     style={{ background: currentBg, borderColor: currentBorder, color: currentText }}
                   >
                     <option value="none" style={{ background: currentCardBg, color: currentText }}>Không hiệu ứng (Tắt)</option>
-                    <option value="rain" style={{ background: currentCardBg, color: currentText }}>Mưa rơi lãng mạn (Rain)</option>
-                    <option value="snow" style={{ background: currentCardBg, color: currentText }}>Tuyết rơi mùa đông (Snow)</option>
-                    <option value="star" style={{ background: currentCardBg, color: currentText }}>Bụi sao lấp lánh (Stars)</option>
-                    <option value="leaf" style={{ background: currentCardBg, color: currentText }}>Lá phong thu rơi (Maple Leaves)</option>
-                    <option value="ginkgo" style={{ background: currentCardBg, color: currentText }}>Lá bạch quả vàng rơi (Ginkgo Leaves)</option>
-                    <option value="cherry_blossom" style={{ background: currentCardBg, color: currentText }}>Cánh hoa đào rơi (Cherry Blossom)</option>
-                    <option value="firefly" style={{ background: currentCardBg, color: currentText }}>Đom đóm bay lấp lánh (Fireflies)</option>
-                    <option value="soap_bubble" style={{ background: currentCardBg, color: currentText }}>Bong bóng xà phòng (Soap Bubbles)</option>
-                    <option value="glitch" style={{ background: currentCardBg, color: currentText }}>Nhiễu sóng viễn tưởng (Glitch)</option>
+                    <option value="rain" style={{ background: currentCardBg, color: currentText }}>Mưa rơi</option>
+                    <option value="snow" style={{ background: currentCardBg, color: currentText }}>Tuyết rơi</option>
+                    <option value="star" style={{ background: currentCardBg, color: currentText }}>Bụi sao</option>
+                    <option value="leaf" style={{ background: currentCardBg, color: currentText }}>Lá phong rơi</option>
+                    <option value="ginkgo" style={{ background: currentCardBg, color: currentText }}>Lá bạch quả rơi</option>
+                    <option value="cherry_blossom" style={{ background: currentCardBg, color: currentText }}>Cánh hoa đào rơi</option>
+                    <option value="firefly" style={{ background: currentCardBg, color: currentText }}>Đom đóm</option>
+                    <option value="soap_bubble" style={{ background: currentCardBg, color: currentText }}>Bong bóng xà phòng</option>
+                    <option value="glitch" style={{ background: currentCardBg, color: currentText }}>Nhiễu sóng</option>
                   </select>
                 </div>
               )}
