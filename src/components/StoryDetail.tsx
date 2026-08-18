@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { Story, Chapter, Comment, UserProfile } from '../types';
-import { ArrowLeft, Bookmark, BookOpen, Send, MessageSquare, Lock, Unlock, CheckCircle2, User, RotateCcw, BookmarkCheck } from 'lucide-react';
+import { ArrowLeft, Bookmark, BookOpen, Send, MessageSquare, Lock, Unlock, CheckCircle2, User, RotateCcw, BookmarkCheck, Share2, Check } from 'lucide-react';
 import { getReadingProgress } from '../lib/readingProgress';
 import { ReadingEffects } from './ReadingEffects';
 import {
