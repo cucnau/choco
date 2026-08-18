@@ -25,7 +25,8 @@ import {
   Download,
   Github,
   RefreshCw,
-  Settings
+  Settings,
+  Check
 } from 'lucide-react';
 import { BulkChapterModal } from './BulkChapterModal';
 import { LiveStoryEditor } from './LiveStoryEditor';
@@ -565,6 +566,11 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
   const [isChapterLocked, setIsChapterLocked] = useState(false);
   const [chapterUnlockPrice, setChapterUnlockPrice] = useState(1);
 
+  // Batch Volume assignment in chapter list
+  const [selectedChapterIds, setSelectedChapterIds] = useState<string[]>([]);
+  const [batchVolumeTitleInput, setBatchVolumeTitleInput] = useState('');
+  const [isUpdatingBatchVolume, setIsUpdatingBatchVolume] = useState(false);
+
   // GitHub Sync State
   const isOwnerAccount = currentUser?.email?.toLowerCase() === 'askerhater21@gmail.com';
 
@@ -1103,6 +1109,49 @@ export const INITIAL_COMMENTS: Comment[] = ${JSON.stringify(comments, null, 2)};
     setIsCreatingChapter(false);
   };
 
+  const handleToggleSelectChapter = (chapId: string) => {
+    setSelectedChapterIds((prev) =>
+      prev.includes(chapId) ? prev.filter((id) => id !== chapId) : [...prev, chapId]
+    );
+  };
+
+  const handleSelectAllChapters = (allChapIds: string[], select: boolean) => {
+    if (select) {
+      setSelectedChapterIds(allChapIds);
+    } else {
+      setSelectedChapterIds([]);
+    }
+  };
+
+  const handleApplyBatchVolume = async (volumeName: string | undefined) => {
+    if (!selectedStoryForChapters || selectedChapterIds.length === 0) return;
+    setIsUpdatingBatchVolume(true);
+    try {
+      const storyChaps = chapters.filter((c) => c.storyId === selectedStoryForChapters.id);
+      const updatedChaps = storyChaps
+        .filter((c) => selectedChapterIds.includes(c.id))
+        .map((c) => ({
+          ...c,
+          volumeTitle: volumeName?.trim() || undefined,
+          updatedAt: new Date().toISOString().split('T')[0],
+        }));
+
+      if (onSaveBatchChapters) {
+        await onSaveBatchChapters(updatedChaps);
+      } else {
+        for (const ch of updatedChaps) {
+          onSaveChapter(ch);
+        }
+      }
+      setSelectedChapterIds([]);
+      setBatchVolumeTitleInput('');
+    } catch (err) {
+      console.error('Error applying batch volume:', err);
+    } finally {
+      setIsUpdatingBatchVolume(false);
+    }
+  };
+
   // Claim ownership for a legacy story
   const handleClaimStory = async (story: Story) => {
     if (!currentUser) return;
@@ -1252,6 +1301,76 @@ export const INITIAL_COMMENTS: Comment[] = ${JSON.stringify(comments, null, 2)};
                 </div>
               </div>
 
+              {/* Batch Volume / Section Manager Toolbar */}
+              {(() => {
+                const storyChaps = chapters
+                  .filter((c) => c.storyId === selectedStoryForChapters.id)
+                  .sort((a, b) => a.chapterNumber - b.chapterNumber);
+
+                if (storyChaps.length === 0) return null;
+
+                return (
+                  <div className="p-3.5 bg-[#160a11] border border-[#3d1f2e] space-y-2.5 rounded-xs">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <label className="flex items-center gap-2 cursor-pointer select-none text-xs font-bold text-[#ffd6e2]">
+                          <input
+                            type="checkbox"
+                            checked={selectedChapterIds.length === storyChaps.length && storyChaps.length > 0}
+                            onChange={(e) => handleSelectAllChapters(storyChaps.map(c => c.id), e.target.checked)}
+                            className="cursor-pointer accent-[#5e2f46] w-4 h-4"
+                          />
+                          <span>Chọn tất cả ({storyChaps.length} chương)</span>
+                        </label>
+                        {selectedChapterIds.length > 0 && (
+                          <span className="text-[11px] text-[#ff99bb] font-bold bg-[#26101c] px-2 py-0.5 border border-[#5e2f46] rounded-xs">
+                            Đã chọn {selectedChapterIds.length} chương
+                          </span>
+                        )}
+                      </div>
+                      {selectedChapterIds.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setSelectedChapterIds([])}
+                          className="text-[11px] text-[#8a717a] hover:text-[#ffd6e2] underline"
+                        >
+                          Bỏ chọn
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2">
+                      <div className="relative flex-1 min-w-[240px]">
+                        <input
+                          type="text"
+                          value={batchVolumeTitleInput}
+                          onChange={(e) => setBatchVolumeTitleInput(e.target.value)}
+                          placeholder="Nhập tên phần/quyển cần gán (Ví dụ: Quyển 1: Đêm đông sống lại)..."
+                          className="w-full bg-[#10070a] border border-[#2d1822] px-3 py-1.5 text-xs text-[#e0c0cc] focus:outline-none focus:border-[#5e2f46] font-mono-code placeholder:text-[#6a555f]"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleApplyBatchVolume(batchVolumeTitleInput)}
+                        disabled={!batchVolumeTitleInput.trim() || selectedChapterIds.length === 0 || isUpdatingBatchVolume}
+                        className="px-3.5 py-1.5 bg-[#2b1620] hover:bg-[#3d1e2c] border border-[#5e2f46] text-[#ffd6e2] text-xs font-mono-code font-bold uppercase tracking-wider disabled:opacity-40 transition flex items-center gap-1.5 shadow-xs"
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                        <span>{isUpdatingBatchVolume ? 'Đang lưu...' : `Đặt tên phần cho ${selectedChapterIds.length} chương`}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleApplyBatchVolume(undefined)}
+                        disabled={selectedChapterIds.length === 0 || isUpdatingBatchVolume}
+                        className="px-3 py-1.5 bg-[#180b12] hover:bg-[#25101b] border border-[#2d1822] hover:border-[#5e2f46] text-[#8a717a] hover:text-[#ffd6e2] text-xs font-mono-code disabled:opacity-40 transition"
+                      >
+                        Xóa tên phần ({selectedChapterIds.length})
+                      </button>
+                    </div>
+                  </div>
+                );
+              })()}
+
               {/* List of chapters with Volume Breaks / Ngắt Phần */}
               <div className="space-y-2">
                 {(() => {
@@ -1271,6 +1390,7 @@ export const INITIAL_COMMENTS: Comment[] = ${JSON.stringify(comments, null, 2)};
                     const prevChap = idx > 0 ? storyChaps[idx - 1] : null;
                     const isNewVolume = !!(chap.volumeTitle && (!prevChap || prevChap.volumeTitle !== chap.volumeTitle));
                     const isTransitionToNoVolume = !chap.volumeTitle && !!(prevChap && prevChap.volumeTitle);
+                    const isSelected = selectedChapterIds.includes(chap.id);
 
                     return (
                       <React.Fragment key={chap.id}>
@@ -1299,26 +1419,43 @@ export const INITIAL_COMMENTS: Comment[] = ${JSON.stringify(comments, null, 2)};
                           </div>
                         )}
 
-                        <div className="bg-[#170d12] border border-[#2d1822] p-3 flex items-center justify-between text-xs font-mono-code">
-                          <div>
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="font-bold text-[#e0c0cc] font-mono-code">{chap.title}</span>
-                              {chap.volumeTitle && (
-                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-[#200d18] border border-[#4d2138] text-[10px] text-[#e0a8be] font-medium rounded-xs">
-                                  {chap.volumeTitle}
-                                </span>
-                              )}
-                              {chap.isLocked && (
-                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-[#2b1620] border border-[#5e2f46] text-[10px] text-[#ffd6e2] font-semibold">
-                                  <Lock className="w-3 h-3 text-[#ff99bb]" />
-                                  <span>{chap.unlockPrice || 1} Chucu</span>
-                                </span>
-                              )}
+                        <div 
+                          className={`p-3 flex items-center justify-between text-xs font-mono-code border transition-colors ${
+                            isSelected 
+                              ? 'bg-[#1e0e17] border-[#6b314e]' 
+                              : 'bg-[#170d12] border-[#2d1822]'
+                          }`}
+                        >
+                          <div className="flex items-center gap-3 flex-1 min-w-0">
+                            {/* Checkbox for selecting chapter */}
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() => handleToggleSelectChapter(chap.id)}
+                              className="cursor-pointer accent-[#5e2f46] w-4 h-4 shrink-0"
+                            />
+
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="font-bold text-[#e0c0cc] font-mono-code">{chap.title}</span>
+                                {chap.volumeTitle && (
+                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-[#200d18] border border-[#4d2138] text-[10px] text-[#e0a8be] font-medium rounded-xs">
+                                    <BookOpen className="w-2.5 h-2.5 text-[#ff99bb]" />
+                                    <span>{chap.volumeTitle}</span>
+                                  </span>
+                                )}
+                                {chap.isLocked && (
+                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-[#2b1620] border border-[#5e2f46] text-[10px] text-[#ffd6e2] font-semibold">
+                                    <Lock className="w-3 h-3 text-[#ff99bb]" />
+                                    <span>{chap.unlockPrice || 1} Chucu</span>
+                                  </span>
+                                )}
+                              </div>
+                              <span className="text-xs text-[#8a717a]">Cập nhật: {chap.createdAt}</span>
                             </div>
-                            <span className="text-xs text-[#8a717a]">Cập nhật: {chap.createdAt}</span>
                           </div>
 
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-1 shrink-0 ml-2">
                             <button
                               onClick={() => handleOpenEditChapter(chap)}
                               className="p-1.5 text-[#8a717a] hover:text-[#ffd6e2] transition"
