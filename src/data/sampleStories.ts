@@ -229,7 +229,7 @@ export const INITIAL_STORIES: Story[] = [
     "customBorderColor": "#c3c24c",
     "customBtnBgColor": "linear-gradient(135deg, #efe973 0%, #f5fcec 100%)",
     "customBtnSecondaryBgColor": "linear-gradient(135deg, #ecf3df 0%, #f8faff 100%)",
-    "readingEffect": "none",
+    "readingEffect": "ginkgo",
     "borderStyle": "none",
     "borderWidth": "thin",
     "borderRadius": "md",
@@ -250,7 +250,7 @@ export const INITIAL_STORIES: Story[] = [
     "chapterBorderRadius": "none",
     "chapterBorderCornerAccent": "none",
     "chapterBorderGlow": "none",
-    "chapterReadingEffect": "none"
+    "chapterReadingEffect": "ginkgo"
   }
 ];
 
