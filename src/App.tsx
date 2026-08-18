@@ -32,7 +32,8 @@ import {
   unlockChapterWithChucu,
   subscribeNotifications,
   markNotificationAsRead,
-  markAllNotificationsAsRead
+  markAllNotificationsAsRead,
+  getUserFontsFromCloud
 } from './lib/storage';
 
 import { Header } from './components/Header';
@@ -87,6 +88,86 @@ export default function App() {
     });
     return () => unsubscribe();
   }, []);
+
+  // Global Font Loading and Injection
+  useEffect(() => {
+    const injectFontFace = (font: { value: string; fontData: string }) => {
+      const styleId = `style-${font.value}`;
+      if (document.getElementById(styleId)) return;
+
+      const style = document.createElement('style');
+      style.id = styleId;
+      style.innerHTML = `
+        @font-face {
+          font-family: '${font.value}';
+          src: url('${font.fontData}');
+        }
+        .${font.value} {
+          font-family: '${font.value}', sans-serif !important;
+        }
+      `;
+      document.head.appendChild(style);
+    };
+
+    // 1. Load from localStorage immediately on mount
+    try {
+      const saved = localStorage.getItem('user_uploaded_fonts');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          parsed.forEach(font => {
+            if (font.value && font.fontData) {
+              injectFontFace(font);
+            }
+          });
+        }
+      }
+    } catch (e) {
+      console.warn('[Global Fonts] Error loading local fonts:', e);
+    }
+
+    // 2. Load and sync from cloud when currentUser is available
+    if (currentUser) {
+      getUserFontsFromCloud(currentUser.uid).then((cloudFonts) => {
+        if (!cloudFonts || cloudFonts.length === 0) return;
+
+        try {
+          const localSaved = localStorage.getItem('user_uploaded_fonts');
+          const localFonts = localSaved ? JSON.parse(localSaved) : [];
+          
+          const merged = [...localFonts];
+          let updated = false;
+
+          cloudFonts.forEach(cf => {
+            // Check if font already exists in merged list
+            const exists = merged.some(lf => lf.value === cf.value);
+            if (!exists) {
+              merged.push({
+                value: cf.value,
+                label: cf.name,
+                styleId: `style-${cf.value}`,
+                fontData: cf.fileData
+              });
+              updated = true;
+            }
+          });
+
+          if (updated) {
+            localStorage.setItem('user_uploaded_fonts', JSON.stringify(merged));
+          }
+
+          // Inject all merged fonts
+          merged.forEach(font => {
+            if (font.value && font.fontData) {
+              injectFontFace(font);
+            }
+          });
+        } catch (e) {
+          console.warn('[Global Fonts] Error syncing cloud fonts:', e);
+        }
+      });
+    }
+  }, [currentUser]);
 
   // Global Anti-Copy Protection
   useEffect(() => {
