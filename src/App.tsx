@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { auth, logout, db } from './lib/firebase';
+import { slugify } from './lib/slug';
 import { Story, Chapter, Comment, BookmarkItem, ReadingProgress, LoungeMessage, EditorRequest, UserProfile, Notification } from './types';
 import { 
   getStoriesLocal, 
@@ -55,6 +56,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<'browse' | 'library' | 'studio' | 'games'>('browse');
   const [selectedStory, setSelectedStory] = useState<Story | null>(null);
   const [selectedChapter, setSelectedChapter] = useState<Chapter | null>(null);
+  const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
 
   // Search Filter State
   const [searchQuery, setSearchQuery] = useState('');
@@ -346,6 +348,152 @@ export default function App() {
     };
   }, []);
 
+  // Điều hướng bằng URL Hash tiếng Việt đẹp (ví dụ: #truyen/dem-dong-song-lai/chuong-1)
+  useEffect(() => {
+    const handleLocationChange = () => {
+      let rawHash = window.location.hash;
+
+      // Hỗ trợ trường hợp mở từ query params ?story=123 hoặc ?chapter=456
+      if (!rawHash && window.location.search) {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('chapter')) {
+          rawHash = `#chapter/${params.get('chapter')}`;
+        } else if (params.get('story')) {
+          rawHash = `#story/${params.get('story')}`;
+        } else if (params.get('tab')) {
+          rawHash = `#${params.get('tab')}`;
+        }
+      }
+
+      let cleanRoute = '';
+      try {
+        cleanRoute = decodeURIComponent(rawHash.replace(/^#\/?/, ''));
+      } catch {
+        cleanRoute = rawHash.replace(/^#\/?/, '');
+      }
+
+      if (!cleanRoute || cleanRoute === 'browse' || cleanRoute === 'home' || cleanRoute === 'trang-chu') {
+        setActiveTab('browse');
+        setSelectedStory(null);
+        setSelectedChapter(null);
+        setSelectedGameId(null);
+        return;
+      }
+
+      if (cleanRoute === 'library' || cleanRoute === 'tu-sach' || cleanRoute === 'da-luu') {
+        setActiveTab('library');
+        setSelectedStory(null);
+        setSelectedChapter(null);
+        setSelectedGameId(null);
+        return;
+      }
+
+      if (cleanRoute === 'studio' || cleanRoute === 'xuong-viet' || cleanRoute === 'sang-tac') {
+        setActiveTab('studio');
+        setSelectedStory(null);
+        setSelectedChapter(null);
+        setSelectedGameId(null);
+        return;
+      }
+
+      if (cleanRoute.startsWith('games') || cleanRoute.startsWith('tro-choi')) {
+        setActiveTab('games');
+        setSelectedStory(null);
+        setSelectedChapter(null);
+        const parts = cleanRoute.split('/');
+        if (parts.length > 1 && parts[1]) {
+          const rawGame = parts[1];
+          if (rawGame === 'xep-gach' || rawGame === 'block_blast') {
+            setSelectedGameId('block_blast');
+          } else {
+            setSelectedGameId(rawGame);
+          }
+        } else {
+          setSelectedGameId(null);
+        }
+        return;
+      }
+
+      // Xử lý route truyện / đọc chương (ví dụ: truyen/dem-dong-song-lai, truyen/dem-dong-song-lai/chuong-1, story/123/chapter/456)
+      if (cleanRoute.startsWith('truyen/') || cleanRoute.startsWith('story/') || cleanRoute.includes('chapter/')) {
+        const parts = cleanRoute.split('/');
+        let storyParam = '';
+        let chapterParam = '';
+
+        if (cleanRoute.startsWith('truyen/') || cleanRoute.startsWith('story/')) {
+          storyParam = parts[1] || '';
+          if (parts[2] === 'chapter') {
+            chapterParam = parts[3] || '';
+          } else if (parts[2]) {
+            chapterParam = parts[2];
+          }
+        } else if (cleanRoute.includes('chapter/')) {
+          const cIdx = parts.indexOf('chapter') + 1;
+          chapterParam = parts[cIdx] || '';
+        }
+
+        let foundStory = stories.find(s => slugify(s.title) === storyParam || s.id === storyParam);
+
+        // Nếu có thông tin chương
+        if (chapterParam) {
+          // Thử trích xuất số chương (ví dụ chuong-1 -> 1, chapter-2 -> 2)
+          const matchNum = chapterParam.match(/(?:chuong|chapter)?-?(\d+)/i);
+          const chapNum = matchNum ? parseInt(matchNum[1], 10) : null;
+
+          let foundChap: Chapter | undefined;
+
+          if (foundStory) {
+            foundChap = chapters.find(c => c.storyId === foundStory?.id && (
+              (chapNum !== null && c.chapterNumber === chapNum) ||
+              c.id === chapterParam ||
+              slugify(c.title) === chapterParam
+            ));
+          } else {
+            // Nếu chưa khớp truyện, tìm chương theo id hoặc slug toàn bộ
+            foundChap = chapters.find(c => 
+              c.id === chapterParam || 
+              (chapNum !== null && c.chapterNumber === chapNum) ||
+              slugify(c.title) === chapterParam
+            );
+            if (foundChap) {
+              foundStory = stories.find(s => s.id === foundChap?.storyId);
+            }
+          }
+
+          if (foundChap && foundStory) {
+            setSelectedStory(foundStory);
+            setSelectedChapter(foundChap);
+            setSelectedGameId(null);
+            return;
+          }
+        }
+
+        if (foundStory) {
+          setSelectedStory(foundStory);
+          setSelectedChapter(null);
+          setSelectedGameId(null);
+          return;
+        }
+      }
+
+      // Mặc định về trang chủ nếu route không khớp
+      setActiveTab('browse');
+      setSelectedStory(null);
+      setSelectedChapter(null);
+      setSelectedGameId(null);
+    };
+
+    handleLocationChange();
+
+    window.addEventListener('hashchange', handleLocationChange);
+    window.addEventListener('popstate', handleLocationChange);
+
+    return () => {
+      window.removeEventListener('hashchange', handleLocationChange);
+      window.removeEventListener('popstate', handleLocationChange);
+    };
+  }, [stories, chapters]);
+
   // Đồng bộ selectedStory và selectedChapter khi danh sách dữ liệu cập nhật thời gian thực
   useEffect(() => {
     if (selectedStory) {
@@ -379,6 +527,8 @@ export default function App() {
   const handleSelectStory = (story: Story) => {
     setSelectedStory(story);
     setSelectedChapter(null);
+    setSelectedGameId(null);
+    window.location.hash = `#truyen/${slugify(story.title)}`;
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -388,9 +538,11 @@ export default function App() {
     if (story) {
       setSelectedStory(story);
       setSelectedChapter(chapter);
+      setSelectedGameId(null);
       incrementChapterViews(chapter.id, story.id);
       saveReadingProgress(story.id, chapter.id, chapter.chapterNumber);
       refreshData();
+      window.location.hash = `#truyen/${slugify(story.title)}/chuong-${chapter.chapterNumber}`;
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
@@ -657,6 +809,11 @@ export default function App() {
             setActiveTab(tab);
             setSelectedStory(null);
             setSelectedChapter(null);
+            setSelectedGameId(null);
+            if (tab === 'browse') window.location.hash = '#trang-chu';
+            else if (tab === 'library') window.location.hash = '#tu-sach';
+            else if (tab === 'studio') window.location.hash = '#xuong-viet';
+            else if (tab === 'games') window.location.hash = '#tro-choi';
           }}
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
@@ -719,7 +876,14 @@ export default function App() {
             userProfile={userProfile}
             isAdmin={isAdmin}
             onSelectChapter={handleSelectChapter}
-            onBackToStory={() => setSelectedChapter(null)}
+            onBackToStory={() => {
+              setSelectedChapter(null);
+              if (selectedStory) {
+                window.location.hash = `#truyen/${slugify(selectedStory.title)}`;
+              } else {
+                window.location.hash = '#trang-chu';
+              }
+            }}
             onAddComment={handleAddComment}
             onUnlockChapter={async (chapterId, price, authorUid) => {
               if (!currentUser) return { success: false, error: 'Chưa đăng nhập' };
@@ -767,7 +931,14 @@ export default function App() {
               isAdmin={isAdmin}
               onToggleBookmark={(id) => handleToggleBookmark(id)}
               onSelectChapter={handleSelectChapter}
-              onBack={() => setSelectedStory(null)}
+              onBack={() => {
+                setSelectedStory(null);
+                setSelectedChapter(null);
+                if (activeTab === 'library') window.location.hash = '#tu-sach';
+                else if (activeTab === 'studio') window.location.hash = '#xuong-viet';
+                else if (activeTab === 'games') window.location.hash = '#tro-choi';
+                else window.location.hash = '#trang-chu';
+              }}
               onAddComment={handleAddComment}
             />
           </div>
@@ -1034,6 +1205,16 @@ export default function App() {
           <GamesHub
             currentUser={currentUser}
             userProfile={userProfile}
+            selectedGameId={selectedGameId}
+            onSelectGame={(gameId) => {
+              setSelectedGameId(gameId);
+              if (gameId) {
+                const gameSlug = gameId === 'block_blast' ? 'xep-gach' : gameId;
+                window.location.hash = `#tro-choi/${gameSlug}`;
+              } else {
+                window.location.hash = '#tro-choi';
+              }
+            }}
           />
         ) : (
           /* Home Browse View with 4 Sections: Lounge, Ranking, Comments, All Stories */
@@ -1053,6 +1234,8 @@ export default function App() {
               setActiveTab('studio');
               setSelectedStory(null);
               setSelectedChapter(null);
+              setSelectedGameId(null);
+              window.location.hash = '#xuong-viet';
             }}
             onOpenAuthModal={() => setIsAuthModalOpen(true)}
             onCheckInSuccess={(reward, newStreak, newBalance) => {
