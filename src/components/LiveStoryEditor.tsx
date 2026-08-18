@@ -1257,9 +1257,9 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
               {useSeparateChapterTheme && (
                 <div className="p-2 rounded text-[10px] font-mono border text-center font-bold" style={{ background: currentBtnSecondaryBg, borderColor: currentBorder }}>
                   {previewMode === 'story' ? (
-                    <span className="text-amber-500">✍️ Thiết lập: Giao diện trang truyện</span>
+                    <span className="text-amber-500">Thiết lập: Giao diện trang truyện</span>
                   ) : (
-                    <span className="text-emerald-500">✍️ Thiết lập: Giao diện đọc chương</span>
+                    <span className="text-emerald-500">Thiết lập: Giao diện đọc chương</span>
                   )}
                 </div>
               )}
@@ -1570,9 +1570,9 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
               {useSeparateChapterTheme && (
                 <div className="p-2 rounded text-[10px] font-mono border text-center font-bold" style={{ background: currentBtnSecondaryBg, borderColor: currentBorder }}>
                   {previewMode === 'story' ? (
-                    <span className="text-amber-500">✍️ Thiết lập viền: Giao diện trang truyện</span>
+                    <span className="text-amber-500">Thiết lập viền: Giao diện trang truyện</span>
                   ) : (
-                    <span className="text-emerald-500">✍️ Thiết lập viền: Giao diện đọc chương</span>
+                    <span className="text-emerald-500">Thiết lập viền: Giao diện đọc chương</span>
                   )}
                 </div>
               )}
@@ -1751,15 +1751,15 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                       style={{ background: currentCardBg, borderColor: currentBorder, color: currentText }}
                     >
                       <option value="none" style={{ background: currentCardBg, color: currentText }}>Không hiệu ứng (Tắt)</option>
-                      <option value="rain" style={{ background: currentCardBg, color: currentText }}>🌧️ Mưa rơi lãng mạn (Rain)</option>
-                      <option value="snow" style={{ background: currentCardBg, color: currentText }}>❄️ Tuyết rơi mùa đông (Snow)</option>
-                      <option value="star" style={{ background: currentCardBg, color: currentText }}>✨ Bụi sao lấp lánh (Stars)</option>
-                      <option value="leaf" style={{ background: currentCardBg, color: currentText }}>🍁 Lá phong thu rơi (Maple Leaves)</option>
-                      <option value="ginkgo" style={{ background: currentCardBg, color: currentText }}>🍂 Lá bạch quả vàng rơi (Ginkgo Leaves)</option>
-                      <option value="cherry_blossom" style={{ background: currentCardBg, color: currentText }}>🌸 Cánh hoa đào rơi (Cherry Blossom)</option>
-                      <option value="firefly" style={{ background: currentCardBg, color: currentText }}>✨ Đom đóm bay lấp lánh (Fireflies)</option>
-                      <option value="soap_bubble" style={{ background: currentCardBg, color: currentText }}>🫧 Bong bóng xà phòng (Soap Bubbles)</option>
-                      <option value="glitch" style={{ background: currentCardBg, color: currentText }}>⚡ Nhiễu sóng viễn tưởng (Glitch)</option>
+                      <option value="rain" style={{ background: currentCardBg, color: currentText }}>Mưa rơi lãng mạn (Rain)</option>
+                      <option value="snow" style={{ background: currentCardBg, color: currentText }}>Tuyết rơi mùa đông (Snow)</option>
+                      <option value="star" style={{ background: currentCardBg, color: currentText }}>Bụi sao lấp lánh (Stars)</option>
+                      <option value="leaf" style={{ background: currentCardBg, color: currentText }}>Lá phong thu rơi (Maple Leaves)</option>
+                      <option value="ginkgo" style={{ background: currentCardBg, color: currentText }}>Lá bạch quả vàng rơi (Ginkgo Leaves)</option>
+                      <option value="cherry_blossom" style={{ background: currentCardBg, color: currentText }}>Cánh hoa đào rơi (Cherry Blossom)</option>
+                      <option value="firefly" style={{ background: currentCardBg, color: currentText }}>Đom đóm bay lấp lánh (Fireflies)</option>
+                      <option value="soap_bubble" style={{ background: currentCardBg, color: currentText }}>Bong bóng xà phòng (Soap Bubbles)</option>
+                      <option value="glitch" style={{ background: currentCardBg, color: currentText }}>Nhiễu sóng viễn tưởng (Glitch)</option>
                     </select>
                   </div>
 
@@ -1788,15 +1788,15 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                       style={{ background: currentCardBg, borderColor: currentBorder, color: currentText }}
                     >
                       <option value="none" style={{ background: currentCardBg, color: currentText }}>Không hiệu ứng (Tắt)</option>
-                      <option value="rain" style={{ background: currentCardBg, color: currentText }}>🌧️ Mưa rơi lãng mạn (Rain)</option>
-                      <option value="snow" style={{ background: currentCardBg, color: currentText }}>❄️ Tuyết rơi mùa đông (Snow)</option>
-                      <option value="star" style={{ background: currentCardBg, color: currentText }}>✨ Bụi sao lấp lánh (Stars)</option>
-                      <option value="leaf" style={{ background: currentCardBg, color: currentText }}>🍁 Lá phong thu rơi (Maple Leaves)</option>
-                      <option value="ginkgo" style={{ background: currentCardBg, color: currentText }}>🍂 Lá bạch quả vàng rơi (Ginkgo Leaves)</option>
-                      <option value="cherry_blossom" style={{ background: currentCardBg, color: currentText }}>🌸 Cánh hoa đào rơi (Cherry Blossom)</option>
-                      <option value="firefly" style={{ background: currentCardBg, color: currentText }}>✨ Đom đóm bay lấp lánh (Fireflies)</option>
-                      <option value="soap_bubble" style={{ background: currentCardBg, color: currentText }}>🫧 Bong bóng xà phòng (Soap Bubbles)</option>
-                      <option value="glitch" style={{ background: currentCardBg, color: currentText }}>⚡ Nhiễu sóng viễn tưởng (Glitch)</option>
+                      <option value="rain" style={{ background: currentCardBg, color: currentText }}>Mưa rơi lãng mạn (Rain)</option>
+                      <option value="snow" style={{ background: currentCardBg, color: currentText }}>Tuyết rơi mùa đông (Snow)</option>
+                      <option value="star" style={{ background: currentCardBg, color: currentText }}>Bụi sao lấp lánh (Stars)</option>
+                      <option value="leaf" style={{ background: currentCardBg, color: currentText }}>Lá phong thu rơi (Maple Leaves)</option>
+                      <option value="ginkgo" style={{ background: currentCardBg, color: currentText }}>Lá bạch quả vàng rơi (Ginkgo Leaves)</option>
+                      <option value="cherry_blossom" style={{ background: currentCardBg, color: currentText }}>Cánh hoa đào rơi (Cherry Blossom)</option>
+                      <option value="firefly" style={{ background: currentCardBg, color: currentText }}>Đom đóm bay lấp lánh (Fireflies)</option>
+                      <option value="soap_bubble" style={{ background: currentCardBg, color: currentText }}>Bong bóng xà phòng (Soap Bubbles)</option>
+                      <option value="glitch" style={{ background: currentCardBg, color: currentText }}>Nhiễu sóng viễn tưởng (Glitch)</option>
                     </select>
                   </div>
                 </div>
@@ -1817,15 +1817,15 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                     style={{ background: currentBg, borderColor: currentBorder, color: currentText }}
                   >
                     <option value="none" style={{ background: currentCardBg, color: currentText }}>Không hiệu ứng (Tắt)</option>
-                    <option value="rain" style={{ background: currentCardBg, color: currentText }}>🌧️ Mưa rơi lãng mạn (Rain)</option>
-                    <option value="snow" style={{ background: currentCardBg, color: currentText }}>❄️ Tuyết rơi mùa đông (Snow)</option>
-                    <option value="star" style={{ background: currentCardBg, color: currentText }}>✨ Bụi sao lấp lánh (Stars)</option>
-                    <option value="leaf" style={{ background: currentCardBg, color: currentText }}>🍁 Lá phong thu rơi (Maple Leaves)</option>
-                    <option value="ginkgo" style={{ background: currentCardBg, color: currentText }}>🍂 Lá bạch quả vàng rơi (Ginkgo Leaves)</option>
-                    <option value="cherry_blossom" style={{ background: currentCardBg, color: currentText }}>🌸 Cánh hoa đào rơi (Cherry Blossom)</option>
-                    <option value="firefly" style={{ background: currentCardBg, color: currentText }}>✨ Đom đóm bay lấp lánh (Fireflies)</option>
-                    <option value="soap_bubble" style={{ background: currentCardBg, color: currentText }}>🫧 Bong bóng xà phòng (Soap Bubbles)</option>
-                    <option value="glitch" style={{ background: currentCardBg, color: currentText }}>⚡ Nhiễu sóng viễn tưởng (Glitch)</option>
+                    <option value="rain" style={{ background: currentCardBg, color: currentText }}>Mưa rơi lãng mạn (Rain)</option>
+                    <option value="snow" style={{ background: currentCardBg, color: currentText }}>Tuyết rơi mùa đông (Snow)</option>
+                    <option value="star" style={{ background: currentCardBg, color: currentText }}>Bụi sao lấp lánh (Stars)</option>
+                    <option value="leaf" style={{ background: currentCardBg, color: currentText }}>Lá phong thu rơi (Maple Leaves)</option>
+                    <option value="ginkgo" style={{ background: currentCardBg, color: currentText }}>Lá bạch quả vàng rơi (Ginkgo Leaves)</option>
+                    <option value="cherry_blossom" style={{ background: currentCardBg, color: currentText }}>Cánh hoa đào rơi (Cherry Blossom)</option>
+                    <option value="firefly" style={{ background: currentCardBg, color: currentText }}>Đom đóm bay lấp lánh (Fireflies)</option>
+                    <option value="soap_bubble" style={{ background: currentCardBg, color: currentText }}>Bong bóng xà phòng (Soap Bubbles)</option>
+                    <option value="glitch" style={{ background: currentCardBg, color: currentText }}>Nhiễu sóng viễn tưởng (Glitch)</option>
                   </select>
                 </div>
               )}
