@@ -328,7 +328,7 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
             <div 
               className="hidden md:flex items-center gap-1.5 px-3 py-1 text-[11px] rounded-full border shadow-xs animate-pulse"
               style={{
-                backgroundColor: currentBtnBg,
+                background: currentBtnBg,
                 borderColor: currentBtnBorder,
                 color: currentBtnText,
               }}
@@ -346,7 +346,7 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
               onChange={(e) => setReaderFont(e.target.value)}
               className="border px-2 py-1 text-[11px] rounded outline-none cursor-pointer"
               style={{
-                backgroundColor: currentBg,
+                background: currentBg,
                 borderColor: currentBorder,
                 color: currentText,
               }}
@@ -373,7 +373,7 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
             <div 
               className="flex items-center gap-1 border px-2 py-0.5 rounded text-xs"
               style={{
-                backgroundColor: currentBg,
+                background: currentBg,
                 borderColor: currentBorder,
               }}
             >
@@ -442,7 +442,7 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
                 <span 
                   className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 border text-xs font-semibold rounded shadow-xs ${storyBtnFont}`}
                   style={{
-                    backgroundColor: currentBtnBg,
+                    background: currentBtnBg,
                     borderColor: currentBtnBorder,
                     color: currentBtnText,
                   }}
@@ -467,7 +467,7 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
             <div 
               className={`p-6 sm:p-10 text-center space-y-5 rounded transition-colors duration-200 border ${storyBodyFont}`}
               style={{
-                backgroundColor: currentBg,
+                background: currentBg,
                 borderColor: currentBorder,
               }}
             >
@@ -475,7 +475,7 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
                 <div 
                   className="w-12 h-12 mx-auto rounded-full flex items-center justify-center border shadow-xs"
                   style={{
-                    backgroundColor: currentBtnBg,
+                    background: currentBtnBg,
                     borderColor: currentBtnBorder,
                     color: currentBtnText,
                   }}
@@ -500,7 +500,7 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
               <div 
                 className={`border p-4 max-w-sm mx-auto space-y-2 text-xs rounded ${storyMutedFont}`}
                 style={{
-                  backgroundColor: currentCardBg,
+                  background: currentCardBg,
                   borderColor: currentBorder,
                 }}
               >
@@ -523,7 +523,7 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
                   disabled={isUnlocking}
                   className={`w-full sm:w-auto px-6 py-2.5 border font-bold text-xs uppercase tracking-wider rounded transition flex items-center justify-center gap-2 shadow-sm disabled:opacity-50 ${storyBtnFont}`}
                   style={{
-                    backgroundColor: currentBtnBg,
+                    background: currentBtnBg,
                     borderColor: currentBtnBorder,
                     color: currentBtnText,
                   }}
@@ -546,7 +546,7 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
                     onClick={onOpenRechargeModal}
                     className={`w-full sm:w-auto px-5 py-2.5 border font-bold text-xs uppercase tracking-wider rounded transition ${storyBtnFont}`}
                     style={{
-                      backgroundColor: currentBtnSecondaryBg,
+                      background: currentBtnSecondaryBg,
                       borderColor: currentBtnBorder,
                       color: currentText,
                     }}
@@ -606,7 +606,7 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
                         <div 
                           className="mt-3 p-4 border text-xs space-y-3 transition-colors duration-200 rounded shadow-sm"
                           style={{
-                            backgroundColor: currentBg,
+                            background: currentBg,
                             borderColor: currentBorder,
                             color: currentText,
                           }}
@@ -643,7 +643,7 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
                                   key={cm.id} 
                                   className="p-2.5 border text-xs space-y-1 rounded"
                                   style={{
-                                    backgroundColor: currentCardBg,
+                                    background: currentCardBg,
                                     borderColor: currentBorder,
                                   }}
                                 >
@@ -668,7 +668,7 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
                               placeholder={`Ý kiến của bạn về đoạn #${idx + 1}...`}
                               className="flex-1 border p-2 text-xs focus:outline-none rounded transition"
                               style={{
-                                backgroundColor: currentCardBg,
+                                background: currentCardBg,
                                 borderColor: currentBorder,
                                 color: currentText,
                               }}
@@ -678,7 +678,7 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
                               disabled={!paraCommentText.trim()}
                               className={`px-3 py-1.5 border text-xs font-semibold uppercase disabled:opacity-40 transition flex items-center gap-1 shrink-0 rounded ${storyBtnFont}`}
                               style={{
-                                backgroundColor: currentBtnBg,
+                                background: currentBtnBg,
                                 borderColor: currentBtnBorder,
                                 color: currentBtnText,
                               }}
@@ -706,7 +706,7 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
                 onClick={() => prevChapter && onSelectChapter(prevChapter)}
                 className={`px-3.5 py-1.5 rounded border font-bold disabled:opacity-30 disabled:cursor-not-allowed transition flex items-center gap-1 uppercase tracking-wider ${storyBtnFont}`}
                 style={{
-                  backgroundColor: currentBtnSecondaryBg,
+                  background: currentBtnSecondaryBg,
                   borderColor: currentBtnBorder,
                   color: currentText,
                 }}
@@ -719,7 +719,7 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
                 onClick={onBackToStory}
                 className={`px-4 py-1.5 rounded border font-bold transition uppercase tracking-wider ${storyBtnFont}`}
                 style={{
-                  backgroundColor: currentBtnBg,
+                  background: currentBtnBg,
                   borderColor: currentBtnBorder,
                   color: currentBtnText,
                 }}
@@ -732,7 +732,7 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
                 onClick={() => nextChapter && onSelectChapter(nextChapter)}
                 className={`px-3.5 py-1.5 rounded border font-bold disabled:opacity-30 disabled:cursor-not-allowed transition flex items-center gap-1 uppercase tracking-wider ${storyBtnFont}`}
                 style={{
-                  backgroundColor: currentBtnSecondaryBg,
+                  background: currentBtnSecondaryBg,
                   borderColor: currentBtnBorder,
                   color: currentText,
                 }}
