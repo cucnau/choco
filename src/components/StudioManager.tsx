@@ -857,6 +857,24 @@ export const INITIAL_COMMENTS: Comment[] = ${JSON.stringify(comments, null, 2)};
       borderRadius: storyData.borderRadius,
       borderCornerAccent: storyData.borderCornerAccent,
       borderGlow: storyData.borderGlow,
+
+      // Theme và Hiệu ứng chương riêng biệt
+      useSeparateChapterTheme: storyData.useSeparateChapterTheme,
+      useSeparateChapterEffect: storyData.useSeparateChapterEffect,
+      chapterThemeTone: storyData.chapterThemeTone,
+      chapterCustomBgColor: storyData.chapterCustomBgColor,
+      chapterCustomCardBgColor: storyData.chapterCustomCardBgColor,
+      chapterCustomTextColor: storyData.chapterCustomTextColor,
+      chapterCustomTextMutedColor: storyData.chapterCustomTextMutedColor,
+      chapterCustomBorderColor: storyData.chapterCustomBorderColor,
+      chapterCustomBtnBgColor: storyData.chapterCustomBtnBgColor,
+      chapterCustomBtnSecondaryBgColor: storyData.chapterCustomBtnSecondaryBgColor,
+      chapterBorderStyle: storyData.chapterBorderStyle,
+      chapterBorderWidth: storyData.chapterBorderWidth,
+      chapterBorderRadius: storyData.chapterBorderRadius,
+      chapterBorderCornerAccent: storyData.chapterBorderCornerAccent,
+      chapterBorderGlow: storyData.chapterBorderGlow,
+      chapterReadingEffect: storyData.chapterReadingEffect,
     };
 
     onSaveStory(newStory);

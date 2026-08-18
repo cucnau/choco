@@ -11,6 +11,7 @@ import {
   orderBy
 } from 'firebase/firestore';
 import { db, auth } from './firebase';
+import { safeLocalStorageSet, safeLocalStorageGet, migrateLocalStorageFonts } from './idbStorage';
 import { Story, Chapter, Comment, BookmarkItem, ReadingProgress, LoungeMessage, EditorRequest, UserProfile, Notification } from '../types';
 import { INITIAL_STORIES, INITIAL_CHAPTERS, INITIAL_COMMENTS } from '../data/sampleStories';
 
@@ -82,29 +83,32 @@ const STORAGE_KEYS = {
 
 // Initialize Local Backup
 export function initStorage(): void {
+  // Dọn dẹp fonts nặng khỏi localStorage để giải phóng 5MB
+  migrateLocalStorageFonts().catch(() => {});
+
   if (!localStorage.getItem(STORAGE_KEYS.STORIES)) {
-    localStorage.setItem(STORAGE_KEYS.STORIES, JSON.stringify(INITIAL_STORIES));
+    safeLocalStorageSet(STORAGE_KEYS.STORIES, JSON.stringify(INITIAL_STORIES));
   }
   if (!localStorage.getItem(STORAGE_KEYS.CHAPTERS)) {
-    localStorage.setItem(STORAGE_KEYS.CHAPTERS, JSON.stringify(INITIAL_CHAPTERS));
+    safeLocalStorageSet(STORAGE_KEYS.CHAPTERS, JSON.stringify(INITIAL_CHAPTERS));
   }
   if (!localStorage.getItem(STORAGE_KEYS.COMMENTS)) {
-    localStorage.setItem(STORAGE_KEYS.COMMENTS, JSON.stringify(INITIAL_COMMENTS));
+    safeLocalStorageSet(STORAGE_KEYS.COMMENTS, JSON.stringify(INITIAL_COMMENTS));
   }
   if (!localStorage.getItem(STORAGE_KEYS.BOOKMARKS)) {
-    localStorage.setItem(STORAGE_KEYS.BOOKMARKS, JSON.stringify([]));
+    safeLocalStorageSet(STORAGE_KEYS.BOOKMARKS, JSON.stringify([]));
   }
   if (!localStorage.getItem(STORAGE_KEYS.READING_HISTORY)) {
-    localStorage.setItem(STORAGE_KEYS.READING_HISTORY, JSON.stringify([]));
+    safeLocalStorageSet(STORAGE_KEYS.READING_HISTORY, JSON.stringify([]));
   }
   if (!localStorage.getItem(STORAGE_KEYS.LOUNGE)) {
-    localStorage.setItem(STORAGE_KEYS.LOUNGE, JSON.stringify([]));
+    safeLocalStorageSet(STORAGE_KEYS.LOUNGE, JSON.stringify([]));
   } else {
     try {
       const existing = JSON.parse(localStorage.getItem(STORAGE_KEYS.LOUNGE) || '[]');
       const filtered = existing.filter((m: LoungeMessage) => m.id !== 'lounge-1' && m.id !== 'lounge-2' && !m.id.startsWith('lounge-'));
       if (filtered.length !== existing.length) {
-        localStorage.setItem(STORAGE_KEYS.LOUNGE, JSON.stringify(filtered));
+        safeLocalStorageSet(STORAGE_KEYS.LOUNGE, JSON.stringify(filtered));
       }
     } catch {}
   }
@@ -125,7 +129,7 @@ export function subscribeStories(callback: (stories: Story[]) => void, onError?:
           snapshot.forEach((doc) => {
             list.push(doc.data() as Story);
           });
-          localStorage.setItem(STORAGE_KEYS.STORIES, JSON.stringify(list));
+          safeLocalStorageSet(STORAGE_KEYS.STORIES, JSON.stringify(list));
           callback(list);
         } else {
           // If empty, seed Firestore with initial stories
@@ -160,7 +164,7 @@ export function subscribeChapters(callback: (chapters: Chapter[]) => void, onErr
           snapshot.forEach((doc) => {
             list.push(doc.data() as Chapter);
           });
-          localStorage.setItem(STORAGE_KEYS.CHAPTERS, JSON.stringify(list));
+          safeLocalStorageSet(STORAGE_KEYS.CHAPTERS, JSON.stringify(list));
           callback(list);
         } else {
           INITIAL_CHAPTERS.forEach((chap) => {
@@ -194,7 +198,7 @@ export function subscribeComments(callback: (comments: Comment[]) => void, onErr
           list.push(doc.data() as Comment);
         });
         if (list.length > 0) {
-          localStorage.setItem(STORAGE_KEYS.COMMENTS, JSON.stringify(list));
+          safeLocalStorageSet(STORAGE_KEYS.COMMENTS, JSON.stringify(list));
           callback(list);
         } else {
           INITIAL_COMMENTS.forEach((c) => {
@@ -325,7 +329,7 @@ export async function saveStory(story: Story): Promise<Story[]> {
     updated = [finalStory, ...stories];
   }
 
-  localStorage.setItem(STORAGE_KEYS.STORIES, JSON.stringify(updated));
+  safeLocalStorageSet(STORAGE_KEYS.STORIES, JSON.stringify(updated));
   syncDataToCode().catch(() => {});
 
   try {
@@ -339,7 +343,7 @@ export async function saveStory(story: Story): Promise<Story[]> {
 
 export async function deleteStory(storyId: string): Promise<Story[]> {
   const stories = getStoriesLocal().filter((s) => s.id !== storyId);
-  localStorage.setItem(STORAGE_KEYS.STORIES, JSON.stringify(stories));
+  safeLocalStorageSet(STORAGE_KEYS.STORIES, JSON.stringify(stories));
   syncDataToCode().catch(() => {});
 
   try {
@@ -361,7 +365,7 @@ export async function incrementStoryViews(storyId: string): Promise<void> {
     }
     return s;
   });
-  localStorage.setItem(STORAGE_KEYS.STORIES, JSON.stringify(updated));
+  safeLocalStorageSet(STORAGE_KEYS.STORIES, JSON.stringify(updated));
 }
 
 export async function saveChapter(chapter: Chapter): Promise<Chapter[]> {
@@ -381,7 +385,7 @@ export async function saveChapter(chapter: Chapter): Promise<Chapter[]> {
     updated = [...allChapters, finalChapter];
   }
 
-  localStorage.setItem(STORAGE_KEYS.CHAPTERS, JSON.stringify(updated));
+  safeLocalStorageSet(STORAGE_KEYS.CHAPTERS, JSON.stringify(updated));
   syncDataToCode().catch(() => {});
 
   try {
@@ -418,13 +422,19 @@ export async function saveMultipleChapters(newChapters: Chapter[]): Promise<Chap
   });
 
   const updated = Array.from(existingMap.values());
-  localStorage.setItem(STORAGE_KEYS.CHAPTERS, JSON.stringify(updated));
+  safeLocalStorageSet(STORAGE_KEYS.CHAPTERS, JSON.stringify(updated));
   syncDataToCode().catch(() => {});
 
   try {
-    await Promise.all(
-      preparedChapters.map((c) => setDoc(doc(db, 'chapters', c.id), cleanForFirestore(c)))
-    );
+    // Lưu theo chunk 20 chương lên Firestore để đảm bảo an toàn kết nối
+    const chunkSize = 20;
+    for (let i = 0; i < preparedChapters.length; i += chunkSize) {
+      const chunk = preparedChapters.slice(i, i + chunkSize);
+      await Promise.all(
+        chunk.map((c) => setDoc(doc(db, 'chapters', c.id), cleanForFirestore(c)))
+      );
+    }
+
     brandNewChapters.forEach((c) => {
       notifyNewChapter(c.storyId, c.title, c.id, c.chapterNumber).catch(() => {});
     });
@@ -438,7 +448,7 @@ export async function saveMultipleChapters(newChapters: Chapter[]): Promise<Chap
 export async function deleteChapter(chapterId: string, storyId: string): Promise<Chapter[]> {
   const allChapters = getChaptersLocal();
   const updated = allChapters.filter((c) => c.id !== chapterId);
-  localStorage.setItem(STORAGE_KEYS.CHAPTERS, JSON.stringify(updated));
+  safeLocalStorageSet(STORAGE_KEYS.CHAPTERS, JSON.stringify(updated));
   syncDataToCode().catch(() => {});
 
   try {
@@ -460,7 +470,7 @@ export async function incrementChapterViews(chapterId: string, storyId: string):
     }
     return c;
   });
-  localStorage.setItem(STORAGE_KEYS.CHAPTERS, JSON.stringify(updatedChapters));
+  safeLocalStorageSet(STORAGE_KEYS.CHAPTERS, JSON.stringify(updatedChapters));
   incrementStoryViews(storyId);
 }
 
@@ -500,7 +510,7 @@ export async function toggleBookmark(storyId: string): Promise<boolean> {
     }
   }
 
-  localStorage.setItem(STORAGE_KEYS.BOOKMARKS, JSON.stringify(newList));
+  safeLocalStorageSet(STORAGE_KEYS.BOOKMARKS, JSON.stringify(newList));
   return isBookmarked;
 }
 
@@ -527,7 +537,7 @@ export async function saveReadingProgress(storyId: string, chapterId: string, ch
     },
     ...filtered,
   ];
-  localStorage.setItem(STORAGE_KEYS.READING_HISTORY, JSON.stringify(updated));
+  safeLocalStorageSet(STORAGE_KEYS.READING_HISTORY, JSON.stringify(updated));
 
   if (auth.currentUser) {
     setDoc(doc(db, 'reading_history', `${auth.currentUser.uid}_${storyId}`), {
@@ -564,7 +574,7 @@ export async function addComment(comment: Omit<Comment, 'id' | 'createdAt'>): Pr
   const data = localStorage.getItem(STORAGE_KEYS.COMMENTS);
   const all: Comment[] = data ? JSON.parse(data) : INITIAL_COMMENTS;
   const updated = [newComment, ...all];
-  localStorage.setItem(STORAGE_KEYS.COMMENTS, JSON.stringify(updated));
+  safeLocalStorageSet(STORAGE_KEYS.COMMENTS, JSON.stringify(updated));
 
   try {
     await setDoc(doc(db, 'comments', newComment.id), firestoreData);
@@ -695,7 +705,7 @@ export function subscribeNotifications(userId: string, callback: (notifications:
         list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
         
         const allLocal = getNotificationsLocal().filter(n => n.userId !== userId);
-        localStorage.setItem('wp_notifications_v4', JSON.stringify([...list, ...allLocal]));
+        safeLocalStorageSet('wp_notifications_v4', JSON.stringify([...list, ...allLocal]));
         callback(list);
       },
       (error) => {
@@ -719,7 +729,7 @@ export async function createNotification(notification: Omit<Notification, 'id' |
   };
 
   const local = getNotificationsLocal();
-  localStorage.setItem('wp_notifications_v4', JSON.stringify([newNotif, ...local]));
+  safeLocalStorageSet('wp_notifications_v4', JSON.stringify([newNotif, ...local]));
 
   try {
     await setDoc(doc(db, 'notifications', newNotif.id), cleanForFirestore(newNotif));
@@ -731,7 +741,7 @@ export async function createNotification(notification: Omit<Notification, 'id' |
 export async function markNotificationAsRead(notificationId: string): Promise<void> {
   const local = getNotificationsLocal();
   const updated = local.map(n => n.id === notificationId ? { ...n, isRead: true } : n);
-  localStorage.setItem('wp_notifications_v4', JSON.stringify(updated));
+  safeLocalStorageSet('wp_notifications_v4', JSON.stringify(updated));
 
   try {
     await setDoc(doc(db, 'notifications', notificationId), { isRead: true }, { merge: true });
@@ -743,7 +753,7 @@ export async function markNotificationAsRead(notificationId: string): Promise<vo
 export async function markAllNotificationsAsRead(userId: string): Promise<void> {
   const local = getNotificationsLocal();
   const updated = local.map(n => n.userId === userId ? { ...n, isRead: true } : n);
-  localStorage.setItem('wp_notifications_v4', JSON.stringify(updated));
+  safeLocalStorageSet('wp_notifications_v4', JSON.stringify(updated));
 
   try {
     const colRef = collection(db, 'notifications');
@@ -811,7 +821,7 @@ export function subscribeLoungeMessages(callback: (messages: LoungeMessage[]) =>
         });
         // Sort by timestamp
         list.sort((a, b) => (a.id > b.id ? 1 : -1));
-        localStorage.setItem(STORAGE_KEYS.LOUNGE, JSON.stringify(list));
+        safeLocalStorageSet(STORAGE_KEYS.LOUNGE, JSON.stringify(list));
         callback(list);
       },
       (error) => {
@@ -835,7 +845,7 @@ export function getLoungeMessagesLocal(): LoungeMessage[] {
     const list: LoungeMessage[] = JSON.parse(data);
     const filtered = list.filter((m) => m.id !== 'lounge-1' && m.id !== 'lounge-2' && !m.id.startsWith('lounge-'));
     if (filtered.length !== list.length) {
-      localStorage.setItem(STORAGE_KEYS.LOUNGE, JSON.stringify(filtered));
+      safeLocalStorageSet(STORAGE_KEYS.LOUNGE, JSON.stringify(filtered));
     }
     return filtered;
   } catch {
@@ -856,7 +866,7 @@ export async function sendLoungeMessage(content: string, customName?: string, cu
 
   const list = getLoungeMessagesLocal();
   const updated = [...list, newMsg];
-  localStorage.setItem(STORAGE_KEYS.LOUNGE, JSON.stringify(updated));
+  safeLocalStorageSet(STORAGE_KEYS.LOUNGE, JSON.stringify(updated));
 
   try {
     await setDoc(doc(db, 'lounge_messages', newMsg.id), newMsg);
@@ -1205,7 +1215,7 @@ export function subscribeUserUnlockedChapters(
           const unlocked = Array.isArray(data.unlockedChapters) ? data.unlockedChapters : [];
           // Merge local & cloud
           const merged = Array.from(new Set([...local, ...unlocked]));
-          localStorage.setItem(`${UNLOCKED_STORAGE_KEY_PREFIX}${uid}`, JSON.stringify(merged));
+          safeLocalStorageSet(`${UNLOCKED_STORAGE_KEY_PREFIX}${uid}`, JSON.stringify(merged));
           callback(merged);
         } else {
           callback(local);
@@ -1274,7 +1284,7 @@ export async function unlockChapterWithChucu(
     );
 
     // Lưu local
-    localStorage.setItem(`${UNLOCKED_STORAGE_KEY_PREFIX}${userUid}`, JSON.stringify(newUnlocked));
+    safeLocalStorageSet(`${UNLOCKED_STORAGE_KEY_PREFIX}${userUid}`, JSON.stringify(newUnlocked));
 
     // Nếu tác giả/Editor có UID khác người mua, cộng thưởng Chucu cho Editor
     if (authorUid && authorUid !== userUid) {
@@ -1331,7 +1341,7 @@ export async function claimStoryOwnership(
 
   const updated = [...stories];
   updated[index] = updatedStory;
-  localStorage.setItem(STORAGE_KEYS.STORIES, JSON.stringify(updated));
+  safeLocalStorageSet(STORAGE_KEYS.STORIES, JSON.stringify(updated));
 
   try {
     await setDoc(doc(db, 'stories', storyId), cleanForFirestore(updatedStory), { merge: true });
@@ -1418,7 +1428,7 @@ export async function updateUserDataEverywhere(
     });
 
     if (localStoriesUpdated) {
-      localStorage.setItem(STORAGE_KEYS.STORIES, JSON.stringify(updatedLocalStories));
+      safeLocalStorageSet(STORAGE_KEYS.STORIES, JSON.stringify(updatedLocalStories));
     }
   } catch (err) {
     console.warn('Lỗi khi cập nhật thông tin editor trong stories:', err);
@@ -1459,7 +1469,7 @@ export async function updateUserDataEverywhere(
     });
 
     if (localCommentsUpdated) {
-      localStorage.setItem(STORAGE_KEYS.COMMENTS, JSON.stringify(updatedLocalComments));
+      safeLocalStorageSet(STORAGE_KEYS.COMMENTS, JSON.stringify(updatedLocalComments));
     }
   } catch (err) {
     console.warn('Lỗi khi cập nhật tên trong comments:', err);
@@ -1500,7 +1510,7 @@ export async function updateUserDataEverywhere(
     });
 
     if (localLoungeUpdated) {
-      localStorage.setItem(STORAGE_KEYS.LOUNGE, JSON.stringify(updatedLocalLounge));
+      safeLocalStorageSet(STORAGE_KEYS.LOUNGE, JSON.stringify(updatedLocalLounge));
     }
   } catch (err) {
     console.warn('Lỗi khi cập nhật tên trong lounge messages:', err);

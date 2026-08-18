@@ -37,6 +37,7 @@ import {
 } from './lib/storage';
 
 import { Header } from './components/Header';
+import { migrateLocalStorageFonts, getIdbFonts, saveIdbFonts, StoredUserFont } from './lib/idbStorage';
 import { StoryCard } from './components/StoryCard';
 import { StoryDetail } from './components/StoryDetail';
 import { ChapterReader } from './components/ChapterReader';
@@ -109,37 +110,28 @@ export default function App() {
       document.head.appendChild(style);
     };
 
-    // 1. Load from localStorage immediately on mount
-    try {
-      const saved = localStorage.getItem('user_uploaded_fonts');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) {
-          parsed.forEach(font => {
-            if (font.value && font.fontData) {
-              injectFontFace(font);
-            }
-          });
+    // 1. Tự động di chuyển font cũ từ localStorage sang IndexedDB và nạp fonts
+    migrateLocalStorageFonts().then((fonts) => {
+      fonts.forEach(font => {
+        if (font.value && font.fontData) {
+          injectFontFace(font);
         }
-      }
-    } catch (e) {
-      console.warn('[Global Fonts] Error loading local fonts:', e);
-    }
+      });
+    }).catch(e => {
+      console.warn('[Global Fonts] Error loading IDB fonts:', e);
+    });
 
     // 2. Load and sync from cloud when currentUser is available
     if (currentUser) {
-      getUserFontsFromCloud(currentUser.uid).then((cloudFonts) => {
+      getUserFontsFromCloud(currentUser.uid).then(async (cloudFonts) => {
         if (!cloudFonts || cloudFonts.length === 0) return;
 
         try {
-          const localSaved = localStorage.getItem('user_uploaded_fonts');
-          const localFonts = localSaved ? JSON.parse(localSaved) : [];
-          
-          const merged = [...localFonts];
+          const currentIdbFonts = await getIdbFonts();
+          const merged: StoredUserFont[] = [...currentIdbFonts];
           let updated = false;
 
           cloudFonts.forEach(cf => {
-            // Check if font already exists in merged list
             const exists = merged.some(lf => lf.value === cf.value);
             if (!exists) {
               merged.push({
@@ -153,7 +145,7 @@ export default function App() {
           });
 
           if (updated) {
-            localStorage.setItem('user_uploaded_fonts', JSON.stringify(merged));
+            await saveIdbFonts(merged);
           }
 
           // Inject all merged fonts

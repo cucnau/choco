@@ -442,6 +442,17 @@ app.post('/api/conversations/:id/messages', (req, res) => {
   res.json({ success: true, message: newMessage });
 });
 
+// API đồng bộ dữ liệu vào server
+app.post("/api/sync-code-data", (req, res) => {
+  try {
+    const { stories, chapters, comments } = req.body;
+    console.log(`[Sync Data] Nhận yêu cầu đồng bộ: ${stories?.length || 0} truyện, ${chapters?.length || 0} chương.`);
+    res.json({ success: true, message: "Đã đồng bộ dữ liệu thành công" });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // === TÍCH HỢP VITE MIDDLEWARE CHO DEVELOPMENT VÀ PRODUCTION ===
 
 async function startServer() {

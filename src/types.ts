@@ -79,6 +79,7 @@ export interface Story {
   
   // Tách biệt theme chương và truyện riêng biệt
   useSeparateChapterTheme?: boolean;
+  useSeparateChapterEffect?: boolean; // Tách biệt hiệu ứng hạt rơi giữa trang truyện và đọc chương
   chapterThemeTone?: string;
   chapterCustomBgColor?: string;
   chapterCustomCardBgColor?: string;

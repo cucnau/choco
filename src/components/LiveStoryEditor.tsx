@@ -3,6 +3,7 @@ import { HexColorPicker } from 'react-colorful';
 import { User as FirebaseUser } from 'firebase/auth';
 import { auth } from '../lib/firebase';
 import { saveUserFontToCloud, deleteUserFontFromCloud, getUserFontsFromCloud } from '../lib/storage';
+import { getIdbFonts, saveIdbFonts, deleteIdbFont, migrateLocalStorageFonts, StoredUserFont } from '../lib/idbStorage';
 import { Story, UserProfile } from '../types';
 import {
   ArrowLeft,
@@ -510,14 +511,17 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
   const [borderGlow, setBorderGlow] = useState<NonNullable<Story['borderGlow']>>(initialStory?.borderGlow || 'none');
 
   // Reading Effect
-  const [readingEffect, setReadingEffect] = useState<'none' | 'rain' | 'snow' | 'glitch' | 'star' | 'leaf'>(
-    initialStory?.readingEffect || 'none'
+  const [readingEffect, setReadingEffect] = useState<'none' | 'rain' | 'snow' | 'glitch' | 'star' | 'leaf' | 'cherry_blossom' | 'firefly' | 'soap_bubble' | 'ginkgo'>(
+    (initialStory?.readingEffect as any) || 'none'
   );
 
   const [previewMode, setPreviewMode] = useState<'story' | 'chapter'>('story');
 
-  // Trạng thái Tách theme chương và truyện riêng biệt
+  // Trạng thái Tách theme và hiệu ứng chương và truyện riêng biệt
   const [useSeparateChapterTheme, setUseSeparateChapterTheme] = useState<boolean>(initialStory?.useSeparateChapterTheme || false);
+  const [useSeparateChapterEffect, setUseSeparateChapterEffect] = useState<boolean>(
+    initialStory?.useSeparateChapterEffect ?? (initialStory?.useSeparateChapterTheme || false)
+  );
   const [chapterThemeTone, setChapterThemeTone] = useState<string>(initialStory?.chapterThemeTone || initialStory?.themeTone || 'dark-rose');
   const [chapterCustomBgColor, setChapterCustomBgColor] = useState(initialStory?.chapterCustomBgColor || '#080406');
   const [chapterCustomCardBgColor, setChapterCustomCardBgColor] = useState(initialStory?.chapterCustomCardBgColor || '#11090c');
@@ -546,15 +550,22 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
   const coverFileInputRef = useRef<HTMLInputElement>(null);
   const avatarFileInputRef = useRef<HTMLInputElement>(null);
 
-  // Custom User-Uploaded Fonts (stored in localStorage, synced with Firestore if logged in)
-  const [userUploadedFonts, setUserUploadedFonts] = useState<{ value: string; label: string; styleId: string; fontData: string }[]>(() => {
-    try {
-      const saved = localStorage.getItem('user_uploaded_fonts');
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
+  // Custom User-Uploaded Fonts (lưu trữ trong IndexedDB an toàn, đồng bộ Firestore)
+  const [userUploadedFonts, setUserUploadedFonts] = useState<StoredUserFont[]>([]);
+
+  // Tự động nạp fonts từ IndexedDB khi mount
+  useEffect(() => {
+    migrateLocalStorageFonts().then((fonts) => {
+      setUserUploadedFonts(fonts);
+      fonts.forEach(font => {
+        if (font.value && font.fontData) {
+          injectFontFace(font);
+        }
+      });
+    }).catch(err => {
+      console.warn('[LiveStoryEditor] Error loading IDB fonts:', err);
+    });
+  }, []);
 
   const injectFontFace = (font: { value: string; fontData: string }) => {
     const styleId = `style-${font.value}`;
@@ -580,20 +591,16 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
     });
   }, [userUploadedFonts]);
 
-  // Sync fonts from Firestore to LocalStorage and State when user logs in
+  // Sync fonts from Firestore to IndexedDB and State when user logs in
   useEffect(() => {
     const syncFontsFromCloud = async () => {
       if (!currentUser?.uid) return;
       try {
         const cloudFonts = await getUserFontsFromCloud(currentUser.uid);
         if (cloudFonts.length > 0) {
-          const localSaved = localStorage.getItem('user_uploaded_fonts');
-          let localFonts: { value: string; label: string; styleId: string; fontData: string }[] = [];
-          try {
-            localFonts = localSaved ? JSON.parse(localSaved) : [];
-          } catch {}
+          const currentIdbFonts = await getIdbFonts();
+          const merged: StoredUserFont[] = [...currentIdbFonts];
 
-          const merged = [...localFonts];
           cloudFonts.forEach(cf => {
             const exists = merged.find(lf => lf.value === cf.value);
             if (!exists) {
@@ -607,7 +614,7 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
           });
 
           setUserUploadedFonts(merged);
-          localStorage.setItem('user_uploaded_fonts', JSON.stringify(merged));
+          await saveIdbFonts(merged);
           merged.forEach(font => {
             injectFontFace(font);
           });
@@ -629,9 +636,9 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
     let successCount = 0;
 
     for (const file of filesArray) {
-      // Limit size to 1.5MB for secure localStorage storage
-      if (file.size > 1.5 * 1024 * 1024) {
-        alert(`Kích thước font "${file.name}" quá lớn! Hãy chọn file dưới 1.5MB.`);
+      // Cho phép font đến 3MB an toàn trên IndexedDB
+      if (file.size > 3 * 1024 * 1024) {
+        alert(`Kích thước font "${file.name}" quá lớn! Hãy chọn file dưới 3MB.`);
         continue;
       }
 
@@ -664,7 +671,7 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
       const fontValue = `font-user-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
       const styleId = `style-${fontValue}`;
 
-      const newFont = {
+      const newFont: StoredUserFont = {
         value: fontValue,
         label,
         styleId,
@@ -687,7 +694,7 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
 
     if (successCount > 0) {
       setUserUploadedFonts(updatedFonts);
-      localStorage.setItem('user_uploaded_fonts', JSON.stringify(updatedFonts));
+      await saveIdbFonts(updatedFonts);
     }
 
     if (filesArray.length > 1) {
@@ -703,7 +710,7 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
   const handleDeleteUploadedFont = async (fontValue: string) => {
     const updated = userUploadedFonts.filter(f => f.value !== fontValue);
     setUserUploadedFonts(updated);
-    localStorage.setItem('user_uploaded_fonts', JSON.stringify(updated));
+    await deleteIdbFont(fontValue);
 
     const styleEl = document.getElementById(`style-${fontValue}`);
     if (styleEl) {
@@ -770,7 +777,10 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
   const activeBRadius = isViewingChapterTheme ? chapterBorderRadius : borderRadius;
   const activeBCorner = isViewingChapterTheme ? chapterBorderCornerAccent : borderCornerAccent;
   const activeBGlow = isViewingChapterTheme ? chapterBorderGlow : borderGlow;
-  const activeReadingEffect = isViewingChapterTheme ? chapterReadingEffect : readingEffect;
+
+  const isSeparatedEffect = useSeparateChapterEffect || useSeparateChapterTheme;
+  const isViewingChapterEffect = isSeparatedEffect && previewMode === 'chapter';
+  const activeReadingEffect = isViewingChapterEffect ? chapterReadingEffect : readingEffect;
 
   const currentBorderObj = {
     borderStyle: activeBStyle,
@@ -845,7 +855,7 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
     else setBorderGlow(val);
   };
   const handleSetReadingEffect = (val: any) => {
-    if (isViewingChapterTheme) setChapterReadingEffect(val);
+    if (isViewingChapterEffect) setChapterReadingEffect(val);
     else setReadingEffect(val);
   };
 
@@ -940,8 +950,9 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
       borderGlow,
       readingEffect,
 
-      // Thông số theme chương riêng biệt
+      // Thông số theme & hiệu ứng chương riêng biệt
       useSeparateChapterTheme,
+      useSeparateChapterEffect,
       chapterThemeTone,
       chapterCustomBgColor: chapterThemeTone === 'custom' ? chapterCustomBgColor : undefined,
       chapterCustomCardBgColor: chapterThemeTone === 'custom' ? chapterCustomCardBgColor : undefined,
@@ -968,7 +979,7 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
       }}
     >
       {/* Hiệu ứng đọc thời gian thực */}
-      {readingEffect !== 'none' && <ReadingEffects effect={readingEffect} isDarkTheme={isDarkTheme} />}
+      {activeReadingEffect !== 'none' && <ReadingEffects effect={activeReadingEffect} isDarkTheme={isDarkTheme} />}
 
       {/* Hidden file inputs */}
       <input
@@ -1545,41 +1556,167 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
 
           {/* TAB 4: READING EFFECTS */}
           {activeDrawerTab === 'effects' && (
-            <div className="space-y-3 text-xs">
-              {useSeparateChapterTheme && (
-                <div className="p-2 rounded text-[10px] font-mono border text-center font-bold" style={{ backgroundColor: currentBtnSecondaryBg, borderColor: currentBorder }}>
-                  {previewMode === 'story' ? (
-                    <span className="text-amber-500">✍️ Thiết lập hiệu ứng: Giao diện trang truyện</span>
-                  ) : (
-                    <span className="text-emerald-500">✍️ Thiết lập hiệu ứng: Giao diện đọc chương</span>
-                  )}
+            <div className="space-y-3.5 text-xs">
+              {/* Nút bật/tắt tách hiệu ứng */}
+              <div className="p-2.5 rounded border border-dashed flex items-center justify-between" style={{ borderColor: currentBorder }}>
+                <div className="pr-2">
+                  <span className="font-bold block text-[11px]" style={{ color: currentText }}>Tách biệt hiệu ứng truyện & chương</span>
+                  <span className="text-[10px] leading-tight block" style={{ color: currentTextMuted }}>
+                    Cho phép chọn hiệu ứng rơi riêng biệt cho trang giới thiệu truyện và trang đọc chương.
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setUseSeparateChapterEffect(!useSeparateChapterEffect)}
+                  className={`w-10 h-6 flex items-center rounded-full p-1 cursor-pointer transition-all duration-300 shrink-0 ${
+                    isSeparatedEffect ? 'bg-emerald-600' : 'bg-gray-600'
+                  }`}
+                >
+                  <div
+                    className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-all duration-300 ${
+                      isSeparatedEffect ? 'translate-x-4' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {/* Khi bật tách hiệu ứng: Hiển thị cả 2 bộ chọn kèm tab xem trước */}
+              {isSeparatedEffect ? (
+                <div className="space-y-3">
+                  {/* Nút chuyển đổi nhanh preview & mục tiêu cấu hình */}
+                  <div className="grid grid-cols-2 gap-1.5 p-1 rounded bg-black/20 border" style={{ borderColor: currentBorder }}>
+                    <button
+                      type="button"
+                      onClick={() => setPreviewMode('story')}
+                      className={`py-1.5 px-2 rounded text-[11px] font-bold flex items-center justify-center gap-1 transition ${
+                        previewMode === 'story'
+                          ? 'bg-amber-600 text-white shadow'
+                          : 'opacity-70 hover:opacity-100'
+                      }`}
+                      style={previewMode !== 'story' ? { color: currentText } : {}}
+                    >
+                      <span>Trang truyện</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPreviewMode('chapter')}
+                      className={`py-1.5 px-2 rounded text-[11px] font-bold flex items-center justify-center gap-1 transition ${
+                        previewMode === 'chapter'
+                          ? 'bg-emerald-600 text-white shadow'
+                          : 'opacity-70 hover:opacity-100'
+                      }`}
+                      style={previewMode !== 'chapter' ? { color: currentText } : {}}
+                    >
+                      <span>Đọc chương</span>
+                    </button>
+                  </div>
+
+                  {/* 1. Hiệu ứng Trang giới thiệu truyện */}
+                  <div className={`p-2.5 rounded border space-y-1.5 transition-all ${
+                    previewMode === 'story' ? 'ring-1 ring-amber-500/50' : 'opacity-80'
+                  }`} style={{ backgroundColor: currentBg, borderColor: currentBorder }}>
+                    <div className="flex items-center justify-between">
+                      <label className="block text-[11px] font-bold text-amber-500">
+                        Hiệu ứng Trang giới thiệu truyện:
+                      </label>
+                      {previewMode !== 'story' && (
+                        <button
+                          type="button"
+                          onClick={() => setPreviewMode('story')}
+                          className="text-[10px] text-amber-400 underline hover:opacity-80 font-mono"
+                        >
+                          Xem trước
+                        </button>
+                      )}
+                    </div>
+                    <select
+                      value={readingEffect}
+                      onChange={(e) => setReadingEffect(e.target.value as any)}
+                      className="w-full p-2 rounded border text-xs focus:outline-none"
+                      style={{ backgroundColor: currentCardBg, borderColor: currentBorder, color: currentText }}
+                    >
+                      <option value="none" style={{ backgroundColor: currentCardBg, color: currentText }}>Không hiệu ứng (Tắt)</option>
+                      <option value="rain" style={{ backgroundColor: currentCardBg, color: currentText }}>🌧️ Mưa rơi lãng mạn (Rain)</option>
+                      <option value="snow" style={{ backgroundColor: currentCardBg, color: currentText }}>❄️ Tuyết rơi mùa đông (Snow)</option>
+                      <option value="star" style={{ backgroundColor: currentCardBg, color: currentText }}>✨ Bụi sao lấp lánh (Stars)</option>
+                      <option value="leaf" style={{ backgroundColor: currentCardBg, color: currentText }}>🍁 Lá phong thu rơi (Maple Leaves)</option>
+                      <option value="ginkgo" style={{ backgroundColor: currentCardBg, color: currentText }}>🍂 Lá bạch quả vàng rơi (Ginkgo Leaves)</option>
+                      <option value="cherry_blossom" style={{ backgroundColor: currentCardBg, color: currentText }}>🌸 Cánh hoa đào rơi (Cherry Blossom)</option>
+                      <option value="firefly" style={{ backgroundColor: currentCardBg, color: currentText }}>✨ Đom đóm bay lấp lánh (Fireflies)</option>
+                      <option value="soap_bubble" style={{ backgroundColor: currentCardBg, color: currentText }}>🫧 Bong bóng xà phòng (Soap Bubbles)</option>
+                      <option value="glitch" style={{ backgroundColor: currentCardBg, color: currentText }}>⚡ Nhiễu sóng viễn tưởng (Glitch)</option>
+                    </select>
+                  </div>
+
+                  {/* 2. Hiệu ứng Trang đọc chương */}
+                  <div className={`p-2.5 rounded border space-y-1.5 transition-all ${
+                    previewMode === 'chapter' ? 'ring-1 ring-emerald-500/50' : 'opacity-80'
+                  }`} style={{ backgroundColor: currentBg, borderColor: currentBorder }}>
+                    <div className="flex items-center justify-between">
+                      <label className="block text-[11px] font-bold text-emerald-500">
+                        Hiệu ứng Trang đọc chương:
+                      </label>
+                      {previewMode !== 'chapter' && (
+                        <button
+                          type="button"
+                          onClick={() => setPreviewMode('chapter')}
+                          className="text-[10px] text-emerald-400 underline hover:opacity-80 font-mono"
+                        >
+                          Xem trước
+                        </button>
+                      )}
+                    </div>
+                    <select
+                      value={chapterReadingEffect}
+                      onChange={(e) => setChapterReadingEffect(e.target.value as any)}
+                      className="w-full p-2 rounded border text-xs focus:outline-none"
+                      style={{ backgroundColor: currentCardBg, borderColor: currentBorder, color: currentText }}
+                    >
+                      <option value="none" style={{ backgroundColor: currentCardBg, color: currentText }}>Không hiệu ứng (Tắt)</option>
+                      <option value="rain" style={{ backgroundColor: currentCardBg, color: currentText }}>🌧️ Mưa rơi lãng mạn (Rain)</option>
+                      <option value="snow" style={{ backgroundColor: currentCardBg, color: currentText }}>❄️ Tuyết rơi mùa đông (Snow)</option>
+                      <option value="star" style={{ backgroundColor: currentCardBg, color: currentText }}>✨ Bụi sao lấp lánh (Stars)</option>
+                      <option value="leaf" style={{ backgroundColor: currentCardBg, color: currentText }}>🍁 Lá phong thu rơi (Maple Leaves)</option>
+                      <option value="ginkgo" style={{ backgroundColor: currentCardBg, color: currentText }}>🍂 Lá bạch quả vàng rơi (Ginkgo Leaves)</option>
+                      <option value="cherry_blossom" style={{ backgroundColor: currentCardBg, color: currentText }}>🌸 Cánh hoa đào rơi (Cherry Blossom)</option>
+                      <option value="firefly" style={{ backgroundColor: currentCardBg, color: currentText }}>✨ Đom đóm bay lấp lánh (Fireflies)</option>
+                      <option value="soap_bubble" style={{ backgroundColor: currentCardBg, color: currentText }}>🫧 Bong bóng xà phòng (Soap Bubbles)</option>
+                      <option value="glitch" style={{ backgroundColor: currentCardBg, color: currentText }}>⚡ Nhiễu sóng viễn tưởng (Glitch)</option>
+                    </select>
+                  </div>
+                </div>
+              ) : (
+                /* Dùng chung hiệu ứng */
+                <div>
+                  <label className="block text-[11px] font-semibold mb-1" style={{ color: currentText }}>
+                    Hiệu ứng rơi chung (Áp dụng cho cả trang truyện & chương):
+                  </label>
+                  <select
+                    value={readingEffect}
+                    onChange={(e) => {
+                      const val = e.target.value as any;
+                      setReadingEffect(val);
+                      setChapterReadingEffect(val);
+                    }}
+                    className="w-full p-2 rounded border text-xs focus:outline-none"
+                    style={{ backgroundColor: currentBg, borderColor: currentBorder, color: currentText }}
+                  >
+                    <option value="none" style={{ backgroundColor: currentCardBg, color: currentText }}>Không hiệu ứng (Tắt)</option>
+                    <option value="rain" style={{ backgroundColor: currentCardBg, color: currentText }}>🌧️ Mưa rơi lãng mạn (Rain)</option>
+                    <option value="snow" style={{ backgroundColor: currentCardBg, color: currentText }}>❄️ Tuyết rơi mùa đông (Snow)</option>
+                    <option value="star" style={{ backgroundColor: currentCardBg, color: currentText }}>✨ Bụi sao lấp lánh (Stars)</option>
+                    <option value="leaf" style={{ backgroundColor: currentCardBg, color: currentText }}>🍁 Lá phong thu rơi (Maple Leaves)</option>
+                    <option value="ginkgo" style={{ backgroundColor: currentCardBg, color: currentText }}>🍂 Lá bạch quả vàng rơi (Ginkgo Leaves)</option>
+                    <option value="cherry_blossom" style={{ backgroundColor: currentCardBg, color: currentText }}>🌸 Cánh hoa đào rơi (Cherry Blossom)</option>
+                    <option value="firefly" style={{ backgroundColor: currentCardBg, color: currentText }}>✨ Đom đóm bay lấp lánh (Fireflies)</option>
+                    <option value="soap_bubble" style={{ backgroundColor: currentCardBg, color: currentText }}>🫧 Bong bóng xà phòng (Soap Bubbles)</option>
+                    <option value="glitch" style={{ backgroundColor: currentCardBg, color: currentText }}>⚡ Nhiễu sóng viễn tưởng (Glitch)</option>
+                  </select>
                 </div>
               )}
 
-              <div>
-                <label className="block text-[11px] font-semibold mb-1" style={{ color: currentText }}>
-                  Hiệu ứng rơi / hạt nền:
-                </label>
-                <select
-                  value={activeReadingEffect}
-                  onChange={(e) => handleSetReadingEffect(e.target.value as any)}
-                  className="w-full p-2 rounded border text-xs focus:outline-none"
-                  style={{ backgroundColor: currentBg, borderColor: currentBorder, color: currentText }}
-                >
-                  <option value="none" style={{ backgroundColor: currentCardBg, color: currentText }}>Không hiệu ứng</option>
-                  <option value="rain" style={{ backgroundColor: currentCardBg, color: currentText }}>Mưa rơi lãng mạn (Rain)</option>
-                  <option value="snow" style={{ backgroundColor: currentCardBg, color: currentText }}>Tuyết rơi mùa đông (Snow)</option>
-                  <option value="star" style={{ backgroundColor: currentCardBg, color: currentText }}>Bụi sao lấp lánh (Stars)</option>
-                  <option value="leaf" style={{ backgroundColor: currentCardBg, color: currentText }}>Lá phong thu rơi (Maple Leaves)</option>
-                  <option value="ginkgo" style={{ backgroundColor: currentCardBg, color: currentText }}>Lá bạch quả vàng rơi (Ginkgo Leaves)</option>
-                  <option value="cherry_blossom" style={{ backgroundColor: currentCardBg, color: currentText }}>Cánh hoa đào rơi (Cherry Blossom)</option>
-                  <option value="firefly" style={{ backgroundColor: currentCardBg, color: currentText }}>Đom đóm bay lấp lánh (Fireflies)</option>
-                  <option value="soap_bubble" style={{ backgroundColor: currentCardBg, color: currentText }}>Bong bóng xà phòng (Soap Bubbles)</option>
-                  <option value="glitch" style={{ backgroundColor: currentCardBg, color: currentText }}>Nhiễu sóng viễn tưởng (Glitch)</option>
-                </select>
-              </div>
               <p className="text-[10px] leading-relaxed" style={{ color: currentTextMuted }}>
-                Hiệu ứng rơi sẽ tự động kích hoạt ngay trên nền trang đọc và trang chi tiết của bộ truyện này.
+                Hiệu ứng rơi sẽ tự động kích hoạt ngay trên nền trang đọc và trang chi tiết của bộ truyện theo từng cài đặt riêng.
               </p>
             </div>
           )}
@@ -1683,7 +1820,7 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
             style={{ color: currentText }}
           >
             <BookOpen className="w-3.5 h-3.5" />
-            <span>📖 Giao diện trang truyện</span>
+            <span>Giao diện trang truyện</span>
           </button>
           <button
             type="button"
@@ -1696,7 +1833,7 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
             style={{ color: currentText }}
           >
             <Bookmark className="w-3.5 h-3.5" />
-            <span>📄 Giao diện đọc chương</span>
+            <span>Giao diện đọc chương</span>
           </button>
         </div>
 

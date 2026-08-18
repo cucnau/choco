@@ -544,7 +544,8 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
   const activeBorderRadius = hasSeparateTheme ? (story.chapterBorderRadius || 'none') : (story.borderRadius || 'none');
   const activeBorderCornerAccent = hasSeparateTheme ? (story.chapterBorderCornerAccent || 'none') : (story.borderCornerAccent || 'none');
   const activeBorderGlow = hasSeparateTheme ? (story.chapterBorderGlow || 'none') : (story.borderGlow || 'none');
-  const activeReadingEffect = hasSeparateTheme ? (story.chapterReadingEffect || 'none') : (story.readingEffect || 'none');
+  const hasSeparateEffect = story.useSeparateChapterEffect || story.useSeparateChapterTheme;
+  const activeReadingEffect = hasSeparateEffect ? (story.chapterReadingEffect || 'none') : (story.readingEffect || 'none');
 
   const borderObj = {
     borderStyle: activeBorderStyle,
