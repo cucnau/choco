@@ -525,6 +525,8 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
   const [customBodyFont, setCustomBodyFont] = useState('font-mono');
   const [customMutedFont, setCustomMutedFont] = useState('font-mono');
   const [customBtnFont, setCustomBtnFont] = useState('font-mono');
+  const [titleFontSize, setTitleFontSize] = useState('24px');
+  const [bodyFontSize, setBodyFontSize] = useState('14px');
   const [customBgColor, setCustomBgColor] = useState('#080406');
   const [customBgType, setCustomBgType] = useState<'solid' | 'gradient'>('solid');
   const [customGradientColor1, setCustomGradientColor1] = useState('#2b111e');
@@ -906,6 +908,8 @@ export const INITIAL_COMMENTS: Comment[] = ${JSON.stringify(comments, null, 2)};
     setCustomBodyFont('font-mono');
     setCustomMutedFont('font-mono');
     setCustomBtnFont('font-mono');
+    setTitleFontSize('24px');
+    setBodyFontSize('14px');
     setCustomBgColor('#080406');
     setCustomBgType('solid');
     setCustomGradientColor1('#2b111e');
@@ -954,6 +958,8 @@ export const INITIAL_COMMENTS: Comment[] = ${JSON.stringify(comments, null, 2)};
     setCustomBodyFont(story.customBodyFont || story.defaultFont || 'font-mono');
     setCustomMutedFont(story.customMutedFont || story.defaultFont || 'font-mono');
     setCustomBtnFont(story.customBtnFont || story.defaultFont || 'font-mono');
+    setTitleFontSize(story.titleFontSize || '24px');
+    setBodyFontSize(story.bodyFontSize || '14px');
     
     const bg = story.customBgColor || '#080406';
     if (bg.includes('gradient')) {
@@ -1037,6 +1043,8 @@ export const INITIAL_COMMENTS: Comment[] = ${JSON.stringify(comments, null, 2)};
       customBodyFont: customBodyFont,
       customMutedFont: customMutedFont,
       customBtnFont: customBtnFont,
+      titleFontSize: titleFontSize,
+      bodyFontSize: bodyFontSize,
       customBgColor: themeTone === 'custom' ? customBgColor : undefined,
       customCardBgColor: themeTone === 'custom' ? customCardBgColor : undefined,
       customTextColor: themeTone === 'custom' ? customTextColor : undefined,
@@ -2165,6 +2173,42 @@ export const INITIAL_COMMENTS: Comment[] = ${JSON.stringify(comments, null, 2)};
                     </select>
                   </div>
                 </div>
+
+                {/* Font Size Settings */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2.5 border-t border-[#2d1822]">
+                  <div className="space-y-1">
+                    <label className="text-xs text-[#8a717a] block font-mono-code">Cỡ chữ tiêu đề (Trang truyện):</label>
+                    <select
+                      value={titleFontSize}
+                      onChange={(e) => setTitleFontSize(e.target.value)}
+                      className="w-full bg-[#170d12] border border-[#2d1822] p-2 text-xs text-[#e0c0cc] focus:outline-none focus:border-[#522d3d] font-mono-code"
+                    >
+                      <option value="18px">Nhỏ (18px)</option>
+                      <option value="20px">Vừa (20px)</option>
+                      <option value="24px">Mặc định (24px)</option>
+                      <option value="28px">Lớn (28px)</option>
+                      <option value="32px">Rất lớn (32px)</option>
+                      <option value="36px">Cực lớn (36px)</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs text-[#8a717a] block font-mono-code">Cỡ chữ tóm tắt & danh sách chương:</label>
+                    <select
+                      value={bodyFontSize}
+                      onChange={(e) => setBodyFontSize(e.target.value)}
+                      className="w-full bg-[#170d12] border border-[#2d1822] p-2 text-xs text-[#e0c0cc] focus:outline-none focus:border-[#522d3d] font-mono-code"
+                    >
+                      <option value="12px">Nhỏ (12px)</option>
+                      <option value="13px">Hơi nhỏ (13px)</option>
+                      <option value="14px">Mặc định (14px)</option>
+                      <option value="15px">Vừa (15px)</option>
+                      <option value="16px">Chuẩn (16px)</option>
+                      <option value="18px">Lớn (18px)</option>
+                      <option value="20px">Rất lớn (20px)</option>
+                    </select>
+                  </div>
+                </div>
               </div>
 
               {/* Story Border & Frame Customization Section */}
@@ -2511,8 +2555,8 @@ export const INITIAL_COMMENTS: Comment[] = ${JSON.stringify(comments, null, 2)};
                       <div className="flex-1 min-w-0 space-y-2.5">
                         <div>
                           <h3 
-                            className={`text-base font-bold uppercase tracking-wide leading-snug ${customTitleFont}`}
-                            style={{ color: activePreviewColors.text }}
+                            className={`font-bold tracking-wide leading-snug ${customTitleFont}`}
+                            style={{ color: activePreviewColors.text, fontSize: titleFontSize }}
                           >
                             {storyTitle.trim() || 'Tên bộ truyện của bạn'}
                           </h3>
@@ -2533,8 +2577,8 @@ export const INITIAL_COMMENTS: Comment[] = ${JSON.stringify(comments, null, 2)};
                             Giới thiệu:
                           </span>
                           <p 
-                            className={`text-xs leading-relaxed line-clamp-4 opacity-90 text-justify ${customBodyFont}`}
-                            style={{ color: activePreviewColors.text }}
+                            className={`leading-relaxed line-clamp-4 opacity-90 text-justify ${customBodyFont}`}
+                            style={{ color: activePreviewColors.text, fontSize: bodyFontSize }}
                           >
                             {storySynopsis.trim() || 'Đây là phần giới thiệu tác phẩm hiển thị trên trang thông tin truyện. Bạn có thể kiểm tra phông chữ và độ tương phản giữa màu chữ chính với màu nền thẻ.'}
                           </p>
@@ -2544,7 +2588,7 @@ export const INITIAL_COMMENTS: Comment[] = ${JSON.stringify(comments, null, 2)};
 
                     {/* Chapters List Section Preview */}
                     <div className="pt-3 border-t space-y-2" style={{ borderColor: activePreviewColors.border }}>
-                      <div className={`flex items-center justify-between text-xs font-bold uppercase tracking-wider ${customTitleFont}`} style={{ color: activePreviewColors.text }}>
+                      <div className={`flex items-center justify-between text-xs font-bold uppercase tracking-wider ${customBodyFont}`} style={{ color: activePreviewColors.text }}>
                         <span>Danh sách chương (2)</span>
                       </div>
 
@@ -2556,7 +2600,7 @@ export const INITIAL_COMMENTS: Comment[] = ${JSON.stringify(comments, null, 2)};
                             borderColor: activePreviewColors.border,
                           }}
                         >
-                          <span className={`font-medium ${customTitleFont}`} style={{ color: activePreviewColors.text }}>
+                          <span className={`font-medium ${customBodyFont}`} style={{ color: activePreviewColors.text }}>
                             Chương 1: Mở đầu câu chuyện
                           </span>
                         </div>
@@ -2568,7 +2612,7 @@ export const INITIAL_COMMENTS: Comment[] = ${JSON.stringify(comments, null, 2)};
                             borderColor: activePreviewColors.border,
                           }}
                         >
-                          <span className={`font-medium ${customTitleFont}`} style={{ color: activePreviewColors.text }}>
+                          <span className={`font-medium ${customBodyFont}`} style={{ color: activePreviewColors.text }}>
                             Chương 2: Đêm trăng trên đỉnh núi
                           </span>
                         </div>

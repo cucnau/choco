@@ -1788,5 +1788,30 @@ export async function getUserFontsFromCloud(userId: string): Promise<{ name: str
   }
 }
 
+/**
+ * LẤY TẤT CẢ FONT TẢI LÊN TRÊN HỆ THỐNG ĐỂ NGƯỜI KHÁC CŨNG ĐỌC ĐƯỢC
+ */
+export async function getAllUserFontsFromCloud(): Promise<{ name: string; value: string; fileData: string }[]> {
+  try {
+    const colRef = collection(db, 'user_fonts');
+    const snap = await getDocs(colRef);
+    const list: { name: string; value: string; fileData: string }[] = [];
+    snap.forEach((d) => {
+      const data = d.data();
+      if (data.name && data.value && data.fileData) {
+        list.push({
+          name: data.name,
+          value: data.value,
+          fileData: data.fileData
+        });
+      }
+    });
+    return list;
+  } catch (err) {
+    console.warn(`[Font Cloud] Không thể tải toàn bộ font từ Firestore:`, err);
+    return [];
+  }
+}
+
 
 

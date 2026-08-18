@@ -33,7 +33,8 @@ import {
   subscribeNotifications,
   markNotificationAsRead,
   markAllNotificationsAsRead,
-  getUserFontsFromCloud
+  getUserFontsFromCloud,
+  getAllUserFontsFromCloud
 } from './lib/storage';
 
 import { Header } from './components/Header';
@@ -121,45 +122,43 @@ export default function App() {
       console.warn('[Global Fonts] Error loading IDB fonts:', e);
     });
 
-    // 2. Load and sync from cloud when currentUser is available
-    if (currentUser) {
-      getUserFontsFromCloud(currentUser.uid).then(async (cloudFonts) => {
-        if (!cloudFonts || cloudFonts.length === 0) return;
+    // 2. Load and sync ALL custom fonts from cloud for every reader/visitor
+    getAllUserFontsFromCloud().then(async (cloudFonts) => {
+      if (!cloudFonts || cloudFonts.length === 0) return;
 
-        try {
-          const currentIdbFonts = await getIdbFonts();
-          const merged: StoredUserFont[] = [...currentIdbFonts];
-          let updated = false;
+      try {
+        const currentIdbFonts = await getIdbFonts();
+        const merged: StoredUserFont[] = [...currentIdbFonts];
+        let updated = false;
 
-          cloudFonts.forEach(cf => {
-            const exists = merged.some(lf => lf.value === cf.value);
-            if (!exists) {
-              merged.push({
-                value: cf.value,
-                label: cf.name,
-                styleId: `style-${cf.value}`,
-                fontData: cf.fileData
-              });
-              updated = true;
-            }
-          });
-
-          if (updated) {
-            await saveIdbFonts(merged);
+        cloudFonts.forEach(cf => {
+          const exists = merged.some(lf => lf.value === cf.value);
+          if (!exists) {
+            merged.push({
+              value: cf.value,
+              label: cf.name,
+              styleId: `style-${cf.value}`,
+              fontData: cf.fileData
+            });
+            updated = true;
           }
+        });
 
-          // Inject all merged fonts
-          merged.forEach(font => {
-            if (font.value && font.fontData) {
-              injectFontFace(font);
-            }
-          });
-        } catch (e) {
-          console.warn('[Global Fonts] Error syncing cloud fonts:', e);
+        if (updated) {
+          await saveIdbFonts(merged);
         }
-      });
-    }
-  }, [currentUser]);
+
+        // Inject all merged fonts into document @font-face
+        merged.forEach(font => {
+          if (font.value && font.fontData) {
+            injectFontFace(font);
+          }
+        });
+      } catch (e) {
+        console.warn('[Global Fonts] Error syncing cloud fonts:', e);
+      }
+    });
+  }, []);
 
   // Global Anti-Copy Protection
   useEffect(() => {

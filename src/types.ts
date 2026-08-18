@@ -63,6 +63,8 @@ export interface Story {
   customBodyFont?: string; // Font chữ cho nội dung / chữ thường
   customMutedFont?: string; // Font chữ phụ / chú thích / tác giả / ngày tháng
   customBtnFont?: string; // Font chữ cho các nút bấm / huy hiệu / nhãn trạng thái
+  titleFontSize?: string; // Cỡ chữ tiêu đề truyện (ví dụ: '18px', '20px', '24px', '28px', '32px')
+  bodyFontSize?: string; // Cỡ chữ nội dung / tóm tắt / danh sách chương (ví dụ: '12px', '14px', '16px', '18px')
   customBgColor?: string; // Màu nền trang đọc truyện (Màu đơn hoặc Gradient CSS)
   customCardBgColor?: string; // Màu nền khung truyện/thẻ truyện (Màu đơn hoặc Gradient CSS)
   customTextColor?: string; // Màu chữ chính

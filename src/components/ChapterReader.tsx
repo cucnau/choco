@@ -413,7 +413,7 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
 
           {/* Chapter Header: Story title, volume title, chapter title, lock badge, meta */}
           <div className="text-center space-y-2 pb-5 border-b border-dashed" style={{ borderColor: currentBorder }}>
-            <div className={`flex items-center justify-center gap-2 flex-wrap text-[11px] font-bold uppercase tracking-widest ${storyMutedFont}`} style={{ color: currentTextMuted }}>
+            <div className={`flex items-center justify-center gap-2 flex-wrap text-[11px] font-bold tracking-wider ${storyMutedFont}`} style={{ color: currentTextMuted }}>
               <span>{story.title}</span>
               {chapter.volumeTitle && (
                 <>
@@ -423,7 +423,7 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
               )}
             </div>
             <div className="flex items-center justify-center gap-2 flex-wrap">
-              <h1 className={`text-xl sm:text-2xl font-bold tracking-wide leading-snug ${storyTitleFont}`} style={{ color: currentText }}>
+              <h1 className={`text-xl sm:text-2xl font-bold tracking-wide leading-snug ${storyBodyFont}`} style={{ color: currentText }}>
                 {chapter.title}
               </h1>
               {chapter.isLocked && (
@@ -470,7 +470,7 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
                 >
                   <Lock className="w-6 h-6" />
                 </div>
-                <h3 className={`text-base sm:text-lg font-bold uppercase tracking-wider ${storyTitleFont}`} style={{ color: currentText }}>
+                <h3 className={`text-base sm:text-lg font-bold uppercase tracking-wider ${storyBodyFont}`} style={{ color: currentText }}>
                   Chương này đã bị khóa
                 </h3>
                 <p className={`text-xs ${storyMutedFont}`} style={{ color: currentTextMuted }}>
@@ -754,7 +754,7 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
         >
           <div className="flex flex-wrap items-center justify-between gap-2 border-b pb-2.5" style={{ borderColor: currentBorder }}>
             <h3 
-              className={`text-xs font-bold uppercase tracking-[0.15em] flex items-center gap-2 ${storyTitleFont}`}
+              className={`text-xs font-bold uppercase tracking-[0.15em] flex items-center gap-2 ${storyBodyFont}`}
               style={{ color: currentText }}
             >
               <MessageSquare className="w-4 h-4" style={{ color: currentTextMuted }} />

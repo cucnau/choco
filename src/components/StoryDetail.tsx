@@ -508,8 +508,11 @@ export const StoryDetail: React.FC<StoryDetailProps> = ({
           {/* Right Column (Title + Metadata + Synopsis): Trên mobile sẽ đứng thứ 2 (dưới ảnh bìa, trên editor/nút) */}
           <div className="order-2 sm:col-start-2 sm:row-start-1 sm:row-span-2 space-y-4">
             <h1 
-              className={`text-lg sm:text-2xl font-bold uppercase tracking-[0.05em] ${storyTitleFont}`}
-              style={customStyles.text}
+              className={`font-bold tracking-[0.02em] ${storyTitleFont} ${story.titleFontSize ? '' : 'text-lg sm:text-2xl'}`}
+              style={{
+                ...customStyles.text,
+                ...(story.titleFontSize ? { fontSize: story.titleFontSize } : {})
+              }}
             >
               {story.title}
             </h1>
@@ -539,8 +542,11 @@ export const StoryDetail: React.FC<StoryDetailProps> = ({
                       .map((para, idx) => (
                         <p 
                           key={idx} 
-                          className="text-sm leading-relaxed opacity-90 text-justify"
-                          style={customStyles.text}
+                          className={`leading-relaxed opacity-90 text-justify ${story.bodyFontSize ? '' : 'text-sm'}`}
+                          style={{
+                            ...customStyles.text,
+                            ...(story.bodyFontSize ? { fontSize: story.bodyFontSize } : {})
+                          }}
                         >
                           {para}
                         </p>
@@ -745,7 +751,7 @@ export const StoryDetail: React.FC<StoryDetailProps> = ({
           className="space-y-3 pt-4 border-t"
           style={customStyles.border}
         >
-          <h3 className={`text-xs font-bold uppercase tracking-[0.15em] flex items-center justify-between ${storyTitleFont}`} style={customStyles.text}>
+          <h3 className={`text-xs font-bold uppercase tracking-[0.15em] flex items-center justify-between ${storyBodyFont}`} style={customStyles.text}>
             <span>Danh sách chương ({chapters.length})</span>
           </h3>
 
@@ -783,7 +789,7 @@ export const StoryDetail: React.FC<StoryDetailProps> = ({
                           >
                             <div className="flex items-center gap-2">
                               <BookOpen className="w-3.5 h-3.5 opacity-80" />
-                              <span className={storyTitleFont}>{chap.volumeTitle}</span>
+                              <span className={storyBodyFont}>{chap.volumeTitle}</span>
                             </div>
                             <span className={`text-[10px] font-normal font-mono ${storyMutedFont}`} style={customStyles.textMuted}>
                               {sorted.filter(c => c.volumeTitle === chap.volumeTitle).length} chương
@@ -827,7 +833,15 @@ export const StoryDetail: React.FC<StoryDetailProps> = ({
                         }}
                       >
                         <div className="flex items-center gap-2.5 flex-wrap">
-                          <span className={`font-bold text-sm ${storyTitleFont}`} style={customStyles.text}>{chap.title}</span>
+                          <span 
+                            className={`font-bold ${storyBodyFont} ${story.bodyFontSize ? '' : 'text-sm'}`} 
+                            style={{
+                              ...customStyles.text,
+                              ...(story.bodyFontSize ? { fontSize: story.bodyFontSize } : {})
+                            }}
+                          >
+                            {chap.title}
+                          </span>
                           
                           {lastReadProgress && lastReadProgress.chapterId === chap.id && (
                             <span 
@@ -876,7 +890,7 @@ export const StoryDetail: React.FC<StoryDetailProps> = ({
           className="space-y-4 pt-6 border-t"
           style={customStyles.border}
         >
-          <h3 className={`text-xs font-bold uppercase tracking-[0.15em] flex items-center gap-2 ${storyTitleFont}`} style={customStyles.text}>
+          <h3 className={`text-xs font-bold uppercase tracking-[0.15em] flex items-center gap-2 ${storyBodyFont}`} style={customStyles.text}>
             <MessageSquare className="w-4 h-4 opacity-85" style={customStyles.textMuted} />
             <span>Bình luận ({comments.length})</span>
           </h3>

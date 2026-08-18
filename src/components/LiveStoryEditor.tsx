@@ -493,6 +493,8 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
   const [customBodyFont, setCustomBodyFont] = useState(initialStory?.customBodyFont || initialStory?.defaultFont || 'font-mono');
   const [customMutedFont, setCustomMutedFont] = useState(initialStory?.customMutedFont || initialStory?.defaultFont || 'font-mono');
   const [customBtnFont, setCustomBtnFont] = useState(initialStory?.customBtnFont || initialStory?.defaultFont || 'font-mono');
+  const [titleFontSize, setTitleFontSize] = useState<string>(initialStory?.titleFontSize || '24px');
+  const [bodyFontSize, setBodyFontSize] = useState<string>(initialStory?.bodyFontSize || '14px');
 
   // Custom Colors
   const [customBgColor, setCustomBgColor] = useState(initialStory?.customBgColor || '#080406');
@@ -936,6 +938,8 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
       customBodyFont,
       customMutedFont,
       customBtnFont,
+      titleFontSize,
+      bodyFontSize,
       customBgColor: themeTone === 'custom' ? customBgColor : undefined,
       customCardBgColor: themeTone === 'custom' ? customCardBgColor : undefined,
       customTextColor: themeTone === 'custom' ? customTextColor : undefined,
@@ -1445,6 +1449,47 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                     </option>
                   ))}
                 </select>
+              </div>
+
+              <div className="pt-2 border-t border-dashed space-y-3" style={{ borderColor: currentBorder }}>
+                <div>
+                  <label className="block text-[11px] font-semibold mb-1" style={{ color: currentText }}>
+                    Cỡ chữ tiêu đề (Trang truyện):
+                  </label>
+                  <select
+                    value={titleFontSize}
+                    onChange={(e) => setTitleFontSize(e.target.value)}
+                    className="w-full p-2 rounded border text-xs focus:outline-none"
+                    style={{ backgroundColor: currentBg, borderColor: currentBorder, color: currentText }}
+                  >
+                    <option value="18px" style={{ backgroundColor: currentCardBg, color: currentText }}>Nhỏ (18px)</option>
+                    <option value="20px" style={{ backgroundColor: currentCardBg, color: currentText }}>Vừa (20px)</option>
+                    <option value="24px" style={{ backgroundColor: currentCardBg, color: currentText }}>Mặc định (24px)</option>
+                    <option value="28px" style={{ backgroundColor: currentCardBg, color: currentText }}>Lớn (28px)</option>
+                    <option value="32px" style={{ backgroundColor: currentCardBg, color: currentText }}>Rất lớn (32px)</option>
+                    <option value="36px" style={{ backgroundColor: currentCardBg, color: currentText }}>Cực lớn (36px)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-semibold mb-1" style={{ color: currentText }}>
+                    Cỡ chữ tóm tắt & danh sách chương:
+                  </label>
+                  <select
+                    value={bodyFontSize}
+                    onChange={(e) => setBodyFontSize(e.target.value)}
+                    className="w-full p-2 rounded border text-xs focus:outline-none"
+                    style={{ backgroundColor: currentBg, borderColor: currentBorder, color: currentText }}
+                  >
+                    <option value="12px" style={{ backgroundColor: currentCardBg, color: currentText }}>Nhỏ (12px)</option>
+                    <option value="13px" style={{ backgroundColor: currentCardBg, color: currentText }}>Hơi nhỏ (13px)</option>
+                    <option value="14px" style={{ backgroundColor: currentCardBg, color: currentText }}>Mặc định (14px)</option>
+                    <option value="15px" style={{ backgroundColor: currentCardBg, color: currentText }}>Vừa (15px)</option>
+                    <option value="16px" style={{ backgroundColor: currentCardBg, color: currentText }}>Chuẩn (16px)</option>
+                    <option value="18px" style={{ backgroundColor: currentCardBg, color: currentText }}>Lớn (18px)</option>
+                    <option value="20px" style={{ backgroundColor: currentCardBg, color: currentText }}>Rất lớn (20px)</option>
+                  </select>
+                </div>
               </div>
             </div>
           )}
@@ -2212,10 +2257,11 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                   placeholder="Nhập tên truyện tại đây..."
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  className={`w-full p-2.5 bg-transparent rounded border border-dashed hover:border-solid focus:border-solid transition-all text-lg sm:text-2xl font-bold uppercase tracking-[0.05em] focus:outline-none focus:ring-1 ${customTitleFont}`}
+                  className={`w-full p-2.5 bg-transparent rounded border border-dashed hover:border-solid focus:border-solid transition-all font-bold tracking-[0.02em] focus:outline-none focus:ring-1 ${customTitleFont}`}
                   style={{
                     borderColor: currentBorder,
                     color: currentText,
+                    fontSize: titleFontSize,
                   }}
                 />
               </div>
@@ -2252,10 +2298,11 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                   placeholder="Nhập phần tóm tắt, trích đoạn hoặc giới thiệu nội dung cuốn hút của bộ truyện..."
                   value={synopsis}
                   onChange={(e) => setSynopsis(e.target.value)}
-                  className={`w-full p-3 bg-transparent rounded border border-dashed hover:border-solid focus:border-solid transition-all text-sm leading-relaxed focus:outline-none focus:ring-1 resize-y ${customBodyFont}`}
+                  className={`w-full p-3 bg-transparent rounded border border-dashed hover:border-solid focus:border-solid transition-all leading-relaxed focus:outline-none focus:ring-1 resize-y ${customBodyFont}`}
                   style={{
                     borderColor: currentBorder,
                     color: currentText,
+                    fontSize: bodyFontSize,
                   }}
                 />
               </div>
