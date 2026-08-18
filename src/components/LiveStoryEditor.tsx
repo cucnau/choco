@@ -24,6 +24,8 @@ import {
   Layers,
   ChevronDown,
   ChevronUp,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { ReadingEffects } from './ReadingEffects';
 import {
@@ -511,6 +513,8 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
   const [readingEffect, setReadingEffect] = useState<'none' | 'rain' | 'snow' | 'glitch' | 'star' | 'leaf'>(
     initialStory?.readingEffect || 'none'
   );
+
+  const [previewMode, setPreviewMode] = useState<'story' | 'chapter'>('story');
 
   // Floating Design Drawer Tabs
   const [activeDrawerTab, setActiveDrawerTab] = useState<'theme' | 'fonts' | 'borders' | 'effects' | null>(null);
@@ -1487,16 +1491,145 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
           </button>
         </div>
 
-        {/* LIVE ARTICLE CONTAINER */}
-        <article
-          className="p-6 space-y-6 relative overflow-hidden transition-all duration-200"
-          style={{
-            background: currentCardBg,
-            ...getStoryBorderStyle(currentBorderObj, currentBorder),
-          }}
-        >
-          {/* Corner Accents */}
-          <StoryCornerAccents accent={borderCornerAccent} color={currentBorder} />
+        {/* TOGGLE CHẾ ĐỘ XEM TRƯỚC GIAO DIỆN (TRANG GIỚI THIỆU VS TRANG ĐỌC CHƯƠNG) */}
+        <div className="flex items-center gap-1.5 sm:gap-4 border-b pb-1 font-mono text-xs sm:text-sm overflow-x-auto whitespace-nowrap" style={{ borderColor: currentBorder }}>
+          <button
+            type="button"
+            onClick={() => setPreviewMode('story')}
+            className={`px-3.5 py-2 font-bold uppercase tracking-wider border-b-2 transition-all duration-200 flex items-center gap-1.5 ${
+              previewMode === 'story'
+                ? 'border-current opacity-100 font-extrabold'
+                : 'border-transparent opacity-60 hover:opacity-100'
+            }`}
+            style={{ color: currentText }}
+          >
+            <BookOpen className="w-3.5 h-3.5" />
+            <span>📖 Giao diện trang truyện</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setPreviewMode('chapter')}
+            className={`px-3.5 py-2 font-bold uppercase tracking-wider border-b-2 transition-all duration-200 flex items-center gap-1.5 ${
+              previewMode === 'chapter'
+                ? 'border-current opacity-100 font-extrabold'
+                : 'border-transparent opacity-60 hover:opacity-100'
+            }`}
+            style={{ color: currentText }}
+          >
+            <Bookmark className="w-3.5 h-3.5" />
+            <span>📄 Giao diện đọc chương</span>
+          </button>
+        </div>
+
+        {/* LIVE ARTICLE CONTAINER OR CHAPTER PREVIEW */}
+        {previewMode === 'chapter' ? (
+          <article
+            className="p-6 space-y-6 relative overflow-hidden transition-all duration-200 shadow-xl"
+            style={{
+              background: currentCardBg,
+              ...getStoryBorderStyle(currentBorderObj, currentBorder),
+            }}
+          >
+            {/* Vintage/Brackets Corner Decorators */}
+            <StoryCornerAccents accent={borderCornerAccent} color={currentBorder} />
+
+            {/* Header: Chapter title, word count, date */}
+            <div className="text-center space-y-2 pb-5 border-b border-dashed" style={{ borderColor: currentBorder }}>
+              <span className={`text-[11px] font-bold uppercase tracking-widest ${customMutedFont}`} style={{ color: currentTextMuted }}>
+                Chương 1 (Đọc thử)
+              </span>
+              <h2 className={`text-xl sm:text-2xl font-bold tracking-wide leading-snug ${customTitleFont}`} style={{ color: currentText }}>
+                Khởi Đầu Của Cuộc Phiêu Lưu Kỳ Thú
+              </h2>
+              <div className={`flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[10px] font-mono ${customMutedFont}`} style={{ color: currentTextMuted }}>
+                <span>Người đăng: {editorName}</span>
+                <span>•</span>
+                <span>1,250 chữ</span>
+                <span>•</span>
+                <span>Vừa xong</span>
+              </div>
+            </div>
+
+            {/* Mock Chapter Content Paragraphs */}
+            <div className={`space-y-4 text-sm leading-relaxed ${customBodyFont}`} style={{ color: currentText }}>
+              <p>
+                Ánh nắng ban mai khẽ len lỏi qua những tán lá sồi già, rọi chiếu từng vệt sáng lấp lánh xuống thảm cỏ đẫm sương đêm. 
+                Gió thổi dịu mát, mang theo hương vị trong lành của núi rừng hoang dã.
+              </p>
+              <p>
+                Đây là một đoạn nội dung văn bản đọc thử nhằm kiểm tra khả năng hiển thị phông chữ, khoảng cách dòng, độ tương phản và màu sắc của chương truyện thực tế. 
+                Khi độc giả vào chương mới của bạn, giao diện và hiệu ứng sẽ xuất hiện giống hệt như những gì bạn đang thiết lập và tinh chỉnh ở đây.
+              </p>
+              <p>
+                "Mọi hành trình vạn dặm đều bắt đầu từ một bước chân đầu tiên," nhân vật chính khẽ thầm thì, mắt hướng về phía chân trời xa xăm nơi những dãy núi mờ sương đang thức giấc.
+              </p>
+            </div>
+
+            {/* Chapter Navigation controls */}
+            <div className="pt-6 border-t border-dashed space-y-4" style={{ borderColor: currentBorder }}>
+              <div className="flex items-center justify-between gap-2 font-mono text-xs">
+                <button
+                  type="button"
+                  disabled
+                  className="px-3.5 py-1.5 rounded border opacity-50 cursor-not-allowed transition flex items-center gap-1"
+                  style={{
+                    backgroundColor: currentBtnSecondaryBg,
+                    borderColor: currentBtnBorder,
+                    color: currentText,
+                  }}
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                  <span>Chương trước</span>
+                </button>
+
+                <button
+                  type="button"
+                  className="px-4 py-1.5 rounded border font-bold transition uppercase tracking-wider"
+                  style={{
+                    backgroundColor: currentBtnBg,
+                    borderColor: currentBtnBorder,
+                    color: currentBtnText,
+                  }}
+                >
+                  Mục lục
+                </button>
+
+                <button
+                  type="button"
+                  className="px-3.5 py-1.5 rounded border hover:opacity-80 transition flex items-center gap-1"
+                  style={{
+                    backgroundColor: currentBtnSecondaryBg,
+                    borderColor: currentBtnBorder,
+                    color: currentText,
+                  }}
+                >
+                  <span>Chương sau</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              {/* Back to story main link */}
+              <div className="text-center font-mono">
+                <button
+                  type="button"
+                  className="text-[11px] underline hover:opacity-80 transition"
+                  style={{ color: currentTextMuted }}
+                >
+                  ← Trở về trang giới thiệu truyện
+                </button>
+              </div>
+            </div>
+          </article>
+        ) : (
+          <article
+            className="p-6 space-y-6 relative overflow-hidden transition-all duration-200"
+            style={{
+              background: currentCardBg,
+              ...getStoryBorderStyle(currentBorderObj, currentBorder),
+            }}
+          >
+            {/* Corner Accents */}
+            <StoryCornerAccents accent={borderCornerAccent} color={currentBorder} />
 
           <div className="grid grid-cols-1 sm:grid-cols-[224px_1fr] gap-6 items-start">
             {/* LEFT COLUMN: COVER & EDITOR INFO & TAGS */}
@@ -1815,6 +1948,7 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
             </div>
           </div>
         </article>
+      )}
 
         {/* BOTTOM FLOATING SAVE BAR */}
         <div className="flex items-center justify-end gap-3 pt-4 border-t font-mono" style={{ borderColor: currentBorder }}>
