@@ -516,6 +516,26 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
 
   const [previewMode, setPreviewMode] = useState<'story' | 'chapter'>('story');
 
+  // Trạng thái Tách theme chương và truyện riêng biệt
+  const [useSeparateChapterTheme, setUseSeparateChapterTheme] = useState<boolean>(initialStory?.useSeparateChapterTheme || false);
+  const [chapterThemeTone, setChapterThemeTone] = useState<string>(initialStory?.chapterThemeTone || initialStory?.themeTone || 'dark-rose');
+  const [chapterCustomBgColor, setChapterCustomBgColor] = useState(initialStory?.chapterCustomBgColor || '#080406');
+  const [chapterCustomCardBgColor, setChapterCustomCardBgColor] = useState(initialStory?.chapterCustomCardBgColor || '#11090c');
+  const [chapterCustomTextColor, setChapterCustomTextColor] = useState(initialStory?.chapterCustomTextColor || '#e0d0d5');
+  const [chapterCustomTextMutedColor, setChapterCustomTextMutedColor] = useState(initialStory?.chapterCustomTextMutedColor || '#8a717a');
+  const [chapterCustomBorderColor, setChapterCustomBorderColor] = useState(initialStory?.chapterCustomBorderColor || '#2d1822');
+  const [chapterCustomBtnBgColor, setChapterCustomBtnBgColor] = useState(initialStory?.chapterCustomBtnBgColor || '#2b1620');
+  const [chapterCustomBtnSecondaryBgColor, setChapterCustomBtnSecondaryBgColor] = useState(initialStory?.chapterCustomBtnSecondaryBgColor || '#1c0f16');
+
+  const [chapterBorderStyle, setChapterBorderStyle] = useState<NonNullable<Story['borderStyle']>>(initialStory?.chapterBorderStyle || 'solid');
+  const [chapterBorderWidth, setChapterBorderWidth] = useState<NonNullable<Story['borderWidth']>>(initialStory?.chapterBorderWidth || 'thin');
+  const [chapterBorderRadius, setChapterBorderRadius] = useState<NonNullable<Story['borderRadius']>>(initialStory?.chapterBorderRadius || 'none');
+  const [chapterBorderCornerAccent, setChapterBorderCornerAccent] = useState<NonNullable<Story['borderCornerAccent']>>(initialStory?.chapterBorderCornerAccent || 'none');
+  const [chapterBorderGlow, setChapterBorderGlow] = useState<NonNullable<Story['borderGlow']>>(initialStory?.chapterBorderGlow || 'none');
+  const [chapterReadingEffect, setChapterReadingEffect] = useState<'none' | 'rain' | 'snow' | 'glitch' | 'star' | 'leaf' | 'cherry_blossom' | 'firefly' | 'soap_bubble' | 'ginkgo'>(
+    (initialStory?.chapterReadingEffect as any) || 'none'
+  );
+
   // Floating Design Drawer Tabs
   const [activeDrawerTab, setActiveDrawerTab] = useState<'theme' | 'fonts' | 'borders' | 'effects' | null>(null);
   const [isCompressingCover, setIsCompressingCover] = useState(false);
@@ -712,30 +732,121 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
     };
   }, []);
 
-  // Compute live visual tokens
-  const isCustomTheme = themeTone === 'custom';
-  const activePreset = PRESET_THEME_COLORS[themeTone] || PRESET_THEME_COLORS['dark-rose'];
+  // Compute live visual tokens based on active preview page (if split)
+  const isViewingChapterTheme = useSeparateChapterTheme && previewMode === 'chapter';
+  const activeTone = isViewingChapterTheme ? chapterThemeTone : themeTone;
+  const isCustomTheme = activeTone === 'custom';
+  const activePreset = PRESET_THEME_COLORS[activeTone] || PRESET_THEME_COLORS['dark-rose'];
 
-  const currentBg = isCustomTheme ? customBgColor : activePreset.bg;
-  const currentCardBg = isCustomTheme ? customCardBgColor : activePreset.cardBg;
-  const currentText = isCustomTheme ? customTextColor : activePreset.text;
-  const currentTextMuted = isCustomTheme ? customTextMutedColor : activePreset.textMuted;
-  const currentBorder = isCustomTheme ? customBorderColor : activePreset.border;
-  const currentBtnBg = isCustomTheme ? customBtnBgColor : activePreset.btnBg;
-  const currentBtnSecondaryBg = isCustomTheme ? customBtnSecondaryBgColor : (activePreset.btnSecondaryBg || activePreset.btnBg);
-  const currentBtnBorder = isCustomTheme ? customBorderColor : activePreset.btnBorder;
-  const currentBtnText = isCustomTheme ? customTextColor : activePreset.btnText;
+  const currentBg = isCustomTheme 
+    ? (isViewingChapterTheme ? chapterCustomBgColor : customBgColor) 
+    : activePreset.bg;
+  const currentCardBg = isCustomTheme 
+    ? (isViewingChapterTheme ? chapterCustomCardBgColor : customCardBgColor) 
+    : activePreset.cardBg;
+  const currentText = isCustomTheme 
+    ? (isViewingChapterTheme ? chapterCustomTextColor : customTextColor) 
+    : activePreset.text;
+  const currentTextMuted = isCustomTheme 
+    ? (isViewingChapterTheme ? chapterCustomTextMutedColor : customTextMutedColor) 
+    : activePreset.textMuted;
+  const currentBorder = isCustomTheme 
+    ? (isViewingChapterTheme ? chapterCustomBorderColor : customBorderColor) 
+    : activePreset.border;
+  const currentBtnBg = isCustomTheme 
+    ? (isViewingChapterTheme ? chapterCustomBtnBgColor : customBtnBgColor) 
+    : activePreset.btnBg;
+  const currentBtnSecondaryBg = isCustomTheme 
+    ? (isViewingChapterTheme ? chapterCustomBtnSecondaryBgColor : customBtnSecondaryBgColor) 
+    : (activePreset.btnSecondaryBg || activePreset.btnBg);
+  const currentBtnBorder = isCustomTheme ? currentBorder : activePreset.btnBorder;
+  const currentBtnText = isCustomTheme ? currentText : activePreset.btnText;
 
   // Check if background is dark for effect visibility
   const isDarkTheme = !currentBg.toLowerCase().includes('#fff') && !currentBg.toLowerCase().includes('255, 255, 255');
 
+  const activeBStyle = isViewingChapterTheme ? chapterBorderStyle : borderStyle;
+  const activeBWidth = isViewingChapterTheme ? chapterBorderWidth : borderWidth;
+  const activeBRadius = isViewingChapterTheme ? chapterBorderRadius : borderRadius;
+  const activeBCorner = isViewingChapterTheme ? chapterBorderCornerAccent : borderCornerAccent;
+  const activeBGlow = isViewingChapterTheme ? chapterBorderGlow : borderGlow;
+  const activeReadingEffect = isViewingChapterTheme ? chapterReadingEffect : readingEffect;
+
   const currentBorderObj = {
-    borderStyle,
-    borderWidth,
-    borderRadius,
-    borderCornerAccent,
-    borderGlow,
+    borderStyle: activeBStyle,
+    borderWidth: activeBWidth,
+    borderRadius: activeBRadius,
+    borderCornerAccent: activeBCorner,
+    borderGlow: activeBGlow,
     customBorderColor: currentBorder,
+  };
+
+  // Getters/setters for Customizer Drawer controls (handles automatic target switching)
+  const activeThemeTone = isViewingChapterTheme ? chapterThemeTone : themeTone;
+  const activeBgColorVal = isViewingChapterTheme ? chapterCustomBgColor : customBgColor;
+  const activeCardBgColorVal = isViewingChapterTheme ? chapterCustomCardBgColor : customCardBgColor;
+  const activeTextColorVal = isViewingChapterTheme ? chapterCustomTextColor : customTextColor;
+  const activeTextMutedColorVal = isViewingChapterTheme ? chapterCustomTextMutedColor : customTextMutedColor;
+  const activeBorderColorVal = isViewingChapterTheme ? chapterCustomBorderColor : customBorderColor;
+  const activeBtnBgColorVal = isViewingChapterTheme ? chapterCustomBtnBgColor : customBtnBgColor;
+  const activeBtnSecondaryBgColorVal = isViewingChapterTheme ? chapterCustomBtnSecondaryBgColor : customBtnSecondaryBgColor;
+
+  const handleSetThemeTone = (val: string) => {
+    if (isViewingChapterTheme) setChapterThemeTone(val);
+    else setThemeTone(val);
+  };
+  const handleSetBgColor = (val: string) => {
+    if (isViewingChapterTheme) setChapterCustomBgColor(val);
+    else setCustomBgColor(val);
+  };
+  const handleSetCardBgColor = (val: string) => {
+    if (isViewingChapterTheme) setChapterCustomCardBgColor(val);
+    else setCustomCardBgColor(val);
+  };
+  const handleSetTextColor = (val: string) => {
+    if (isViewingChapterTheme) setChapterCustomTextColor(val);
+    else setCustomTextColor(val);
+  };
+  const handleSetTextMutedColor = (val: string) => {
+    if (isViewingChapterTheme) setChapterCustomTextMutedColor(val);
+    else setCustomTextMutedColor(val);
+  };
+  const handleSetBorderColor = (val: string) => {
+    if (isViewingChapterTheme) setChapterCustomBorderColor(val);
+    else setCustomBorderColor(val);
+  };
+  const handleSetBtnBgColor = (val: string) => {
+    if (isViewingChapterTheme) setChapterCustomBtnBgColor(val);
+    else setCustomBtnBgColor(val);
+  };
+  const handleSetBtnSecondaryBgColor = (val: string) => {
+    if (isViewingChapterTheme) setChapterCustomBtnSecondaryBgColor(val);
+    else setCustomBtnSecondaryBgColor(val);
+  };
+
+  const handleSetBorderStyle = (val: any) => {
+    if (isViewingChapterTheme) setChapterBorderStyle(val);
+    else setBorderStyle(val);
+  };
+  const handleSetBorderWidth = (val: any) => {
+    if (isViewingChapterTheme) setChapterBorderWidth(val);
+    else setBorderWidth(val);
+  };
+  const handleSetBorderRadius = (val: any) => {
+    if (isViewingChapterTheme) setChapterBorderRadius(val);
+    else setBorderRadius(val);
+  };
+  const handleSetBorderCornerAccent = (val: any) => {
+    if (isViewingChapterTheme) setChapterBorderCornerAccent(val);
+    else setBorderCornerAccent(val);
+  };
+  const handleSetBorderGlow = (val: any) => {
+    if (isViewingChapterTheme) setChapterBorderGlow(val);
+    else setBorderGlow(val);
+  };
+  const handleSetReadingEffect = (val: any) => {
+    if (isViewingChapterTheme) setChapterReadingEffect(val);
+    else setReadingEffect(val);
   };
 
   // Image compressor
@@ -815,19 +926,36 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
       customBodyFont,
       customMutedFont,
       customBtnFont,
-      customBgColor: isCustomTheme ? customBgColor : undefined,
-      customCardBgColor: isCustomTheme ? customCardBgColor : undefined,
-      customTextColor: isCustomTheme ? customTextColor : undefined,
-      customTextMutedColor: isCustomTheme ? customTextMutedColor : undefined,
-      customBorderColor: isCustomTheme ? customBorderColor : undefined,
-      customBtnBgColor: isCustomTheme ? customBtnBgColor : undefined,
-      customBtnSecondaryBgColor: isCustomTheme ? customBtnSecondaryBgColor : undefined,
+      customBgColor: themeTone === 'custom' ? customBgColor : undefined,
+      customCardBgColor: themeTone === 'custom' ? customCardBgColor : undefined,
+      customTextColor: themeTone === 'custom' ? customTextColor : undefined,
+      customTextMutedColor: themeTone === 'custom' ? customTextMutedColor : undefined,
+      customBorderColor: themeTone === 'custom' ? customBorderColor : undefined,
+      customBtnBgColor: themeTone === 'custom' ? customBtnBgColor : undefined,
+      customBtnSecondaryBgColor: themeTone === 'custom' ? customBtnSecondaryBgColor : undefined,
       borderStyle,
       borderWidth,
       borderRadius,
       borderCornerAccent,
       borderGlow,
       readingEffect,
+
+      // Thông số theme chương riêng biệt
+      useSeparateChapterTheme,
+      chapterThemeTone,
+      chapterCustomBgColor: chapterThemeTone === 'custom' ? chapterCustomBgColor : undefined,
+      chapterCustomCardBgColor: chapterThemeTone === 'custom' ? chapterCustomCardBgColor : undefined,
+      chapterCustomTextColor: chapterThemeTone === 'custom' ? chapterCustomTextColor : undefined,
+      chapterCustomTextMutedColor: chapterThemeTone === 'custom' ? chapterCustomTextMutedColor : undefined,
+      chapterCustomBorderColor: chapterThemeTone === 'custom' ? chapterCustomBorderColor : undefined,
+      chapterCustomBtnBgColor: chapterThemeTone === 'custom' ? chapterCustomBtnBgColor : undefined,
+      chapterCustomBtnSecondaryBgColor: chapterThemeTone === 'custom' ? chapterCustomBtnSecondaryBgColor : undefined,
+      chapterBorderStyle,
+      chapterBorderWidth,
+      chapterBorderRadius,
+      chapterBorderCornerAccent,
+      chapterBorderGlow,
+      chapterReadingEffect,
     });
   };
 
@@ -1020,13 +1148,44 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
           {/* TAB 1: THEME / COLORS */}
           {activeDrawerTab === 'theme' && (
             <div className="space-y-3 text-xs">
+              {/* Nút bật/tắt tách theme */}
+              <div className="p-2.5 rounded border border-dashed flex items-center justify-between" style={{ borderColor: currentBorder }}>
+                <div className="pr-2">
+                  <span className="font-bold block text-[11px]" style={{ color: currentText }}>Tách biệt theme truyện & chương</span>
+                  <span className="text-[10px] leading-tight block" style={{ color: currentTextMuted }}>Cho phép thiết kế giao diện chương đọc khác với trang giới thiệu.</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setUseSeparateChapterTheme(!useSeparateChapterTheme)}
+                  className={`w-10 h-6 flex items-center rounded-full p-1 cursor-pointer transition-all duration-300 shrink-0 ${
+                    useSeparateChapterTheme ? 'bg-emerald-600' : 'bg-gray-600'
+                  }`}
+                >
+                  <div
+                    className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-all duration-300 ${
+                      useSeparateChapterTheme ? 'translate-x-4' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {useSeparateChapterTheme && (
+                <div className="p-2 rounded text-[10px] font-mono border text-center font-bold" style={{ backgroundColor: currentBtnSecondaryBg, borderColor: currentBorder }}>
+                  {previewMode === 'story' ? (
+                    <span className="text-amber-500">✍️ Thiết lập: Giao diện trang truyện</span>
+                  ) : (
+                    <span className="text-emerald-500">✍️ Thiết lập: Giao diện đọc chương</span>
+                  )}
+                </div>
+              )}
+
               <div>
                 <label className="block text-[11px] font-semibold mb-1" style={{ color: currentText }}>
                   Chọn bộ màu có sẵn:
                 </label>
                 <select
-                  value={themeTone}
-                  onChange={(e) => setThemeTone(e.target.value)}
+                  value={activeThemeTone}
+                  onChange={(e) => handleSetThemeTone(e.target.value)}
                   className="w-full p-2 rounded border text-xs focus:outline-none font-semibold"
                   style={{ backgroundColor: currentBg, borderColor: currentBorder, color: currentText }}
                 >
@@ -1068,8 +1227,8 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                     <LocalColorField
                       label="Màu nền chính"
-                      value={customBgColor}
-                      onChange={setCustomBgColor}
+                      value={activeBgColorVal}
+                      onChange={handleSetBgColor}
                       allowGradient
                       currentBg={currentBg}
                       currentBorder={currentBorder}
@@ -1079,8 +1238,8 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
 
                     <LocalColorField
                       label="Màu thẻ nội dung"
-                      value={customCardBgColor}
-                      onChange={setCustomCardBgColor}
+                      value={activeCardBgColorVal}
+                      onChange={handleSetCardBgColor}
                       currentBg={currentBg}
                       currentBorder={currentBorder}
                       currentText={currentText}
@@ -1089,8 +1248,8 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
 
                     <LocalColorField
                       label="Màu nút chính"
-                      value={customBtnBgColor}
-                      onChange={setCustomBtnBgColor}
+                      value={activeBtnBgColorVal}
+                      onChange={handleSetBtnBgColor}
                       allowGradient
                       currentBg={currentBg}
                       currentBorder={currentBorder}
@@ -1100,8 +1259,8 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
 
                     <LocalColorField
                       label="Màu nút phụ & Ô chứa"
-                      value={customBtnSecondaryBgColor}
-                      onChange={setCustomBtnSecondaryBgColor}
+                      value={activeBtnSecondaryBgColorVal}
+                      onChange={handleSetBtnSecondaryBgColor}
                       allowGradient
                       currentBg={currentBg}
                       currentBorder={currentBorder}
@@ -1111,8 +1270,8 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
 
                     <LocalColorField
                       label="Màu chữ chính"
-                      value={customTextColor}
-                      onChange={setCustomTextColor}
+                      value={activeTextColorVal}
+                      onChange={handleSetTextColor}
                       currentBg={currentBg}
                       currentBorder={currentBorder}
                       currentText={currentText}
@@ -1121,8 +1280,8 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
 
                     <LocalColorField
                       label="Màu chữ phụ / mờ"
-                      value={customTextMutedColor}
-                      onChange={setCustomTextMutedColor}
+                      value={activeTextMutedColorVal}
+                      onChange={handleSetTextMutedColor}
                       currentBg={currentBg}
                       currentBorder={currentBorder}
                       currentText={currentText}
@@ -1131,8 +1290,8 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
 
                     <LocalColorField
                       label="Màu đường viền"
-                      value={customBorderColor}
-                      onChange={setCustomBorderColor}
+                      value={activeBorderColorVal}
+                      onChange={handleSetBorderColor}
                       currentBg={currentBg}
                       currentBorder={currentBorder}
                       currentText={currentText}
@@ -1282,13 +1441,23 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
           {/* TAB 3: BORDERS & FRAMES */}
           {activeDrawerTab === 'borders' && (
             <div className="space-y-3 text-xs">
+              {useSeparateChapterTheme && (
+                <div className="p-2 rounded text-[10px] font-mono border text-center font-bold" style={{ backgroundColor: currentBtnSecondaryBg, borderColor: currentBorder }}>
+                  {previewMode === 'story' ? (
+                    <span className="text-amber-500">✍️ Thiết lập viền: Giao diện trang truyện</span>
+                  ) : (
+                    <span className="text-emerald-500">✍️ Thiết lập viền: Giao diện đọc chương</span>
+                  )}
+                </div>
+              )}
+
               <div>
                 <label className="block text-[11px] font-semibold mb-1" style={{ color: currentText }}>
                   Kiểu nét viền (Stroke Style):
                 </label>
                 <select
-                  value={borderStyle}
-                  onChange={(e) => setBorderStyle(e.target.value as any)}
+                  value={activeBStyle}
+                  onChange={(e) => handleSetBorderStyle(e.target.value as any)}
                   className="w-full p-2 rounded border text-xs focus:outline-none"
                   style={{ backgroundColor: currentBg, borderColor: currentBorder, color: currentText }}
                 >
@@ -1305,8 +1474,8 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                   Độ dày nét viền (Width):
                 </label>
                 <select
-                  value={borderWidth}
-                  onChange={(e) => setBorderWidth(e.target.value as any)}
+                  value={activeBWidth}
+                  onChange={(e) => handleSetBorderWidth(e.target.value as any)}
                   className="w-full p-2 rounded border text-xs focus:outline-none"
                   style={{ backgroundColor: currentBg, borderColor: currentBorder, color: currentText }}
                 >
@@ -1323,8 +1492,8 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                   Bo góc viền (Radius):
                 </label>
                 <select
-                  value={borderRadius}
-                  onChange={(e) => setBorderRadius(e.target.value as any)}
+                  value={activeBRadius}
+                  onChange={(e) => handleSetBorderRadius(e.target.value as any)}
                   className="w-full p-2 rounded border text-xs focus:outline-none"
                   style={{ backgroundColor: currentBg, borderColor: currentBorder, color: currentText }}
                 >
@@ -1341,8 +1510,8 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                   Họa tiết 4 góc (Corner Accents):
                 </label>
                 <select
-                  value={borderCornerAccent}
-                  onChange={(e) => setBorderCornerAccent(e.target.value as any)}
+                  value={activeBCorner}
+                  onChange={(e) => handleSetBorderCornerAccent(e.target.value as any)}
                   className="w-full p-2 rounded border text-xs focus:outline-none"
                   style={{ backgroundColor: currentBg, borderColor: currentBorder, color: currentText }}
                 >
@@ -1359,8 +1528,8 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                   Hiệu ứng viền (Glow / Shadow):
                 </label>
                 <select
-                  value={borderGlow}
-                  onChange={(e) => setBorderGlow(e.target.value as any)}
+                  value={activeBGlow}
+                  onChange={(e) => handleSetBorderGlow(e.target.value as any)}
                   className="w-full p-2 rounded border text-xs focus:outline-none"
                   style={{ backgroundColor: currentBg, borderColor: currentBorder, color: currentText }}
                 >
@@ -1377,13 +1546,23 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
           {/* TAB 4: READING EFFECTS */}
           {activeDrawerTab === 'effects' && (
             <div className="space-y-3 text-xs">
+              {useSeparateChapterTheme && (
+                <div className="p-2 rounded text-[10px] font-mono border text-center font-bold" style={{ backgroundColor: currentBtnSecondaryBg, borderColor: currentBorder }}>
+                  {previewMode === 'story' ? (
+                    <span className="text-amber-500">✍️ Thiết lập hiệu ứng: Giao diện trang truyện</span>
+                  ) : (
+                    <span className="text-emerald-500">✍️ Thiết lập hiệu ứng: Giao diện đọc chương</span>
+                  )}
+                </div>
+              )}
+
               <div>
                 <label className="block text-[11px] font-semibold mb-1" style={{ color: currentText }}>
                   Hiệu ứng rơi / hạt nền:
                 </label>
                 <select
-                  value={readingEffect}
-                  onChange={(e) => setReadingEffect(e.target.value as any)}
+                  value={activeReadingEffect}
+                  onChange={(e) => handleSetReadingEffect(e.target.value as any)}
                   className="w-full p-2 rounded border text-xs focus:outline-none"
                   style={{ backgroundColor: currentBg, borderColor: currentBorder, color: currentText }}
                 >
@@ -1539,7 +1718,7 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                 Chương 1 (Đọc thử)
               </span>
               <h2 className={`text-xl sm:text-2xl font-bold tracking-wide leading-snug ${customTitleFont}`} style={{ color: currentText }}>
-                Khởi Đầu Của Cuộc Phiêu Lưu Kỳ Thú
+                Đây là tiêu đề chương truyện mẫu
               </h2>
               <div className={`flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[10px] font-mono ${customMutedFont}`} style={{ color: currentTextMuted }}>
                 <span>Người đăng: {editorName}</span>
@@ -1553,15 +1732,13 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
             {/* Mock Chapter Content Paragraphs */}
             <div className={`space-y-4 text-sm leading-relaxed ${customBodyFont}`} style={{ color: currentText }}>
               <p>
-                Ánh nắng ban mai khẽ len lỏi qua những tán lá sồi già, rọi chiếu từng vệt sáng lấp lánh xuống thảm cỏ đẫm sương đêm. 
-                Gió thổi dịu mát, mang theo hương vị trong lành của núi rừng hoang dã.
+                Đây là nội dung hiển thị dòng thứ nhất của chương truyện mẫu. Bạn có thể sử dụng dòng này để kiểm tra xem phông chữ thân bài hiển thị như thế nào, khoảng cách dòng có vừa vặn và dễ đọc hay không.
               </p>
               <p>
-                Đây là một đoạn nội dung văn bản đọc thử nhằm kiểm tra khả năng hiển thị phông chữ, khoảng cách dòng, độ tương phản và màu sắc của chương truyện thực tế. 
-                Khi độc giả vào chương mới của bạn, giao diện và hiệu ứng sẽ xuất hiện giống hệt như những gì bạn đang thiết lập và tinh chỉnh ở đây.
+                Đây là nội dung hiển thị dòng thứ hai của chương truyện mẫu. Màu sắc chữ, màu nền, các đường viền họa tiết trang trí và mức độ tương phản so với nền chương đọc sẽ được thể hiện trực tiếp tại đây giúp bạn dễ dàng căn chỉnh tông màu.
               </p>
               <p>
-                "Mọi hành trình vạn dặm đều bắt đầu từ một bước chân đầu tiên," nhân vật chính khẽ thầm thì, mắt hướng về phía chân trời xa xăm nơi những dãy núi mờ sương đang thức giấc.
+                Đây là nội dung hiển thị dòng thứ ba của chương truyện mẫu. Toàn bộ các cài đặt về phông chữ, khoảng cách lề và khung viền của chương truyện thực tế khi độc giả đọc truyện sẽ xuất hiện giống hệt như thế này.
               </p>
             </div>
 

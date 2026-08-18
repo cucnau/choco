@@ -18,6 +18,8 @@ import {
   BookmarkCheck
 } from 'lucide-react';
 import { saveReadingProgress, getReadingProgress } from '../lib/readingProgress';
+import { ReadingEffects } from './ReadingEffects';
+import { getStoryBorderStyle, StoryCornerAccents } from '../lib/borderStyles';
 
 const PRESET_PROGRESS_BAR_COLORS: Record<string, string> = {
   'dark-rose': '#ff99bb',
@@ -495,36 +497,65 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
     setParaCommentText('');
   };
 
-  const toneKey = story.themeTone || 'dark-rose';
+  // Tách biệt theme chương và truyện riêng biệt (nếu được bật)
+  const hasSeparateTheme = story.useSeparateChapterTheme;
+  const toneKey = hasSeparateTheme ? (story.chapterThemeTone || 'dark-rose') : (story.themeTone || 'dark-rose');
   const isCustomTheme = toneKey === 'custom';
   const tone = THEME_TONES[toneKey] || THEME_TONES['dark-rose'];
 
+  const customBgColor = hasSeparateTheme ? story.chapterCustomBgColor : story.customBgColor;
+  const customCardBgColor = hasSeparateTheme ? story.chapterCustomCardBgColor : story.customCardBgColor;
+  const customTextColor = hasSeparateTheme ? story.chapterCustomTextColor : story.customTextColor;
+  const customTextMutedColor = hasSeparateTheme ? story.chapterCustomTextMutedColor : story.customTextMutedColor;
+  const customBorderColor = hasSeparateTheme ? story.chapterCustomBorderColor : story.customBorderColor;
+  const customBtnBgColor = hasSeparateTheme ? story.chapterCustomBtnBgColor : story.customBtnBgColor;
+  const customBtnSecondaryBgColor = hasSeparateTheme ? story.chapterCustomBtnSecondaryBgColor : story.customBtnSecondaryBgColor;
+
   const progressBarColor = isCustomTheme
-    ? (story.customBtnBgColor && story.customBtnBgColor !== story.customBgColor ? story.customBtnBgColor : story.customTextColor || '#ff99bb')
+    ? (customBtnBgColor && customBtnBgColor !== customBgColor ? customBtnBgColor : customTextColor || '#ff99bb')
     : (PRESET_PROGRESS_BAR_COLORS[toneKey] || '#ff99bb');
 
   // Cấu trúc dynamic inline style khi editor phối màu riêng
   const customStyles = {
     container: isCustomTheme
-      ? { background: story.customBgColor || '#080406', color: story.customTextColor }
+      ? { background: customBgColor || '#080406', color: customTextColor }
       : (tone.gradientBg ? { background: tone.gradientBg } : {}),
     card: isCustomTheme
-      ? { background: story.customCardBgColor, color: story.customTextColor, borderColor: story.customBorderColor }
+      ? { background: customCardBgColor, color: customTextColor, borderColor: customBorderColor }
       : {},
-    border: isCustomTheme ? { borderColor: story.customBorderColor } : {},
-    text: isCustomTheme ? { color: story.customTextColor } : {},
-    textMuted: isCustomTheme ? { color: story.customTextMutedColor } : {},
+    border: isCustomTheme ? { borderColor: customBorderColor } : {},
+    text: isCustomTheme ? { color: customTextColor } : {},
+    textMuted: isCustomTheme ? { color: customTextMutedColor } : {},
     input: isCustomTheme
-      ? { background: story.customBtnSecondaryBgColor || story.customCardBgColor || story.customBgColor, color: story.customTextColor, borderColor: story.customBorderColor }
+      ? { background: customBtnSecondaryBgColor || customCardBgColor || customBgColor, color: customTextColor, borderColor: customBorderColor }
       : {},
     btnPrimary: isCustomTheme
-      ? { background: story.customBtnBgColor, borderColor: story.customBorderColor, color: story.customTextColor }
+      ? { background: customBtnBgColor, borderColor: customBorderColor, color: customTextColor }
       : {},
     btnSecondary: isCustomTheme
-      ? { background: story.customBtnSecondaryBgColor || story.customCardBgColor || story.customBgColor, borderColor: story.customBorderColor, color: story.customTextColor }
+      ? { background: customBtnSecondaryBgColor || customCardBgColor || customBgColor, borderColor: customBorderColor, color: customTextColor }
       : {},
-    headerBorder: isCustomTheme ? { borderColor: story.customBorderColor } : {},
+    headerBorder: isCustomTheme ? { borderColor: customBorderColor } : {},
   };
+
+  // Cấu trúc viền, khung trang trí góc viền và phát sáng cho chương truyện
+  const activeBorderStyle = hasSeparateTheme ? (story.chapterBorderStyle || 'solid') : (story.borderStyle || 'solid');
+  const activeBorderWidth = hasSeparateTheme ? (story.chapterBorderWidth || 'thin') : (story.borderWidth || 'thin');
+  const activeBorderRadius = hasSeparateTheme ? (story.chapterBorderRadius || 'none') : (story.borderRadius || 'none');
+  const activeBorderCornerAccent = hasSeparateTheme ? (story.chapterBorderCornerAccent || 'none') : (story.borderCornerAccent || 'none');
+  const activeBorderGlow = hasSeparateTheme ? (story.chapterBorderGlow || 'none') : (story.borderGlow || 'none');
+  const activeReadingEffect = hasSeparateTheme ? (story.chapterReadingEffect || 'none') : (story.readingEffect || 'none');
+
+  const borderObj = {
+    borderStyle: activeBorderStyle,
+    borderWidth: activeBorderWidth,
+    borderRadius: activeBorderRadius,
+    borderCornerAccent: activeBorderCornerAccent,
+    borderGlow: activeBorderGlow,
+    customBorderColor: customBorderColor,
+  };
+
+  const isDarkTheme = !customBgColor?.toLowerCase().includes('#fff') && !customBgColor?.toLowerCase().includes('255, 255, 255');
 
   const paragraphs = chapter.content
     ? chapter.content.split('\n').map((line) => line.trim()).filter(Boolean)
@@ -544,6 +575,8 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
       className={`min-h-screen ${isCustomTheme || toneKey.startsWith('gradient-') ? '' : tone.containerBg} ${tone.text} ${readerFont} pb-16 transition-colors duration-300 relative`}
       style={customStyles.container}
     >
+      {/* Hiệu ứng hạt rơi ở trang đọc chương */}
+      {activeReadingEffect !== 'none' && <ReadingEffects effect={activeReadingEffect} isDarkTheme={isDarkTheme} />}
       
       {/* Top Fixed Control Bar */}
       <div 
@@ -760,9 +793,19 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
         ) : (
         /* Text Content with Paragraph-level commenting */
         <article
-          style={{ fontSize: `${fontSize}px`, lineHeight: 1.85, ...(isCustomTheme ? { backgroundColor: story.customCardBgColor, color: story.customTextColor, borderColor: story.customBorderColor } : {}) }}
-          className={`${isCustomTheme ? 'border' : `${tone.cardBg} border ${tone.border}`} p-6 sm:p-10 space-y-5 transition-colors duration-300 select-none`}
+          style={{
+            fontSize: `${fontSize}px`,
+            lineHeight: 1.85,
+            position: 'relative',
+            overflow: 'hidden',
+            backgroundColor: isCustomTheme ? customCardBgColor : undefined,
+            color: isCustomTheme ? customTextColor : undefined,
+            ...getStoryBorderStyle(borderObj, customBorderColor || '#2d1822'),
+          }}
+          className={`${isCustomTheme ? '' : `${tone.cardBg} border ${tone.border}`} p-6 sm:p-10 space-y-5 transition-colors duration-300 select-none`}
         >
+          {/* Họa tiết trang trí góc viền chương */}
+          <StoryCornerAccents accent={activeBorderCornerAccent} color={customBorderColor || '#2d1822'} />
           {paragraphs.length > 0 ? (
             paragraphs.map((para, idx) => {
               const paraComments = comments.filter((c) => c.paragraphIndex === idx);

@@ -76,6 +76,23 @@ export interface Story {
   borderRadius?: 'none' | 'xs' | 'sm' | 'md' | 'lg' | 'chamfer' | 'leaf'; // Kiểu bo góc viền
   borderCornerAccent?: 'none' | 'brackets' | 'vintage' | 'rivets' | 'dots' | 'crosshairs'; // Trang trí góc viền
   borderGlow?: 'none' | 'soft' | 'neon' | 'shadow'; // Hiệu ứng phát sáng hoặc đổ bóng viền
+  
+  // Tách biệt theme chương và truyện riêng biệt
+  useSeparateChapterTheme?: boolean;
+  chapterThemeTone?: string;
+  chapterCustomBgColor?: string;
+  chapterCustomCardBgColor?: string;
+  chapterCustomTextColor?: string;
+  chapterCustomTextMutedColor?: string;
+  chapterCustomBorderColor?: string;
+  chapterCustomBtnBgColor?: string;
+  chapterCustomBtnSecondaryBgColor?: string;
+  chapterBorderStyle?: 'solid' | 'double' | 'dashed' | 'dotted' | 'groove' | 'ridge' | 'inset' | 'outset' | 'none';
+  chapterBorderWidth?: 'thin' | 'medium' | 'thick' | 'heavy';
+  chapterBorderRadius?: 'none' | 'xs' | 'sm' | 'md' | 'lg' | 'chamfer' | 'leaf';
+  chapterBorderCornerAccent?: 'none' | 'brackets' | 'vintage' | 'rivets' | 'dots' | 'crosshairs';
+  chapterBorderGlow?: 'none' | 'soft' | 'neon' | 'shadow';
+  chapterReadingEffect?: 'none' | 'rain' | 'snow' | 'glitch' | 'star' | 'leaf' | 'cherry_blossom' | 'firefly' | 'soap_bubble' | 'ginkgo';
 }
 
 export interface ReadingProgress {
