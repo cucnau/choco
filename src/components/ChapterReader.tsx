@@ -84,7 +84,13 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
     if (currentBodyFont) {
       setReaderFont(currentBodyFont);
     }
-  }, [story.id, story.customBodyFont, story.defaultFont]);
+    if (story.bodyFontSize) {
+      const parsed = parseInt(story.bodyFontSize);
+      if (!isNaN(parsed) && parsed > 0) {
+        setFontSize(parsed);
+      }
+    }
+  }, [story.id, story.customBodyFont, story.defaultFont, story.bodyFontSize]);
 
   const [generalCommentText, setGeneralCommentText] = useState('');
   const [activeParagraphIndex, setActiveParagraphIndex] = useState<number | null>(null);
@@ -423,7 +429,13 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
               )}
             </div>
             <div className="flex items-center justify-center gap-2 flex-wrap">
-              <h1 className={`text-xl sm:text-2xl font-bold tracking-wide leading-snug ${storyBodyFont}`} style={{ color: currentText }}>
+              <h1 
+                className={`font-bold tracking-wide leading-snug ${storyBodyFont} ${story.titleFontSize ? '' : 'text-xl sm:text-2xl'}`} 
+                style={{
+                  color: currentText,
+                  ...(story.titleFontSize ? { fontSize: story.titleFontSize } : {})
+                }}
+              >
                 {chapter.title}
               </h1>
               {chapter.isLocked && (

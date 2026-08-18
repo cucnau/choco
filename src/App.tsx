@@ -411,6 +411,9 @@ export default function App() {
   const handleSaveStory = async (story: Story) => {
     try {
       await saveStory(story);
+      if (selectedStory && selectedStory.id === story.id) {
+        setSelectedStory(story);
+      }
       setCloudError(null);
     } catch (err: any) {
       console.error(err);

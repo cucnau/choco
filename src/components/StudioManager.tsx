@@ -854,6 +854,8 @@ export const INITIAL_COMMENTS: Comment[] = ${JSON.stringify(comments, null, 2)};
       customBodyFont: storyData.customBodyFont,
       customMutedFont: storyData.customMutedFont,
       customBtnFont: storyData.customBtnFont,
+      titleFontSize: storyData.titleFontSize,
+      bodyFontSize: storyData.bodyFontSize,
       customBgColor: storyData.customBgColor,
       customCardBgColor: storyData.customCardBgColor,
       customTextColor: storyData.customTextColor,
