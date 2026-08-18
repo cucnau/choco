@@ -70,7 +70,6 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
   const [readerFont, setReaderFont] = useState<string>(story.customBodyFont || story.defaultFont || 'font-bevietnam');
   const [isUnlocking, setIsUnlocking] = useState(false);
   const [unlockError, setUnlockError] = useState<string | null>(null);
-
   const [readingProgressPercent, setReadingProgressPercent] = useState<number>(0);
   const [autoResumeNotice, setAutoResumeNotice] = useState<string | null>(null);
 
