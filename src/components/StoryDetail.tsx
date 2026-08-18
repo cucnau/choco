@@ -780,7 +780,7 @@ export const StoryDetail: React.FC<StoryDetailProps> = ({
                           <div 
                             className="px-3.5 py-2 flex items-center justify-between border font-bold text-xs uppercase tracking-wider rounded-xs select-none shadow-xs"
                             style={{
-                              backgroundColor: isCustomTheme
+                              background: isCustomTheme
                                 ? (story.customBtnSecondaryBgColor || story.customCardBgColor || story.customBgColor)
                                 : undefined,
                               borderColor: activeBorderColor,

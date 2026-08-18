@@ -488,7 +488,10 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
   const [newTagInput, setNewTagInput] = useState('');
 
   // Styles & Theme
-  const [themeTone, setThemeTone] = useState<string>(initialStory?.themeTone || 'dark-rose');
+  const [themeTone, setThemeTone] = useState<string>(
+    initialStory?.themeTone ||
+      (initialStory?.customBtnBgColor || initialStory?.customBgColor ? 'custom' : 'dark-rose')
+  );
   const [customTitleFont, setCustomTitleFont] = useState(initialStory?.customTitleFont || initialStory?.defaultFont || 'font-mono');
   const [customBodyFont, setCustomBodyFont] = useState(initialStory?.customBodyFont || initialStory?.defaultFont || 'font-mono');
   const [customMutedFont, setCustomMutedFont] = useState(initialStory?.customMutedFont || initialStory?.defaultFont || 'font-mono');
@@ -804,36 +807,98 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
   const activeBtnSecondaryBgColorVal = isViewingChapterTheme ? chapterCustomBtnSecondaryBgColor : customBtnSecondaryBgColor;
 
   const handleSetThemeTone = (val: string) => {
-    if (isViewingChapterTheme) setChapterThemeTone(val);
-    else setThemeTone(val);
+    if (isViewingChapterTheme) {
+      setChapterThemeTone(val);
+      if (val === 'custom') {
+        const preset = PRESET_THEME_COLORS[chapterThemeTone] || PRESET_THEME_COLORS['dark-rose'];
+        if (preset) {
+          setChapterCustomBgColor(preset.bg);
+          setChapterCustomCardBgColor(preset.cardBg);
+          setChapterCustomTextColor(preset.text);
+          setChapterCustomTextMutedColor(preset.textMuted);
+          setChapterCustomBorderColor(preset.border);
+          setChapterCustomBtnBgColor(preset.btnBg);
+          setChapterCustomBtnSecondaryBgColor(preset.btnSecondaryBg || preset.btnBg);
+        }
+      }
+    } else {
+      setThemeTone(val);
+      if (val === 'custom') {
+        const preset = PRESET_THEME_COLORS[themeTone] || PRESET_THEME_COLORS['dark-rose'];
+        if (preset) {
+          setCustomBgColor(preset.bg);
+          setCustomCardBgColor(preset.cardBg);
+          setCustomTextColor(preset.text);
+          setCustomTextMutedColor(preset.textMuted);
+          setCustomBorderColor(preset.border);
+          setCustomBtnBgColor(preset.btnBg);
+          setCustomBtnSecondaryBgColor(preset.btnSecondaryBg || preset.btnBg);
+        }
+      }
+    }
   };
   const handleSetBgColor = (val: string) => {
-    if (isViewingChapterTheme) setChapterCustomBgColor(val);
-    else setCustomBgColor(val);
+    if (isViewingChapterTheme) {
+      setChapterCustomBgColor(val);
+      if (chapterThemeTone !== 'custom') setChapterThemeTone('custom');
+    } else {
+      setCustomBgColor(val);
+      if (themeTone !== 'custom') setThemeTone('custom');
+    }
   };
   const handleSetCardBgColor = (val: string) => {
-    if (isViewingChapterTheme) setChapterCustomCardBgColor(val);
-    else setCustomCardBgColor(val);
+    if (isViewingChapterTheme) {
+      setChapterCustomCardBgColor(val);
+      if (chapterThemeTone !== 'custom') setChapterThemeTone('custom');
+    } else {
+      setCustomCardBgColor(val);
+      if (themeTone !== 'custom') setThemeTone('custom');
+    }
   };
   const handleSetTextColor = (val: string) => {
-    if (isViewingChapterTheme) setChapterCustomTextColor(val);
-    else setCustomTextColor(val);
+    if (isViewingChapterTheme) {
+      setChapterCustomTextColor(val);
+      if (chapterThemeTone !== 'custom') setChapterThemeTone('custom');
+    } else {
+      setCustomTextColor(val);
+      if (themeTone !== 'custom') setThemeTone('custom');
+    }
   };
   const handleSetTextMutedColor = (val: string) => {
-    if (isViewingChapterTheme) setChapterCustomTextMutedColor(val);
-    else setCustomTextMutedColor(val);
+    if (isViewingChapterTheme) {
+      setChapterCustomTextMutedColor(val);
+      if (chapterThemeTone !== 'custom') setChapterThemeTone('custom');
+    } else {
+      setCustomTextMutedColor(val);
+      if (themeTone !== 'custom') setThemeTone('custom');
+    }
   };
   const handleSetBorderColor = (val: string) => {
-    if (isViewingChapterTheme) setChapterCustomBorderColor(val);
-    else setCustomBorderColor(val);
+    if (isViewingChapterTheme) {
+      setChapterCustomBorderColor(val);
+      if (chapterThemeTone !== 'custom') setChapterThemeTone('custom');
+    } else {
+      setCustomBorderColor(val);
+      if (themeTone !== 'custom') setThemeTone('custom');
+    }
   };
   const handleSetBtnBgColor = (val: string) => {
-    if (isViewingChapterTheme) setChapterCustomBtnBgColor(val);
-    else setCustomBtnBgColor(val);
+    if (isViewingChapterTheme) {
+      setChapterCustomBtnBgColor(val);
+      if (chapterThemeTone !== 'custom') setChapterThemeTone('custom');
+    } else {
+      setCustomBtnBgColor(val);
+      if (themeTone !== 'custom') setThemeTone('custom');
+    }
   };
   const handleSetBtnSecondaryBgColor = (val: string) => {
-    if (isViewingChapterTheme) setChapterCustomBtnSecondaryBgColor(val);
-    else setCustomBtnSecondaryBgColor(val);
+    if (isViewingChapterTheme) {
+      setChapterCustomBtnSecondaryBgColor(val);
+      if (chapterThemeTone !== 'custom') setChapterThemeTone('custom');
+    } else {
+      setCustomBtnSecondaryBgColor(val);
+      if (themeTone !== 'custom') setThemeTone('custom');
+    }
   };
 
   const handleSetBorderStyle = (val: any) => {
