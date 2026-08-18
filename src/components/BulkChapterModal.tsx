@@ -15,7 +15,8 @@ import {
   Layers,
   Check,
   RefreshCw,
-  FileType
+  FileType,
+  BookOpen
 } from 'lucide-react';
 
 export interface ParsedChapterItem {
@@ -25,6 +26,7 @@ export interface ParsedChapterItem {
   content: string;
   wordCount: number;
   selected: boolean;
+  volumeTitle?: string;
 }
 
 interface BulkChapterModalProps {
@@ -37,7 +39,7 @@ interface BulkChapterModalProps {
 // Regex patterns to detect chapter heading lines in Vietnamese & international formats
 const CHAPTER_REGEX_PATTERNS = [
   // "Chương 1: Tiêu đề", "Chương 1 - Tiêu đề", "Chương 1. Tiêu đề", "Chương 1"
-  /^\s*(?:#{1,3}\s*)?(?:chương|chapter|chap|hồi|phần|tập|tiết|quyển)\s+([0-9ivxlcdm一二三四五六七八九十百千万]+)?\s*([:.\-–—]\s*.*|\s+.*)?$/i,
+  /^\s*(?:#{1,3}\s*)?(?:chương|chapter|chap|tiết|hồi)\s+([0-9ivxlcdm一二三四五六七八九十百千万]+)?\s*([:.\-–—]\s*.*|\s+.*)?$/i,
   // "Chương [0-9]+" without separator
   /^\s*(?:#{1,3}\s*)?(?:chương|chapter|chap|hồi)\s*([0-9ivxlcdm]+)\b\s*(.*)$/i,
   // "Hồi thứ [0-9]+"
@@ -153,6 +155,11 @@ export const BulkChapterModal: React.FC<BulkChapterModalProps> = ({
   const [isBulkLocked, setIsBulkLocked] = useState(false);
   const [bulkUnlockPrice, setBulkUnlockPrice] = useState(1);
 
+  // Manual Volume assignment state by Editor
+  const [manualVolumeInput, setManualVolumeInput] = useState('');
+  const [editingVolumeItemId, setEditingVolumeItemId] = useState<string | null>(null);
+  const [editingVolumeItemValue, setEditingVolumeItemValue] = useState('');
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileUpload = async (file: File) => {
@@ -261,6 +268,34 @@ export const BulkChapterModal: React.FC<BulkChapterModalProps> = ({
     setEditingTitleValue('');
   };
 
+  const handleApplyManualVolume = () => {
+    if (!manualVolumeInput.trim()) return;
+    const vol = manualVolumeInput.trim();
+    setParsedChapters(prev =>
+      prev.map(c => (c.selected ? { ...c, volumeTitle: vol } : c))
+    );
+  };
+
+  const handleClearManualVolume = () => {
+    setParsedChapters(prev =>
+      prev.map(c => (c.selected ? { ...c, volumeTitle: undefined } : c))
+    );
+  };
+
+  const handleStartEditItemVolume = (item: ParsedChapterItem) => {
+    setEditingVolumeItemId(item.id);
+    setEditingVolumeItemValue(item.volumeTitle || '');
+  };
+
+  const handleSaveEditItemVolume = (id: string) => {
+    const val = editingVolumeItemValue.trim();
+    setParsedChapters(prev =>
+      prev.map(c => (c.id === id ? { ...c, volumeTitle: val || undefined } : c))
+    );
+    setEditingVolumeItemId(null);
+    setEditingVolumeItemValue('');
+  };
+
   const selectedCount = parsedChapters.filter(c => c.selected).length;
   const totalWords = parsedChapters
     .filter(c => c.selected)
@@ -279,6 +314,7 @@ export const BulkChapterModal: React.FC<BulkChapterModalProps> = ({
       storyId: story.id,
       chapterNumber: item.chapterNumber,
       title: item.title,
+      volumeTitle: item.volumeTitle || undefined,
       content: item.content,
       views: 0,
       createdAt: today,
@@ -563,85 +599,207 @@ export const BulkChapterModal: React.FC<BulkChapterModalProps> = ({
                 )}
               </div>
 
+              {/* Manual Volume / Section Setter by Editor */}
+              <div className="p-3 bg-[#160a11] border border-[#3d1f2e] space-y-2 text-xs">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5 text-[#ffd6e2] font-bold text-xs">
+                    <BookOpen className="w-4 h-4 text-[#ff99bb]" />
+                    <span>Gán Phần / Quyển cho các chương đang chọn (Editor tự đặt tên):</span>
+                  </div>
+                  <span className="text-[11px] text-[#8a717a]">
+                    Đã chọn: <span className="text-[#ffd6e2] font-bold">{selectedCount}</span> chương
+                  </span>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <input
+                    type="text"
+                    value={manualVolumeInput}
+                    onChange={(e) => setManualVolumeInput(e.target.value)}
+                    placeholder="Nhập tên phần/quyển (Ví dụ: Quyển 1: Đêm đông sống lại)..."
+                    className="flex-1 min-w-[220px] bg-[#10070a] border border-[#2d1822] px-2.5 py-1.5 text-xs text-[#e0c0cc] focus:outline-none focus:border-[#5e2f46]"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleApplyManualVolume}
+                    disabled={!manualVolumeInput.trim() || selectedCount === 0}
+                    className="px-3 py-1.5 bg-[#2b1620] border border-[#5e2f46] hover:bg-[#3d1e2c] text-[#ffd6e2] font-bold disabled:opacity-40 transition text-xs flex items-center gap-1.5"
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                    <span>Gán cho {selectedCount} chương</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleClearManualVolume}
+                    disabled={selectedCount === 0}
+                    className="px-2.5 py-1.5 bg-[#180b12] border border-[#2d1822] hover:border-[#5e2f46] text-[#8a717a] hover:text-[#ffd6e2] disabled:opacity-40 transition text-xs"
+                  >
+                    Xóa quyển khỏi {selectedCount} chương
+                  </button>
+                </div>
+              </div>
+
               {/* Parsed Chapters List */}
               <div className="space-y-2.5 max-h-[50vh] overflow-y-auto pr-1">
                 {parsedChapters.map((item, idx) => {
+                  const prevItem = idx > 0 ? parsedChapters[idx - 1] : null;
+                  const isNewVolume = !!(item.volumeTitle && (!prevItem || prevItem.volumeTitle !== item.volumeTitle));
+                  const isTransitionToNoVolume = !item.volumeTitle && !!(prevItem && prevItem.volumeTitle);
+
                   const isExpanded = expandedPreviewId === item.id;
                   const isEditing = editingTitleId === item.id;
+                  const isEditingVolume = editingVolumeItemId === item.id;
 
                   return (
-                    <div
-                      key={item.id}
-                      className={`border transition duration-150 ${
-                        item.selected
-                          ? 'bg-[#170d12] border-[#3a1d2c]'
-                          : 'bg-[#12090c] border-[#201017] opacity-60'
-                      }`}
-                    >
-                      <div className="p-3 flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-3 flex-1 min-w-0">
-                          {/* Checkbox */}
-                          <input
-                            type="checkbox"
-                            checked={item.selected}
-                            onChange={() => handleToggleSelect(item.id)}
-                            className="cursor-pointer accent-[#5e2f46] w-4 h-4 shrink-0"
-                          />
-
-                          {/* Chapter Badge */}
-                          <span className="shrink-0 px-2 py-0.5 bg-[#221019] border border-[#5e2f46] text-[10px] text-[#ffd6e2] font-bold">
-                            Chương #{item.chapterNumber}
-                          </span>
-
-                          {/* Chapter Title (Editable) */}
-                          <div className="flex-1 min-w-0">
-                            {isEditing ? (
-                              <div className="flex items-center gap-2">
-                                <input
-                                  type="text"
-                                  value={editingTitleValue}
-                                  onChange={(e) => setEditingTitleValue(e.target.value)}
-                                  onKeyDown={(e) => {
-                                    if (e.key === 'Enter') handleSaveEditTitle(item.id);
-                                    if (e.key === 'Escape') setEditingTitleId(null);
-                                  }}
-                                  autoFocus
-                                  className="w-full bg-[#10070a] border border-[#5e2f46] px-2 py-1 text-xs text-[#ffd6e2] focus:outline-none"
-                                />
-                                <button
-                                  onClick={() => handleSaveEditTitle(item.id)}
-                                  className="p-1 bg-[#2b1620] border border-[#5e2f46] text-[#ffd6e2] hover:bg-[#3d1e2c]"
-                                  title="Lưu"
-                                >
-                                  <Check className="w-3.5 h-3.5" />
-                                </button>
-                                <button
-                                  onClick={() => setEditingTitleId(null)}
-                                  className="p-1 bg-[#160c10] border border-[#2d1822] text-[#8a717a]"
-                                  title="Hủy"
-                                >
-                                  <X className="w-3.5 h-3.5" />
-                                </button>
-                              </div>
-                            ) : (
-                              <div className="flex items-center gap-2 group/title">
-                                <span className="font-bold text-[#e0c0cc] truncate text-xs">
-                                  {item.title}
-                                </span>
-                                <button
-                                  onClick={() => handleStartEditTitle(item)}
-                                  className="opacity-0 group-hover/title:opacity-100 text-[#8a717a] hover:text-[#ffd6e2] transition p-0.5"
-                                  title="Đổi tiêu đề"
-                                >
-                                  <Edit3 className="w-3 h-3" />
-                                </button>
-                              </div>
-                            )}
-                            <span className="text-[10px] text-[#8a717a] block mt-0.5">
-                              {item.wordCount.toLocaleString()} từ • ~{Math.ceil(item.wordCount / 200)} phút đọc
+                    <React.Fragment key={item.id}>
+                      {/* Section Break / Ngắt Phần Header */}
+                      {isNewVolume && (
+                        <div className="pt-2 pb-0.5">
+                          <div className="bg-[#1f0f18] border border-[#5e2f46] px-3.5 py-1.5 flex items-center justify-between text-xs font-bold text-[#ffd6e2] rounded-xs shadow-xs">
+                            <div className="flex items-center gap-2">
+                              <BookOpen className="w-3.5 h-3.5 text-[#ff99bb]" />
+                              <span>{item.volumeTitle}</span>
+                            </div>
+                            <span className="text-[11px] font-normal text-[#c492a5]">
+                              {parsedChapters.filter((c) => c.volumeTitle === item.volumeTitle).length} chương
                             </span>
                           </div>
                         </div>
+                      )}
+
+                      {isTransitionToNoVolume && (
+                        <div className="pt-2 pb-0.5">
+                          <div className="bg-[#12080d] border border-dashed border-[#3b1f2d] px-3 py-1 flex items-center gap-2 text-xs text-[#8a717a] rounded-xs">
+                            <BookOpen className="w-3 h-3 text-[#8a717a]" />
+                            <span className="text-[10px] uppercase tracking-wider font-semibold">Các chương tiếp theo</span>
+                          </div>
+                        </div>
+                      )}
+
+                      <div
+                        className={`border transition duration-150 ${
+                          item.selected
+                            ? 'bg-[#170d12] border-[#3a1d2c]'
+                            : 'bg-[#12090c] border-[#201017] opacity-60'
+                        }`}
+                      >
+                        <div className="p-3 flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-3 flex-1 min-w-0">
+                            {/* Checkbox */}
+                            <input
+                              type="checkbox"
+                              checked={item.selected}
+                              onChange={() => handleToggleSelect(item.id)}
+                              className="cursor-pointer accent-[#5e2f46] w-4 h-4 shrink-0"
+                            />
+
+                            {/* Chapter Badge */}
+                            <span className="shrink-0 px-2 py-0.5 bg-[#221019] border border-[#5e2f46] text-[10px] text-[#ffd6e2] font-bold">
+                              Chương #{item.chapterNumber}
+                            </span>
+
+                            {/* Volume Tag / Inline Volume Editor */}
+                            {isEditingVolume ? (
+                              <div className="flex items-center gap-1 shrink-0">
+                                <input
+                                  type="text"
+                                  value={editingVolumeItemValue}
+                                  onChange={(e) => setEditingVolumeItemValue(e.target.value)}
+                                  placeholder="Tên Quyển..."
+                                  autoFocus
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') handleSaveEditItemVolume(item.id);
+                                    if (e.key === 'Escape') setEditingVolumeItemId(null);
+                                  }}
+                                  className="w-32 bg-[#10070a] border border-[#5e2f46] px-1.5 py-0.5 text-[10px] text-[#ffd6e2]"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => handleSaveEditItemVolume(item.id)}
+                                  className="p-0.5 bg-[#2b1620] border border-[#5e2f46] text-[#ffd6e2]"
+                                  title="Lưu quyển"
+                                >
+                                  <Check className="w-3 h-3" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingVolumeItemId(null)}
+                                  className="p-0.5 bg-[#160c10] border border-[#2d1822] text-[#8a717a]"
+                                  title="Hủy"
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </div>
+                            ) : item.volumeTitle ? (
+                              <button
+                                type="button"
+                                onClick={() => handleStartEditItemVolume(item)}
+                                className="shrink-0 px-1.5 py-0.5 bg-[#200d18] border border-[#4d2138] hover:border-[#ff99bb] text-[9px] text-[#e0a8be] font-medium hidden sm:inline-flex items-center gap-1 transition"
+                                title="Bấm để sửa tên quyển"
+                              >
+                                <BookOpen className="w-2.5 h-2.5 text-[#ff99bb]" />
+                                <span>{item.volumeTitle}</span>
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => handleStartEditItemVolume(item)}
+                                className="shrink-0 px-1.5 py-0.5 bg-[#140a0f] border border-dashed border-[#2d1822] hover:border-[#5e2f46] text-[9px] text-[#8a717a] hover:text-[#ffd6e2] hidden sm:inline-flex items-center gap-1 transition"
+                                title="Đặt quyển cho chương này"
+                              >
+                                <span>+ Quyển</span>
+                              </button>
+                            )}
+
+                            {/* Chapter Title (Editable) */}
+                            <div className="flex-1 min-w-0">
+                              {isEditing ? (
+                                <div className="flex items-center gap-2">
+                                  <input
+                                    type="text"
+                                    value={editingTitleValue}
+                                    onChange={(e) => setEditingTitleValue(e.target.value)}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') handleSaveEditTitle(item.id);
+                                      if (e.key === 'Escape') setEditingTitleId(null);
+                                    }}
+                                    autoFocus
+                                    className="w-full bg-[#10070a] border border-[#5e2f46] px-2 py-1 text-xs text-[#ffd6e2] focus:outline-none"
+                                  />
+                                  <button
+                                    onClick={() => handleSaveEditTitle(item.id)}
+                                    className="p-1 bg-[#2b1620] border border-[#5e2f46] text-[#ffd6e2] hover:bg-[#3d1e2c]"
+                                    title="Lưu"
+                                  >
+                                    <Check className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button
+                                    onClick={() => setEditingTitleId(null)}
+                                    className="p-1 bg-[#160c10] border border-[#2d1822] text-[#8a717a]"
+                                    title="Hủy"
+                                  >
+                                    <X className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-2 group/title">
+                                  <span className="font-bold text-[#e0c0cc] truncate text-xs">
+                                    {item.title}
+                                  </span>
+                                  <button
+                                    onClick={() => handleStartEditTitle(item)}
+                                    className="opacity-0 group-hover/title:opacity-100 text-[#8a717a] hover:text-[#ffd6e2] transition p-0.5"
+                                    title="Đổi tiêu đề"
+                                  >
+                                    <Edit3 className="w-3 h-3" />
+                                  </button>
+                                </div>
+                              )}
+                              <span className="text-[10px] text-[#8a717a] block mt-0.5">
+                                {item.wordCount.toLocaleString()} từ • ~{Math.ceil(item.wordCount / 200)} phút đọc
+                              </span>
+                            </div>
+                          </div>
 
                         {/* Action buttons */}
                         <div className="flex items-center gap-1 shrink-0">
@@ -676,8 +834,9 @@ export const BulkChapterModal: React.FC<BulkChapterModalProps> = ({
                         </div>
                       )}
                     </div>
-                  );
-                })}
+                  </React.Fragment>
+                );
+              })}
               </div>
 
               {/* Footer Save Actions */}

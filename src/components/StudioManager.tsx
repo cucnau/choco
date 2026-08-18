@@ -560,6 +560,7 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
   const [editingChapter, setEditingChapter] = useState<Chapter | null>(null);
   const [isBulkUploadingChapter, setIsBulkUploadingChapter] = useState(false);
   const [chapterTitle, setChapterTitle] = useState('');
+  const [chapterVolumeTitle, setChapterVolumeTitle] = useState('');
   const [chapterContent, setChapterContent] = useState('');
   const [isChapterLocked, setIsChapterLocked] = useState(false);
   const [chapterUnlockPrice, setChapterUnlockPrice] = useState(1);
@@ -1052,6 +1053,7 @@ export const INITIAL_COMMENTS: Comment[] = ${JSON.stringify(comments, null, 2)};
   const handleOpenCreateChapter = () => {
     setEditingChapter(null);
     setChapterTitle('');
+    setChapterVolumeTitle('');
     setChapterContent('');
     setIsChapterLocked(false);
     setChapterUnlockPrice(1);
@@ -1062,6 +1064,7 @@ export const INITIAL_COMMENTS: Comment[] = ${JSON.stringify(comments, null, 2)};
   const handleOpenEditChapter = (chap: Chapter) => {
     setEditingChapter(chap);
     setChapterTitle(chap.title);
+    setChapterVolumeTitle(chap.volumeTitle || '');
     setChapterContent(chap.content);
     setIsChapterLocked(!!chap.isLocked);
     setChapterUnlockPrice(chap.unlockPrice && chap.unlockPrice > 0 ? chap.unlockPrice : 1);
@@ -1081,6 +1084,7 @@ export const INITIAL_COMMENTS: Comment[] = ${JSON.stringify(comments, null, 2)};
       storyId: selectedStoryForChapters.id,
       chapterNumber: nextChapterNum,
       title: chapterTitle.trim(),
+      volumeTitle: chapterVolumeTitle.trim() || undefined,
       content: chapterContent.trim(),
       views: editingChapter ? editingChapter.views : 0,
       createdAt: editingChapter ? editingChapter.createdAt : new Date().toISOString().split('T')[0],
@@ -1091,6 +1095,7 @@ export const INITIAL_COMMENTS: Comment[] = ${JSON.stringify(comments, null, 2)};
 
     onSaveChapter(newChapter);
     setChapterTitle('');
+    setChapterVolumeTitle('');
     setChapterContent('');
     setIsChapterLocked(false);
     setChapterUnlockPrice(1);
@@ -1247,44 +1252,93 @@ export const INITIAL_COMMENTS: Comment[] = ${JSON.stringify(comments, null, 2)};
                 </div>
               </div>
 
-              {/* List of chapters */}
+              {/* List of chapters with Volume Breaks / Ngắt Phần */}
               <div className="space-y-2">
-                {chapters.filter(c => c.storyId === selectedStoryForChapters.id).map((chap) => (
-                  <div
-                    key={chap.id}
-                    className="bg-[#170d12] border border-[#2d1822] p-3 flex items-center justify-between text-xs font-mono-code"
-                  >
-                    <div>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-bold text-[#e0c0cc] font-mono-code">{chap.title}</span>
-                        {chap.isLocked && (
-                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-[#2b1620] border border-[#5e2f46] text-[10px] text-[#ffd6e2] font-semibold">
-                            <Lock className="w-3 h-3 text-[#ff99bb]" />
-                            <span>{chap.unlockPrice || 1} Chucu</span>
-                          </span>
-                        )}
-                      </div>
-                      <span className="text-xs text-[#8a717a]">Cập nhật: {chap.createdAt}</span>
-                    </div>
+                {(() => {
+                  const storyChaps = chapters
+                    .filter((c) => c.storyId === selectedStoryForChapters.id)
+                    .sort((a, b) => a.chapterNumber - b.chapterNumber);
 
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => handleOpenEditChapter(chap)}
-                        className="p-1.5 text-[#8a717a] hover:text-[#ffd6e2] transition"
-                        title="Sửa chương / Đổi giá Chucu"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => onDeleteChapter(chap.id, selectedStoryForChapters.id)}
-                        className="p-1.5 text-[#8a717a] hover:text-[#d0a0b0] transition"
-                        title="Xóa chương"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                  if (storyChaps.length === 0) {
+                    return (
+                      <div className="bg-[#170d12] border border-[#2d1822] p-4 text-center text-xs text-[#8a717a]">
+                        Chưa có chương nào được viết.
+                      </div>
+                    );
+                  }
+
+                  return storyChaps.map((chap, idx) => {
+                    const prevChap = idx > 0 ? storyChaps[idx - 1] : null;
+                    const isNewVolume = !!(chap.volumeTitle && (!prevChap || prevChap.volumeTitle !== chap.volumeTitle));
+                    const isTransitionToNoVolume = !chap.volumeTitle && !!(prevChap && prevChap.volumeTitle);
+
+                    return (
+                      <React.Fragment key={chap.id}>
+                        {/* Volume / Section Break Header */}
+                        {isNewVolume && (
+                          <div className="pt-2 pb-0.5">
+                            <div className="bg-[#1f0f18] border border-[#5e2f46] px-3.5 py-2 flex items-center justify-between text-xs font-bold text-[#ffd6e2] rounded-xs shadow-xs">
+                              <div className="flex items-center gap-2">
+                                <BookOpen className="w-3.5 h-3.5 text-[#ff99bb]" />
+                                <span>{chap.volumeTitle}</span>
+                              </div>
+                              <span className="text-[11px] font-normal text-[#c492a5]">
+                                {storyChaps.filter((c) => c.volumeTitle === chap.volumeTitle).length} chương
+                              </span>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Transition divider */}
+                        {isTransitionToNoVolume && (
+                          <div className="pt-2 pb-0.5">
+                            <div className="bg-[#12080d] border border-dashed border-[#3b1f2d] px-3 py-1.5 flex items-center gap-2 text-xs text-[#8a717a] rounded-xs">
+                              <BookOpen className="w-3 h-3 text-[#8a717a]" />
+                              <span className="text-[10px] uppercase tracking-wider font-semibold">Các chương tiếp theo</span>
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="bg-[#170d12] border border-[#2d1822] p-3 flex items-center justify-between text-xs font-mono-code">
+                          <div>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-bold text-[#e0c0cc] font-mono-code">{chap.title}</span>
+                              {chap.volumeTitle && (
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-[#200d18] border border-[#4d2138] text-[10px] text-[#e0a8be] font-medium rounded-xs">
+                                  {chap.volumeTitle}
+                                </span>
+                              )}
+                              {chap.isLocked && (
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-[#2b1620] border border-[#5e2f46] text-[10px] text-[#ffd6e2] font-semibold">
+                                  <Lock className="w-3 h-3 text-[#ff99bb]" />
+                                  <span>{chap.unlockPrice || 1} Chucu</span>
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-xs text-[#8a717a]">Cập nhật: {chap.createdAt}</span>
+                          </div>
+
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => handleOpenEditChapter(chap)}
+                              className="p-1.5 text-[#8a717a] hover:text-[#ffd6e2] transition"
+                              title="Sửa chương / Đổi ngắt phần / Đổi giá Chucu"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => onDeleteChapter(chap.id, selectedStoryForChapters.id)}
+                              className="p-1.5 text-[#8a717a] hover:text-[#d0a0b0] transition"
+                              title="Xóa chương"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      </React.Fragment>
+                    );
+                  });
+                })()}
               </div>
             </div>
           ) : (
@@ -1304,6 +1358,24 @@ export const INITIAL_COMMENTS: Comment[] = ${JSON.stringify(comments, null, 2)};
                     <span>Hoặc Tải file tổng tự chia chương</span>
                   </button>
                 )}
+              </div>
+
+              {/* Volume Title / Section Break field */}
+              <div className="space-y-1.5 bg-[#140a0f] border border-[#2d1822] p-3 rounded-xs">
+                <div className="flex flex-wrap items-center justify-between gap-1">
+                  <label className="text-xs font-bold text-[#ffd6e2] block font-mono-code flex items-center gap-1.5">
+                    <BookOpen className="w-3.5 h-3.5 text-[#ff99bb]" />
+                    <span>Phần / Quyển (Ngắt phần - Tùy chọn):</span>
+                  </label>
+                  <span className="text-[10px] text-[#8a717a] italic">Ví dụ: Quyển 1: Đêm đông sống lại</span>
+                </div>
+                <input
+                  type="text"
+                  value={chapterVolumeTitle}
+                  onChange={(e) => setChapterVolumeTitle(e.target.value)}
+                  placeholder="Nhập tên phần/quyển để gom nhóm các chương (Ví dụ: Quyển 1: Đêm đông sống lại)..."
+                  className="w-full bg-[#10070a] border border-[#2d1822] p-2 text-xs text-[#e0c0cc] focus:outline-none focus:border-[#5e2f46] font-mono-code"
+                />
               </div>
 
               <div className="space-y-1">

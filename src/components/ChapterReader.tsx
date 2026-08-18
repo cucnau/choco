@@ -411,11 +411,17 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
           {/* Vintage/Brackets Corner Decorators */}
           <StoryCornerAccents accent={activeBorderCornerAccent} color={currentBorder} />
 
-          {/* Chapter Header: Story title, chapter title, lock badge, meta */}
+          {/* Chapter Header: Story title, volume title, chapter title, lock badge, meta */}
           <div className="text-center space-y-2 pb-5 border-b border-dashed" style={{ borderColor: currentBorder }}>
-            <span className={`text-[11px] font-bold uppercase tracking-widest ${storyMutedFont}`} style={{ color: currentTextMuted }}>
-              {story.title}
-            </span>
+            <div className={`flex items-center justify-center gap-2 flex-wrap text-[11px] font-bold uppercase tracking-widest ${storyMutedFont}`} style={{ color: currentTextMuted }}>
+              <span>{story.title}</span>
+              {chapter.volumeTitle && (
+                <>
+                  <span className="opacity-50">•</span>
+                  <span className="text-opacity-90">{chapter.volumeTitle}</span>
+                </>
+              )}
+            </div>
             <div className="flex items-center justify-center gap-2 flex-wrap">
               <h1 className={`text-xl sm:text-2xl font-bold tracking-wide leading-snug ${storyTitleFont}`} style={{ color: currentText }}>
                 {chapter.title}

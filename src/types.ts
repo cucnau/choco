@@ -9,6 +9,7 @@ export interface Chapter {
   updatedAt: string;
   isLocked?: boolean; // Chương có bị khóa Chucu không
   unlockPrice?: number; // Số Chucu cần để mở khóa (mặc định min 1 nếu khóa, ví dụ 1, 2, 5...)
+  volumeTitle?: string; // Tên phần / quyển / ngắt phần (ví dụ: "Quyển 1: Đêm đông sống lại")
 }
 
 export interface Comment {
