@@ -8,10 +8,25 @@ import { Game2048 } from './Game2048';
 interface GamesHubProps {
   currentUser?: FirebaseUser | null;
   userProfile?: UserProfile | null;
+  selectedGameId?: string | null;
+  onSelectGame?: (gameId: string | null) => void;
 }
 
-export const GamesHub: React.FC<GamesHubProps> = ({ currentUser, userProfile }) => {
-  const [activeGameId, setActiveGameId] = useState<string | null>(null);
+export const GamesHub: React.FC<GamesHubProps> = ({ 
+  currentUser, 
+  userProfile,
+  selectedGameId: propSelectedGameId,
+  onSelectGame
+}) => {
+  const [internalGameId, setInternalGameId] = useState<string | null>(null);
+  const activeGameId = propSelectedGameId !== undefined ? propSelectedGameId : internalGameId;
+
+  const setActiveGameId = (id: string | null) => {
+    setInternalGameId(id);
+    if (onSelectGame) {
+      onSelectGame(id);
+    }
+  };
 
   // Lấy kỷ lục điểm Block đã lưu trong localStorage
   const blockHighScore = (() => {
