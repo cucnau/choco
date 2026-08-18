@@ -10,6 +10,38 @@ const DB_FILE = path.join(process.cwd(), 'server_db.json');
 // Cấu hình middleware để đọc json
 app.use(express.json());
 
+// Middleware sửa triệt để 100% lỗi đường dẫn tương đối (khi client kẹt cache cũ hoặc CDN cloud kẹt cache)
+app.use((req, res, next) => {
+  const url = req.path;
+  
+  // 1. Nếu có yêu cầu trực tiếp tệp cũ bị kẹt trong cache trình duyệt (kể cả bị lồng cấp như /truyen/...)
+  if (url.includes('index-rnbyIbOD.js') || (url.endsWith('.js') && !url.startsWith('/assets/') && !url.startsWith('/src/') && !url.startsWith('/api/'))) {
+    const distAssets = path.join(process.cwd(), 'dist', 'assets');
+    if (fs.existsSync(distAssets)) {
+      const files = fs.readdirSync(distAssets);
+      const jsFile = files.find(f => f.endsWith('.js'));
+      if (jsFile) {
+        res.setHeader('Content-Type', 'application/javascript');
+        return res.sendFile(path.join(distAssets, jsFile));
+      }
+    }
+  }
+
+  if (url.includes('index-bxerD5Ct.css') || (url.endsWith('.css') && !url.startsWith('/assets/') && !url.startsWith('/api/'))) {
+    const distAssets = path.join(process.cwd(), 'dist', 'assets');
+    if (fs.existsSync(distAssets)) {
+      const files = fs.readdirSync(distAssets);
+      const cssFile = files.find(f => f.endsWith('.css'));
+      if (cssFile) {
+        res.setHeader('Content-Type', 'text/css');
+        return res.sendFile(path.join(distAssets, cssFile));
+      }
+    }
+  }
+
+  next();
+});
+
 // Khởi tạo database server-side dạng file JSON nếu chưa tồn tại
 const INITIAL_ACCOUNTS = [
   {
