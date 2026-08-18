@@ -972,10 +972,15 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
 
   const handleAddTag = () => {
     if (!newTagInput.trim()) return;
-    const cleanTag = newTagInput.trim().replace(/^#/, '');
-    if (!tags.includes(cleanTag)) {
-      setTags([...tags, cleanTag]);
-    }
+    const rawTags = newTagInput.split(/[,，\n]/);
+    const updatedTags = [...tags];
+    rawTags.forEach((item) => {
+      const cleanTag = item.trim().replace(/^#/, '');
+      if (cleanTag && !updatedTags.includes(cleanTag)) {
+        updatedTags.push(cleanTag);
+      }
+    });
+    setTags(updatedTags);
     setNewTagInput('');
   };
 
@@ -2281,7 +2286,7 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                   <div className="flex items-center gap-1 mt-1 font-mono">
                     <input
                       type="text"
-                      placeholder="Thêm tag (VD: Ngôn tình)..."
+                      placeholder="Thêm tag (cách nhau bởi dấu phẩy)..."
                       value={newTagInput}
                       onChange={(e) => setNewTagInput(e.target.value)}
                       onKeyDown={(e) => {
