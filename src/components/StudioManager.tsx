@@ -46,50 +46,50 @@ import {
 
 const FONT_OPTIONS = [
   // Serif (Cổ điển / Trang trọng)
-  { value: 'font-lora', label: 'Lora - Cổ điển' },
-  { value: 'font-garamond', label: 'EB Garamond - Cổ điển cổ kính' },
-  { value: 'font-merriweather', label: 'Merriweather - Đọc truyện dài' },
-  { value: 'font-playfair', label: 'Playfair Display - Nghệ thuật' },
-  { value: 'font-notoserif', label: 'Noto Serif - Trang nghiêm' },
-  { value: 'font-robotoslab', label: 'Roboto Slab - Khung chắc chắn' },
-  { value: 'font-times', label: 'Times New Roman - Truyền thống' },
-  { value: 'font-cormorant', label: 'Cormorant Garamond - Quý phái' },
+  { value: 'font-lora', label: 'Lora' },
+  { value: 'font-garamond', label: 'EB Garamond' },
+  { value: 'font-merriweather', label: 'Merriweather' },
+  { value: 'font-playfair', label: 'Playfair Display' },
+  { value: 'font-notoserif', label: 'Noto Serif' },
+  { value: 'font-robotoslab', label: 'Roboto Slab' },
+  { value: 'font-times', label: 'Times New Roman' },
+  { value: 'font-cormorant', label: 'Cormorant Garamond' },
 
   // Sans-serif (Hiện đại / Sạch sẽ)
-  { value: 'font-bevietnam', label: 'Be Vietnam Pro - Hiện đại Việt' },
-  { value: 'font-inter', label: 'Inter - Tối giản công nghệ' },
-  { value: 'font-opensans', label: 'Open Sans - Thư thái dễ nhìn' },
-  { value: 'font-roboto', label: 'Roboto - Phổ thông chuẩn mực' },
-  { value: 'font-montserrat', label: 'Montserrat - Sang trọng đô thị' },
-  { value: 'font-nunito', label: 'Nunito - Thân thiện bo góc' },
-  { value: 'font-quicksand', label: 'Quicksand - Tròn trịa dễ thương' },
-  { value: 'font-mulish', label: 'Mulish - Thanh lịch nhẹ nhàng' },
-  { value: 'font-notosans', label: 'Noto Sans - Trung tính hoàn hảo' },
-  { value: 'font-sourcesans', label: 'Source Sans 3 - Sắc sảo rõ nét' },
-  { value: 'font-worksans', label: 'Work Sans - Vững chãi rành mạch' },
-  { value: 'font-saira', label: 'Saira - Trang nhã thanh lịch' },
-  { value: 'font-lexend', label: 'Lexend - Siêu sạch thoáng đãng' },
-  { value: 'font-comfortaa', label: 'Comfortaa - Tròn xoe đáng yêu' },
-  { value: 'font-baloo', label: 'Baloo 2 - Tròn mập nhí nhố' },
+  { value: 'font-bevietnam', label: 'Be Vietnam Pro' },
+  { value: 'font-inter', label: 'Inter' },
+  { value: 'font-opensans', label: 'Open Sans' },
+  { value: 'font-roboto', label: 'Roboto' },
+  { value: 'font-montserrat', label: 'Montserrat' },
+  { value: 'font-nunito', label: 'Nunito' },
+  { value: 'font-quicksand', label: 'Quicksand' },
+  { value: 'font-mulish', label: 'Mulish' },
+  { value: 'font-notosans', label: 'Noto Sans' },
+  { value: 'font-sourcesans', label: 'Source Sans 3' },
+  { value: 'font-worksans', label: 'Work Sans' },
+  { value: 'font-saira', label: 'Saira' },
+  { value: 'font-lexend', label: 'Lexend' },
+  { value: 'font-comfortaa', label: 'Comfortaa' },
+  { value: 'font-baloo', label: 'Baloo 2' },
 
   // Calligraphy & Script (Bay bổng / Lãng mạn / Thư pháp)
-  { value: 'font-charm', label: 'Charm - Bay bổng dịu dàng' },
-  { value: 'font-dancing', label: 'Dancing Script - Lãng mạn mềm mại' },
-  { value: 'font-pacifico', label: 'Pacifico - Phóng khoáng bãi biển' },
-  { value: 'font-lobster', label: 'Lobster - Phá cách Retro' },
-  { value: 'font-pattaya', label: 'Pattaya - Uốn lượn đầy đặn' },
-  { value: 'font-arima', label: 'Arima - Nghệ thuật cổ trang' },
+  { value: 'font-charm', label: 'Charm' },
+  { value: 'font-dancing', label: 'Dancing Script' },
+  { value: 'font-pacifico', label: 'Pacifico' },
+  { value: 'font-lobster', label: 'Lobster' },
+  { value: 'font-pattaya', label: 'Pattaya' },
+  { value: 'font-arima', label: 'Arima' },
 
   // Comic & Handwritten (Truyện tranh / Bình dị)
-  { value: 'font-patrick', label: 'Patrick Hand - Nhật ký tự nhiên' },
-  { value: 'font-itim', label: 'Itim - Hoạt họa học đường' },
-  { value: 'font-sriracha', label: 'Sriracha - Nét bút lông sắc sảo' },
-  { value: 'font-pangolin', label: 'Pangolin - Nét vẽ vui tươi' },
+  { value: 'font-patrick', label: 'Patrick Hand' },
+  { value: 'font-itim', label: 'Itim' },
+  { value: 'font-sriracha', label: 'Sriracha' },
+  { value: 'font-pangolin', label: 'Pangolin' },
 
   // Monospace & Pixel & Display (Công nghệ / Retro game)
-  { value: 'font-mono', label: 'JetBrains Mono - Lập trình viên' },
-  { value: 'font-inconsolata', label: 'Inconsolata - Máy chữ cổ điển' },
-  { value: 'font-bungee', label: 'Bungee - Biển hiệu khối đậm' }
+  { value: 'font-mono', label: 'JetBrains Mono' },
+  { value: 'font-inconsolata', label: 'Inconsolata' },
+  { value: 'font-bungee', label: 'Bungee' }
 ];
 
 const PRESET_THEME_COLORS: Record<string, {
@@ -2109,15 +2109,15 @@ export const INITIAL_COMMENTS: Comment[] = ${JSON.stringify(comments, null, 2)};
                       className="w-full bg-[#170d12] border border-[#2d1822] p-2 text-xs text-[#e0c0cc] focus:outline-none focus:border-[#522d3d] font-mono-code"
                     >
                       <option value="none">Không có hiệu ứng</option>
-                      <option value="rain">Mưa rơi bóng nước</option>
-                      <option value="snow">Tuyết rơi êm dịu</option>
-                      <option value="glitch">Glitch nhiễu sóng nhẹ</option>
-                      <option value="star">Bụi sao băng lấp lánh</option>
-                      <option value="leaf">Lá phong thu rơi</option>
-                      <option value="ginkgo">Lá bạch quả vàng rơi</option>
+                      <option value="rain">Mưa rơi</option>
+                      <option value="snow">Tuyết rơi</option>
+                      <option value="glitch">Nhiễu sóng</option>
+                      <option value="star">Bụi sao</option>
+                      <option value="leaf">Lá phong rơi</option>
+                      <option value="ginkgo">Lá bạch quả rơi</option>
                       <option value="cherry_blossom">Cánh hoa đào rơi</option>
-                      <option value="firefly">Đom đóm bay lấp lánh</option>
-                      <option value="soap_bubble">Bong bóng xà phòng bay</option>
+                      <option value="firefly">Đom đóm</option>
+                      <option value="soap_bubble">Bong bóng xà phòng</option>
                     </select>
                   </div>
                 </div>
