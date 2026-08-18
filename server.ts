@@ -10,38 +10,6 @@ const DB_FILE = path.join(process.cwd(), 'server_db.json');
 // Cấu hình middleware để đọc json
 app.use(express.json());
 
-// Middleware sửa triệt để 100% lỗi đường dẫn tương đối (khi client kẹt cache cũ hoặc CDN cloud kẹt cache)
-app.use((req, res, next) => {
-  const url = req.path;
-  
-  // 1. Nếu có yêu cầu trực tiếp tệp cũ bị kẹt trong cache trình duyệt (kể cả bị lồng cấp như /truyen/...)
-  if (url.includes('index-rnbyIbOD.js') || (url.endsWith('.js') && !url.startsWith('/assets/') && !url.startsWith('/src/') && !url.startsWith('/api/'))) {
-    const distAssets = path.join(process.cwd(), 'dist', 'assets');
-    if (fs.existsSync(distAssets)) {
-      const files = fs.readdirSync(distAssets);
-      const jsFile = files.find(f => f.endsWith('.js'));
-      if (jsFile) {
-        res.setHeader('Content-Type', 'application/javascript');
-        return res.sendFile(path.join(distAssets, jsFile));
-      }
-    }
-  }
-
-  if (url.includes('index-bxerD5Ct.css') || (url.endsWith('.css') && !url.startsWith('/assets/') && !url.startsWith('/api/'))) {
-    const distAssets = path.join(process.cwd(), 'dist', 'assets');
-    if (fs.existsSync(distAssets)) {
-      const files = fs.readdirSync(distAssets);
-      const cssFile = files.find(f => f.endsWith('.css'));
-      if (cssFile) {
-        res.setHeader('Content-Type', 'text/css');
-        return res.sendFile(path.join(distAssets, cssFile));
-      }
-    }
-  }
-
-  next();
-});
-
 // Khởi tạo database server-side dạng file JSON nếu chưa tồn tại
 const INITIAL_ACCOUNTS = [
   {
@@ -494,32 +462,10 @@ async function startServer() {
       appType: "spa",
     });
     app.use(vite.middlewares);
-
-    // Bắt tất cả đường dẫn SPA (như /truyen/..., /tu-sach, /tro-choi...) trả về index.html để không bị 404 khi nhấn F5
-    app.get('*', async (req, res, next) => {
-      if (req.originalUrl.startsWith('/api')) {
-        return next();
-      }
-      try {
-        const url = req.originalUrl;
-        let template = fs.readFileSync(path.join(process.cwd(), 'index.html'), 'utf-8');
-        template = await vite.transformIndexHtml(url, template);
-        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-        res.setHeader('Pragma', 'no-cache');
-        res.setHeader('Expires', '0');
-        res.status(200).set({ 'Content-Type': 'text/html' }).end(template);
-      } catch (e) {
-        vite.ssrFixStacktrace(e as Error);
-        next(e);
-      }
-    });
   } else {
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));
     app.get('*', (req, res) => {
-      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-      res.setHeader('Pragma', 'no-cache');
-      res.setHeader('Expires', '0');
       res.sendFile(path.join(distPath, 'index.html'));
     });
   }
