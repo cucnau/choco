@@ -348,28 +348,56 @@ export default function App() {
     };
   }, []);
 
-  // Điều hướng bằng URL Hash tiếng Việt đẹp (ví dụ: #truyen/dem-dong-song-lai/chuong-1)
+  // Hàm điều hướng URL sạch (Path routing, hoàn toàn không có dấu #)
+  const navigateTo = (path: string) => {
+    const cleanPath = path.startsWith('/') ? path : `/${path}`;
+    if (window.location.pathname !== cleanPath || window.location.hash) {
+      window.history.pushState(null, '', cleanPath);
+      // Kích hoạt sự kiện popstate để cập nhật state ngay lập tức
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    }
+  };
+
+  // Điều hướng bằng URL sạch chuẩn HTML5 History (ví dụ: /home, /studio, /truyen/dem-dong-song-lai/chuong-1)
   useEffect(() => {
     const handleLocationChange = () => {
       let rawHash = window.location.hash;
 
+      // Nếu URL cũ đang có dấu # (do bookmark hoặc session cũ), tự động chuyển đổi sang URL sạch không có #
+      if (rawHash) {
+        let cleanFromHash = rawHash.replace(/^#\/?/, '');
+        if (cleanFromHash === 'trang-chu' || cleanFromHash === 'browse') cleanFromHash = 'home';
+        else if (cleanFromHash === 'tu-sach' || cleanFromHash === 'da-luu') cleanFromHash = 'library';
+        else if (cleanFromHash === 'xuong-viet' || cleanFromHash === 'sang-tac') cleanFromHash = 'studio';
+        else if (cleanFromHash === 'tro-choi') cleanFromHash = 'games';
+        else if (cleanFromHash.startsWith('tro-choi/')) cleanFromHash = cleanFromHash.replace('tro-choi/', 'games/');
+
+        const newCleanPath = cleanFromHash ? `/${cleanFromHash}` : '/home';
+        window.history.replaceState(null, '', newCleanPath);
+      }
+
       // Hỗ trợ trường hợp mở từ query params ?story=123 hoặc ?chapter=456
-      if (!rawHash && window.location.search) {
+      if (window.location.search) {
         const params = new URLSearchParams(window.location.search);
         if (params.get('chapter')) {
-          rawHash = `#chapter/${params.get('chapter')}`;
+          const chapId = params.get('chapter');
+          window.history.replaceState(null, '', `/truyen/chapter/${chapId}`);
         } else if (params.get('story')) {
-          rawHash = `#story/${params.get('story')}`;
+          const storyId = params.get('story');
+          window.history.replaceState(null, '', `/truyen/${storyId}`);
         } else if (params.get('tab')) {
-          rawHash = `#${params.get('tab')}`;
+          const tabName = params.get('tab');
+          window.history.replaceState(null, '', `/${tabName}`);
         }
       }
 
-      let cleanRoute = '';
+      // Đọc đường dẫn từ pathname (loại bỏ dấu / ở đầu và cuối)
+      let cleanRoute = window.location.pathname.replace(/^\/+|\/+$/g, '');
+
       try {
-        cleanRoute = decodeURIComponent(rawHash.replace(/^#\/?/, ''));
+        cleanRoute = decodeURIComponent(cleanRoute);
       } catch {
-        cleanRoute = rawHash.replace(/^#\/?/, '');
+        // ignore
       }
 
       if (!cleanRoute || cleanRoute === 'browse' || cleanRoute === 'home' || cleanRoute === 'trang-chu') {
@@ -403,8 +431,8 @@ export default function App() {
         const parts = cleanRoute.split('/');
         if (parts.length > 1 && parts[1]) {
           const rawGame = parts[1];
-          if (rawGame === 'xep-gach' || rawGame === 'block_blast') {
-            setSelectedGameId('block_blast');
+          if (rawGame === 'block' || rawGame === 'block_blast' || rawGame === 'xep-gach') {
+            setSelectedGameId('block');
           } else {
             setSelectedGameId(rawGame);
           }
@@ -528,7 +556,7 @@ export default function App() {
     setSelectedStory(story);
     setSelectedChapter(null);
     setSelectedGameId(null);
-    window.location.hash = `#truyen/${slugify(story.title)}`;
+    navigateTo(`/truyen/${slugify(story.title)}`);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -542,7 +570,7 @@ export default function App() {
       incrementChapterViews(chapter.id, story.id);
       saveReadingProgress(story.id, chapter.id, chapter.chapterNumber);
       refreshData();
-      window.location.hash = `#truyen/${slugify(story.title)}/chuong-${chapter.chapterNumber}`;
+      navigateTo(`/truyen/${slugify(story.title)}/chuong-${chapter.chapterNumber}`);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
@@ -810,10 +838,10 @@ export default function App() {
             setSelectedStory(null);
             setSelectedChapter(null);
             setSelectedGameId(null);
-            if (tab === 'browse') window.location.hash = '#trang-chu';
-            else if (tab === 'library') window.location.hash = '#tu-sach';
-            else if (tab === 'studio') window.location.hash = '#xuong-viet';
-            else if (tab === 'games') window.location.hash = '#tro-choi';
+            if (tab === 'browse') navigateTo('/home');
+            else if (tab === 'library') navigateTo('/library');
+            else if (tab === 'studio') navigateTo('/studio');
+            else if (tab === 'games') navigateTo('/games');
           }}
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
@@ -879,9 +907,9 @@ export default function App() {
             onBackToStory={() => {
               setSelectedChapter(null);
               if (selectedStory) {
-                window.location.hash = `#truyen/${slugify(selectedStory.title)}`;
+                navigateTo(`/truyen/${slugify(selectedStory.title)}`);
               } else {
-                window.location.hash = '#trang-chu';
+                navigateTo('/home');
               }
             }}
             onAddComment={handleAddComment}
@@ -934,10 +962,10 @@ export default function App() {
               onBack={() => {
                 setSelectedStory(null);
                 setSelectedChapter(null);
-                if (activeTab === 'library') window.location.hash = '#tu-sach';
-                else if (activeTab === 'studio') window.location.hash = '#xuong-viet';
-                else if (activeTab === 'games') window.location.hash = '#tro-choi';
-                else window.location.hash = '#trang-chu';
+                if (activeTab === 'library') navigateTo('/library');
+                else if (activeTab === 'studio') navigateTo('/studio');
+                else if (activeTab === 'games') navigateTo('/games');
+                else navigateTo('/home');
               }}
               onAddComment={handleAddComment}
             />
@@ -1209,10 +1237,9 @@ export default function App() {
             onSelectGame={(gameId) => {
               setSelectedGameId(gameId);
               if (gameId) {
-                const gameSlug = gameId === 'block_blast' ? 'xep-gach' : gameId;
-                window.location.hash = `#tro-choi/${gameSlug}`;
+                navigateTo(`/games/${gameId}`);
               } else {
-                window.location.hash = '#tro-choi';
+                navigateTo('/games');
               }
             }}
           />
@@ -1235,7 +1262,7 @@ export default function App() {
               setSelectedStory(null);
               setSelectedChapter(null);
               setSelectedGameId(null);
-              window.location.hash = '#xuong-viet';
+              navigateTo('/studio');
             }}
             onOpenAuthModal={() => setIsAuthModalOpen(true)}
             onCheckInSuccess={(reward, newStreak, newBalance) => {
