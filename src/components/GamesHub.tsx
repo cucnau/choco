@@ -49,7 +49,7 @@ export const GamesHub: React.FC<GamesHubProps> = ({
   })();
 
   // Nếu đang chơi game Block
-  if (activeGameId === 'block_blast') {
+  if (activeGameId === 'block' || activeGameId === 'block_blast') {
     return (
       <BlockBlastGame
         onBack={() => setActiveGameId(null)}
@@ -133,7 +133,7 @@ export const GamesHub: React.FC<GamesHubProps> = ({
 
             {/* Nút vào chơi */}
             <button
-              onClick={() => setActiveGameId('block_blast')}
+              onClick={() => setActiveGameId('block')}
               className="w-full py-2.5 bg-[#881337] hover:bg-[#9f1239] text-white font-mono-code font-bold text-xs rounded-xs border border-[#ff4d79] transition flex items-center justify-center gap-2 cursor-pointer shadow-md"
             >
               <Play className="w-3.5 h-3.5 fill-current" />
