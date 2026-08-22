@@ -2198,22 +2198,74 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
 
                 {/* Màu mở rộng cho Gradient hoặc Hào quang */}
                 {(storyBorderStyle === 'gradient' || storyBorderGlow === 'gradient-aura') && (
-                  <div className="p-2.5 bg-[#10070a] border border-[#2d1822] rounded flex flex-wrap gap-4 items-center">
+                  <div className="p-3 bg-[#10070a] border border-[#2d1822] rounded space-y-3">
                     {storyBorderStyle === 'gradient' && (
-                      <div className="flex items-center gap-2">
-                        <span className="text-[11px] text-[#e0c0cc]">Màu viền thứ 2 (Gradient):</span>
-                        <input
-                          type="color"
-                          value={storyCustomBorderGradientColor2}
-                          onChange={(e) => setStoryCustomBorderGradientColor2(e.target.value)}
-                          className="w-6 h-6 rounded cursor-pointer border border-white/20 p-0 bg-transparent"
-                        />
+                      <div className="space-y-2">
+                        <div className="text-xs font-bold text-[#ffd6e2] font-mono-code flex items-center gap-1">
+                          <span>🎨 Tùy chỉnh 2 màu dải chuyển sắc (Gradient):</span>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                          {/* Màu 1 */}
+                          <div className="flex items-center justify-between p-2 rounded bg-[#180a11] border border-[#3d1d2e]">
+                            <span className="text-xs text-[#e0c0cc] font-mono-code">Màu 1 (Màu bắt đầu):</span>
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="color"
+                                value={customBorderColor}
+                                onChange={(e) => setCustomBorderColor(e.target.value)}
+                                className="w-6 h-6 rounded cursor-pointer border border-white/20 p-0 bg-transparent"
+                              />
+                              <span className="font-mono text-xs text-[#ffd6e2] uppercase">{customBorderColor}</span>
+                            </div>
+                          </div>
+
+                          {/* Màu 2 */}
+                          <div className="flex items-center justify-between p-2 rounded bg-[#180a11] border border-[#3d1d2e]">
+                            <span className="text-xs text-[#e0c0cc] font-mono-code">Màu 2 (Màu kết thúc):</span>
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="color"
+                                value={storyCustomBorderGradientColor2}
+                                onChange={(e) => setStoryCustomBorderGradientColor2(e.target.value)}
+                                className="w-6 h-6 rounded cursor-pointer border border-white/20 p-0 bg-transparent"
+                              />
+                              <span className="font-mono text-xs text-[#ffd6e2] uppercase">{storyCustomBorderGradientColor2}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Preset gradient buttons */}
+                        <div className="pt-2 border-t border-[#2d1822] flex flex-wrap items-center gap-1.5">
+                          <span className="text-[10px] text-[#8a717a] font-mono-code mr-1">Gợi ý phối màu:</span>
+                          {[
+                            { name: 'Hồng - Tím', c1: '#ff6b9d', c2: '#a855f7' },
+                            { name: 'Vàng - Cam', c1: '#f59e0b', c2: '#ef4444' },
+                            { name: 'Xanh - Lam', c1: '#10b981', c2: '#06b6d4' },
+                            { name: 'Tím - Neon', c1: '#8b5cf6', c2: '#ec4899' },
+                            { name: 'Kim loại', c1: '#e2e8f0', c2: '#64748b' },
+                            { name: 'Hào quang', c1: '#f43f5e', c2: '#38bdf8' },
+                          ].map((p, idx) => (
+                            <button
+                              key={idx}
+                              type="button"
+                              onClick={() => {
+                                setCustomBorderColor(p.c1);
+                                setStoryCustomBorderGradientColor2(p.c2);
+                              }}
+                              className="px-2 py-1 rounded text-[10px] font-medium border border-white/20 transition hover:scale-105 text-white shadow-sm font-mono-code"
+                              style={{ background: `linear-gradient(135deg, ${p.c1}, ${p.c2})` }}
+                            >
+                              {p.name}
+                            </button>
+                          ))}
+                        </div>
                       </div>
                     )}
+
                     {storyBorderGlow === 'gradient-aura' && (
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-3 pt-2 border-t border-[#2d1822]">
                         <div className="flex items-center gap-1.5">
-                          <span className="text-[11px] text-[#e0c0cc]">Màu hào quang 1:</span>
+                          <span className="text-[11px] text-[#e0c0cc] font-mono-code">Màu hào quang 1:</span>
                           <input
                             type="color"
                             value={storyCustomBorderGlowColor1}
@@ -2222,7 +2274,7 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
                           />
                         </div>
                         <div className="flex items-center gap-1.5">
-                          <span className="text-[11px] text-[#e0c0cc]">Màu 2:</span>
+                          <span className="text-[11px] text-[#e0c0cc] font-mono-code">Màu 2:</span>
                           <input
                             type="color"
                             value={storyCustomBorderGlowColor2}
@@ -2330,6 +2382,12 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
                           borderWidth: storyBorderWidth,
                           borderRadius: storyBorderRadius,
                           borderGlow: storyBorderGlow,
+                          customBorderColor: customBorderColor || activePreviewColors.border,
+                          customBorderGradientColor2: storyCustomBorderGradientColor2,
+                          customBorderGlowColor1: storyCustomBorderGlowColor1,
+                          customBorderGlowColor2: storyCustomBorderGlowColor2,
+                          customCardBgColor: activePreviewColors.cardBg,
+                          customBgColor: activePreviewColors.bg,
                         },
                         activePreviewColors.border
                       ),

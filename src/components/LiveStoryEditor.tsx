@@ -1655,19 +1655,68 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                   })}
                 </div>
 
-                {/* Tùy chỉnh màu thứ 2 khi chọn Viền Gradient */}
+                {/* Tùy chỉnh 2 màu cho dải chuyển sắc (Gradient) */}
                 {activeBStyle === 'gradient' && (
-                  <div className="p-2.5 rounded border mt-2 space-y-2" style={{ background: currentBtnSecondaryBg, borderColor: currentBorder }}>
-                    <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-bold" style={{ color: currentText }}>Màu viền thứ 2 (dải chuyển màu):</span>
-                      <div className="flex items-center gap-1.5">
-                        <input
-                          type="color"
-                          value={activeBorderGradientColor2Val}
-                          onChange={(e) => handleSetBorderGradientColor2(e.target.value)}
-                          className="w-6 h-6 rounded cursor-pointer border border-white/20 p-0 bg-transparent"
-                        />
-                        <span className="font-mono text-[10px] uppercase opacity-80">{activeBorderGradientColor2Val}</span>
+                  <div className="p-3 rounded border mt-2 space-y-2.5" style={{ background: currentBtnSecondaryBg, borderColor: currentBorder }}>
+                    <div className="text-[11px] font-bold flex items-center justify-between" style={{ color: currentText }}>
+                      <span>🎨 Tùy chỉnh 2 màu dải chuyển sắc (Gradient):</span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      {/* Màu 1 */}
+                      <div className="p-2 rounded bg-black/30 border border-white/10 space-y-1">
+                        <span className="text-[10px] font-medium block" style={{ color: currentTextMuted }}>Màu 1 (Màu bắt đầu):</span>
+                        <div className="flex items-center gap-1.5">
+                          <input
+                            type="color"
+                            value={currentBorder}
+                            onChange={(e) => handleSetBorderColor(e.target.value)}
+                            className="w-6 h-6 rounded cursor-pointer border border-white/20 p-0 bg-transparent shrink-0"
+                          />
+                          <span className="font-mono text-[10px] uppercase opacity-90 truncate" style={{ color: currentText }}>{currentBorder}</span>
+                        </div>
+                      </div>
+
+                      {/* Màu 2 */}
+                      <div className="p-2 rounded bg-black/30 border border-white/10 space-y-1">
+                        <span className="text-[10px] font-medium block" style={{ color: currentTextMuted }}>Màu 2 (Màu kết thúc):</span>
+                        <div className="flex items-center gap-1.5">
+                          <input
+                            type="color"
+                            value={activeBorderGradientColor2Val}
+                            onChange={(e) => handleSetBorderGradientColor2(e.target.value)}
+                            className="w-6 h-6 rounded cursor-pointer border border-white/20 p-0 bg-transparent shrink-0"
+                          />
+                          <span className="font-mono text-[10px] uppercase opacity-90 truncate" style={{ color: currentText }}>{activeBorderGradientColor2Val}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Phối màu Gradient mẫu */}
+                    <div className="pt-2 border-t border-white/10 space-y-1">
+                      <span className="text-[10px] opacity-75 block font-mono" style={{ color: currentTextMuted }}>Phối màu gradient gợi ý:</span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {[
+                          { name: 'Hồng - Tím', c1: '#ff6b9d', c2: '#a855f7' },
+                          { name: 'Vàng - Cam', c1: '#f59e0b', c2: '#ef4444' },
+                          { name: 'Xanh - Lam', c1: '#10b981', c2: '#06b6d4' },
+                          { name: 'Tím - Neon', c1: '#8b5cf6', c2: '#ec4899' },
+                          { name: 'Kim loại', c1: '#e2e8f0', c2: '#64748b' },
+                          { name: 'Hào quang', c1: '#f43f5e', c2: '#38bdf8' },
+                        ].map((p, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => {
+                              handleSetBorderColor(p.c1);
+                              handleSetBorderGradientColor2(p.c2);
+                            }}
+                            className="px-2 py-1 rounded text-[10px] font-medium border border-white/20 transition hover:scale-105 flex items-center gap-1 text-white shadow-sm"
+                            style={{ background: `linear-gradient(135deg, ${p.c1}, ${p.c2})` }}
+                          >
+                            <span>{p.name}</span>
+                          </button>
+                        ))}
                       </div>
                     </div>
                   </div>
