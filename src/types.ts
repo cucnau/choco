@@ -74,11 +74,11 @@ export interface Story {
   customBtnSecondaryBgColor?: string; // Màu nền nút phụ / ô editor / danh sách chương (Màu đơn hoặc Gradient CSS)
   tags?: string[]; // Danh sách các tag thể loại của truyện
   readingEffect?: 'none' | 'rain' | 'snow' | 'glitch' | 'star' | 'leaf' | 'cherry_blossom' | 'firefly' | 'soap_bubble' | 'ginkgo'; // Hiệu ứng đọc truyện
-  borderStyle?: 'solid' | 'double' | 'dashed' | 'dotted' | 'groove' | 'ridge' | 'inset' | 'outset' | 'none'; // Kiểu nét đường viền
-  borderWidth?: 'thin' | 'medium' | 'thick' | 'heavy'; // Độ dày đường viền
-  borderRadius?: 'none' | 'xs' | 'sm' | 'md' | 'lg' | 'chamfer' | 'leaf'; // Kiểu bo góc viền
-  borderCornerAccent?: 'none' | 'brackets' | 'vintage' | 'rivets' | 'dots' | 'crosshairs'; // Trang trí góc viền
-  borderGlow?: 'none' | 'soft' | 'neon' | 'shadow'; // Hiệu ứng phát sáng hoặc đổ bóng viền
+  borderStyle?: 'solid' | 'double' | 'dashed' | 'dotted' | 'dash-dot' | 'sketch' | 'stitched' | 'gradient' | 'stamp' | 'film' | 'groove' | 'ridge' | 'offset' | 'none'; // Kiểu nét đường viền phong phú Canva
+  borderWidth?: 'thin' | 'medium' | 'thick' | 'heavy' | 'bold' | 'frame'; // Độ dày đường viền
+  borderRadius?: 'none' | 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'pill' | 'leaf' | 'chamfer' | 'ticket' | 'petal' | 'tab'; // Kiểu bo góc viền đa dạng
+  borderCornerAccent?: 'none' | 'brackets' | 'vintage' | 'rivets' | 'dots' | 'crosshairs' | 'washi' | 'sparkle' | 'heart' | 'botanical' | 'artdeco' | 'bow' | 'paperclip'; // Trang trí góc viền nghệ thuật Canva
+  borderGlow?: 'none' | 'soft' | 'neon' | 'shadow' | 'soft-depth' | 'gradient-aura' | 'isometric'; // Hiệu ứng phát sáng / đổ bóng viền
   
   // Tách biệt theme chương và truyện riêng biệt
   useSeparateChapterTheme?: boolean;
@@ -91,11 +91,11 @@ export interface Story {
   chapterCustomBorderColor?: string;
   chapterCustomBtnBgColor?: string;
   chapterCustomBtnSecondaryBgColor?: string;
-  chapterBorderStyle?: 'solid' | 'double' | 'dashed' | 'dotted' | 'groove' | 'ridge' | 'inset' | 'outset' | 'none';
-  chapterBorderWidth?: 'thin' | 'medium' | 'thick' | 'heavy';
-  chapterBorderRadius?: 'none' | 'xs' | 'sm' | 'md' | 'lg' | 'chamfer' | 'leaf';
-  chapterBorderCornerAccent?: 'none' | 'brackets' | 'vintage' | 'rivets' | 'dots' | 'crosshairs';
-  chapterBorderGlow?: 'none' | 'soft' | 'neon' | 'shadow';
+  chapterBorderStyle?: 'solid' | 'double' | 'dashed' | 'dotted' | 'dash-dot' | 'sketch' | 'stitched' | 'gradient' | 'stamp' | 'film' | 'groove' | 'ridge' | 'offset' | 'none';
+  chapterBorderWidth?: 'thin' | 'medium' | 'thick' | 'heavy' | 'bold' | 'frame';
+  chapterBorderRadius?: 'none' | 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'pill' | 'leaf' | 'chamfer' | 'ticket' | 'petal' | 'tab';
+  chapterBorderCornerAccent?: 'none' | 'brackets' | 'vintage' | 'rivets' | 'dots' | 'crosshairs' | 'washi' | 'sparkle' | 'heart' | 'botanical' | 'artdeco' | 'bow' | 'paperclip';
+  chapterBorderGlow?: 'none' | 'soft' | 'neon' | 'shadow' | 'soft-depth' | 'gradient-aura' | 'isometric';
   chapterReadingEffect?: 'none' | 'rain' | 'snow' | 'glitch' | 'star' | 'leaf' | 'cherry_blossom' | 'firefly' | 'soap_bubble' | 'ginkgo';
 }
 
