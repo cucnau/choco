@@ -1637,9 +1637,6 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                         }}
                       >
                         <div className="text-[11px] font-bold truncate">{opt.label}</div>
-                        <div className="text-[9px] opacity-70 truncate mt-0.5" style={{ color: isSelected ? currentBtnText : currentTextMuted }}>
-                          {opt.desc}
-                        </div>
                       </button>
                     );
                   })}
@@ -1726,9 +1723,6 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                         }}
                       >
                         <div className="text-[10px] font-bold truncate">{opt.label}</div>
-                        <div className="text-[9px] opacity-70 truncate mt-0.5" style={{ color: isSelected ? currentBtnText : currentTextMuted }}>
-                          {opt.desc}
-                        </div>
                       </button>
                     );
                   })}
@@ -1763,9 +1757,6 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                         }}
                       >
                         <div className="text-[10px] font-bold truncate">{opt.label}</div>
-                        <div className="text-[9px] opacity-70 truncate mt-0.5" style={{ color: isSelected ? currentBtnText : currentTextMuted }}>
-                          {opt.desc}
-                        </div>
                       </button>
                     );
                   })}
@@ -1800,9 +1791,6 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                         }}
                       >
                         <div className="text-[10px] font-bold truncate">{opt.label}</div>
-                        <div className="text-[9px] opacity-70 truncate mt-0.5" style={{ color: isSelected ? currentBtnText : currentTextMuted }}>
-                          {opt.desc}
-                        </div>
                       </button>
                     );
                   })}
