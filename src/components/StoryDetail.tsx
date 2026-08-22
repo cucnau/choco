@@ -717,7 +717,7 @@ export const StoryDetail: React.FC<StoryDetailProps> = ({
             </div>
 
             {/* Story Tags under Save Story button */}
-            {story.tags && story.tags.length > 0 && (
+            {story?.tags && story.tags.length > 0 && (
               <div className="flex flex-wrap gap-1.5 pt-1">
                 {story.tags.map((tag, idx) => (
                   <span
