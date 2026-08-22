@@ -1,5 +1,6 @@
 import React from 'react';
 import { Story } from '../types';
+import { getStoryBorderStyle, StoryCornerAccents } from '../lib/borderStyles';
 
 interface StoryCardProps {
   story: Story;
@@ -12,15 +13,25 @@ export const StoryCard: React.FC<StoryCardProps> = ({
   story,
   onSelectStory,
 }) => {
+  const cardBorderColor = story.customBorderColor || '#2d1822';
+  const customCardStyle = getStoryBorderStyle(story, cardBorderColor);
+
   return (
     <article
       onClick={() => onSelectStory(story)}
-      className="bg-[#11090c] border border-[#2d1822] hover:border-[#5e2f46] p-2.5 transition cursor-pointer flex flex-col group font-mono-code"
+      className="bg-[#11090c] p-2.5 transition-all duration-200 cursor-pointer flex flex-col group font-mono-code relative overflow-hidden hover:scale-[1.01]"
+      style={customCardStyle}
     >
-      <div className="space-y-2.5">
+      {/* Corner Accents nếu có */}
+      <StoryCornerAccents
+        accent={story.borderCornerAccent}
+        color={story.customBorderColor || '#5e2f46'}
+      />
+
+      <div className="space-y-2.5 relative z-10">
         {/* Cover image if available */}
         {story.coverUrl ? (
-          <div className="w-full aspect-[3/4] bg-[#170d12] border border-[#2d1822] overflow-hidden flex justify-center items-center">
+          <div className="w-full aspect-[3/4] bg-[#170d12] border border-[#2d1822] overflow-hidden flex justify-center items-center rounded-xs">
             <img
               src={story.coverUrl}
               alt={story.title}
@@ -28,13 +39,13 @@ export const StoryCard: React.FC<StoryCardProps> = ({
             />
           </div>
         ) : (
-          <div className="w-full aspect-[3/4] bg-[#170d12] border border-[#2d1822] flex items-center justify-center text-xs text-[#8a717a]">
+          <div className="w-full aspect-[3/4] bg-[#170d12] border border-[#2d1822] flex items-center justify-center text-xs text-[#8a717a] rounded-xs">
             Chưa có ảnh bìa
           </div>
         )}
 
         <div className="space-y-1">
-          <h3 className="font-mono-code font-bold text-xs text-[#e0c0cc] group-hover:text-[#d0a0b0] transition leading-snug line-clamp-2">
+          <h3 className="font-mono-code font-bold text-xs text-[#e0c0cc] group-hover:text-[#ffd6e2] transition leading-snug line-clamp-2">
             {story.title}
           </h3>
 
@@ -47,3 +58,4 @@ export const StoryCard: React.FC<StoryCardProps> = ({
     </article>
   );
 };
+
