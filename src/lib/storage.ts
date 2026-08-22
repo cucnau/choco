@@ -13,8 +13,10 @@ import {
 import { db, auth } from './firebase';
 import { safeLocalStorageSet, safeLocalStorageGet, migrateLocalStorageFonts } from './idbStorage';
 import { Story, Chapter, Comment, BookmarkItem, ReadingProgress, LoungeMessage, EditorRequest, UserProfile, Notification } from '../types';
-import { INITIAL_STORIES, INITIAL_CHAPTERS, INITIAL_COMMENTS } from '../data/sampleStories';
 
+export const INITIAL_STORIES: Story[] = [];
+export const INITIAL_CHAPTERS: Chapter[] = [];
+export const INITIAL_COMMENTS: Comment[] = [];
 const INITIAL_LOUNGE_MESSAGES: LoungeMessage[] = [];
 
 
@@ -79,18 +81,38 @@ const STORAGE_KEYS = {
   BOOKMARKS: 'wp_bookmarks_v4',
   READING_HISTORY: 'wp_history_v4',
   LOUNGE: 'wp_lounge_v4',
+  DELETED_STORIES: 'wp_deleted_stories_v4',
 };
+
+export function getDeletedStoryIds(): Set<string> {
+  try {
+    const data = localStorage.getItem(STORAGE_KEYS.DELETED_STORIES);
+    return new Set(data ? JSON.parse(data) : []);
+  } catch {
+    return new Set();
+  }
+}
+
+export function markStoryAsDeleted(storyId: string) {
+  const ids = getDeletedStoryIds();
+  ids.add(storyId);
+  safeLocalStorageSet(STORAGE_KEYS.DELETED_STORIES, JSON.stringify(Array.from(ids)));
+}
 
 // Initialize Local Backup
 export function initStorage(): void {
   // Dọn dẹp fonts nặng khỏi localStorage để giải phóng 5MB
   migrateLocalStorageFonts().catch(() => {});
 
+  const deletedIds = getDeletedStoryIds();
+
   if (!localStorage.getItem(STORAGE_KEYS.STORIES)) {
-    safeLocalStorageSet(STORAGE_KEYS.STORIES, JSON.stringify(INITIAL_STORIES));
+    const initialFiltered = INITIAL_STORIES.filter(s => !deletedIds.has(s.id));
+    safeLocalStorageSet(STORAGE_KEYS.STORIES, JSON.stringify(initialFiltered));
   }
   if (!localStorage.getItem(STORAGE_KEYS.CHAPTERS)) {
-    safeLocalStorageSet(STORAGE_KEYS.CHAPTERS, JSON.stringify(INITIAL_CHAPTERS));
+    const initialChaptersFiltered = INITIAL_CHAPTERS.filter(c => !deletedIds.has(c.storyId));
+    safeLocalStorageSet(STORAGE_KEYS.CHAPTERS, JSON.stringify(initialChaptersFiltered));
   }
   if (!localStorage.getItem(STORAGE_KEYS.COMMENTS)) {
     safeLocalStorageSet(STORAGE_KEYS.COMMENTS, JSON.stringify(INITIAL_COMMENTS));
@@ -124,18 +146,18 @@ export function subscribeStories(callback: (stories: Story[]) => void, onError?:
     return onSnapshot(
       colRef,
       (snapshot) => {
+        const deletedIds = getDeletedStoryIds();
         if (!snapshot.empty) {
           const list: Story[] = [];
           snapshot.forEach((doc) => {
-            list.push(doc.data() as Story);
+            const story = doc.data() as Story;
+            if (!deletedIds.has(story.id)) {
+              list.push(story);
+            }
           });
           safeLocalStorageSet(STORAGE_KEYS.STORIES, JSON.stringify(list));
           callback(list);
         } else {
-          // If empty, seed Firestore with initial stories
-          INITIAL_STORIES.forEach((story) => {
-            setDoc(doc(db, 'stories', story.id), story).catch(() => {});
-          });
           callback(getStoriesLocal());
         }
       },
@@ -225,10 +247,13 @@ export function subscribeComments(callback: (comments: Comment[]) => void, onErr
 export function getStoriesLocal(): Story[] {
   initStorage();
   try {
+    const deletedIds = getDeletedStoryIds();
     const data = localStorage.getItem(STORAGE_KEYS.STORIES);
-    return data ? JSON.parse(data) : INITIAL_STORIES;
+    const stories: Story[] = data ? JSON.parse(data) : INITIAL_STORIES;
+    return stories.filter((s) => !deletedIds.has(s.id));
   } catch {
-    return INITIAL_STORIES;
+    const deletedIds = getDeletedStoryIds();
+    return INITIAL_STORIES.filter((s) => !deletedIds.has(s.id));
   }
 }
 
@@ -239,16 +264,19 @@ export function getStories(): Story[] {
 export function getChaptersLocal(storyId?: string): Chapter[] {
   initStorage();
   try {
+    const deletedIds = getDeletedStoryIds();
     const data = localStorage.getItem(STORAGE_KEYS.CHAPTERS);
     const all: Chapter[] = data ? JSON.parse(data) : INITIAL_CHAPTERS;
+    const filtered = all.filter((c) => !deletedIds.has(c.storyId));
     if (storyId) {
-      return all
+      return filtered
         .filter((c) => c.storyId === storyId)
         .sort((a, b) => a.chapterNumber - b.chapterNumber);
     }
-    return all;
+    return filtered;
   } catch {
-    return INITIAL_CHAPTERS;
+    const deletedIds = getDeletedStoryIds();
+    return INITIAL_CHAPTERS.filter((c) => !deletedIds.has(c.storyId));
   }
 }
 
@@ -259,9 +287,11 @@ export function getChapters(storyId?: string): Chapter[] {
 export function getCommentsLocal(storyId?: string, chapterId?: string): Comment[] {
   initStorage();
   try {
+    const deletedIds = getDeletedStoryIds();
     const data = localStorage.getItem(STORAGE_KEYS.COMMENTS);
     const all: Comment[] = data ? JSON.parse(data) : INITIAL_COMMENTS;
     return all.filter((c) => {
+      if (deletedIds.has(c.storyId)) return false;
       if (storyId && c.storyId !== storyId) return false;
       if (chapterId && c.chapterId !== chapterId) return false;
       return true;
@@ -273,33 +303,6 @@ export function getCommentsLocal(storyId?: string, chapterId?: string): Comment[
 
 export function getComments(storyId?: string, chapterId?: string): Comment[] {
   return getCommentsLocal(storyId, chapterId);
-}
-
-/**
- * GỌI API ĐỒNG BỘ DỮ LIỆU SANG FILE CODE
- */
-export async function syncDataToCode(): Promise<void> {
-  try {
-    const stories = getStoriesLocal();
-    const chapters = getChaptersLocal();
-    const comments = getCommentsLocal();
-
-    const response = await fetch('/api/sync-code-data', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ stories, chapters, comments })
-    });
-
-    if (!response.ok) {
-      throw new Error(`Server returned code ${response.status}`);
-    }
-    const data = await response.json();
-    console.log('[Sync Code] Đồng bộ file code thành công:', data);
-  } catch (err) {
-    console.warn('[Sync Code] Không thể đồng bộ dữ liệu sang file code:', err);
-  }
 }
 
 // ------------------- ACTIONS (WRITE / UPDATE / DELETE) -------------------
@@ -330,7 +333,6 @@ export async function saveStory(story: Story): Promise<Story[]> {
   }
 
   safeLocalStorageSet(STORAGE_KEYS.STORIES, JSON.stringify(updated));
-  syncDataToCode().catch(() => {});
 
   try {
     await setDoc(doc(db, 'stories', finalStory.id), cleanForFirestore(finalStory));
@@ -342,12 +344,47 @@ export async function saveStory(story: Story): Promise<Story[]> {
 }
 
 export async function deleteStory(storyId: string): Promise<Story[]> {
+  // Đánh dấu ID đã xóa để không bao giờ bị nạp lại từ sample stories hoặc sync ngược
+  markStoryAsDeleted(storyId);
+
+  // 1. Cập nhật danh sách truyện local
   const stories = getStoriesLocal().filter((s) => s.id !== storyId);
   safeLocalStorageSet(STORAGE_KEYS.STORIES, JSON.stringify(stories));
-  syncDataToCode().catch(() => {});
 
+  // 2. Xóa các chương thuộc truyện khỏi local
+  const remainingChapters = getChaptersLocal().filter((c) => c.storyId !== storyId);
+  safeLocalStorageSet(STORAGE_KEYS.CHAPTERS, JSON.stringify(remainingChapters));
+
+  // 3. Xóa các bình luận thuộc truyện khỏi local
+  const remainingComments = getCommentsLocal().filter((c) => c.storyId !== storyId);
+  safeLocalStorageSet(STORAGE_KEYS.COMMENTS, JSON.stringify(remainingComments));
+
+  // 4. Xóa bookmark và lịch sử đọc
+  const remainingBookmarks = getBookmarks().filter((b) => b.storyId !== storyId);
+  safeLocalStorageSet(STORAGE_KEYS.BOOKMARKS, JSON.stringify(remainingBookmarks));
+  const remainingHistory = getReadingHistory().filter((h) => h.storyId !== storyId);
+  safeLocalStorageSet(STORAGE_KEYS.READING_HISTORY, JSON.stringify(remainingHistory));
+
+  // 5. Xóa khỏi Firestore
   try {
+    // Xóa document truyện
     await deleteDoc(doc(db, 'stories', storyId));
+
+    // Xóa các chapters của truyện trên Firestore
+    const chapsQuery = query(collection(db, 'chapters'), where('storyId', '==', storyId));
+    const chapsSnap = await getDocs(chapsQuery);
+    await Promise.all(chapsSnap.docs.map((docSnap) => deleteDoc(docSnap.ref)));
+
+    // Xóa các comments của truyện trên Firestore
+    const commsQuery = query(collection(db, 'comments'), where('storyId', '==', storyId));
+    const commsSnap = await getDocs(commsQuery);
+    await Promise.all(commsSnap.docs.map((docSnap) => deleteDoc(docSnap.ref)));
+
+    // Ghi nhận vào collection deleted_stories trên Firestore
+    await setDoc(doc(db, 'deleted_stories', storyId), {
+      storyId,
+      deletedAt: new Date().toISOString(),
+    }).catch(() => {});
   } catch (err) {
     handleFirestoreError(err, OperationType.DELETE, `stories/${storyId}`);
   }
@@ -386,7 +423,6 @@ export async function saveChapter(chapter: Chapter): Promise<Chapter[]> {
   }
 
   safeLocalStorageSet(STORAGE_KEYS.CHAPTERS, JSON.stringify(updated));
-  syncDataToCode().catch(() => {});
 
   try {
     await setDoc(doc(db, 'chapters', finalChapter.id), cleanForFirestore(finalChapter));
@@ -423,7 +459,6 @@ export async function saveMultipleChapters(newChapters: Chapter[]): Promise<Chap
 
   const updated = Array.from(existingMap.values());
   safeLocalStorageSet(STORAGE_KEYS.CHAPTERS, JSON.stringify(updated));
-  syncDataToCode().catch(() => {});
 
   try {
     // Lưu theo chunk 20 chương lên Firestore để đảm bảo an toàn kết nối
@@ -449,10 +484,17 @@ export async function deleteChapter(chapterId: string, storyId: string): Promise
   const allChapters = getChaptersLocal();
   const updated = allChapters.filter((c) => c.id !== chapterId);
   safeLocalStorageSet(STORAGE_KEYS.CHAPTERS, JSON.stringify(updated));
-  syncDataToCode().catch(() => {});
+
+  // Xóa bình luận của chương này
+  const remainingComments = getCommentsLocal().filter((c) => c.chapterId !== chapterId);
+  safeLocalStorageSet(STORAGE_KEYS.COMMENTS, JSON.stringify(remainingComments));
 
   try {
     await deleteDoc(doc(db, 'chapters', chapterId));
+
+    const commsQuery = query(collection(db, 'comments'), where('chapterId', '==', chapterId));
+    const commsSnap = await getDocs(commsQuery);
+    await Promise.all(commsSnap.docs.map((docSnap) => deleteDoc(docSnap.ref)));
   } catch (err) {
     handleFirestoreError(err, OperationType.DELETE, `chapters/${chapterId}`);
   }
@@ -970,16 +1012,28 @@ export async function rejectEditorRequest(userId: string): Promise<void> {
 export async function syncLocalToCloud(): Promise<void> {
   initStorage();
   try {
+    const deletedIds = getDeletedStoryIds();
+
+    // Lấy danh sách đã xóa từ cloud nếu có
+    try {
+      const deletedSnap = await getDocs(collection(db, 'deleted_stories'));
+      deletedSnap.docs.forEach(docSnap => {
+        deletedIds.add(docSnap.id);
+        markStoryAsDeleted(docSnap.id);
+      });
+    } catch {}
+
     // 1. Đồng bộ Stories
     const storiesCol = collection(db, 'stories');
     const storiesSnap = await getDocs(storiesCol);
     const cloudStoryIds = new Set(storiesSnap.docs.map(doc => doc.id));
-    const localStories = getStoriesLocal();
+    const localStories = getStoriesLocal().filter(s => !deletedIds.has(s.id));
     let localStoriesUpdated = false;
     const syncedLocalStories = [...localStories];
 
     for (let i = 0; i < syncedLocalStories.length; i++) {
       const story = syncedLocalStories[i];
+      if (deletedIds.has(story.id)) continue;
       if (!cloudStoryIds.has(story.id)) {
         let finalStory = { ...story };
         // Nếu ảnh bìa quá lớn (> 150KB), nén lại để vượt qua giới hạn 1MB của Firestore document
@@ -1009,8 +1063,9 @@ export async function syncLocalToCloud(): Promise<void> {
     const chapsCol = collection(db, 'chapters');
     const chapsSnap = await getDocs(chapsCol);
     const cloudChapIds = new Set(chapsSnap.docs.map(doc => doc.id));
-    const localChapters = getChaptersLocal();
+    const localChapters = getChaptersLocal().filter(c => !deletedIds.has(c.storyId));
     for (const chap of localChapters) {
+      if (deletedIds.has(chap.storyId)) continue;
       if (!cloudChapIds.has(chap.id)) {
         await setDoc(doc(db, 'chapters', chap.id), cleanForFirestore(chap));
         console.log(`[Sync] Đã đồng bộ chương: ${chap.title} (${chap.id}) lên Firestore`);
@@ -1021,8 +1076,9 @@ export async function syncLocalToCloud(): Promise<void> {
     const commentsCol = collection(db, 'comments');
     const commentsSnap = await getDocs(commentsCol);
     const cloudCommentIds = new Set(commentsSnap.docs.map(doc => doc.id));
-    const localComments = getCommentsLocal();
+    const localComments = getCommentsLocal().filter(c => !deletedIds.has(c.storyId));
     for (const comment of localComments) {
+      if (deletedIds.has(comment.storyId)) continue;
       if (!cloudCommentIds.has(comment.id)) {
         await setDoc(doc(db, 'comments', comment.id), cleanForFirestore(comment));
         console.log(`[Sync] Đã đồng bộ bình luận: ${comment.id} lên Firestore`);
