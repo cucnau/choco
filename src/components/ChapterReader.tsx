@@ -483,7 +483,7 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
           }}
         >
           {/* Vintage/Brackets Corner Decorators */}
-          <StoryCornerAccents accent={activeBorderCornerAccent} color={currentBorder} />
+          <StoryCornerAccents accent={activeBorderCornerAccent} borderStyle={borderObj?.borderStyle} color={currentBorder} />
 
           {/* Chapter Header: Story title, volume title, chapter title, lock badge, meta */}
           <div className="text-center space-y-2 pb-5 border-b border-dashed" style={{ borderColor: currentBorder }}>

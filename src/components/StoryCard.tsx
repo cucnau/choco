@@ -39,6 +39,7 @@ export const StoryCard: React.FC<StoryCardProps> = ({
       {/* Corner Accents nếu có */}
       <StoryCornerAccents
         accent={story.borderCornerAccent}
+        borderStyle={story.borderStyle}
         color={story.customBorderColor || '#5e2f46'}
       />
 

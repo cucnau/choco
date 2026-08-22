@@ -928,18 +928,31 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
   };
 
   const handleSetBorderStyle = (val: any) => {
-    if (isViewingChapterTheme) setChapterBorderStyle(val);
-    else setBorderStyle(val);
+    if (isViewingChapterTheme) {
+      setChapterBorderStyle(val);
+      if (val === 'sketch') {
+        setChapterBorderRadius('none');
+        setChapterBorderCornerAccent('none');
+      }
+    } else {
+      setBorderStyle(val);
+      if (val === 'sketch') {
+        setBorderRadius('none');
+        setBorderCornerAccent('none');
+      }
+    }
   };
   const handleSetBorderWidth = (val: any) => {
     if (isViewingChapterTheme) setChapterBorderWidth(val);
     else setBorderWidth(val);
   };
   const handleSetBorderRadius = (val: any) => {
+    if (activeBStyle === 'sketch') return;
     if (isViewingChapterTheme) setChapterBorderRadius(val);
     else setBorderRadius(val);
   };
   const handleSetBorderCornerAccent = (val: any) => {
+    if (activeBStyle === 'sketch') return;
     if (isViewingChapterTheme) setChapterBorderCornerAccent(val);
     else setBorderCornerAccent(val);
   };
@@ -1702,31 +1715,37 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                     3. Kiểu bo góc:
                   </label>
                   <span className="text-[10px] opacity-75 font-mono" style={{ color: currentTextMuted }}>
-                    {BORDER_RADIUS_OPTIONS.find(o => o.value === activeBRadius)?.label}
+                    {activeBStyle === 'sketch' ? 'Vuông vức (Mặc định Nét vẽ tay)' : BORDER_RADIUS_OPTIONS.find(o => o.value === activeBRadius)?.label}
                   </span>
                 </div>
-                <div className="grid grid-cols-2 gap-1.5 max-h-[150px] overflow-y-auto pr-1">
-                  {BORDER_RADIUS_OPTIONS.map((opt) => {
-                    const isSelected = activeBRadius === opt.value;
-                    return (
-                      <button
-                        key={opt.value}
-                        type="button"
-                        onClick={() => handleSetBorderRadius(opt.value)}
-                        className={`p-2 rounded text-left transition border ${
-                          isSelected ? 'ring-2 shadow-sm' : 'hover:opacity-80'
-                        }`}
-                        style={{
-                          background: isSelected ? currentBtnBg : currentCardBg,
-                          borderColor: isSelected ? (currentText || '#ff99bb') : currentBorder,
-                          color: isSelected ? currentBtnText : currentText,
-                        }}
-                      >
-                        <div className="text-[10px] font-bold truncate">{opt.label}</div>
-                      </button>
-                    );
-                  })}
-                </div>
+                {activeBStyle === 'sketch' ? (
+                  <div className="p-2 text-[11px] rounded border text-amber-500/90 font-medium bg-amber-500/10 border-amber-500/20">
+                    🔒 Khi chọn Nét vẽ tay, góc viền sẽ mặc định vuông vức và không thể chọn bo góc.
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-1.5 max-h-[150px] overflow-y-auto pr-1">
+                    {BORDER_RADIUS_OPTIONS.map((opt) => {
+                      const isSelected = activeBRadius === opt.value;
+                      return (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          onClick={() => handleSetBorderRadius(opt.value)}
+                          className={`p-2 rounded text-left transition border ${
+                            isSelected ? 'ring-2 shadow-sm' : 'hover:opacity-80'
+                          }`}
+                          style={{
+                            background: isSelected ? currentBtnBg : currentCardBg,
+                            borderColor: isSelected ? (currentText || '#ff99bb') : currentBorder,
+                            color: isSelected ? currentBtnText : currentText,
+                          }}
+                        >
+                          <div className="text-[10px] font-bold truncate">{opt.label}</div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
               {/* 4. Họa tiết 4 góc nghệ thuật */}
@@ -1736,31 +1755,37 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                     4. Họa tiết 4 góc nghệ thuật:
                   </label>
                   <span className="text-[10px] opacity-75 font-mono" style={{ color: currentTextMuted }}>
-                    {BORDER_CORNER_ACCENT_OPTIONS.find(o => o.value === activeBCorner)?.label}
+                    {activeBStyle === 'sketch' ? 'Không có (Mặc định Nét vẽ tay)' : BORDER_CORNER_ACCENT_OPTIONS.find(o => o.value === activeBCorner)?.label}
                   </span>
                 </div>
-                <div className="grid grid-cols-2 gap-1.5 max-h-[160px] overflow-y-auto pr-1">
-                  {BORDER_CORNER_ACCENT_OPTIONS.map((opt) => {
-                    const isSelected = activeBCorner === opt.value;
-                    return (
-                      <button
-                        key={opt.value}
-                        type="button"
-                        onClick={() => handleSetBorderCornerAccent(opt.value)}
-                        className={`p-2 rounded text-left transition border ${
-                          isSelected ? 'ring-2 shadow-sm' : 'hover:opacity-80'
-                        }`}
-                        style={{
-                          background: isSelected ? currentBtnBg : currentCardBg,
-                          borderColor: isSelected ? (currentText || '#ff99bb') : currentBorder,
-                          color: isSelected ? currentBtnText : currentText,
-                        }}
-                      >
-                        <div className="text-[10px] font-bold truncate">{opt.label}</div>
-                      </button>
-                    );
-                  })}
-                </div>
+                {activeBStyle === 'sketch' ? (
+                  <div className="p-2 text-[11px] rounded border text-amber-500/90 font-medium bg-amber-500/10 border-amber-500/20">
+                    🔒 Khi chọn Nét vẽ tay, mặc định không có họa tiết góc và không thể chọn họa tiết.
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-1.5 max-h-[160px] overflow-y-auto pr-1">
+                    {BORDER_CORNER_ACCENT_OPTIONS.map((opt) => {
+                      const isSelected = activeBCorner === opt.value;
+                      return (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          onClick={() => handleSetBorderCornerAccent(opt.value)}
+                          className={`p-2 rounded text-left transition border ${
+                            isSelected ? 'ring-2 shadow-sm' : 'hover:opacity-80'
+                          }`}
+                          style={{
+                            background: isSelected ? currentBtnBg : currentCardBg,
+                            borderColor: isSelected ? (currentText || '#ff99bb') : currentBorder,
+                            color: isSelected ? currentBtnText : currentText,
+                          }}
+                        >
+                          <div className="text-[10px] font-bold truncate">{opt.label}</div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
               {/* 5. Hiệu ứng viền & Đổ bóng */}
@@ -2119,7 +2144,7 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
             }}
           >
             {/* Vintage/Brackets Corner Decorators */}
-            <StoryCornerAccents accent={activeBCorner} color={currentBorder} />
+            <StoryCornerAccents accent={activeBCorner} borderStyle={currentBorderObj?.borderStyle} color={currentBorder} />
 
             {/* Header: Chapter title, word count, date */}
             <div className="text-center space-y-2 pb-5 border-b border-dashed" style={{ borderColor: currentBorder }}>
@@ -2215,7 +2240,7 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
             }}
           >
             {/* Corner Accents */}
-            <StoryCornerAccents accent={activeBCorner} color={currentBorder} />
+            <StoryCornerAccents accent={activeBCorner} borderStyle={currentBorderObj?.borderStyle} color={currentBorder} />
 
           <div className="grid grid-cols-1 sm:grid-cols-[224px_1fr] gap-6 items-start">
             {/* LEFT COLUMN: COVER & EDITOR INFO & TAGS */}
@@ -2227,7 +2252,7 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                   background: currentBtnSecondaryBg,
                   ...getStoryBorderStyle(
                     {
-                      borderStyle,
+                      borderStyle: 'solid',
                       borderWidth: 'thin',
                       borderRadius,
                       borderGlow: 'none',
@@ -2320,7 +2345,7 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                     background: currentBtnSecondaryBg,
                     ...getStoryBorderStyle(
                       {
-                        borderStyle,
+                        borderStyle: 'solid',
                         borderWidth: 'thin',
                         borderRadius,
                         borderGlow: 'none',
@@ -2418,7 +2443,7 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                           color: currentTextMuted,
                           ...getStoryBorderStyle(
                             {
-                              borderStyle,
+                              borderStyle: 'solid',
                               borderWidth: 'thin',
                               borderRadius,
                               borderGlow: 'none',

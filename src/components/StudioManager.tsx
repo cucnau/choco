@@ -2101,7 +2101,14 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
                     <label className="text-xs text-[#8a717a] block font-mono-code">Kiểu nét viền:</label>
                     <select
                       value={storyBorderStyle}
-                      onChange={(e) => setStoryBorderStyle(e.target.value as any)}
+                      onChange={(e) => {
+                        const val = e.target.value as any;
+                        setStoryBorderStyle(val);
+                        if (val === 'sketch') {
+                          setStoryBorderRadius('none');
+                          setStoryBorderCornerAccent('none');
+                        }
+                      }}
                       className="w-full bg-[#10070a] border border-[#2d1822] p-2 text-xs text-[#e0c0cc] focus:outline-none focus:border-[#522d3d] font-mono-code"
                     >
                       {BORDER_STYLE_OPTIONS.map((opt) => (
@@ -2132,9 +2139,12 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
                   <div className="space-y-1">
                     <label className="text-xs text-[#8a717a] block font-mono-code">Bo góc viền:</label>
                     <select
-                      value={storyBorderRadius}
+                      value={storyBorderStyle === 'sketch' ? 'none' : storyBorderRadius}
+                      disabled={storyBorderStyle === 'sketch'}
                       onChange={(e) => setStoryBorderRadius(e.target.value as any)}
-                      className="w-full bg-[#10070a] border border-[#2d1822] p-2 text-xs text-[#e0c0cc] focus:outline-none focus:border-[#522d3d] font-mono-code"
+                      className={`w-full bg-[#10070a] border border-[#2d1822] p-2 text-xs text-[#e0c0cc] focus:outline-none focus:border-[#522d3d] font-mono-code ${
+                        storyBorderStyle === 'sketch' ? 'opacity-50 cursor-not-allowed' : ''
+                      }`}
                     >
                       {BORDER_RADIUS_OPTIONS.map((opt) => (
                         <option key={opt.value} value={opt.value}>
@@ -2142,15 +2152,21 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
                         </option>
                       ))}
                     </select>
+                    {storyBorderStyle === 'sketch' && (
+                      <span className="text-[10px] text-amber-400/90 block font-mono-code">🔒 Mặc định vuông vức khi chọn Nét vẽ tay</span>
+                    )}
                   </div>
 
                   {/* 4. Corner Accents */}
                   <div className="space-y-1">
                     <label className="text-xs text-[#8a717a] block font-mono-code">Họa tiết 4 góc nghệ thuật:</label>
                     <select
-                      value={storyBorderCornerAccent}
+                      value={storyBorderStyle === 'sketch' ? 'none' : storyBorderCornerAccent}
+                      disabled={storyBorderStyle === 'sketch'}
                       onChange={(e) => setStoryBorderCornerAccent(e.target.value as any)}
-                      className="w-full bg-[#10070a] border border-[#2d1822] p-2 text-xs text-[#e0c0cc] focus:outline-none focus:border-[#522d3d] font-mono-code"
+                      className={`w-full bg-[#10070a] border border-[#2d1822] p-2 text-xs text-[#e0c0cc] focus:outline-none focus:border-[#522d3d] font-mono-code ${
+                        storyBorderStyle === 'sketch' ? 'opacity-50 cursor-not-allowed' : ''
+                      }`}
                     >
                       {BORDER_CORNER_ACCENT_OPTIONS.map((opt) => (
                         <option key={opt.value} value={opt.value}>
@@ -2158,6 +2174,9 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
                         </option>
                       ))}
                     </select>
+                    {storyBorderStyle === 'sketch' && (
+                      <span className="text-[10px] text-amber-400/90 block font-mono-code">🔒 Mặc định không họa tiết khi chọn Nét vẽ tay</span>
+                    )}
                   </div>
 
                   {/* 5. Border Glow / Shadow */}
@@ -2318,6 +2337,7 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
                   >
                     <StoryCornerAccents
                       accent={storyBorderCornerAccent}
+                      borderStyle={storyBorderStyle}
                       color={activePreviewColors.border}
                     />
 
@@ -2330,7 +2350,7 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
                             background: activePreviewColors.bg,
                             ...getStoryBorderStyle(
                               {
-                                borderStyle: storyBorderStyle,
+                                borderStyle: 'solid',
                                 borderWidth: 'thin',
                                 borderRadius: storyBorderRadius,
                                 borderGlow: 'none',
@@ -2360,7 +2380,7 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
                             background: activePreviewColors.btnSecondaryBg || activePreviewColors.bg,
                             ...getStoryBorderStyle(
                               {
-                                borderStyle: storyBorderStyle,
+                                borderStyle: 'solid',
                                 borderWidth: 'thin',
                                 borderRadius: storyBorderRadius,
                                 borderGlow: 'none',
@@ -2448,7 +2468,7 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
                                     color: activePreviewColors.textMuted,
                                     ...getStoryBorderStyle(
                                       {
-                                        borderStyle: storyBorderStyle,
+                                        borderStyle: 'solid',
                                         borderWidth: 'thin',
                                         borderRadius: storyBorderRadius,
                                         borderGlow: 'none',

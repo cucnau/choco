@@ -476,6 +476,7 @@ export const StoryDetail: React.FC<StoryDetailProps> = ({
         {/* Corner Accents */}
         <StoryCornerAccents
           accent={story.borderCornerAccent}
+          borderStyle={story.borderStyle}
           color={activeBorderColor}
         />
 
@@ -491,7 +492,7 @@ export const StoryDetail: React.FC<StoryDetailProps> = ({
                     : { backgroundColor: tone.inputBg }),
                   ...getStoryBorderStyle(
                     {
-                      borderStyle: story.borderStyle,
+                      borderStyle: 'solid',
                       borderWidth: 'thin',
                       borderRadius: story.borderRadius,
                       borderGlow: 'none',
@@ -596,7 +597,7 @@ export const StoryDetail: React.FC<StoryDetailProps> = ({
                   : {}),
                 ...getStoryBorderStyle(
                   {
-                    borderStyle: story.borderStyle,
+                    borderStyle: 'solid',
                     borderWidth: 'thin',
                     borderRadius: story.borderRadius,
                     borderGlow: 'none',
@@ -734,7 +735,7 @@ export const StoryDetail: React.FC<StoryDetailProps> = ({
                         : { color: tone.textMuted }),
                       ...getStoryBorderStyle(
                         {
-                          borderStyle: story.borderStyle,
+                          borderStyle: 'solid',
                           borderWidth: 'thin',
                           borderRadius: story.borderRadius,
                           borderGlow: 'none',
@@ -833,7 +834,7 @@ export const StoryDetail: React.FC<StoryDetailProps> = ({
                             : {}),
                           ...getStoryBorderStyle(
                             {
-                              borderStyle: story.borderStyle,
+                              borderStyle: 'solid',
                               borderWidth: 'thin',
                               borderRadius: story.borderRadius,
                               borderGlow: 'none',
