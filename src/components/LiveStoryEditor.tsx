@@ -1566,7 +1566,7 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
 
           {/* TAB 3: BORDERS & FRAMES */}
           {activeDrawerTab === 'borders' && (
-            <div className="space-y-3 text-xs">
+            <div className="space-y-4 text-xs">
               {useSeparateChapterTheme && (
                 <div className="p-2 rounded text-[10px] font-mono border text-center font-bold" style={{ background: currentBtnSecondaryBg, borderColor: currentBorder }}>
                   {previewMode === 'story' ? (
@@ -1577,94 +1577,187 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                 </div>
               )}
 
-              <div>
-                <label className="block text-[11px] font-semibold mb-1" style={{ color: currentText }}>
-                  Kiểu nét viền (Stroke Style):
-                </label>
-                <select
-                  value={activeBStyle}
-                  onChange={(e) => handleSetBorderStyle(e.target.value as any)}
-                  className="w-full p-2 rounded border text-xs focus:outline-none"
-                  style={{ background: currentBg, borderColor: currentBorder, color: currentText }}
-                >
-                  {BORDER_STYLE_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value} style={{ background: currentCardBg, color: currentText }}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
+              {/* 1. Kiểu nét viền (Stroke Style) */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="block text-[11px] font-bold" style={{ color: currentText }}>
+                    1. Kiểu nét viền (Stroke Style):
+                  </label>
+                  <span className="text-[10px] opacity-75 font-mono" style={{ color: currentTextMuted }}>
+                    {BORDER_STYLE_OPTIONS.find(o => o.value === activeBStyle)?.label.split('(')[0] || activeBStyle}
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-1.5 max-h-[160px] overflow-y-auto pr-1">
+                  {BORDER_STYLE_OPTIONS.map((opt) => {
+                    const isSelected = activeBStyle === opt.value;
+                    return (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => handleSetBorderStyle(opt.value)}
+                        className={`p-2 rounded text-left transition relative border ${
+                          isSelected ? 'ring-2 shadow-sm' : 'hover:opacity-80'
+                        }`}
+                        style={{
+                          background: isSelected ? currentBtnBg : currentCardBg,
+                          borderColor: isSelected ? (currentText || '#ff99bb') : currentBorder,
+                          color: isSelected ? currentBtnText : currentText,
+                        }}
+                      >
+                        <div className="text-[11px] font-bold truncate">{opt.label}</div>
+                        <div className="text-[9px] opacity-70 truncate mt-0.5" style={{ color: isSelected ? currentBtnText : currentTextMuted }}>
+                          {opt.desc}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
-              <div>
-                <label className="block text-[11px] font-semibold mb-1" style={{ color: currentText }}>
-                  Độ dày nét viền (Width):
-                </label>
-                <select
-                  value={activeBWidth}
-                  onChange={(e) => handleSetBorderWidth(e.target.value as any)}
-                  className="w-full p-2 rounded border text-xs focus:outline-none"
-                  style={{ background: currentBg, borderColor: currentBorder, color: currentText }}
-                >
-                  {BORDER_WIDTH_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value} style={{ background: currentCardBg, color: currentText }}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
+              {/* 2. Độ dày nét viền (Width) */}
+              <div className="space-y-1.5 pt-2 border-t" style={{ borderColor: currentBorder }}>
+                <div className="flex items-center justify-between">
+                  <label className="block text-[11px] font-bold" style={{ color: currentText }}>
+                    2. Độ dày nét viền (Width):
+                  </label>
+                  <span className="text-[10px] opacity-75 font-mono" style={{ color: currentTextMuted }}>
+                    {BORDER_WIDTH_OPTIONS.find(o => o.value === activeBWidth)?.label}
+                  </span>
+                </div>
+                <div className="grid grid-cols-3 gap-1.5">
+                  {BORDER_WIDTH_OPTIONS.map((opt) => {
+                    const isSelected = activeBWidth === opt.value;
+                    return (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => handleSetBorderWidth(opt.value)}
+                        className={`py-2 px-1.5 rounded text-center transition border ${
+                          isSelected ? 'ring-2 shadow-sm' : 'hover:opacity-80'
+                        }`}
+                        style={{
+                          background: isSelected ? currentBtnBg : currentCardBg,
+                          borderColor: isSelected ? (currentText || '#ff99bb') : currentBorder,
+                          color: isSelected ? currentBtnText : currentText,
+                        }}
+                      >
+                        <div className="text-[10px] font-bold">{opt.label.split('(')[0]}</div>
+                        <div className="text-[9px] opacity-70 font-mono">{opt.label.match(/\((.*?)\)/)?.[1]}</div>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
-              <div>
-                <label className="block text-[11px] font-semibold mb-1" style={{ color: currentText }}>
-                  Bo góc viền (Radius):
-                </label>
-                <select
-                  value={activeBRadius}
-                  onChange={(e) => handleSetBorderRadius(e.target.value as any)}
-                  className="w-full p-2 rounded border text-xs focus:outline-none"
-                  style={{ background: currentBg, borderColor: currentBorder, color: currentText }}
-                >
-                  {BORDER_RADIUS_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value} style={{ background: currentCardBg, color: currentText }}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
+              {/* 3. Kiểu bo góc & Hình dáng (Radius & Shape) */}
+              <div className="space-y-1.5 pt-2 border-t" style={{ borderColor: currentBorder }}>
+                <div className="flex items-center justify-between">
+                  <label className="block text-[11px] font-bold" style={{ color: currentText }}>
+                    3. Kiểu bo góc & Hình dáng (Radius):
+                  </label>
+                  <span className="text-[10px] opacity-75 font-mono" style={{ color: currentTextMuted }}>
+                    {BORDER_RADIUS_OPTIONS.find(o => o.value === activeBRadius)?.label.split('(')[0]}
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-1.5 max-h-[150px] overflow-y-auto pr-1">
+                  {BORDER_RADIUS_OPTIONS.map((opt) => {
+                    const isSelected = activeBRadius === opt.value;
+                    return (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => handleSetBorderRadius(opt.value)}
+                        className={`p-2 rounded text-left transition border ${
+                          isSelected ? 'ring-2 shadow-sm' : 'hover:opacity-80'
+                        }`}
+                        style={{
+                          background: isSelected ? currentBtnBg : currentCardBg,
+                          borderColor: isSelected ? (currentText || '#ff99bb') : currentBorder,
+                          color: isSelected ? currentBtnText : currentText,
+                        }}
+                      >
+                        <div className="text-[10px] font-bold truncate">{opt.label}</div>
+                        <div className="text-[9px] opacity-70 truncate mt-0.5" style={{ color: isSelected ? currentBtnText : currentTextMuted }}>
+                          {opt.desc}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
-              <div>
-                <label className="block text-[11px] font-semibold mb-1" style={{ color: currentText }}>
-                  Họa tiết 4 góc (Corner Accents):
-                </label>
-                <select
-                  value={activeBCorner}
-                  onChange={(e) => handleSetBorderCornerAccent(e.target.value as any)}
-                  className="w-full p-2 rounded border text-xs focus:outline-none"
-                  style={{ background: currentBg, borderColor: currentBorder, color: currentText }}
-                >
-                  {BORDER_CORNER_ACCENT_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value} style={{ background: currentCardBg, color: currentText }}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
+              {/* 4. Họa tiết 4 góc Canva (Corner Accents) */}
+              <div className="space-y-1.5 pt-2 border-t" style={{ borderColor: currentBorder }}>
+                <div className="flex items-center justify-between">
+                  <label className="block text-[11px] font-bold" style={{ color: currentText }}>
+                    4. Họa tiết 4 góc nghệ thuật Canva:
+                  </label>
+                  <span className="text-[10px] opacity-75 font-mono" style={{ color: currentTextMuted }}>
+                    {BORDER_CORNER_ACCENT_OPTIONS.find(o => o.value === activeBCorner)?.label}
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-1.5 max-h-[160px] overflow-y-auto pr-1">
+                  {BORDER_CORNER_ACCENT_OPTIONS.map((opt) => {
+                    const isSelected = activeBCorner === opt.value;
+                    return (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => handleSetBorderCornerAccent(opt.value)}
+                        className={`p-2 rounded text-left transition border ${
+                          isSelected ? 'ring-2 shadow-sm' : 'hover:opacity-80'
+                        }`}
+                        style={{
+                          background: isSelected ? currentBtnBg : currentCardBg,
+                          borderColor: isSelected ? (currentText || '#ff99bb') : currentBorder,
+                          color: isSelected ? currentBtnText : currentText,
+                        }}
+                      >
+                        <div className="text-[10px] font-bold truncate">{opt.label}</div>
+                        <div className="text-[9px] opacity-70 truncate mt-0.5" style={{ color: isSelected ? currentBtnText : currentTextMuted }}>
+                          {opt.desc}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
-              <div>
-                <label className="block text-[11px] font-semibold mb-1" style={{ color: currentText }}>
-                  Hiệu ứng viền (Glow / Shadow):
-                </label>
-                <select
-                  value={activeBGlow}
-                  onChange={(e) => handleSetBorderGlow(e.target.value as any)}
-                  className="w-full p-2 rounded border text-xs focus:outline-none"
-                  style={{ background: currentBg, borderColor: currentBorder, color: currentText }}
-                >
-                  {BORDER_GLOW_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value} style={{ background: currentCardBg, color: currentText }}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
+              {/* 5. Hiệu ứng viền & Đổ bóng (Glow / Shadow) */}
+              <div className="space-y-1.5 pt-2 border-t" style={{ borderColor: currentBorder }}>
+                <div className="flex items-center justify-between">
+                  <label className="block text-[11px] font-bold" style={{ color: currentText }}>
+                    5. Hiệu ứng phát sáng & Đổ bóng (Glow / Shadow):
+                  </label>
+                  <span className="text-[10px] opacity-75 font-mono" style={{ color: currentTextMuted }}>
+                    {BORDER_GLOW_OPTIONS.find(o => o.value === activeBGlow)?.label.split('(')[0]}
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-1.5 max-h-[140px] overflow-y-auto pr-1">
+                  {BORDER_GLOW_OPTIONS.map((opt) => {
+                    const isSelected = activeBGlow === opt.value;
+                    return (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => handleSetBorderGlow(opt.value)}
+                        className={`p-2 rounded text-left transition border ${
+                          isSelected ? 'ring-2 shadow-sm' : 'hover:opacity-80'
+                        }`}
+                        style={{
+                          background: isSelected ? currentBtnBg : currentCardBg,
+                          borderColor: isSelected ? (currentText || '#ff99bb') : currentBorder,
+                          color: isSelected ? currentBtnText : currentText,
+                        }}
+                      >
+                        <div className="text-[10px] font-bold truncate">{opt.label}</div>
+                        <div className="text-[9px] opacity-70 truncate mt-0.5" style={{ color: isSelected ? currentBtnText : currentTextMuted }}>
+                          {opt.desc}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           )}
