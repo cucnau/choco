@@ -11,9 +11,14 @@ import {
   Key,
   RefreshCw,
   AlertCircle,
-  BookmarkCheck
+  BookmarkCheck,
+  Eye,
+  EyeOff,
+  HelpCircle,
+  CheckCircle2
 } from 'lucide-react';
 import { saveReadingProgress, getReadingProgress } from '../lib/readingProgress';
+import { getUserUnlockedPasswordChaptersLocal, unlockChapterWithPassword } from '../lib/storage';
 import { ReadingEffects } from './ReadingEffects';
 import { getStoryBorderStyle, StoryCornerAccents } from '../lib/borderStyles';
 import { PRESET_THEME_COLORS } from '../lib/themeConstants';
@@ -103,18 +108,43 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
   const prevChapter = currentIndex > 0 ? sortedChapters[currentIndex - 1] : null;
   const nextChapter = currentIndex < sortedChapters.length - 1 ? sortedChapters[currentIndex + 1] : null;
 
+  // Password unlock state
+  const [inputPassword, setInputPassword] = useState('');
+  const [isPasswordUnlocked, setIsPasswordUnlocked] = useState(false);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [showPasswordText, setShowPasswordText] = useState(false);
+  const [isSubmittingPass, setIsSubmittingPass] = useState(false);
+
+  // Sync password unlocked status
+  useEffect(() => {
+    setInputPassword('');
+    setPasswordError(null);
+    if (!chapter.isPasswordProtected || !chapter.password) {
+      setIsPasswordUnlocked(true);
+      return;
+    }
+    const unlockedPassLocal = getUserUnlockedPasswordChaptersLocal(currentUser?.uid);
+    const isUnlocked = 
+      unlockedPassLocal.includes(chapter.id) ||
+      !!(userProfile?.unlockedPasswordChapters && userProfile.unlockedPasswordChapters.includes(chapter.id));
+    setIsPasswordUnlocked(isUnlocked);
+  }, [chapter.id, chapter.isPasswordProtected, chapter.password, currentUser?.uid, userProfile?.unlockedPasswordChapters]);
+
   // Kiểm tra quyền đọc chương
   const isAuthorOrOwner = 
     (currentUser?.uid && story.authorUid && currentUser.uid === story.authorUid) ||
     (currentUser?.email && story.authorEmail && currentUser.email.toLowerCase() === story.authorEmail.toLowerCase()) ||
     isAdmin;
 
-  const isAlreadyUnlockedByUser = !!(
+  const isAlreadyUnlockedByChucu = !!(
     userProfile?.unlockedChapters && 
     userProfile.unlockedChapters.includes(chapter.id)
   );
 
-  const isChapterReadable = !chapter.isLocked || isAlreadyUnlockedByUser || isAuthorOrOwner;
+  const isChucuReadable = !chapter.isLocked || isAlreadyUnlockedByChucu || isAuthorOrOwner;
+  const isPassReadable = !chapter.isPasswordProtected || !chapter.password || isPasswordUnlocked || isAuthorOrOwner;
+  const isChapterReadable = isChucuReadable && isPassReadable;
+
   const unlockPrice = chapter.unlockPrice && chapter.unlockPrice > 0 ? chapter.unlockPrice : 1;
   const currentChucuBalance = userProfile?.chucu || 0;
 
@@ -199,6 +229,31 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
     }
   };
 
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inputPassword.trim()) {
+      setPasswordError('Vui lòng nhập mật khẩu.');
+      return;
+    }
+
+    setIsSubmittingPass(true);
+    setPasswordError(null);
+
+    try {
+      const res = await unlockChapterWithPassword(chapter.id, inputPassword, chapter.password, currentUser?.uid);
+      if (res.success) {
+        setIsPasswordUnlocked(true);
+        setPasswordError(null);
+      } else {
+        setPasswordError(res.message);
+      }
+    } catch (err: any) {
+      setPasswordError(err.message || 'Lỗi khi kiểm tra mật khẩu.');
+    } finally {
+      setIsSubmittingPass(false);
+    }
+  };
+
   const handleGeneralCommentSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!generalCommentText.trim()) return;
@@ -257,6 +312,16 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
   const hasSeparateEffect = story.useSeparateChapterEffect || story.useSeparateChapterTheme;
   const activeReadingEffect = hasSeparateEffect ? (story.chapterReadingEffect || 'none') : (story.readingEffect || 'none');
 
+  const activeBorderGradientColor2 = hasSeparateTheme
+    ? (story.chapterCustomBorderGradientColor2 || story.customBorderGradientColor2)
+    : story.customBorderGradientColor2;
+  const activeBorderGlowColor1 = hasSeparateTheme
+    ? (story.chapterCustomBorderGlowColor1 || story.customBorderGlowColor1)
+    : story.customBorderGlowColor1;
+  const activeBorderGlowColor2 = hasSeparateTheme
+    ? (story.chapterCustomBorderGlowColor2 || story.customBorderGlowColor2)
+    : story.customBorderGlowColor2;
+
   const borderObj = {
     borderStyle: activeBorderStyle,
     borderWidth: activeBorderWidth,
@@ -264,6 +329,10 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
     borderCornerAccent: activeBorderCornerAccent,
     borderGlow: activeBorderGlow,
     customBorderColor: currentBorder,
+    customCardBgColor: currentCardBg,
+    customBorderGradientColor2: activeBorderGradientColor2,
+    customBorderGlowColor1: activeBorderGlowColor1,
+    customBorderGlowColor2: activeBorderGlowColor2,
   };
 
   const isDarkTheme = !currentBg.toLowerCase().includes('#fff') && !currentBg.toLowerCase().includes('255, 255, 255');
@@ -404,7 +473,7 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
         
         {/* Unified Chapter Article Card (matching Live Story Editor) */}
         <article
-          className="p-6 sm:p-10 space-y-6 relative overflow-hidden transition-all duration-200 shadow-xl"
+          className="p-6 sm:p-10 space-y-6 relative transition-all duration-200 shadow-xl"
           style={{
             background: currentCardBg,
             color: currentText,
@@ -450,6 +519,19 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
                   <span>{unlockPrice} Chucu</span>
                 </span>
               )}
+              {chapter.isPasswordProtected && (
+                <span 
+                  className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 border text-xs font-semibold rounded shadow-xs ${storyBtnFont}`}
+                  style={{
+                    background: currentBtnBg,
+                    borderColor: currentBtnBorder,
+                    color: currentBtnText,
+                  }}
+                >
+                  <Key className="w-3.5 h-3.5" />
+                  <span>{isPassReadable ? 'Đã mở Pass' : 'Có Pass'}</span>
+                </span>
+              )}
             </div>
             <div className={`flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[10px] font-mono ${storyMutedFont}`} style={{ color: currentTextMuted }}>
               {story.author && <span>Người đăng: {story.author}</span>}
@@ -462,99 +544,208 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
 
           {/* Locked Screen or Chapter Paragraph Content */}
           {!isChapterReadable ? (
-            /* Locked Chapter Paywall Screen */
-            <div 
-              className={`p-6 sm:p-10 text-center space-y-5 rounded transition-colors duration-200 border ${storyBodyFont}`}
-              style={{
-                background: currentBg,
-                borderColor: currentBorder,
-              }}
-            >
-              <div className="space-y-2">
-                <div 
-                  className="w-12 h-12 mx-auto rounded-full flex items-center justify-center border shadow-xs"
-                  style={{
-                    background: currentBtnBg,
-                    borderColor: currentBtnBorder,
-                    color: currentBtnText,
-                  }}
-                >
-                  <Lock className="w-6 h-6" />
-                </div>
-                <h3 className={`text-base sm:text-lg font-bold uppercase tracking-wider ${storyBodyFont}`} style={{ color: currentText }}>
-                  Chương này đã bị khóa
-                </h3>
-                <p className={`text-xs ${storyMutedFont}`} style={{ color: currentTextMuted }}>
-                  Tác giả yêu cầu mở khóa bằng Chucu để đọc tiếp nội dung chương này.
-                </p>
-              </div>
-
-              {unlockError && (
-                <div className="max-w-md mx-auto p-3 bg-[#3e141a] border border-[#a2202f] text-xs text-[#ffccd1] flex items-center gap-2 text-left rounded">
-                  <AlertCircle className="w-4 h-4 text-[#ff9aa6] shrink-0" />
-                  <span>{unlockError}</span>
-                </div>
-              )}
-
+            !isChucuReadable ? (
+              /* Locked Chapter Paywall Screen - Chucu */
               <div 
-                className={`border p-4 max-w-sm mx-auto space-y-2 text-xs rounded ${storyMutedFont}`}
+                className={`p-6 sm:p-10 text-center space-y-5 rounded transition-colors duration-200 border ${storyBodyFont}`}
                 style={{
-                  background: currentCardBg,
+                  background: currentBg,
                   borderColor: currentBorder,
                 }}
               >
-                <div className="flex items-center justify-between">
-                  <span style={{ color: currentTextMuted }}>Giá mở khóa:</span>
-                  <span className="font-bold" style={{ color: currentText }}>{unlockPrice} Chucu</span>
-                </div>
-                <div 
-                  className="flex items-center justify-between border-t pt-2"
-                  style={{ borderColor: currentBorder }}
-                >
-                  <span style={{ color: currentTextMuted }}>Số dư Chucu hiện tại:</span>
-                  <span className="font-bold" style={{ color: currentText }}>{currentChucuBalance} Chucu</span>
-                </div>
-              </div>
-
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
-                <button
-                  onClick={handleUnlockClick}
-                  disabled={isUnlocking}
-                  className={`w-full sm:w-auto px-6 py-2.5 border font-bold text-xs uppercase tracking-wider rounded transition flex items-center justify-center gap-2 shadow-sm disabled:opacity-50 ${storyBtnFont}`}
-                  style={{
-                    background: currentBtnBg,
-                    borderColor: currentBtnBorder,
-                    color: currentBtnText,
-                  }}
-                >
-                  {isUnlocking ? (
-                    <>
-                      <RefreshCw className="w-4 h-4 animate-spin" />
-                      <span>Đang mở khóa...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Key className="w-4 h-4" />
-                      <span>Mở khóa chương ({unlockPrice} Chucu)</span>
-                    </>
-                  )}
-                </button>
-
-                {currentChucuBalance < unlockPrice && onOpenRechargeModal && (
-                  <button
-                    onClick={onOpenRechargeModal}
-                    className={`w-full sm:w-auto px-5 py-2.5 border font-bold text-xs uppercase tracking-wider rounded transition ${storyBtnFont}`}
+                <div className="space-y-2">
+                  <div 
+                    className="w-12 h-12 mx-auto rounded-full flex items-center justify-center border shadow-xs"
                     style={{
-                      background: currentBtnSecondaryBg,
+                      background: currentBtnBg,
                       borderColor: currentBtnBorder,
-                      color: currentText,
+                      color: currentBtnText,
                     }}
                   >
-                    Nạp thêm Chucu
-                  </button>
+                    <Lock className="w-6 h-6" />
+                  </div>
+                  <h3 className={`text-base sm:text-lg font-bold uppercase tracking-wider ${storyBodyFont}`} style={{ color: currentText }}>
+                    Chương này đã bị khóa bằng Chucu
+                  </h3>
+                  <p className={`text-xs ${storyMutedFont}`} style={{ color: currentTextMuted }}>
+                    Tác giả yêu cầu mở khóa bằng Chucu để đọc tiếp nội dung chương này.
+                  </p>
+                </div>
+
+                {unlockError && (
+                  <div className="max-w-md mx-auto p-3 bg-[#3e141a] border border-[#a2202f] text-xs text-[#ffccd1] flex items-center gap-2 text-left rounded">
+                    <AlertCircle className="w-4 h-4 text-[#ff9aa6] shrink-0" />
+                    <span>{unlockError}</span>
+                  </div>
                 )}
+
+                <div 
+                  className={`border p-4 max-w-sm mx-auto space-y-2 text-xs rounded ${storyMutedFont}`}
+                  style={{
+                    background: currentCardBg,
+                    borderColor: currentBorder,
+                  }}
+                >
+                  <div className="flex items-center justify-between">
+                    <span style={{ color: currentTextMuted }}>Giá mở khóa:</span>
+                    <span className="font-bold" style={{ color: currentText }}>{unlockPrice} Chucu</span>
+                  </div>
+                  <div 
+                    className="flex items-center justify-between border-t pt-2"
+                    style={{ borderColor: currentBorder }}
+                  >
+                    <span style={{ color: currentTextMuted }}>Số dư Chucu hiện tại:</span>
+                    <span className="font-bold" style={{ color: currentText }}>{currentChucuBalance} Chucu</span>
+                  </div>
+                </div>
+
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+                  <button
+                    onClick={handleUnlockClick}
+                    disabled={isUnlocking}
+                    className={`w-full sm:w-auto px-6 py-2.5 border font-bold text-xs uppercase tracking-wider rounded transition flex items-center justify-center gap-2 shadow-sm disabled:opacity-50 ${storyBtnFont}`}
+                    style={{
+                      background: currentBtnBg,
+                      borderColor: currentBtnBorder,
+                      color: currentBtnText,
+                    }}
+                  >
+                    {isUnlocking ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                        <span>Đang mở khóa...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Key className="w-4 h-4" />
+                        <span>Mở khóa chương ({unlockPrice} Chucu)</span>
+                      </>
+                    )}
+                  </button>
+
+                  {currentChucuBalance < unlockPrice && onOpenRechargeModal && (
+                    <button
+                      onClick={onOpenRechargeModal}
+                      className={`w-full sm:w-auto px-5 py-2.5 border font-bold text-xs uppercase tracking-wider rounded transition ${storyBtnFont}`}
+                      style={{
+                        background: currentBtnSecondaryBg,
+                        borderColor: currentBtnBorder,
+                        color: currentText,
+                      }}
+                    >
+                      Nạp thêm Chucu
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
+            ) : (
+              /* Password Protected Chapter Screen (Nhập Pass) */
+              <div 
+                className={`p-6 sm:p-10 text-center space-y-5 rounded transition-colors duration-200 border ${storyBodyFont}`}
+                style={{
+                  background: currentBg,
+                  borderColor: currentBorder,
+                }}
+              >
+                <div className="space-y-2">
+                  <div 
+                    className="w-12 h-12 mx-auto rounded-full flex items-center justify-center border shadow-xs"
+                    style={{
+                      background: currentBtnBg,
+                      borderColor: currentBtnBorder,
+                      color: currentBtnText,
+                    }}
+                  >
+                    <Key className="w-6 h-6" />
+                  </div>
+                  <h3 className={`text-base sm:text-lg font-bold uppercase tracking-wider ${storyBodyFont}`} style={{ color: currentText }}>
+                    Chương này yêu cầu mật khẩu (Pass)
+                  </h3>
+                  <p className={`text-xs ${storyMutedFont}`} style={{ color: currentTextMuted }}>
+                    Tác giả đã đặt mật khẩu cho chương này. Vui lòng nhập đúng mật khẩu để mở khóa và đọc tiếp.
+                  </p>
+                </div>
+
+                {/* Gợi ý mật khẩu nếu có */}
+                {chapter.passwordHint && (
+                  <div 
+                    className="p-3.5 max-w-md mx-auto rounded border border-dashed text-left space-y-1.5"
+                    style={{
+                      background: currentCardBg,
+                      borderColor: currentBorder,
+                    }}
+                  >
+                    <div className="flex items-center gap-1.5 text-xs font-bold" style={{ color: currentText }}>
+                      <HelpCircle className="w-4 h-4 text-[#ff99bb] shrink-0" />
+                      <span>Gợi ý mật khẩu từ tác giả:</span>
+                    </div>
+                    <p className="text-xs italic pl-5 leading-relaxed" style={{ color: currentTextMuted }}>
+                      {chapter.passwordHint}
+                    </p>
+                  </div>
+                )}
+
+                <form onSubmit={handlePasswordSubmit} className="max-w-sm mx-auto space-y-3 pt-1">
+                  <div className="relative">
+                    <input
+                      type={showPasswordText ? "text" : "password"}
+                      value={inputPassword}
+                      onChange={(e) => {
+                        setInputPassword(e.target.value);
+                        if (passwordError) setPasswordError(null);
+                      }}
+                      placeholder="Nhập mật khẩu (pass) để đọc..."
+                      className="w-full px-3.5 py-2.5 pr-10 text-xs border rounded focus:outline-none transition font-mono"
+                      style={{
+                        background: currentCardBg,
+                        borderColor: currentBorder,
+                        color: currentText,
+                      }}
+                      autoFocus
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPasswordText(!showPasswordText)}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-xs opacity-60 hover:opacity-100 transition"
+                      style={{ color: currentText }}
+                      title={showPasswordText ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+                    >
+                      {showPasswordText ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+
+                  {passwordError && (
+                    <div className="p-2.5 bg-[#3e141a] border border-[#a2202f] text-xs text-[#ffccd1] flex items-center gap-2 text-left rounded">
+                      <AlertCircle className="w-4 h-4 text-[#ff9aa6] shrink-0" />
+                      <span>{passwordError}</span>
+                    </div>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={isSubmittingPass || !inputPassword.trim()}
+                    className={`w-full py-2.5 border font-bold text-xs uppercase tracking-wider rounded transition flex items-center justify-center gap-2 shadow-sm disabled:opacity-50 ${storyBtnFont}`}
+                    style={{
+                      background: currentBtnBg,
+                      borderColor: currentBtnBorder,
+                      color: currentBtnText,
+                    }}
+                  >
+                    {isSubmittingPass ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                        <span>Đang kiểm tra...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Key className="w-4 h-4" />
+                        <span>Mở khóa chương</span>
+                      </>
+                    )}
+                  </button>
+                </form>
+              </div>
+            )
           ) : (
             /* Text Content with Paragraph-level commenting */
             <div className={`space-y-5 text-sm leading-relaxed ${storyBodyFont}`} style={{ color: currentText }}>

@@ -34,75 +34,74 @@ export interface BorderGlowOption {
 }
 
 export const BORDER_STYLE_OPTIONS: BorderStyleOption[] = [
-  { value: 'solid', label: 'Nét liền (Solid)', desc: 'Đường nét thẳng chuẩn mực, tinh tế', category: 'classic' },
-  { value: 'double', label: 'Viền đôi (Double)', desc: 'Hai đường song song sang trọng', category: 'classic' },
-  { value: 'dashed', label: 'Nét đứt (Dashed)', desc: 'Nét đứt khúc thủ công ấn tượng', category: 'classic' },
-  { value: 'dotted', label: 'Chấm bi (Dotted)', desc: 'Hàng chấm tròn nhỏ tinh tế', category: 'classic' },
-  { value: 'dash-dot', label: 'Gạch chấm xen kẽ (Dash-Dot)', desc: 'Phong cách Morse code cổ điển', category: 'creative' },
-  { value: 'sketch', label: 'Nét vẽ tay Canva (Hand Sketch)', desc: 'Nét phác thảo uốn lượn tự nhiên', category: 'creative' },
-  { value: 'stitched', label: 'Đường may chỉ (Stitched)', desc: 'Đường chỉ thêu thủ công vintage', category: 'creative' },
-  { value: 'gradient', label: 'Viền Gradient đa sắc', desc: 'Dải màu chuyển động rực rỡ Canva', category: 'creative' },
-  { value: 'stamp', label: 'Viền tem thư (Postage Stamp)', desc: 'Răng cưa viền tem bưu chính cổ điển', category: 'retro' },
-  { value: 'film', label: 'Khung cuộn phim (Film Strip)', desc: 'Lỗ răng cưa cuộn phim điện ảnh', category: 'retro' },
-  { value: 'groove', label: 'Rãnh chìm 3D (Groove)', desc: 'Đường rãnh khắc chìm chiều sâu', category: 'classic' },
-  { value: 'ridge', label: 'Sống nổi 3D (Ridge)', desc: 'Gờ sống viền nổi 3D tinh xảo', category: 'classic' },
-  { value: 'offset', label: 'Viền đôi lệch tầng (Double Offset)', desc: 'Hiệu ứng xếp lớp đa tầng 3D', category: 'creative' },
-  { value: 'none', label: 'Không viền (None)', desc: 'Tối giản hoàn toàn không đường viền', category: 'classic' },
+  { value: 'solid', label: 'Nét liền', desc: 'Đường nét thẳng chuẩn mực, tinh tế', category: 'classic' },
+  { value: 'double', label: 'Viền đôi', desc: 'Hai đường song song sang trọng', category: 'classic' },
+  { value: 'dashed', label: 'Nét đứt', desc: 'Nét đứt khúc thủ công ấn tượng', category: 'classic' },
+  { value: 'dotted', label: 'Chấm bi tròn', desc: 'Hàng chấm tròn nhỏ tinh tế', category: 'classic' },
+  { value: 'dash-dot', label: 'Gạch chấm xen kẽ', desc: 'Gạch dài xen kẽ chấm tròn thanh lịch', category: 'creative' },
+  { value: 'sketch', label: 'Nét vẽ tay', desc: 'Nét phác thảo uốn lượn tự nhiên', category: 'creative' },
+  { value: 'stitched', label: 'Đường may chỉ', desc: 'Đường chỉ thêu viền cách mép cổ điển', category: 'creative' },
+  { value: 'gradient', label: 'Viền dải màu chuyển sắc', desc: 'Dải màu chuyển động theo đúng góc bo', category: 'creative' },
+  { value: 'stamp', label: 'Viền tem thư bưu chính', desc: 'Răng cưa viền tem bưu chính cổ điển', category: 'retro' },
+  { value: 'film', label: 'Khung cuộn phim', desc: 'Hàng lỗ răng cưa cuộn phim điện ảnh', category: 'retro' },
+  { value: 'groove', label: 'Rãnh chìm', desc: 'Đường rãnh khắc chìm có chiều sâu', category: 'classic' },
+  { value: 'ridge', label: 'Sống nổi', desc: 'Gờ sống viền nổi tinh xảo', category: 'classic' },
+  { value: 'offset', label: 'Viền đôi lệch tầng', desc: 'Hiệu ứng xếp lớp đa tầng nổi bật', category: 'creative' },
+  { value: 'none', label: 'Không viền', desc: 'Tối giản hoàn toàn không đường viền', category: 'classic' },
 ];
 
 export const BORDER_WIDTH_OPTIONS: BorderWidthOption[] = [
-  { value: 'thin', label: 'Siêu mảnh (1px)', widthPx: 1 },
-  { value: 'medium', label: 'Vừa vặn (2px)', widthPx: 2 },
-  { value: 'thick', label: 'Dày rõ nét (3px)', widthPx: 3 },
-  { value: 'heavy', label: 'Đậm đà (4px)', widthPx: 4 },
-  { value: 'bold', label: 'Siêu đậm (6px)', widthPx: 6 },
-  { value: 'frame', label: 'Khung tranh (8px)', widthPx: 8 },
+  { value: 'thin', label: 'Siêu mảnh - 1px', widthPx: 1 },
+  { value: 'medium', label: 'Vừa vặn - 2px', widthPx: 2 },
+  { value: 'thick', label: 'Dày rõ nét - 3px', widthPx: 3 },
+  { value: 'heavy', label: 'Đậm đà - 4px', widthPx: 4 },
+  { value: 'bold', label: 'Siêu đậm - 6px', widthPx: 6 },
+  { value: 'frame', label: 'Khung tranh - 8px', widthPx: 8 },
 ];
 
 export const BORDER_RADIUS_OPTIONS: BorderRadiusOption[] = [
-  { value: 'none', label: 'Vuông vức (0px)', desc: 'Góc vuông sắc cạnh' },
-  { value: 'xs', label: 'Bo vi mô (2px)', desc: 'Bo góc cực nhỏ tinh tế' },
-  { value: 'sm', label: 'Bo nhẹ (4px)', desc: 'Mềm mại thanh lịch vừa phải' },
-  { value: 'md', label: 'Bo vừa chuẩn (8px)', desc: 'Chuẩn giao diện hiện đại' },
-  { value: 'lg', label: 'Bo tròn lớn (16px)', desc: 'Mềm mại và thân thiện' },
-  { value: 'xl', label: 'Bo siêu mềm (24px)', desc: 'Phong cách bo tròn Canva trẻ trung' },
-  { value: 'pill', label: 'Viên thuốc (Pill/Capsule)', desc: 'Bo tròn tối đa dạng viên thuốc' },
-  { value: 'leaf', label: 'Góc lá chéo (Leaf)', desc: 'Bo 2 góc chéo bất đối xứng độc đáo' },
-  { value: 'chamfer', label: 'Vát góc 45° (Chamfer)', desc: 'Vát góc đa giác phong cách hình học' },
-  { value: 'ticket', label: 'Khuyết góc vé (Ticket Notch)', desc: 'Khuyết góc vé xem phim cổ điển' },
-  { value: 'petal', label: 'Cánh hoa (Petal)', desc: 'Dáng cánh hoa 1 góc nhọn mềm mại' },
-  { value: 'tab', label: 'Thẻ Tab trên (Folder Tab)', desc: 'Bo tròn phía trên dạng kẹp hồ sơ' },
+  { value: 'none', label: 'Vuông vức', desc: 'Góc vuông sắc cạnh' },
+  { value: 'xs', label: 'Bo vi mô', desc: 'Bo góc cực nhỏ 2px tinh tế' },
+  { value: 'sm', label: 'Bo nhẹ', desc: 'Mềm mại thanh lịch 4px' },
+  { value: 'md', label: 'Bo vừa', desc: 'Chuẩn giao diện hiện đại 8px' },
+  { value: 'lg', label: 'Bo tròn lớn', desc: 'Mềm mại thân thiện 16px' },
+  { value: 'xl', label: 'Bo siêu mềm', desc: 'Bo tròn mềm mại 24px' },
+  { value: 'leaf', label: 'Góc lá chéo', desc: 'Bo 2 góc chéo bất đối xứng' },
+  { value: 'chamfer', label: 'Vát góc', desc: 'Vát góc đa giác hình học' },
+  { value: 'ticket', label: 'Khuyết góc vé', desc: 'Khuyết góc vé xem phim cổ điển' },
+  { value: 'petal', label: 'Cánh hoa', desc: 'Dáng cánh hoa 1 góc nhọn mềm mại' },
+  { value: 'tab', label: 'Thẻ kẹp trên', desc: 'Bo tròn phía trên dạng kẹp hồ sơ' },
 ];
 
 export const BORDER_CORNER_ACCENT_OPTIONS: BorderCornerAccentOption[] = [
   { value: 'none', label: 'Không góc trang trí', desc: 'Viền thuần túy', category: 'tech' },
   { value: 'brackets', label: 'Khung góc thước L', desc: 'Khung ngắm chữ L sắc nét ở 4 góc', category: 'tech' },
-  { value: 'vintage', label: 'Hoa văn hoàng gia (Filigree)', desc: 'Họa tiết hoa văn cuộn quý tộc ở 4 góc', category: 'vintage' },
-  { value: 'artdeco', label: 'Art Deco hình học', desc: 'Họa tiết góc Art Deco xếp tầng sang trọng', category: 'vintage' },
+  { value: 'vintage', label: 'Hoa văn hoàng gia quý tộc', desc: 'Họa tiết hoa văn Baroque hoàng gia uốn lượn ở 4 góc', category: 'vintage' },
+  { value: 'artdeco', label: 'Họa tiết Art Deco', desc: 'Họa tiết góc xếp tầng sang trọng', category: 'vintage' },
   { value: 'rivets', label: 'Đinh tán kim loại', desc: '4 chốt đinh ốc kim loại ở 4 góc', category: 'tech' },
   { value: 'dots', label: 'Chấm định vị', desc: '4 chấm tròn nhỏ tinh tế ở 4 góc', category: 'tech' },
   { value: 'crosshairs', label: 'Dấu chữ thập tâm điểm', desc: '4 dấu chữ thập giao điểm ở 4 góc', category: 'tech' },
-  { value: 'washi', label: 'Băng dính Washi Tape', desc: 'Băng keo dán giấy trang trí phong cách Canva', category: 'craft' },
-  { value: 'sparkle', label: 'Ngôi sao lấp lánh 4 cánh', desc: 'Họa tiết ngôi sao tỏa sáng tinh nghịch', category: 'cute' },
-  { value: 'heart', label: 'Trái tim ngọt ngào', desc: 'Họa tiết trái tim nhỏ nhắn đáng yêu', category: 'cute' },
-  { value: 'botanical', label: 'Cành lá hoa cỏ', desc: 'Họa tiết cành lá & hoa anh đào thiên nhiên', category: 'vintage' },
+  { value: 'washi', label: 'Băng dính dán góc', desc: 'Băng dính dán đè mép giấy tràn ra nền', category: 'craft' },
+  { value: 'sparkle', label: 'Ngôi sao lấp lánh', desc: 'Họa tiết ngôi sao 4 cánh tỏa sáng tinh nghịch', category: 'cute' },
+  { value: 'heart', label: 'Trái tim', desc: 'Họa tiết trái tim nhỏ nhắn đáng yêu', category: 'cute' },
+  { value: 'botanical', label: 'Cành lá hoa cỏ', desc: 'Cành lá uốn lượn tự nhiên mềm mại', category: 'vintage' },
   { value: 'bow', label: 'Nơ thắt ruy băng', desc: 'Nơ ruy băng mềm mại ở các góc', category: 'cute' },
-  { value: 'paperclip', label: 'Kẹp giấy kim loại', desc: 'Kẹp giấy văn phòng gắn ở góc khung', category: 'craft' },
+  { value: 'paperclip', label: 'Kẹp giấy kim loại', desc: 'Kẹp giấy văn phòng kẹp mép tràn ra nền sau', category: 'craft' },
 ];
 
 export const BORDER_GLOW_OPTIONS: BorderGlowOption[] = [
   { value: 'none', label: 'Không hiệu ứng', desc: 'Màu viền nguyên bản' },
-  { value: 'soft', label: 'Hào quang dịu (Soft Glow)', desc: 'Tỏa ánh sáng nhẹ nhàng êm mắt' },
-  { value: 'neon', label: 'Phát sáng Neon (Neon Glow)', desc: 'Ánh sáng neon viễn tưởng nổi bật' },
-  { value: 'shadow', label: 'Đổ bóng khối Pop-Art (Retro)', desc: 'Bóng khối cứng phong cách Canva Pop Art' },
-  { value: 'soft-depth', label: 'Đổ bóng đa tầng (Soft Depth)', desc: 'Bóng mềm nhiều lớp có chiều sâu chân thực' },
-  { value: 'gradient-aura', label: 'Hào quang Gradient (Aura)', desc: 'Vầng hào quang chuyển sắc rực rỡ' },
-  { value: 'isometric', label: 'Khối nổi 3D (Isometric)', desc: 'Hiệu ứng gờ nổi khối 3D đa hướng' },
+  { value: 'soft', label: 'Hào quang dịu', desc: 'Tỏa ánh sáng nhẹ nhàng êm mắt' },
+  { value: 'neon', label: 'Phát sáng Neon', desc: 'Ánh sáng neon nổi bật' },
+  { value: 'shadow', label: 'Đổ bóng khối', desc: 'Bóng khối cứng phong cách retro' },
+  { value: 'soft-depth', label: 'Đổ bóng đa tầng', desc: 'Bóng mềm nhiều lớp có chiều sâu chân thực' },
+  { value: 'gradient-aura', label: 'Hào quang chuyển sắc', desc: 'Vầng hào quang chuyển sắc rực rỡ' },
+  { value: 'isometric', label: 'Khối nổi đa hướng', desc: 'Hiệu ứng gờ nổi khối đa chiều' },
 ];
 
-function normalizeColor(color: string): string {
-  if (!color) return '#5e2f46';
-  return color;
+function normalizeColor(color?: string, fallback = '#5e2f46'): string {
+  if (!color || !color.trim()) return fallback;
+  return color.trim();
 }
 
 const WIDTH_MAP: Record<string, string> = {
@@ -128,10 +127,42 @@ export function getStoryBorderStyle(
   const bWidth = story.borderWidth || 'thin';
   const bRadius = story.borderRadius || 'none';
   const bGlow = story.borderGlow || 'none';
-  const borderColor = normalizeColor(story.customBorderColor || fallbackBorderColor);
+  const borderColor = normalizeColor(story.customBorderColor, fallbackBorderColor);
   const strokeWidth = WIDTH_MAP[bWidth] || '1px';
+  const cardBg = story.customCardBgColor || '#11090c';
 
-  // 1. Border Style & Width
+  // 1. Border Radius & Shape (Xác định trước để kết hợp mượt với mọi kiểu viền)
+  if (bRadius === 'leaf') {
+    style.borderRadius = '24px 4px 24px 4px';
+  } else if (bRadius === 'chamfer') {
+    style.borderRadius = '12px';
+    style.clipPath = 'polygon(10px 0, calc(100% - 10px) 0, 100% 10px, 100% calc(100% - 10px), calc(100% - 10px) 100%, 10px 100%, 0 calc(100% - 10px), 0 10px)';
+  } else if (bRadius === 'ticket') {
+    style.borderRadius = '10px';
+    style.maskImage = 'radial-gradient(circle at top left, transparent 10px, black 10.5px), radial-gradient(circle at top right, transparent 10px, black 10.5px), radial-gradient(circle at bottom left, transparent 10px, black 10.5px), radial-gradient(circle at bottom right, transparent 10px, black 10.5px)';
+    style.maskComposite = 'intersect';
+  } else if (bRadius === 'petal') {
+    style.borderRadius = '28px 28px 4px 28px';
+  } else if (bRadius === 'tab') {
+    style.borderRadius = '16px 16px 4px 4px';
+  } else if (bRadius === 'xl') {
+    style.borderRadius = '24px';
+  } else if (bRadius === 'lg') {
+    style.borderRadius = '16px';
+  } else if (bRadius === 'md') {
+    style.borderRadius = '8px';
+  } else if (bRadius === 'sm') {
+    style.borderRadius = '4px';
+  } else if (bRadius === 'xs') {
+    style.borderRadius = '2px';
+  } else if (bStyle === 'sketch') {
+    // Nét vẽ tay nếu để none sẽ có đường cong hữu cơ tự nhiên
+    style.borderRadius = '255px 15px 225px 15px/15px 225px 15px 255px';
+  } else {
+    style.borderRadius = '0px';
+  }
+
+  // 2. Border Style & Width
   if (bStyle === 'none') {
     style.border = 'none';
   } else if (bStyle === 'groove') {
@@ -151,46 +182,60 @@ export function getStoryBorderStyle(
     style.borderWidth = doubleMap[bWidth] || '3px';
     style.borderStyle = 'double';
     style.borderColor = borderColor;
-  } else if (bStyle === 'dash-dot') {
+  } else if (bStyle === 'dotted') {
+    // Chấm bi tròn rõ rệt
+    style.borderWidth = strokeWidth;
+    style.borderStyle = 'dotted';
+    style.borderColor = borderColor;
+  } else if (bStyle === 'dashed') {
+    // Nét đứt gạch nối
     style.borderWidth = strokeWidth;
     style.borderStyle = 'dashed';
     style.borderColor = borderColor;
-    style.backgroundImage = `radial-gradient(circle, ${borderColor} 35%, transparent 40%)`;
-    style.backgroundSize = '12px 12px';
+  } else if (bStyle === 'dash-dot') {
+    // Gạch chấm xen kẽ - Áp dụng đường viền kép gạch và chấm, KHÔNG BAO GIỜ đặt background pattern phủ kín card!
+    style.borderWidth = strokeWidth;
+    style.borderStyle = 'dashed';
+    style.borderColor = borderColor;
+    style.outline = `1px dotted ${borderColor}cc`;
+    style.outlineOffset = `2px`;
   } else if (bStyle === 'sketch') {
-    // Hand-drawn sketch: viền không đều với shadow vẽ tay
+    // Nét vẽ tay phác thảo tự nhiên
     style.borderWidth = strokeWidth;
     style.borderStyle = 'solid';
     style.borderColor = borderColor;
-    style.boxShadow = `2px 1px 0px ${borderColor}88, -1px 2px 0px ${borderColor}55`;
-    style.filter = 'drop-shadow(0px 1px 2px rgba(0,0,0,0.25))';
+    style.boxShadow = `2px 1px 0px ${borderColor}88, -1px 2px 0px ${borderColor}55, 1px -1px 0px ${borderColor}33`;
   } else if (bStyle === 'stitched') {
-    // Stitched: viền chỉ khâu viền cách mép
+    // Đường may chỉ khâu viền cách mép
     style.borderWidth = strokeWidth;
     style.borderStyle = 'dashed';
     style.borderColor = borderColor;
     style.outline = `1px solid ${borderColor}55`;
     style.outlineOffset = '3px';
   } else if (bStyle === 'gradient') {
-    // Canva Gradient Border
-    style.borderWidth = strokeWidth;
-    style.borderStyle = 'solid';
-    style.borderImageSource = `linear-gradient(135deg, ${borderColor}, #ff6b9d, #c084fc, #38bdf8, ${borderColor})`;
-    style.borderImageSlice = '1';
+    // Viền gradient chuyển sắc theo đúng góc bo (sử dụng background-clip)
+    const color1 = borderColor;
+    const color2 = normalizeColor(story.customBorderGradientColor2, '#ff6b9d');
+    style.border = `${strokeWidth} solid transparent`;
+    style.backgroundImage = `linear-gradient(${cardBg}, ${cardBg}), linear-gradient(135deg, ${color1}, ${color2})`;
+    style.backgroundOrigin = 'border-box';
+    style.backgroundClip = 'padding-box, border-box';
   } else if (bStyle === 'stamp') {
-    // Postage Stamp: răng cưa mép
+    // Viền tem thư bưu chính: đường viền đứt chấm cổ điển kèm rãnh tem
     style.borderWidth = strokeWidth;
-    style.borderStyle = 'dotted';
+    style.borderStyle = 'dashed';
     style.borderColor = borderColor;
-    style.boxShadow = `inset 0 0 0 2px ${borderColor}44, 0 2px 8px rgba(0,0,0,0.3)`;
+    style.outline = `2px solid ${borderColor}66`;
+    style.outlineOffset = '3px';
+    style.boxShadow = `inset 0 0 0 1px ${borderColor}33, 0 3px 10px rgba(0,0,0,0.35)`;
   } else if (bStyle === 'film') {
-    // Film strip: khung phim cổ điển
+    // Khung cuộn phim điện ảnh: Viền đen tuyền với viền đôi hộp phim
     style.borderWidth = strokeWidth;
     style.borderStyle = 'solid';
     style.borderColor = borderColor;
-    style.boxShadow = `inset 0 4px 0 ${borderColor}55, inset 0 -4px 0 ${borderColor}55, inset 4px 0 0 ${borderColor}33, inset -4px 0 0 ${borderColor}33`;
+    style.boxShadow = `inset 0 5px 0 ${borderColor}66, inset 0 -5px 0 ${borderColor}66, 0 4px 12px rgba(0,0,0,0.4)`;
   } else if (bStyle === 'offset') {
-    // Double Offset frame
+    // Viền đôi lệch tầng
     style.borderWidth = strokeWidth;
     style.borderStyle = 'solid';
     style.borderColor = borderColor;
@@ -201,37 +246,7 @@ export function getStoryBorderStyle(
     style.borderColor = borderColor;
   }
 
-  // 2. Border Radius & Shape
-  if (bRadius === 'leaf') {
-    style.borderRadius = '24px 4px 24px 4px';
-  } else if (bRadius === 'chamfer') {
-    style.borderRadius = '12px';
-    style.clipPath = 'polygon(8px 0, calc(100% - 8px) 0, 100% 8px, 100% calc(100% - 8px), calc(100% - 8px) 100%, 8px 100%, 0 calc(100% - 8px), 0 8px)';
-  } else if (bRadius === 'ticket') {
-    style.borderRadius = '10px';
-    style.maskImage = 'radial-gradient(circle at top left, transparent 8px, black 8.5px), radial-gradient(circle at top right, transparent 8px, black 8.5px), radial-gradient(circle at bottom left, transparent 8px, black 8.5px), radial-gradient(circle at bottom right, transparent 8px, black 8.5px)';
-    style.maskComposite = 'intersect';
-  } else if (bRadius === 'petal') {
-    style.borderRadius = '28px 28px 4px 28px';
-  } else if (bRadius === 'tab') {
-    style.borderRadius = '16px 16px 4px 4px';
-  } else if (bRadius === 'pill') {
-    style.borderRadius = '9999px';
-  } else if (bRadius === 'xl') {
-    style.borderRadius = '24px';
-  } else if (bRadius === 'lg') {
-    style.borderRadius = '16px';
-  } else if (bRadius === 'md') {
-    style.borderRadius = '8px';
-  } else if (bRadius === 'sm') {
-    style.borderRadius = '4px';
-  } else if (bRadius === 'xs') {
-    style.borderRadius = '2px';
-  } else {
-    style.borderRadius = '0px';
-  }
-
-  // 3. Border Glow / Shadow
+  // 3. Border Glow / Shadow (Bỏ qua nếu là groove/ridge/offset vì đã có shadow chuyên biệt)
   if (bStyle !== 'groove' && bStyle !== 'ridge' && bStyle !== 'offset') {
     if (bGlow === 'soft') {
       style.boxShadow = `0 0 16px ${borderColor}66, inset 0 0 8px ${borderColor}22`;
@@ -242,7 +257,9 @@ export function getStoryBorderStyle(
     } else if (bGlow === 'soft-depth') {
       style.boxShadow = `0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 10px 20px -3px ${borderColor}44, 0 1px 3px 0 rgba(0, 0, 0, 0.2)`;
     } else if (bGlow === 'gradient-aura') {
-      style.boxShadow = `0 0 20px #ff6b9d66, 0 0 35px #c084fc55, 0 0 50px #38bdf844`;
+      const glow1 = normalizeColor(story.customBorderGlowColor1, '#ff6b9d');
+      const glow2 = normalizeColor(story.customBorderGlowColor2, '#38bdf8');
+      style.boxShadow = `0 0 20px ${glow1}66, 0 0 35px ${glow2}55, 0 0 50px ${borderColor}44`;
     } else if (bGlow === 'isometric') {
       style.boxShadow = `3px 3px 0px ${borderColor}, 6px 6px 0px ${borderColor}66, 9px 9px 0px ${borderColor}22`;
     }
@@ -265,29 +282,11 @@ export function getStoryButtonBorderStyle(
   const bWidth = story.borderWidth || 'thin';
   const bRadius = story.borderRadius || 'none';
   const bGlow = story.borderGlow || 'none';
-  const borderColor = normalizeColor(story.customBorderColor || fallbackBorderColor);
-
-  if (bStyle === 'none') {
-    style.border = 'none';
-  } else if (bStyle === 'double') {
-    style.borderWidth = '3px';
-    style.borderStyle = 'double';
-    style.borderColor = borderColor;
-  } else if (bStyle === 'gradient') {
-    style.borderWidth = '2px';
-    style.borderStyle = 'solid';
-    style.borderImageSource = `linear-gradient(135deg, ${borderColor}, #ff6b9d, #38bdf8)`;
-    style.borderImageSlice = '1';
-  } else {
-    style.borderStyle = (bStyle === 'sketch' || bStyle === 'film' || bStyle === 'offset') ? 'solid' : (bStyle === 'stitched' || bStyle === 'dash-dot') ? 'dashed' : bStyle;
-    style.borderWidth = bWidth === 'frame' || bWidth === 'bold' ? '3px' : bWidth === 'heavy' ? '2px' : '1px';
-    style.borderColor = borderColor;
-  }
+  const borderColor = normalizeColor(story.customBorderColor, fallbackBorderColor);
+  const btnBg = story.customBtnBgColor || '#2b1620';
 
   if (bRadius === 'leaf') {
     style.borderRadius = '14px 3px 14px 3px';
-  } else if (bRadius === 'pill') {
-    style.borderRadius = '9999px';
   } else if (bRadius === 'petal') {
     style.borderRadius = '16px 16px 2px 16px';
   } else if (bRadius === 'tab') {
@@ -302,8 +301,29 @@ export function getStoryButtonBorderStyle(
     style.borderRadius = '4px';
   } else if (bRadius === 'xs') {
     style.borderRadius = '2px';
+  } else if (bStyle === 'sketch') {
+    style.borderRadius = '255px 15px 225px 15px/15px 225px 15px 255px';
   } else {
     style.borderRadius = '0px';
+  }
+
+  if (bStyle === 'none') {
+    style.border = 'none';
+  } else if (bStyle === 'double') {
+    style.borderWidth = '3px';
+    style.borderStyle = 'double';
+    style.borderColor = borderColor;
+  } else if (bStyle === 'gradient') {
+    const color1 = borderColor;
+    const color2 = normalizeColor(story.customBorderGradientColor2, '#ff6b9d');
+    style.border = '2px solid transparent';
+    style.backgroundImage = `linear-gradient(${btnBg}, ${btnBg}), linear-gradient(135deg, ${color1}, ${color2})`;
+    style.backgroundOrigin = 'border-box';
+    style.backgroundClip = 'padding-box, border-box';
+  } else {
+    style.borderStyle = (bStyle === 'sketch' || bStyle === 'film' || bStyle === 'offset') ? 'solid' : (bStyle === 'stitched' || bStyle === 'dash-dot') ? 'dashed' : bStyle;
+    style.borderWidth = bWidth === 'frame' || bWidth === 'bold' ? '3px' : bWidth === 'heavy' ? '2px' : '1px';
+    style.borderColor = borderColor;
   }
 
   if (bGlow === 'soft') {
@@ -315,7 +335,9 @@ export function getStoryButtonBorderStyle(
   } else if (bGlow === 'soft-depth') {
     style.boxShadow = `0 3px 6px ${borderColor}44`;
   } else if (bGlow === 'gradient-aura') {
-    style.boxShadow = `0 0 10px #ff6b9d55, 0 0 15px #38bdf844`;
+    const glow1 = normalizeColor(story.customBorderGlowColor1, '#ff6b9d');
+    const glow2 = normalizeColor(story.customBorderGlowColor2, '#38bdf8');
+    style.boxShadow = `0 0 10px ${glow1}55, 0 0 15px ${glow2}44`;
   } else if (bGlow === 'isometric') {
     style.boxShadow = `2px 2px 0px ${borderColor}, 4px 4px 0px ${borderColor}55`;
   }
@@ -324,7 +346,7 @@ export function getStoryButtonBorderStyle(
 }
 
 /**
- * Component hiển thị họa tiết trang trí 4 góc viền phong cách Canva
+ * Component hiển thị họa tiết trang trí 4 góc viền
  */
 export const StoryCornerAccents: React.FC<{
   accent?: Story['borderCornerAccent'];
@@ -336,7 +358,7 @@ export const StoryCornerAccents: React.FC<{
 
   const accentColor = color || borderColor || '#e0c0cc';
 
-  // 1. Khung góc chữ L (Brackets)
+  // 1. Khung góc chữ L
   if (accent === 'brackets') {
     return (
       <div className={`pointer-events-none absolute inset-0 overflow-hidden ${className}`}>
@@ -348,52 +370,64 @@ export const StoryCornerAccents: React.FC<{
     );
   }
 
-  // 2. Hoa văn hoàng gia cổ điển (Royal Vintage Filigree)
+  // 2. Hoa văn hoàng gia quý tộc (Royal Baroque Filigree uốn lượn tinh xảo)
   if (accent === 'vintage') {
-    const svgDim = 34;
+    const svgDim = 38;
     return (
       <div className={`pointer-events-none absolute inset-0 overflow-hidden ${className}`}>
-        <svg width={svgDim} height={svgDim} viewBox="0 0 40 40" fill="none" stroke={accentColor} strokeWidth="1.3" className="absolute top-1 left-1">
-          <path d="M2 2 H38 M2 2 V38" strokeWidth="2" />
-          <path d="M6 6 C16 6 22 12 22 22 C22 32 28 34 38 34" strokeLinecap="round" />
-          <path d="M6 14 C12 14 16 10 16 6 M14 6 C14 12 10 16 6 16" strokeLinecap="round" />
-          <circle cx="6" cy="6" r="2" fill={accentColor} />
-          <circle cx="18" cy="18" r="1.5" fill={accentColor} />
-          <circle cx="28" cy="8" r="1.2" fill={accentColor} />
-          <circle cx="8" cy="28" r="1.2" fill={accentColor} />
+        {/* Top Left */}
+        <svg width={svgDim} height={svgDim} viewBox="0 0 45 45" fill="none" stroke={accentColor} strokeWidth="1.2" className="absolute top-0.5 left-0.5">
+          <path d="M2 2 H42 M2 2 V42" strokeWidth="1.8" strokeLinecap="round" />
+          <path d="M5 5 C15 5 24 14 24 24 C24 34 33 40 42 40" strokeLinecap="round" />
+          <path d="M5 14 C12 14 14 7 7 5" strokeLinecap="round" />
+          <path d="M14 5 C14 12 7 14 5 7" strokeLinecap="round" />
+          <path d="M10 24 C14 20 20 20 24 24" strokeLinecap="round" />
+          <circle cx="24" cy="24" r="1.8" fill={accentColor} />
+          <circle cx="7" cy="7" r="2.2" fill={accentColor} />
+          <circle cx="34" cy="8" r="1.4" fill={accentColor} />
+          <circle cx="8" cy="34" r="1.4" fill={accentColor} />
         </svg>
-        <svg width={svgDim} height={svgDim} viewBox="0 0 40 40" fill="none" stroke={accentColor} strokeWidth="1.3" className="absolute top-1 right-1" style={{ transform: 'scaleX(-1)' }}>
-          <path d="M2 2 H38 M2 2 V38" strokeWidth="2" />
-          <path d="M6 6 C16 6 22 12 22 22 C22 32 28 34 38 34" strokeLinecap="round" />
-          <path d="M6 14 C12 14 16 10 16 6 M14 6 C14 12 10 16 6 16" strokeLinecap="round" />
-          <circle cx="6" cy="6" r="2" fill={accentColor} />
-          <circle cx="18" cy="18" r="1.5" fill={accentColor} />
-          <circle cx="28" cy="8" r="1.2" fill={accentColor} />
-          <circle cx="8" cy="28" r="1.2" fill={accentColor} />
+        {/* Top Right */}
+        <svg width={svgDim} height={svgDim} viewBox="0 0 45 45" fill="none" stroke={accentColor} strokeWidth="1.2" className="absolute top-0.5 right-0.5" style={{ transform: 'scaleX(-1)' }}>
+          <path d="M2 2 H42 M2 2 V42" strokeWidth="1.8" strokeLinecap="round" />
+          <path d="M5 5 C15 5 24 14 24 24 C24 34 33 40 42 40" strokeLinecap="round" />
+          <path d="M5 14 C12 14 14 7 7 5" strokeLinecap="round" />
+          <path d="M14 5 C14 12 7 14 5 7" strokeLinecap="round" />
+          <path d="M10 24 C14 20 20 20 24 24" strokeLinecap="round" />
+          <circle cx="24" cy="24" r="1.8" fill={accentColor} />
+          <circle cx="7" cy="7" r="2.2" fill={accentColor} />
+          <circle cx="34" cy="8" r="1.4" fill={accentColor} />
+          <circle cx="8" cy="34" r="1.4" fill={accentColor} />
         </svg>
-        <svg width={svgDim} height={svgDim} viewBox="0 0 40 40" fill="none" stroke={accentColor} strokeWidth="1.3" className="absolute bottom-1 left-1" style={{ transform: 'scaleY(-1)' }}>
-          <path d="M2 2 H38 M2 2 V38" strokeWidth="2" />
-          <path d="M6 6 C16 6 22 12 22 22 C22 32 28 34 38 34" strokeLinecap="round" />
-          <path d="M6 14 C12 14 16 10 16 6 M14 6 C14 12 10 16 6 16" strokeLinecap="round" />
-          <circle cx="6" cy="6" r="2" fill={accentColor} />
-          <circle cx="18" cy="18" r="1.5" fill={accentColor} />
-          <circle cx="28" cy="8" r="1.2" fill={accentColor} />
-          <circle cx="8" cy="28" r="1.2" fill={accentColor} />
+        {/* Bottom Left */}
+        <svg width={svgDim} height={svgDim} viewBox="0 0 45 45" fill="none" stroke={accentColor} strokeWidth="1.2" className="absolute bottom-0.5 left-0.5" style={{ transform: 'scaleY(-1)' }}>
+          <path d="M2 2 H42 M2 2 V42" strokeWidth="1.8" strokeLinecap="round" />
+          <path d="M5 5 C15 5 24 14 24 24 C24 34 33 40 42 40" strokeLinecap="round" />
+          <path d="M5 14 C12 14 14 7 7 5" strokeLinecap="round" />
+          <path d="M14 5 C14 12 7 14 5 7" strokeLinecap="round" />
+          <path d="M10 24 C14 20 20 20 24 24" strokeLinecap="round" />
+          <circle cx="24" cy="24" r="1.8" fill={accentColor} />
+          <circle cx="7" cy="7" r="2.2" fill={accentColor} />
+          <circle cx="34" cy="8" r="1.4" fill={accentColor} />
+          <circle cx="8" cy="34" r="1.4" fill={accentColor} />
         </svg>
-        <svg width={svgDim} height={svgDim} viewBox="0 0 40 40" fill="none" stroke={accentColor} strokeWidth="1.3" className="absolute bottom-1 right-1" style={{ transform: 'scale(-1, -1)' }}>
-          <path d="M2 2 H38 M2 2 V38" strokeWidth="2" />
-          <path d="M6 6 C16 6 22 12 22 22 C22 32 28 34 38 34" strokeLinecap="round" />
-          <path d="M6 14 C12 14 16 10 16 6 M14 6 C14 12 10 16 6 16" strokeLinecap="round" />
-          <circle cx="6" cy="6" r="2" fill={accentColor} />
-          <circle cx="18" cy="18" r="1.5" fill={accentColor} />
-          <circle cx="28" cy="8" r="1.2" fill={accentColor} />
-          <circle cx="8" cy="28" r="1.2" fill={accentColor} />
+        {/* Bottom Right */}
+        <svg width={svgDim} height={svgDim} viewBox="0 0 45 45" fill="none" stroke={accentColor} strokeWidth="1.2" className="absolute bottom-0.5 right-0.5" style={{ transform: 'scale(-1, -1)' }}>
+          <path d="M2 2 H42 M2 2 V42" strokeWidth="1.8" strokeLinecap="round" />
+          <path d="M5 5 C15 5 24 14 24 24 C24 34 33 40 42 40" strokeLinecap="round" />
+          <path d="M5 14 C12 14 14 7 7 5" strokeLinecap="round" />
+          <path d="M14 5 C14 12 7 14 5 7" strokeLinecap="round" />
+          <path d="M10 24 C14 20 20 20 24 24" strokeLinecap="round" />
+          <circle cx="24" cy="24" r="1.8" fill={accentColor} />
+          <circle cx="7" cy="7" r="2.2" fill={accentColor} />
+          <circle cx="34" cy="8" r="1.4" fill={accentColor} />
+          <circle cx="8" cy="34" r="1.4" fill={accentColor} />
         </svg>
       </div>
     );
   }
 
-  // 3. Art Deco hình học mạ vàng (Art Deco Geometric)
+  // 3. Art Deco hình học
   if (accent === 'artdeco') {
     const dim = 28;
     return (
@@ -418,47 +452,51 @@ export const StoryCornerAccents: React.FC<{
     );
   }
 
-  // 4. Băng dính Washi Tape Canva (Masking Tape)
+  // 4. Băng dính dán góc (Washi Tape) - Tràn ra ngoài nền sau, viền răng cưa chân thực
   if (accent === 'washi') {
     return (
-      <div className={`pointer-events-none absolute inset-0 overflow-hidden ${className}`}>
+      <div className={`pointer-events-none absolute inset-0 z-20 ${className}`}>
         {/* Top-Left Washi Tape */}
         <div
-          className="absolute -top-1.5 -left-3 w-10 h-3.5 opacity-85 shadow-sm transform -rotate-30 border border-white/20"
+          className="absolute -top-3 -left-5 w-14 h-5 opacity-90 shadow-md transform -rotate-28 border border-white/20"
           style={{
             backgroundColor: accentColor,
             backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 3px, rgba(255,255,255,0.2) 3px, rgba(255,255,255,0.2) 6px)',
+            clipPath: 'polygon(0% 15%, 4% 0%, 8% 18%, 12% 2%, 96% 0%, 100% 18%, 97% 85%, 100% 100%, 94% 88%, 90% 98%, 0% 100%)',
           }}
         />
         {/* Top-Right Washi Tape */}
         <div
-          className="absolute -top-1.5 -right-3 w-10 h-3.5 opacity-85 shadow-sm transform rotate-30 border border-white/20"
+          className="absolute -top-3 -right-5 w-14 h-5 opacity-90 shadow-md transform rotate-28 border border-white/20"
           style={{
             backgroundColor: accentColor,
             backgroundImage: 'repeating-linear-gradient(-45deg, transparent, transparent 3px, rgba(255,255,255,0.2) 3px, rgba(255,255,255,0.2) 6px)',
+            clipPath: 'polygon(0% 0%, 96% 2%, 100% 15%, 97% 85%, 100% 100%, 8% 100%, 4% 85%, 0% 100%, 3% 85%, 0% 15%)',
           }}
         />
         {/* Bottom-Left Washi Tape */}
         <div
-          className="absolute -bottom-1.5 -left-3 w-10 h-3.5 opacity-85 shadow-sm transform rotate-30 border border-white/20"
+          className="absolute -bottom-3 -left-5 w-14 h-5 opacity-90 shadow-md transform rotate-28 border border-white/20"
           style={{
             backgroundColor: accentColor,
             backgroundImage: 'repeating-linear-gradient(-45deg, transparent, transparent 3px, rgba(255,255,255,0.2) 3px, rgba(255,255,255,0.2) 6px)',
+            clipPath: 'polygon(0% 15%, 4% 0%, 8% 18%, 12% 2%, 96% 0%, 100% 18%, 97% 85%, 100% 100%, 94% 88%, 90% 98%, 0% 100%)',
           }}
         />
         {/* Bottom-Right Washi Tape */}
         <div
-          className="absolute -bottom-1.5 -right-3 w-10 h-3.5 opacity-85 shadow-sm transform -rotate-30 border border-white/20"
+          className="absolute -bottom-3 -right-5 w-14 h-5 opacity-90 shadow-md transform -rotate-28 border border-white/20"
           style={{
             backgroundColor: accentColor,
             backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 3px, rgba(255,255,255,0.2) 3px, rgba(255,255,255,0.2) 6px)',
+            clipPath: 'polygon(0% 0%, 96% 2%, 100% 15%, 97% 85%, 100% 100%, 8% 100%, 4% 85%, 0% 100%, 3% 85%, 0% 15%)',
           }}
         />
       </div>
     );
   }
 
-  // 5. Ngôi sao 4 cánh lấp lánh (Sparkle Stars)
+  // 5. Ngôi sao lấp lánh
   if (accent === 'sparkle') {
     const starDim = 20;
     const renderStar = (posClass: string) => (
@@ -477,7 +515,7 @@ export const StoryCornerAccents: React.FC<{
     );
   }
 
-  // 6. Trái tim ngọt ngào (Cute Hearts)
+  // 6. Trái tim ngọt ngào
   if (accent === 'heart') {
     const heartDim = 18;
     const renderHeart = (posClass: string, rot: string) => (
@@ -495,40 +533,48 @@ export const StoryCornerAccents: React.FC<{
     );
   }
 
-  // 7. Cành lá hoa cỏ (Botanical Flowers)
+  // 7. Cành lá hoa cỏ - Nhánh hoa tự nhiên, thanh nhã mềm mại
   if (accent === 'botanical') {
-    const dim = 26;
+    const dim = 32;
     return (
       <div className={`pointer-events-none absolute inset-0 overflow-hidden ${className}`}>
-        <svg width={dim} height={dim} viewBox="0 0 32 32" fill="none" stroke={accentColor} strokeWidth="1.4" className="absolute top-1 left-1">
-          <path d="M3 29 C6 18 16 10 29 3" strokeLinecap="round" />
-          <path d="M12 18 C8 15 8 10 14 12 C18 14 16 20 12 18 Z" fill={accentColor} opacity="0.4" />
-          <path d="M20 10 C18 6 22 4 25 7 C27 10 24 13 20 10 Z" fill={accentColor} opacity="0.4" />
-          <circle cx="27" cy="5" r="2.5" fill={accentColor} />
+        {/* Top Left */}
+        <svg width={dim} height={dim} viewBox="0 0 36 36" fill="none" stroke={accentColor} strokeWidth="1.3" className="absolute top-0.5 left-0.5">
+          <path d="M4 32 C8 20 18 12 32 4" strokeLinecap="round" />
+          <path d="M12 20 C8 17 8 11 15 13 C19 15 17 22 12 20 Z" fill={accentColor} opacity="0.45" />
+          <path d="M22 12 C19 7 24 5 28 8 C30 11 27 15 22 12 Z" fill={accentColor} opacity="0.45" />
+          <circle cx="30" cy="6" r="2.8" fill={accentColor} />
+          <circle cx="16" cy="18" r="1.5" fill={accentColor} />
         </svg>
-        <svg width={dim} height={dim} viewBox="0 0 32 32" fill="none" stroke={accentColor} strokeWidth="1.4" className="absolute top-1 right-1" style={{ transform: 'scaleX(-1)' }}>
-          <path d="M3 29 C6 18 16 10 29 3" strokeLinecap="round" />
-          <path d="M12 18 C8 15 8 10 14 12 C18 14 16 20 12 18 Z" fill={accentColor} opacity="0.4" />
-          <path d="M20 10 C18 6 22 4 25 7 C27 10 24 13 20 10 Z" fill={accentColor} opacity="0.4" />
-          <circle cx="27" cy="5" r="2.5" fill={accentColor} />
+        {/* Top Right */}
+        <svg width={dim} height={dim} viewBox="0 0 36 36" fill="none" stroke={accentColor} strokeWidth="1.3" className="absolute top-0.5 right-0.5" style={{ transform: 'scaleX(-1)' }}>
+          <path d="M4 32 C8 20 18 12 32 4" strokeLinecap="round" />
+          <path d="M12 20 C8 17 8 11 15 13 C19 15 17 22 12 20 Z" fill={accentColor} opacity="0.45" />
+          <path d="M22 12 C19 7 24 5 28 8 C30 11 27 15 22 12 Z" fill={accentColor} opacity="0.45" />
+          <circle cx="30" cy="6" r="2.8" fill={accentColor} />
+          <circle cx="16" cy="18" r="1.5" fill={accentColor} />
         </svg>
-        <svg width={dim} height={dim} viewBox="0 0 32 32" fill="none" stroke={accentColor} strokeWidth="1.4" className="absolute bottom-1 left-1" style={{ transform: 'scaleY(-1)' }}>
-          <path d="M3 29 C6 18 16 10 29 3" strokeLinecap="round" />
-          <path d="M12 18 C8 15 8 10 14 12 C18 14 16 20 12 18 Z" fill={accentColor} opacity="0.4" />
-          <path d="M20 10 C18 6 22 4 25 7 C27 10 24 13 20 10 Z" fill={accentColor} opacity="0.4" />
-          <circle cx="27" cy="5" r="2.5" fill={accentColor} />
+        {/* Bottom Left */}
+        <svg width={dim} height={dim} viewBox="0 0 36 36" fill="none" stroke={accentColor} strokeWidth="1.3" className="absolute bottom-0.5 left-0.5" style={{ transform: 'scaleY(-1)' }}>
+          <path d="M4 32 C8 20 18 12 32 4" strokeLinecap="round" />
+          <path d="M12 20 C8 17 8 11 15 13 C19 15 17 22 12 20 Z" fill={accentColor} opacity="0.45" />
+          <path d="M22 12 C19 7 24 5 28 8 C30 11 27 15 22 12 Z" fill={accentColor} opacity="0.45" />
+          <circle cx="30" cy="6" r="2.8" fill={accentColor} />
+          <circle cx="16" cy="18" r="1.5" fill={accentColor} />
         </svg>
-        <svg width={dim} height={dim} viewBox="0 0 32 32" fill="none" stroke={accentColor} strokeWidth="1.4" className="absolute bottom-1 right-1" style={{ transform: 'scale(-1, -1)' }}>
-          <path d="M3 29 C6 18 16 10 29 3" strokeLinecap="round" />
-          <path d="M12 18 C8 15 8 10 14 12 C18 14 16 20 12 18 Z" fill={accentColor} opacity="0.4" />
-          <path d="M20 10 C18 6 22 4 25 7 C27 10 24 13 20 10 Z" fill={accentColor} opacity="0.4" />
-          <circle cx="27" cy="5" r="2.5" fill={accentColor} />
+        {/* Bottom Right */}
+        <svg width={dim} height={dim} viewBox="0 0 36 36" fill="none" stroke={accentColor} strokeWidth="1.3" className="absolute bottom-0.5 right-0.5" style={{ transform: 'scale(-1, -1)' }}>
+          <path d="M4 32 C8 20 18 12 32 4" strokeLinecap="round" />
+          <path d="M12 20 C8 17 8 11 15 13 C19 15 17 22 12 20 Z" fill={accentColor} opacity="0.45" />
+          <path d="M22 12 C19 7 24 5 28 8 C30 11 27 15 22 12 Z" fill={accentColor} opacity="0.45" />
+          <circle cx="30" cy="6" r="2.8" fill={accentColor} />
+          <circle cx="16" cy="18" r="1.5" fill={accentColor} />
         </svg>
       </div>
     );
   }
 
-  // 8. Nơ thắt ruy băng (Ribbon Bows)
+  // 8. Nơ thắt ruy băng
   if (accent === 'bow') {
     const dim = 22;
     const renderBow = (posClass: string) => (
@@ -548,21 +594,27 @@ export const StoryCornerAccents: React.FC<{
     );
   }
 
-  // 9. Kẹp giấy kim loại (Paperclips)
+  // 9. Kẹp giấy kim loại (Paperclip) - Trồi ra hẳn ngoài mép khung đè lên nền sau
   if (accent === 'paperclip') {
     return (
-      <div className={`pointer-events-none absolute inset-0 overflow-hidden ${className}`}>
-        <svg width="18" height="24" viewBox="0 0 24 32" fill="none" stroke={accentColor} strokeWidth="2.2" strokeLinecap="round" className="absolute -top-1.5 left-4 rotate-12 drop-shadow-sm">
-          <path d="M8 8 V22 C8 26 16 26 16 22 V6 C16 2 4 2 4 8 V24 C4 30 20 30 20 22 V10" />
-        </svg>
-        <svg width="18" height="24" viewBox="0 0 24 32" fill="none" stroke={accentColor} strokeWidth="2.2" strokeLinecap="round" className="absolute -top-1.5 right-4 -rotate-12 drop-shadow-sm">
-          <path d="M8 8 V22 C8 26 16 26 16 22 V6 C16 2 4 2 4 8 V24 C4 30 20 30 20 22 V10" />
-        </svg>
+      <div className={`pointer-events-none absolute inset-0 z-20 ${className}`}>
+        {/* Left clip */}
+        <div className="absolute -top-4 left-6 rotate-12 filter drop-shadow-md">
+          <svg width="22" height="34" viewBox="0 0 24 36" fill="none" stroke={accentColor} strokeWidth="2.5" strokeLinecap="round">
+            <path d="M8 10 V24 C8 28 16 28 16 24 V6 C16 1.5 4 1.5 4 8 V26 C4 33 20 33 20 24 V12" />
+          </svg>
+        </div>
+        {/* Right clip */}
+        <div className="absolute -top-4 right-6 -rotate-12 filter drop-shadow-md">
+          <svg width="22" height="34" viewBox="0 0 24 36" fill="none" stroke={accentColor} strokeWidth="2.5" strokeLinecap="round">
+            <path d="M8 10 V24 C8 28 16 28 16 24 V6 C16 1.5 4 1.5 4 8 V26 C4 33 20 33 20 24 V12" />
+          </svg>
+        </div>
       </div>
     );
   }
 
-  // 10. Đinh tán kim loại (Rivets)
+  // 10. Đinh tán kim loại
   if (accent === 'rivets') {
     return (
       <div className={`pointer-events-none absolute inset-0 overflow-hidden ${className}`}>
@@ -582,7 +634,7 @@ export const StoryCornerAccents: React.FC<{
     );
   }
 
-  // 11. Chấm định vị (Precision Dots)
+  // 11. Chấm định vị
   if (accent === 'dots') {
     return (
       <div className={`pointer-events-none absolute inset-0 overflow-hidden ${className}`}>
@@ -594,7 +646,7 @@ export const StoryCornerAccents: React.FC<{
     );
   }
 
-  // 12. Dấu chữ thập tâm điểm (Crosshairs)
+  // 12. Dấu chữ thập tâm điểm
   if (accent === 'crosshairs') {
     return (
       <div className={`pointer-events-none absolute inset-0 overflow-hidden ${className}`}>

@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { Story, Chapter, Comment, UserProfile } from '../types';
-import { ArrowLeft, Bookmark, BookOpen, Send, MessageSquare, Lock, Unlock, CheckCircle2, User, RotateCcw, BookmarkCheck, Share2, Check } from 'lucide-react';
+import { ArrowLeft, Bookmark, BookOpen, Send, MessageSquare, Lock, Unlock, Key, CheckCircle2, User, RotateCcw, BookmarkCheck, Share2, Check } from 'lucide-react';
 import { getReadingProgress } from '../lib/readingProgress';
+import { getUserUnlockedPasswordChaptersLocal } from '../lib/storage';
 import { ReadingEffects } from './ReadingEffects';
 import {
   getStoryBorderStyle,
@@ -403,6 +404,10 @@ export const StoryDetail: React.FC<StoryDetailProps> = ({
     borderRadius: story.borderRadius || 'none',
     borderCornerAccent: story.borderCornerAccent || 'none',
     borderGlow: story.borderGlow || 'none',
+    customCardBgColor: story.customCardBgColor,
+    customBorderGradientColor2: story.customBorderGradientColor2,
+    customBorderGlowColor1: story.customBorderGlowColor1,
+    customBorderGlowColor2: story.customBorderGlowColor2,
   };
 
   const customStyles = {
@@ -462,7 +467,7 @@ export const StoryDetail: React.FC<StoryDetailProps> = ({
 
       {/* Main Post Header */}
       <article 
-        className={`${isCustomTheme ? '' : `${tone.cardBg}`} p-6 space-y-6 relative overflow-hidden transition-all duration-200`}
+        className={`${isCustomTheme ? '' : `${tone.cardBg}`} p-6 space-y-6 relative transition-all duration-200`}
         style={{
           ...(isCustomTheme ? { background: story.customCardBgColor } : {}),
           ...getStoryBorderStyle(storyBorderObj, activeBorderColor),
@@ -767,6 +772,11 @@ export const StoryDetail: React.FC<StoryDetailProps> = ({
                   const isTransitionToNoVolume = !chap.volumeTitle && !!(prevChap && prevChap.volumeTitle);
 
                   const isUnlocked = !!(userProfile?.unlockedChapters && userProfile.unlockedChapters.includes(chap.id));
+                  const unlockedPassLocal = getUserUnlockedPasswordChaptersLocal(currentUser?.uid);
+                  const isPassUnlocked = !!(
+                    unlockedPassLocal.includes(chap.id) ||
+                    (userProfile?.unlockedPasswordChapters && userProfile.unlockedPasswordChapters.includes(chap.id))
+                  );
                   const isAuthorOrOwner = 
                     (currentUser?.uid && story.authorUid && currentUser.uid === story.authorUid) ||
                     (currentUser?.email && story.authorEmail && currentUser.email.toLowerCase() === story.authorEmail.toLowerCase()) ||
@@ -871,6 +881,28 @@ export const StoryDetail: React.FC<StoryDetailProps> = ({
                                   style={isCustomTheme ? { color: story.customTextColor } : {}}
                                 />
                                 <span>{chap.unlockPrice || 1} Chucu</span>
+                              </span>
+                            )
+                          ) : null}
+                          {chap.isPasswordProtected ? (
+                            (isPassUnlocked && !isAuthorOrOwner) ? (
+                              <span 
+                                className={`inline-flex items-center gap-1.5 px-2 py-0.5 border text-[11px] font-semibold ${storyBtnFont} ${isCustomTheme ? '' : `${tone.badgeFree} ${tone.badgeFreeBorder} ${tone.badgeFreeText}`}`}
+                                style={isCustomTheme ? { backgroundColor: story.customCardBgColor, borderColor: story.customBorderColor, color: story.customTextColor } : {}}
+                              >
+                                <CheckCircle2 className="w-3.5 h-3.5 opacity-80" />
+                                <span>Đã mở Pass</span>
+                              </span>
+                            ) : (
+                              <span 
+                                className={`inline-flex items-center gap-1.5 px-2 py-0.5 border text-[11px] font-semibold shadow-xs ${storyBtnFont} ${isCustomTheme ? '' : `${tone.badgeLocked} ${tone.badgeLockedBorder} ${tone.badgeLockedText}`}`}
+                                style={isCustomTheme ? { backgroundColor: story.customBtnBgColor || story.customCardBgColor, borderColor: story.customBorderColor, color: story.customTextColor } : {}}
+                              >
+                                <Key 
+                                  className={`w-3.5 h-3.5 ${isCustomTheme ? '' : tone.badgeLockedIcon}`} 
+                                  style={isCustomTheme ? { color: story.customTextColor } : {}}
+                                />
+                                <span>Có Pass</span>
                               </span>
                             )
                           ) : null}

@@ -19,7 +19,7 @@ export const StoryCard: React.FC<StoryCardProps> = ({
   return (
     <article
       onClick={() => onSelectStory(story)}
-      className="bg-[#11090c] p-2.5 transition-all duration-200 cursor-pointer flex flex-col group font-mono-code relative overflow-hidden hover:scale-[1.01]"
+      className="bg-[#11090c] p-2.5 transition-all duration-200 cursor-pointer flex flex-col group font-mono-code relative hover:scale-[1.01]"
       style={customCardStyle}
     >
       {/* Corner Accents nếu có */}

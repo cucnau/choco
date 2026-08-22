@@ -9,6 +9,9 @@ export interface Chapter {
   updatedAt: string;
   isLocked?: boolean; // Chương có bị khóa Chucu không
   unlockPrice?: number; // Số Chucu cần để mở khóa (mặc định min 1 nếu khóa, ví dụ 1, 2, 5...)
+  isPasswordProtected?: boolean; // Chương có đặt mật khẩu (Pass) không
+  password?: string; // Mật khẩu đọc chương
+  passwordHint?: string; // Gợi ý câu hỏi / pass
   volumeTitle?: string; // Tên phần / quyển / ngắt phần (ví dụ: "Quyển 1: Đêm đông sống lại")
 }
 
@@ -74,11 +77,14 @@ export interface Story {
   customBtnSecondaryBgColor?: string; // Màu nền nút phụ / ô editor / danh sách chương (Màu đơn hoặc Gradient CSS)
   tags?: string[]; // Danh sách các tag thể loại của truyện
   readingEffect?: 'none' | 'rain' | 'snow' | 'glitch' | 'star' | 'leaf' | 'cherry_blossom' | 'firefly' | 'soap_bubble' | 'ginkgo'; // Hiệu ứng đọc truyện
-  borderStyle?: 'solid' | 'double' | 'dashed' | 'dotted' | 'dash-dot' | 'sketch' | 'stitched' | 'gradient' | 'stamp' | 'film' | 'groove' | 'ridge' | 'offset' | 'none'; // Kiểu nét đường viền phong phú Canva
+  borderStyle?: 'solid' | 'double' | 'dashed' | 'dotted' | 'dash-dot' | 'sketch' | 'stitched' | 'gradient' | 'stamp' | 'film' | 'groove' | 'ridge' | 'offset' | 'none'; // Kiểu nét đường viền
   borderWidth?: 'thin' | 'medium' | 'thick' | 'heavy' | 'bold' | 'frame'; // Độ dày đường viền
-  borderRadius?: 'none' | 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'pill' | 'leaf' | 'chamfer' | 'ticket' | 'petal' | 'tab'; // Kiểu bo góc viền đa dạng
-  borderCornerAccent?: 'none' | 'brackets' | 'vintage' | 'rivets' | 'dots' | 'crosshairs' | 'washi' | 'sparkle' | 'heart' | 'botanical' | 'artdeco' | 'bow' | 'paperclip'; // Trang trí góc viền nghệ thuật Canva
+  borderRadius?: 'none' | 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'leaf' | 'chamfer' | 'ticket' | 'petal' | 'tab'; // Kiểu bo góc viền đa dạng
+  borderCornerAccent?: 'none' | 'brackets' | 'vintage' | 'rivets' | 'dots' | 'crosshairs' | 'washi' | 'sparkle' | 'heart' | 'botanical' | 'artdeco' | 'bow' | 'paperclip'; // Trang trí góc viền nghệ thuật
   borderGlow?: 'none' | 'soft' | 'neon' | 'shadow' | 'soft-depth' | 'gradient-aura' | 'isometric'; // Hiệu ứng phát sáng / đổ bóng viền
+  customBorderGradientColor2?: string; // Màu thứ 2 cho Viền Gradient đa sắc
+  customBorderGlowColor1?: string; // Màu thứ 1 cho Hào quang Gradient
+  customBorderGlowColor2?: string; // Màu thứ 2 cho Hào quang Gradient
   
   // Tách biệt theme chương và truyện riêng biệt
   useSeparateChapterTheme?: boolean;
@@ -93,9 +99,12 @@ export interface Story {
   chapterCustomBtnSecondaryBgColor?: string;
   chapterBorderStyle?: 'solid' | 'double' | 'dashed' | 'dotted' | 'dash-dot' | 'sketch' | 'stitched' | 'gradient' | 'stamp' | 'film' | 'groove' | 'ridge' | 'offset' | 'none';
   chapterBorderWidth?: 'thin' | 'medium' | 'thick' | 'heavy' | 'bold' | 'frame';
-  chapterBorderRadius?: 'none' | 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'pill' | 'leaf' | 'chamfer' | 'ticket' | 'petal' | 'tab';
+  chapterBorderRadius?: 'none' | 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'leaf' | 'chamfer' | 'ticket' | 'petal' | 'tab';
   chapterBorderCornerAccent?: 'none' | 'brackets' | 'vintage' | 'rivets' | 'dots' | 'crosshairs' | 'washi' | 'sparkle' | 'heart' | 'botanical' | 'artdeco' | 'bow' | 'paperclip';
   chapterBorderGlow?: 'none' | 'soft' | 'neon' | 'shadow' | 'soft-depth' | 'gradient-aura' | 'isometric';
+  chapterCustomBorderGradientColor2?: string;
+  chapterCustomBorderGlowColor1?: string;
+  chapterCustomBorderGlowColor2?: string;
   chapterReadingEffect?: 'none' | 'rain' | 'snow' | 'glitch' | 'star' | 'leaf' | 'cherry_blossom' | 'firefly' | 'soap_bubble' | 'ginkgo';
 }
 
@@ -146,6 +155,7 @@ export interface UserProfile {
   lastCheckInDate?: string; // YYYY-MM-DD của lần điểm danh gần nhất
   totalCheckIns?: number; // Tổng số ngày đã điểm danh
   unlockedChapters?: string[]; // Danh sách các chapterId đã mở khóa bằng Chucu
+  unlockedPasswordChapters?: string[]; // Danh sách các chapterId đã mở khóa bằng Pass
   createdAt?: string;
   updatedAt?: string;
 }

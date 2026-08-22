@@ -65,4 +65,3 @@ export const INITIAL_POSTS: InitialPost[] = [];
 
 // Dữ liệu cuộc trò chuyện / nhóm chat mặc định mã hoá cứng trong codebase
 export const INITIAL_CONVERSATIONS: InitialConversation[] = [];
-

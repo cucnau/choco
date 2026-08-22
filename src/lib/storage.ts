@@ -1375,6 +1375,71 @@ export async function unlockChapterWithChucu(
   }
 }
 
+// ------------------- TÍNH NĂNG MỞ KHÓA CHƯƠNG BẰNG MẬT KHẨU (PASSWORD) -------------------
+
+const UNLOCKED_PASS_STORAGE_KEY_PREFIX = 'wp_unlocked_pass_chapters_';
+
+export function getUserUnlockedPasswordChaptersLocal(uid?: string): string[] {
+  try {
+    const key = `${UNLOCKED_PASS_STORAGE_KEY_PREFIX}${uid || 'guest'}`;
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+export async function saveUserUnlockedPasswordChapter(chapterId: string, uid?: string): Promise<void> {
+  const current = getUserUnlockedPasswordChaptersLocal(uid);
+  if (!current.includes(chapterId)) {
+    const updated = [...current, chapterId];
+    const key = `${UNLOCKED_PASS_STORAGE_KEY_PREFIX}${uid || 'guest'}`;
+    safeLocalStorageSet(key, JSON.stringify(updated));
+
+    if (uid) {
+      try {
+        const userDocRef = doc(db, 'users', uid);
+        await setDoc(
+          userDocRef,
+          cleanForFirestore({
+            unlockedPasswordChapters: updated,
+            updatedAt: new Date().toISOString(),
+          }),
+          { merge: true }
+        );
+      } catch (err) {
+        console.warn('Lỗi khi lưu unlockedPasswordChapters lên Firestore:', err);
+      }
+    }
+  }
+}
+
+export async function unlockChapterWithPassword(
+  chapterId: string,
+  inputPass: string,
+  correctPass?: string,
+  uid?: string
+): Promise<{ success: boolean; message: string }> {
+  if (!correctPass || !correctPass.trim()) {
+    // Nếu chương không có pass hoặc pass trống
+    await saveUserUnlockedPasswordChapter(chapterId, uid);
+    return { success: true, message: 'Mở khóa chương thành công!' };
+  }
+
+  const cleanInput = inputPass.trim();
+  const cleanCorrect = correctPass.trim();
+
+  if (cleanInput === cleanCorrect) {
+    await saveUserUnlockedPasswordChapter(chapterId, uid);
+    return { success: true, message: 'Mật khẩu chính xác! Đã mở khóa chương.' };
+  } else {
+    return {
+      success: false,
+      message: 'Mật khẩu không chính xác. Vui lòng kiểm tra lại gợi ý hoặc nhập lại!',
+    };
+  }
+}
+
 // ------------------- GÁN / NHẬN QUYỀN TRUYỆN CŨ (CLAIM STORY) -------------------
 export async function claimStoryOwnership(
   storyId: string,

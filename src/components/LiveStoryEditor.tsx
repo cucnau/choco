@@ -514,6 +514,9 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
   const [borderRadius, setBorderRadius] = useState<NonNullable<Story['borderRadius']>>(initialStory?.borderRadius || 'none');
   const [borderCornerAccent, setBorderCornerAccent] = useState<NonNullable<Story['borderCornerAccent']>>(initialStory?.borderCornerAccent || 'none');
   const [borderGlow, setBorderGlow] = useState<NonNullable<Story['borderGlow']>>(initialStory?.borderGlow || 'none');
+  const [customBorderGradientColor2, setCustomBorderGradientColor2] = useState<string>(initialStory?.customBorderGradientColor2 || '#ff6b9d');
+  const [customBorderGlowColor1, setCustomBorderGlowColor1] = useState<string>(initialStory?.customBorderGlowColor1 || '#ff6b9d');
+  const [customBorderGlowColor2, setCustomBorderGlowColor2] = useState<string>(initialStory?.customBorderGlowColor2 || '#38bdf8');
 
   // Reading Effect
   const [readingEffect, setReadingEffect] = useState<'none' | 'rain' | 'snow' | 'glitch' | 'star' | 'leaf' | 'cherry_blossom' | 'firefly' | 'soap_bubble' | 'ginkgo'>(
@@ -541,6 +544,9 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
   const [chapterBorderRadius, setChapterBorderRadius] = useState<NonNullable<Story['borderRadius']>>(initialStory?.chapterBorderRadius || 'none');
   const [chapterBorderCornerAccent, setChapterBorderCornerAccent] = useState<NonNullable<Story['borderCornerAccent']>>(initialStory?.chapterBorderCornerAccent || 'none');
   const [chapterBorderGlow, setChapterBorderGlow] = useState<NonNullable<Story['borderGlow']>>(initialStory?.chapterBorderGlow || 'none');
+  const [chapterCustomBorderGradientColor2, setChapterCustomBorderGradientColor2] = useState<string>(initialStory?.chapterCustomBorderGradientColor2 || '#ff6b9d');
+  const [chapterCustomBorderGlowColor1, setChapterCustomBorderGlowColor1] = useState<string>(initialStory?.chapterCustomBorderGlowColor1 || '#ff6b9d');
+  const [chapterCustomBorderGlowColor2, setChapterCustomBorderGlowColor2] = useState<string>(initialStory?.chapterCustomBorderGlowColor2 || '#38bdf8');
   const [chapterReadingEffect, setChapterReadingEffect] = useState<'none' | 'rain' | 'snow' | 'glitch' | 'star' | 'leaf' | 'cherry_blossom' | 'firefly' | 'soap_bubble' | 'ginkgo'>(
     (initialStory?.chapterReadingEffect as any) || 'none'
   );
@@ -794,6 +800,10 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
     borderCornerAccent: activeBCorner,
     borderGlow: activeBGlow,
     customBorderColor: currentBorder,
+    customCardBgColor: currentCardBg,
+    customBorderGradientColor2: isViewingChapterTheme ? chapterCustomBorderGradientColor2 : customBorderGradientColor2,
+    customBorderGlowColor1: isViewingChapterTheme ? chapterCustomBorderGlowColor1 : customBorderGlowColor1,
+    customBorderGlowColor2: isViewingChapterTheme ? chapterCustomBorderGlowColor2 : customBorderGlowColor2,
   };
 
   // Getters/setters for Customizer Drawer controls (handles automatic target switching)
@@ -805,6 +815,22 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
   const activeBorderColorVal = isViewingChapterTheme ? chapterCustomBorderColor : customBorderColor;
   const activeBtnBgColorVal = isViewingChapterTheme ? chapterCustomBtnBgColor : customBtnBgColor;
   const activeBtnSecondaryBgColorVal = isViewingChapterTheme ? chapterCustomBtnSecondaryBgColor : customBtnSecondaryBgColor;
+  const activeBorderGradientColor2Val = isViewingChapterTheme ? chapterCustomBorderGradientColor2 : customBorderGradientColor2;
+  const activeBorderGlowColor1Val = isViewingChapterTheme ? chapterCustomBorderGlowColor1 : customBorderGlowColor1;
+  const activeBorderGlowColor2Val = isViewingChapterTheme ? chapterCustomBorderGlowColor2 : customBorderGlowColor2;
+
+  const handleSetBorderGradientColor2 = (val: string) => {
+    if (isViewingChapterTheme) setChapterCustomBorderGradientColor2(val);
+    else setCustomBorderGradientColor2(val);
+  };
+  const handleSetBorderGlowColor1 = (val: string) => {
+    if (isViewingChapterTheme) setChapterCustomBorderGlowColor1(val);
+    else setCustomBorderGlowColor1(val);
+  };
+  const handleSetBorderGlowColor2 = (val: string) => {
+    if (isViewingChapterTheme) setChapterCustomBorderGlowColor2(val);
+    else setCustomBorderGlowColor2(val);
+  };
 
   const handleSetThemeTone = (val: string) => {
     if (isViewingChapterTheme) {
@@ -1022,6 +1048,9 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
       borderRadius,
       borderCornerAccent,
       borderGlow,
+      customBorderGradientColor2,
+      customBorderGlowColor1,
+      customBorderGlowColor2,
       readingEffect,
 
       // Thông số theme & hiệu ứng chương riêng biệt
@@ -1040,6 +1069,9 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
       chapterBorderRadius,
       chapterBorderCornerAccent,
       chapterBorderGlow,
+      chapterCustomBorderGradientColor2,
+      chapterCustomBorderGlowColor1,
+      chapterCustomBorderGlowColor2,
       chapterReadingEffect,
     });
   };
@@ -1577,14 +1609,14 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                 </div>
               )}
 
-              {/* 1. Kiểu nét viền (Stroke Style) */}
+              {/* 1. Kiểu nét viền */}
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
                   <label className="block text-[11px] font-bold" style={{ color: currentText }}>
-                    1. Kiểu nét viền (Stroke Style):
+                    1. Kiểu nét viền:
                   </label>
                   <span className="text-[10px] opacity-75 font-mono" style={{ color: currentTextMuted }}>
-                    {BORDER_STYLE_OPTIONS.find(o => o.value === activeBStyle)?.label.split('(')[0] || activeBStyle}
+                    {BORDER_STYLE_OPTIONS.find(o => o.value === activeBStyle)?.label || activeBStyle}
                   </span>
                 </div>
                 <div className="grid grid-cols-2 gap-1.5 max-h-[160px] overflow-y-auto pr-1">
@@ -1612,13 +1644,31 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                     );
                   })}
                 </div>
+
+                {/* Tùy chỉnh màu thứ 2 khi chọn Viền Gradient */}
+                {activeBStyle === 'gradient' && (
+                  <div className="p-2.5 rounded border mt-2 space-y-2" style={{ background: currentBtnSecondaryBg, borderColor: currentBorder }}>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-bold" style={{ color: currentText }}>Màu viền thứ 2 (dải chuyển màu):</span>
+                      <div className="flex items-center gap-1.5">
+                        <input
+                          type="color"
+                          value={activeBorderGradientColor2Val}
+                          onChange={(e) => handleSetBorderGradientColor2(e.target.value)}
+                          className="w-6 h-6 rounded cursor-pointer border border-white/20 p-0 bg-transparent"
+                        />
+                        <span className="font-mono text-[10px] uppercase opacity-80">{activeBorderGradientColor2Val}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
-              {/* 2. Độ dày nét viền (Width) */}
+              {/* 2. Độ dày nét viền */}
               <div className="space-y-1.5 pt-2 border-t" style={{ borderColor: currentBorder }}>
                 <div className="flex items-center justify-between">
                   <label className="block text-[11px] font-bold" style={{ color: currentText }}>
-                    2. Độ dày nét viền (Width):
+                    2. Độ dày nét viền:
                   </label>
                   <span className="text-[10px] opacity-75 font-mono" style={{ color: currentTextMuted }}>
                     {BORDER_WIDTH_OPTIONS.find(o => o.value === activeBWidth)?.label}
@@ -1641,22 +1691,21 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                           color: isSelected ? currentBtnText : currentText,
                         }}
                       >
-                        <div className="text-[10px] font-bold">{opt.label.split('(')[0]}</div>
-                        <div className="text-[9px] opacity-70 font-mono">{opt.label.match(/\((.*?)\)/)?.[1]}</div>
+                        <div className="text-[10px] font-bold">{opt.label}</div>
                       </button>
                     );
                   })}
                 </div>
               </div>
 
-              {/* 3. Kiểu bo góc & Hình dáng (Radius & Shape) */}
+              {/* 3. Kiểu bo góc & Hình dáng */}
               <div className="space-y-1.5 pt-2 border-t" style={{ borderColor: currentBorder }}>
                 <div className="flex items-center justify-between">
                   <label className="block text-[11px] font-bold" style={{ color: currentText }}>
-                    3. Kiểu bo góc & Hình dáng (Radius):
+                    3. Kiểu bo góc:
                   </label>
                   <span className="text-[10px] opacity-75 font-mono" style={{ color: currentTextMuted }}>
-                    {BORDER_RADIUS_OPTIONS.find(o => o.value === activeBRadius)?.label.split('(')[0]}
+                    {BORDER_RADIUS_OPTIONS.find(o => o.value === activeBRadius)?.label}
                   </span>
                 </div>
                 <div className="grid grid-cols-2 gap-1.5 max-h-[150px] overflow-y-auto pr-1">
@@ -1686,11 +1735,11 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                 </div>
               </div>
 
-              {/* 4. Họa tiết 4 góc Canva (Corner Accents) */}
+              {/* 4. Họa tiết 4 góc nghệ thuật */}
               <div className="space-y-1.5 pt-2 border-t" style={{ borderColor: currentBorder }}>
                 <div className="flex items-center justify-between">
                   <label className="block text-[11px] font-bold" style={{ color: currentText }}>
-                    4. Họa tiết 4 góc nghệ thuật Canva:
+                    4. Họa tiết 4 góc nghệ thuật:
                   </label>
                   <span className="text-[10px] opacity-75 font-mono" style={{ color: currentTextMuted }}>
                     {BORDER_CORNER_ACCENT_OPTIONS.find(o => o.value === activeBCorner)?.label}
@@ -1723,14 +1772,14 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                 </div>
               </div>
 
-              {/* 5. Hiệu ứng viền & Đổ bóng (Glow / Shadow) */}
+              {/* 5. Hiệu ứng viền & Đổ bóng */}
               <div className="space-y-1.5 pt-2 border-t" style={{ borderColor: currentBorder }}>
                 <div className="flex items-center justify-between">
                   <label className="block text-[11px] font-bold" style={{ color: currentText }}>
-                    5. Hiệu ứng phát sáng & Đổ bóng (Glow / Shadow):
+                    5. Hiệu ứng phát sáng & Đổ bóng:
                   </label>
                   <span className="text-[10px] opacity-75 font-mono" style={{ color: currentTextMuted }}>
-                    {BORDER_GLOW_OPTIONS.find(o => o.value === activeBGlow)?.label.split('(')[0]}
+                    {BORDER_GLOW_OPTIONS.find(o => o.value === activeBGlow)?.label}
                   </span>
                 </div>
                 <div className="grid grid-cols-2 gap-1.5 max-h-[140px] overflow-y-auto pr-1">
@@ -1758,6 +1807,33 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                     );
                   })}
                 </div>
+
+                {/* Tùy chỉnh màu hào quang khi chọn Hào quang chuyển sắc */}
+                {activeBGlow === 'gradient-aura' && (
+                  <div className="p-2.5 rounded border mt-2 space-y-2" style={{ background: currentBtnSecondaryBg, borderColor: currentBorder }}>
+                    <div className="text-[11px] font-bold" style={{ color: currentText }}>Tùy chọn màu hào quang:</div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="flex items-center justify-between p-1.5 rounded bg-black/20">
+                        <span className="text-[10px]" style={{ color: currentTextMuted }}>Màu 1:</span>
+                        <input
+                          type="color"
+                          value={activeBorderGlowColor1Val}
+                          onChange={(e) => handleSetBorderGlowColor1(e.target.value)}
+                          className="w-5 h-5 rounded cursor-pointer border border-white/20 p-0 bg-transparent"
+                        />
+                      </div>
+                      <div className="flex items-center justify-between p-1.5 rounded bg-black/20">
+                        <span className="text-[10px]" style={{ color: currentTextMuted }}>Màu 2:</span>
+                        <input
+                          type="color"
+                          value={activeBorderGlowColor2Val}
+                          onChange={(e) => handleSetBorderGlowColor2(e.target.value)}
+                          className="w-5 h-5 rounded cursor-pointer border border-white/20 p-0 bg-transparent"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -2048,14 +2124,14 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
         {/* LIVE ARTICLE CONTAINER OR CHAPTER PREVIEW */}
         {previewMode === 'chapter' ? (
           <article
-            className="p-6 space-y-6 relative overflow-hidden transition-all duration-200 shadow-xl"
+            className="p-6 space-y-6 relative transition-all duration-200 shadow-xl"
             style={{
               background: currentCardBg,
               ...getStoryBorderStyle(currentBorderObj, currentBorder),
             }}
           >
             {/* Vintage/Brackets Corner Decorators */}
-            <StoryCornerAccents accent={borderCornerAccent} color={currentBorder} />
+            <StoryCornerAccents accent={activeBCorner} color={currentBorder} />
 
             {/* Header: Chapter title, word count, date */}
             <div className="text-center space-y-2 pb-5 border-b border-dashed" style={{ borderColor: currentBorder }}>
@@ -2144,14 +2220,14 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
           </article>
         ) : (
           <article
-            className="p-6 space-y-6 relative overflow-hidden transition-all duration-200"
+            className="p-6 space-y-6 relative transition-all duration-200"
             style={{
               background: currentCardBg,
               ...getStoryBorderStyle(currentBorderObj, currentBorder),
             }}
           >
             {/* Corner Accents */}
-            <StoryCornerAccents accent={borderCornerAccent} color={currentBorder} />
+            <StoryCornerAccents accent={activeBCorner} color={currentBorder} />
 
           <div className="grid grid-cols-1 sm:grid-cols-[224px_1fr] gap-6 items-start">
             {/* LEFT COLUMN: COVER & EDITOR INFO & TAGS */}
