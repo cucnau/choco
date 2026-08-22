@@ -12,7 +12,7 @@ import {
   User,
   getAdditionalUserInfo
 } from 'firebase/auth';
-import { getFirestore, doc, getDocFromServer } from 'firebase/firestore';
+import { initializeFirestore, doc, getDocFromServer } from 'firebase/firestore';
 import firebaseConfig from '../../firebase-applet-config.json';
 
 const app = initializeApp(firebaseConfig);
@@ -22,7 +22,16 @@ export const auth = getAuth(app);
 setPersistence(auth, browserLocalPersistence).catch((err) => {
   console.error('Không thể cấu hình LocalStorage cho Auth:', err);
 });
-export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId || '(default)');
+
+// Khởi tạo Firestore với chế độ tự động Long-Polling để khắc phục lỗi chặn WebChannel/gRPC stream trong iframe và môi trường sandbox
+export const db = initializeFirestore(
+  app,
+  {
+    experimentalAutoDetectLongPolling: true,
+    ignoreUndefinedProperties: true,
+  },
+  firebaseConfig.firestoreDatabaseId || '(default)'
+);
 
 // Google Auth Provider
 const googleProvider = new GoogleAuthProvider();
