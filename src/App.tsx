@@ -348,11 +348,28 @@ export default function App() {
     };
   }, []);
 
-  // Hàm điều hướng URL sạch (Path routing, hoàn toàn không có dấu #)
+  // Lấy đường dẫn gốc (base path) nếu chạy trên GitHub Pages subfolder (ví dụ: /choco)
+  const getBasePath = () => {
+    if (typeof window === 'undefined') return '';
+    if (window.location.hostname.includes('github.io')) {
+      const parts = window.location.pathname.split('/').filter(Boolean);
+      const appRoutes = ['home', 'browse', 'library', 'studio', 'games', 'truyen', 'story', 'tu-sach', 'xuong-viet', 'tro-choi'];
+      if (parts.length > 0 && !appRoutes.includes(parts[0])) {
+        return '/' + parts[0];
+      }
+    }
+    return '';
+  };
+
+  // Hàm điều hướng URL sạch (Path routing, tương thích cả domain gốc lẫn GitHub Pages subfolder)
   const navigateTo = (path: string) => {
-    const cleanPath = path.startsWith('/') ? path : `/${path}`;
-    if (window.location.pathname !== cleanPath || window.location.hash) {
-      window.history.pushState(null, '', cleanPath);
+    const basePath = getBasePath();
+    let target = path.startsWith('/') ? path : `/${path}`;
+    if (basePath && !target.startsWith(basePath)) {
+      target = `${basePath}${target}`;
+    }
+    if (window.location.pathname !== target || window.location.hash) {
+      window.history.pushState(null, '', target);
       // Kích hoạt sự kiện popstate để cập nhật state ngay lập tức
       window.dispatchEvent(new PopStateEvent('popstate'));
     }
@@ -361,6 +378,15 @@ export default function App() {
   // Điều hướng bằng URL sạch chuẩn HTML5 History (ví dụ: /home, /studio, /truyen/dem-dong-song-lai/chuong-1)
   useEffect(() => {
     const handleLocationChange = () => {
+      const basePath = getBasePath();
+
+      // Xử lý chuyển hướng từ 404.html của GitHub Pages (ví dụ: ?/studio hoặc ?%2Fstudio)
+      if (window.location.search && (window.location.search.startsWith('?/') || window.location.search.startsWith('?%2F'))) {
+        const rawSearch = decodeURIComponent(window.location.search.slice(1));
+        const newCleanPath = (basePath ? `${basePath}` : '') + (rawSearch.startsWith('/') ? rawSearch : `/${rawSearch}`);
+        window.history.replaceState(null, '', newCleanPath);
+      }
+
       let rawHash = window.location.hash;
 
       // Nếu URL cũ đang có dấu # (do bookmark hoặc session cũ), tự động chuyển đổi sang URL sạch không có #
@@ -372,7 +398,7 @@ export default function App() {
         else if (cleanFromHash === 'tro-choi') cleanFromHash = 'games';
         else if (cleanFromHash.startsWith('tro-choi/')) cleanFromHash = cleanFromHash.replace('tro-choi/', 'games/');
 
-        const newCleanPath = cleanFromHash ? `/${cleanFromHash}` : '/home';
+        const newCleanPath = (basePath ? `${basePath}` : '') + (cleanFromHash ? `/${cleanFromHash}` : '/home');
         window.history.replaceState(null, '', newCleanPath);
       }
 
@@ -381,18 +407,22 @@ export default function App() {
         const params = new URLSearchParams(window.location.search);
         if (params.get('chapter')) {
           const chapId = params.get('chapter');
-          window.history.replaceState(null, '', `/truyen/chapter/${chapId}`);
+          window.history.replaceState(null, '', (basePath ? `${basePath}` : '') + `/truyen/chapter/${chapId}`);
         } else if (params.get('story')) {
           const storyId = params.get('story');
-          window.history.replaceState(null, '', `/truyen/${storyId}`);
+          window.history.replaceState(null, '', (basePath ? `${basePath}` : '') + `/truyen/${storyId}`);
         } else if (params.get('tab')) {
           const tabName = params.get('tab');
-          window.history.replaceState(null, '', `/${tabName}`);
+          window.history.replaceState(null, '', (basePath ? `${basePath}` : '') + `/${tabName}`);
         }
       }
 
-      // Đọc đường dẫn từ pathname (loại bỏ dấu / ở đầu và cuối)
-      let cleanRoute = window.location.pathname.replace(/^\/+|\/+$/g, '');
+      // Đọc đường dẫn từ pathname (loại bỏ basePath nếu có và dấu / ở đầu/cuối)
+      let currentPath = window.location.pathname;
+      if (basePath && currentPath.startsWith(basePath)) {
+        currentPath = currentPath.slice(basePath.length);
+      }
+      let cleanRoute = currentPath.replace(/^\/+|\/+$/g, '');
 
       try {
         cleanRoute = decodeURIComponent(cleanRoute);
