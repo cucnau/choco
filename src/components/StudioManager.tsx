@@ -494,6 +494,9 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
   const [isCreatingStory, setIsCreatingStory] = useState(false);
   const [editingStory, setEditingStory] = useState<Story | null>(null);
   const [selectedStoryForChapters, setSelectedStoryForChapters] = useState<Story | null>(null);
+  const [storyToDelete, setStoryToDelete] = useState<Story | null>(null);
+  const [chapterToDelete, setChapterToDelete] = useState<Chapter | null>(null);
+  const [isDeletingStory, setIsDeletingStory] = useState(false);
 
   // Filter stories strictly owned by this editor
   // Cho phép hiển thị cả các bộ truyện cũ chưa gán authorUid để editor (askerhater21 / tác giả) có thể quản lý và nhận quyền
@@ -672,175 +675,111 @@ export const INITIAL_CHAPTERS: Chapter[] = ${JSON.stringify(chapters, null, 2)};
 export const INITIAL_COMMENTS: Comment[] = ${JSON.stringify(comments, null, 2)};
 `;
 
-      const cleanOwner = githubOwner.trim().replace(/^https:\/\/github\.com\//, '').split('/')[0];
-      let cleanRepo = githubRepo.trim().replace(/^https:\/\/github\.com\//, '').replace(/\.git$/, '');
-      if (cleanRepo.includes('/')) {
-        cleanRepo = cleanRepo.split('/')[1];
+      // 2. Base64 encode the content (UTF-8 safe)
+      const utf8Bytes = new TextEncoder().encode(fileContent);
+      let binary = '';
+      const len = utf8Bytes.byteLength;
+      for (let i = 0; i < len; i++) {
+        binary += String.fromCharCode(utf8Bytes[i]);
       }
-      const cleanBranch = githubBranch.trim() || 'main';
-      const cleanPath = githubPath.trim().replace(/^\//, '') || 'src/data/sampleStories.ts';
-      const cleanToken = githubToken.trim();
+      const base64Content = window.btoa(binary);
 
-      const authHeaders = {
-        'Authorization': `token ${cleanToken}`,
-        'Accept': 'application/vnd.github.v3+json',
-        'Content-Type': 'application/json'
-      };
+      const cleanPath = githubPath.trim().replace(/^\//, ''); // strip leading slash if any
+      let retries = 3;
+      let success = false;
+      let lastErrorMessage = '';
 
-      if (!isAuto) setSyncMessage('Đang kết nối kho lưu trữ GitHub...');
+      while (retries > 0 && !success) {
+        try {
+          // 3. Fetch existing file SHA from GitHub (always bypass cache with Date.now() query & cache headers)
+          if (!isAuto) setSyncMessage(`Đang lấy thông tin file từ GitHub (Lần thử ${4 - retries}/3)...`);
+          const getFileUrl = `https://api.github.com/repos/${githubOwner.trim()}/${githubRepo.trim()}/contents/${cleanPath}?ref=${githubBranch.trim()}&_t=${Date.now()}`;
+          
+          let currentSha = '';
+          try {
+            const getRes = await fetch(getFileUrl, {
+              headers: {
+                'Authorization': `token ${githubToken.trim()}`,
+                'Accept': 'application/vnd.github.v3+json'
+              }
+            });
+            
+            if (getRes.ok) {
+              const fileData = await getRes.json();
+              currentSha = fileData.sha;
+            } else if (getRes.status !== 404) {
+              throw new Error(`Lỗi kết nối GitHub API: HTTP ${getRes.status}`);
+            }
+          } catch (err: any) {
+            // Check for 404
+            if (err.message && (err.message.includes('404') || err.message.includes('not found'))) {
+              currentSha = '';
+            } else {
+              throw err;
+            }
+          }
 
-      // 2. Tạo Blob trên GitHub Git Database API (Hỗ trợ file cực lớn không giới hạn 1MB và không bị lỗi 500)
-      if (!isAuto) setSyncMessage('Đang nén và truyền dữ liệu lên GitHub Blob API...');
-      const blobRes = await fetch(`https://api.github.com/repos/${cleanOwner}/${cleanRepo}/git/blobs`, {
-        method: 'POST',
-        headers: authHeaders,
-        body: JSON.stringify({
-          content: fileContent,
-          encoding: 'utf-8'
-        })
-      });
+          // 4. Push updated content via PUT request to GitHub
+          if (!isAuto) setSyncMessage('Đang commit dữ liệu mới lên repo...');
+          const putRes = await fetch(`https://api.github.com/repos/${githubOwner.trim()}/${githubRepo.trim()}/contents/${cleanPath}`, {
+            method: 'PUT',
+            headers: {
+              'Authorization': `token ${githubToken.trim()}`,
+              'Accept': 'application/vnd.github.v3+json',
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              message: 'Đồng bộ dữ liệu truyện & chương tự động từ Editor Studio',
+              content: base64Content,
+              branch: githubBranch.trim(),
+              sha: currentSha || undefined
+            })
+          });
 
-      if (!blobRes.ok) {
-        const blobErr = await blobRes.json().catch(() => ({}));
-        if (blobRes.status === 401) {
-          throw new Error('Mã GitHub Token không hợp lệ hoặc đã hết hạn. Vui lòng kiểm tra lại Token.');
-        } else if (blobRes.status === 404) {
-          throw new Error(`Không tìm thấy Repository '${cleanOwner}/${cleanRepo}'. Vui lòng kiểm tra lại Owner và Repo.`);
+          if (putRes.ok) {
+            success = true;
+            break;
+          }
+
+          const errorData = await putRes.json();
+          const serverMsg = errorData.message || '';
+          
+          // If 409 Conflict (SHA mismatch) or error contains sha mismatch info, let's retry
+          if (putRes.status === 409 || serverMsg.toLowerCase().includes('sha') || serverMsg.toLowerCase().includes('conflict')) {
+            console.warn(`[GitHub Sync] Phát hiện xung đột SHA (409) từ GitHub. Đang chuẩn bị thử lại sau 1.5s... Còn lại ${retries - 1} lần thử.`);
+            retries--;
+            if (retries > 0) {
+              await new Promise((resolve) => setTimeout(resolve, 1500));
+              continue;
+            }
+          }
+
+          throw new Error(serverMsg || `Lỗi ghi đè file: HTTP ${putRes.status}`);
+
+        } catch (err: any) {
+          lastErrorMessage = err.message || 'Lỗi chưa rõ nguyên nhân.';
+          console.error(`[GitHub Sync] Thử thất bại (Lần ${4 - retries}):`, lastErrorMessage);
+          
+          // Only retry if it looks like a cache/SHA conflict mismatch
+          if (lastErrorMessage.toLowerCase().includes('sha') || lastErrorMessage.toLowerCase().includes('409') || lastErrorMessage.toLowerCase().includes('conflict')) {
+            retries--;
+            if (retries > 0) {
+              await new Promise((resolve) => setTimeout(resolve, 1500));
+              continue;
+            }
+          } else {
+            // Fail immediately for other fatal errors (e.g., Bad Credentials, Repository not found)
+            break;
+          }
         }
-        throw new Error(`Lỗi tạo Blob (${blobRes.status}): ${blobErr.message || blobRes.statusText}`);
       }
 
-      const blobData = await blobRes.json();
-      const blobSha = blobData.sha;
-
-      // 3. Lấy thông tin commit mới nhất của nhánh (Latest Commit SHA & Tree SHA)
-      if (!isAuto) setSyncMessage(`Đang lấy thông tin nhánh ${cleanBranch}...`);
-      let latestCommitSha = '';
-      let baseTreeSha = '';
-
-      const refRes = await fetch(`https://api.github.com/repos/${cleanOwner}/${cleanRepo}/git/ref/heads/${encodeURIComponent(cleanBranch)}?_t=${Date.now()}`, {
-        headers: authHeaders
-      });
-
-      if (refRes.ok) {
-        const refData = await refRes.json();
-        latestCommitSha = refData.object.sha;
-
-        // Lấy commit details để lấy base tree
-        const commitRes = await fetch(`https://api.github.com/repos/${cleanOwner}/${cleanRepo}/git/commits/${latestCommitSha}`, {
-          headers: authHeaders
-        });
-        if (commitRes.ok) {
-          const commitData = await commitRes.json();
-          baseTreeSha = commitData.tree.sha;
-        }
-      } else if (refRes.status === 404) {
-        // Trường hợp nhánh chưa tồn tại hoặc repo rỗng, thử phương thức Contents API dự phòng
-        console.warn(`[GitHub Sync] Nhánh ${cleanBranch} chưa tồn tại, chuyển sang tạo file khởi tạo qua Contents API...`);
-        
-        // Base64 encode an toàn cho Unicode
-        const utf8Bytes = new TextEncoder().encode(fileContent);
-        let binary = '';
-        const chunkSize = 8192;
-        for (let i = 0; i < utf8Bytes.length; i += chunkSize) {
-          const chunk = utf8Bytes.subarray(i, i + chunkSize);
-          binary += String.fromCharCode.apply(null, Array.from(chunk));
-        }
-        const base64Content = window.btoa(binary);
-
-        const putRes = await fetch(`https://api.github.com/repos/${cleanOwner}/${cleanRepo}/contents/${cleanPath}`, {
-          method: 'PUT',
-          headers: authHeaders,
-          body: JSON.stringify({
-            message: 'Khởi tạo dữ liệu truyện & chương từ TruyenCu Studio',
-            content: base64Content,
-            branch: cleanBranch
-          })
-        });
-
-        if (!putRes.ok) {
-          const errJson = await putRes.json().catch(() => ({}));
-          throw new Error(`Không thể khởi tạo nhánh mới (${putRes.status}): ${errJson.message || putRes.statusText}`);
-        }
-
+      if (success) {
         setSyncStatus('success');
         setSyncMessage(isAuto ? 'Tự động đồng bộ lên GitHub thành công!' : 'Đồng bộ thành công! GitHub Pages sẽ tự động rebuild sau 1-2 phút.');
-        return;
       } else {
-        const refErr = await refRes.json().catch(() => ({}));
-        throw new Error(`Lỗi kiểm tra nhánh (${refRes.status}): ${refErr.message || refRes.statusText}`);
+        throw new Error(lastErrorMessage || 'Xung đột SHA liên tiếp sau 3 lần thử lại. Hãy kiểm tra xem file có bị tác động từ bên ngoài không.');
       }
-
-      // 4. Tạo Tree mới chứa blob của file data
-      if (!isAuto) setSyncMessage('Đang liên kết cây thư mục dữ liệu mới...');
-      const treeBody: any = {
-        tree: [
-          {
-            path: cleanPath,
-            mode: '100644',
-            type: 'blob',
-            sha: blobSha
-          }
-        ]
-      };
-      if (baseTreeSha) {
-        treeBody.base_tree = baseTreeSha;
-      }
-
-      const treeRes = await fetch(`https://api.github.com/repos/${cleanOwner}/${cleanRepo}/git/trees`, {
-        method: 'POST',
-        headers: authHeaders,
-        body: JSON.stringify(treeBody)
-      });
-
-      if (!treeRes.ok) {
-        const treeErr = await treeRes.json().catch(() => ({}));
-        throw new Error(`Lỗi tạo Git Tree (${treeRes.status}): ${treeErr.message || treeRes.statusText}`);
-      }
-
-      const treeData = await treeRes.json();
-      const newTreeSha = treeData.sha;
-
-      // 5. Tạo Commit mới trỏ tới Tree mới
-      if (!isAuto) setSyncMessage('Đang tạo commit phiên bản mới...');
-      const commitBody: any = {
-        message: `Đồng bộ dữ liệu truyện & chương từ Editor Studio [${new Date().toLocaleString('vi-VN')}]`,
-        tree: newTreeSha,
-        parents: latestCommitSha ? [latestCommitSha] : []
-      };
-
-      const newCommitRes = await fetch(`https://api.github.com/repos/${cleanOwner}/${cleanRepo}/git/commits`, {
-        method: 'POST',
-        headers: authHeaders,
-        body: JSON.stringify(commitBody)
-      });
-
-      if (!newCommitRes.ok) {
-        const commitErr = await newCommitRes.json().catch(() => ({}));
-        throw new Error(`Lỗi tạo Commit (${newCommitRes.status}): ${commitErr.message || newCommitRes.statusText}`);
-      }
-
-      const newCommitData = await newCommitRes.json();
-      const newCommitSha = newCommitData.sha;
-
-      // 6. Cập nhật Head Ref của nhánh (Fast-forward update)
-      if (!isAuto) setSyncMessage(`Đang hoàn tất cập nhật nhánh ${cleanBranch}...`);
-      const updateRefRes = await fetch(`https://api.github.com/repos/${cleanOwner}/${cleanRepo}/git/refs/heads/${encodeURIComponent(cleanBranch)}`, {
-        method: 'PATCH',
-        headers: authHeaders,
-        body: JSON.stringify({
-          sha: newCommitSha,
-          force: true
-        })
-      });
-
-      if (!updateRefRes.ok) {
-        const updateErr = await updateRefRes.json().catch(() => ({}));
-        throw new Error(`Lỗi cập nhật Ref nhánh (${updateRefRes.status}): ${updateErr.message || updateRefRes.statusText}`);
-      }
-
-      setSyncStatus('success');
-      setSyncMessage(isAuto ? 'Tự động đồng bộ lên GitHub thành công!' : 'Đồng bộ thành công! GitHub Pages sẽ tự động rebuild sau 1-2 phút.');
 
     } catch (err: any) {
       console.error('GitHub Sync Final Error:', err);
@@ -1015,9 +954,9 @@ export const INITIAL_COMMENTS: Comment[] = ${JSON.stringify(comments, null, 2)};
       currentUser?.photoURL ||
       ''
     );
-    setStoryCoverUrl(story.coverUrl);
-    setStorySynopsis(story.synopsis);
-    setStoryTagsInput(story.tags ? story.tags.join(', ') : '');
+    setStoryCoverUrl(story?.coverUrl || '');
+    setStorySynopsis(story?.synopsis || '');
+    setStoryTagsInput(story?.tags ? story.tags.join(', ') : '');
     setThemeTone(story.themeTone || 'dark-rose');
     setDefaultFont(story.defaultFont || 'font-mono');
     setCustomTitleFont(story.customTitleFont || story.defaultFont || 'font-mono');
@@ -1256,32 +1195,6 @@ export const INITIAL_COMMENTS: Comment[] = ${JSON.stringify(comments, null, 2)};
     onSaveStory(updatedStory);
   };
 
-  const handleDownloadCodeFile = () => {
-    try {
-      const comments = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('chucu_comments') || '[]') : [];
-      
-      const fileContent = `import { Story, Chapter, Comment } from '../types';
-
-export const INITIAL_STORIES: Story[] = ${JSON.stringify(stories, null, 2)};
-
-export const INITIAL_CHAPTERS: Chapter[] = ${JSON.stringify(chapters, null, 2)};
-
-export const INITIAL_COMMENTS: Comment[] = ${JSON.stringify(comments, null, 2)};
-`;
-
-      const blob = new Blob([fileContent], { type: 'text/typescript;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', 'sampleStories.ts');
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    } catch (err) {
-      console.error('Lỗi khi tải file dữ liệu:', err);
-    }
-  };
-
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 space-y-6 font-mono-code text-[#e0d0d5]">
       
@@ -1322,15 +1235,6 @@ export const INITIAL_COMMENTS: Comment[] = ${JSON.stringify(comments, null, 2)};
             </button>
           )}
 
-          <button
-            onClick={handleDownloadCodeFile}
-            className="px-4 py-2 bg-[#1b2b20] hover:bg-[#253d2c] border border-[#3e5e48] text-[#d6ffe0] text-xs font-mono-code font-bold uppercase tracking-wider transition flex items-center gap-2 shrink-0"
-            title="Tải về file sampleStories.ts chứa toàn bộ dữ liệu truyện và chương mới nhất để ghi đè vào thư mục code của bạn trên máy"
-          >
-            <Download className="w-4 h-4 text-[#a0ffd0]" />
-            <span>Tải file code</span>
-          </button>
-          
           <button
             onClick={handleOpenCreateStory}
             className="px-5 py-2 bg-[#2b1620] hover:bg-[#3d1e2c] border border-[#5e2f46] text-[#e0c0cc] text-xs font-mono-code font-bold uppercase tracking-wider transition flex items-center gap-2 shrink-0"
@@ -1652,8 +1556,8 @@ export const INITIAL_COMMENTS: Comment[] = ${JSON.stringify(comments, null, 2)};
                               <Edit2 className="w-4 h-4" />
                             </button>
                             <button
-                              onClick={() => onDeleteChapter(chap.id, selectedStoryForChapters.id)}
-                              className="p-1.5 text-[#8a717a] hover:text-[#d0a0b0] transition"
+                              onClick={() => setChapterToDelete(chap)}
+                              className="p-1.5 text-[#8a717a] hover:text-[#ff99b0] transition"
                               title="Xóa chương"
                             >
                               <Trash2 className="w-4 h-4" />
@@ -1870,8 +1774,8 @@ export const INITIAL_COMMENTS: Comment[] = ${JSON.stringify(comments, null, 2)};
                       </button>
 
                       <button
-                        onClick={() => onDeleteStory(story.id)}
-                        className="p-1.5 bg-[#1f1017] hover:bg-[#2d1822] border border-[#3d202e] text-[#d0a0b0] transition"
+                        onClick={() => setStoryToDelete(story)}
+                        className="p-1.5 bg-[#1f1017] hover:bg-[#3d1828] border border-[#3d202e] text-[#d0a0b0] hover:text-[#ff99b0] transition"
                         title="Xóa truyện"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -1882,6 +1786,82 @@ export const INITIAL_COMMENTS: Comment[] = ${JSON.stringify(comments, null, 2)};
               })}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Confirmation Modal: Delete Story */}
+      {storyToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="bg-[#14080e] border border-[#ff3366]/40 p-6 max-w-md w-full shadow-2xl text-left font-mono-code">
+            <h3 className="text-base font-bold text-[#ffb0c8] mb-3 flex items-center gap-2">
+              <Trash2 className="w-5 h-5 text-[#ff3366]" />
+              <span>Xác nhận xóa bộ truyện?</span>
+            </h3>
+            <p className="text-xs text-[#c0a0b0] mb-5 leading-relaxed">
+              Bạn có chắc chắn muốn xóa bộ truyện <strong className="text-[#ffe0ec]">"{storyToDelete.title}"</strong> không? 
+              Hành động này sẽ xóa vĩnh viễn bộ truyện cùng toàn bộ các chương và bình luận liên quan.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setStoryToDelete(null)}
+                disabled={isDeletingStory}
+                className="px-4 py-2 border border-[#3d202e] text-[#a08090] hover:text-white transition text-xs"
+              >
+                Hủy
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  setIsDeletingStory(true);
+                  try {
+                    await onDeleteStory(storyToDelete.id);
+                  } finally {
+                    setIsDeletingStory(false);
+                    setStoryToDelete(null);
+                  }
+                }}
+                disabled={isDeletingStory}
+                className="px-4 py-2 bg-[#8b1538] hover:bg-[#a61c45] text-white flex items-center gap-2 font-medium transition text-xs"
+              >
+                {isDeletingStory ? <span>Đang xóa...</span> : <span>Xác nhận xóa</span>}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation Modal: Delete Chapter */}
+      {chapterToDelete && selectedStoryForChapters && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="bg-[#14080e] border border-[#ff3366]/40 p-6 max-w-md w-full shadow-2xl text-left font-mono-code">
+            <h3 className="text-base font-bold text-[#ffb0c8] mb-3 flex items-center gap-2">
+              <Trash2 className="w-5 h-5 text-[#ff3366]" />
+              <span>Xác nhận xóa chương?</span>
+            </h3>
+            <p className="text-xs text-[#c0a0b0] mb-5 leading-relaxed">
+              Bạn có chắc chắn muốn xóa <strong className="text-[#ffe0ec]">Chương {chapterToDelete.chapterNumber}: {chapterToDelete.title}</strong> không?
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setChapterToDelete(null)}
+                className="px-4 py-2 border border-[#3d202e] text-[#a08090] hover:text-white transition text-xs"
+              >
+                Hủy
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  onDeleteChapter(chapterToDelete.id, selectedStoryForChapters.id);
+                  setChapterToDelete(null);
+                }}
+                className="px-4 py-2 bg-[#8b1538] hover:bg-[#a61c45] text-white font-medium transition text-xs"
+              >
+                Xác nhận xóa
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
