@@ -901,7 +901,7 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
       return;
     }
 
-    const storyChaps = chapters.filter(c => c.storyId === selectedStoryForChapters.id);
+    const storyChaps = (chapters || []).filter(c => c && c.storyId === selectedStoryForChapters.id);
     const nextChapterNum = editingChapter ? editingChapter.chapterNumber : storyChaps.length + 1;
 
     const newChapter: Chapter = {
@@ -952,11 +952,11 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
     if (!selectedStoryForChapters || selectedChapterIds.length === 0) return;
     setIsUpdatingBatchVolume(true);
     try {
-      const storyChaps = chapters.filter((c) => c.storyId === selectedStoryForChapters.id);
+      const storyChaps = (chapters || []).filter((c) => c && c.storyId === selectedStoryForChapters.id);
       const count = selectedChapterIds.length;
       const cleanVol = volumeName?.trim() || undefined;
       const updatedChaps = storyChaps
-        .filter((c) => selectedChapterIds.includes(c.id))
+        .filter((c) => c && selectedChapterIds.includes(c.id))
         .map((c) => ({
           ...c,
           volumeTitle: cleanVol,
@@ -1055,7 +1055,7 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
             <div className="space-y-4">
               <div className="flex flex-wrap justify-between items-center gap-2">
                 <span className="text-xs text-[#8a717a] font-mono-code">
-                  Tổng số chương: {chapters.filter(c => c.storyId === selectedStoryForChapters.id).length}
+                  Tổng số chương: {(chapters || []).filter(c => c && c.storyId === selectedStoryForChapters.id).length}
                 </span>
                 <div className="flex items-center gap-2">
                   <button
@@ -1078,8 +1078,8 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
 
               {/* Batch Volume / Section Manager Toolbar */}
               {(() => {
-                const storyChaps = chapters
-                  .filter((c) => c.storyId === selectedStoryForChapters.id)
+                const storyChaps = (chapters || [])
+                  .filter((c) => c && c.storyId === selectedStoryForChapters.id)
                   .sort((a, b) => a.chapterNumber - b.chapterNumber);
 
                 if (storyChaps.length === 0) return null;

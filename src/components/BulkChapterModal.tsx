@@ -133,7 +133,7 @@ export const BulkChapterModal: React.FC<BulkChapterModalProps> = ({
   onClose,
   onSaveBatch,
 }) => {
-  const storyChapters = existingChapters.filter(c => c.storyId === story.id);
+  const storyChapters = (existingChapters || []).filter(c => c && story && c.storyId === story.id);
   const defaultStartNum = storyChapters.length + 1;
 
   const [rawText, setRawText] = useState('');

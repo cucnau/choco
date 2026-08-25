@@ -48,7 +48,8 @@ export const HomeView: React.FC<HomeViewProps> = ({
   const [checkInNotice, setCheckInNotice] = useState<{ message: string; isError?: boolean } | null>(null);
 
   // Filter stories based on search query
-  const filteredStories = stories.filter((s) => {
+  const filteredStories = (stories || []).filter((s) => {
+    if (!s) return false;
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       const matchTitle = s.title.toLowerCase().includes(q);

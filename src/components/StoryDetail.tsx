@@ -1431,7 +1431,7 @@ export const StoryDetail: React.FC<StoryDetailProps> = ({
                                   <span className={storyBodyFont}>{chap.volumeTitle}</span>
                                 </div>
                                 <span className={`text-[10px] font-normal font-mono ${storyMutedFont}`} style={customStyles.textMuted}>
-                                  {sorted.filter(c => c.volumeTitle === chap.volumeTitle).length} chương
+                                  {(sorted || []).filter(c => c && c.volumeTitle === chap.volumeTitle).length} chương
                                 </span>
                               </div>
                             </div>

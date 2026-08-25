@@ -810,17 +810,18 @@ export default function App() {
   );
 
   // Filtered Stories Logic
-  const filteredStories = stories.filter(s => {
+  const filteredStories = (stories || []).filter(s => {
+    if (!s) return false;
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
-      const matchTitle = s.title.toLowerCase().includes(q);
-      const matchAuthor = s.author.toLowerCase().includes(q);
+      const matchTitle = s.title ? s.title.toLowerCase().includes(q) : false;
+      const matchAuthor = s.author ? s.author.toLowerCase().includes(q) : false;
       if (!matchTitle && !matchAuthor) return false;
     }
     return true;
   });
 
-  const bookmarkedSet = new Set(bookmarks.map(b => b.storyId));
+  const bookmarkedSet = new Set((bookmarks || []).map(b => b && b.storyId));
 
   const getStoryThemeClass = (story: Story | null) => {
     if (!story) return 'bg-[#080406] text-[#e0d0d5] selection:bg-[#3d1e2c] selection:text-white';
@@ -928,8 +929,8 @@ export default function App() {
           <ChapterReader
             story={selectedStory}
             chapter={selectedChapter}
-            allChapters={chapters.filter(c => c.storyId === selectedStory.id)}
-            comments={comments.filter(c => c.chapterId === selectedChapter.id)}
+            allChapters={(chapters || []).filter(c => c && c.storyId === selectedStory.id)}
+            comments={(comments || []).filter(c => c && c.chapterId === selectedChapter.id)}
             currentUser={currentUser}
             userProfile={userProfile}
             isAdmin={isAdmin}

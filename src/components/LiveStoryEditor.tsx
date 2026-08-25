@@ -569,7 +569,7 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
   const [chapterPasswordInput, setChapterPasswordInput] = useState<string>('');
   const [chapterPasswordHintInput, setChapterPasswordHintInput] = useState<string>('');
 
-  const storyChapters = (chapters || []).filter((c) => c.storyId === workingStoryId);
+  const storyChapters = (chapters || []).filter((c) => c && c.storyId === workingStoryId);
 
   // Trạng thái Tách theme và hiệu ứng chương và truyện riêng biệt
   const [useSeparateChapterTheme, setUseSeparateChapterTheme] = useState<boolean>(initialStory?.useSeparateChapterTheme || false);

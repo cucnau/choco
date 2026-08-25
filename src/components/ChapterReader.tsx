@@ -343,11 +343,12 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
 
   const calculatedWordCount = chapter.wordCount || (chapter.content ? chapter.content.split(/\s+/).filter(Boolean).length : 0);
 
-  const generalComments = comments.filter((c) => c.paragraphIndex === undefined);
-  const paragraphComments = comments.filter((c) => c.paragraphIndex !== undefined);
+  const safeComments = comments || [];
+  const generalComments = safeComments.filter((c) => c && c.paragraphIndex === undefined);
+  const paragraphComments = safeComments.filter((c) => c && c.paragraphIndex !== undefined);
 
   const displayedComments = commentFilter === 'all'
-    ? comments
+    ? safeComments
     : commentFilter === 'general'
     ? generalComments
     : paragraphComments;
@@ -751,7 +752,7 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
             <div className={`space-y-5 text-sm leading-relaxed ${storyBodyFont}`} style={{ color: currentText }}>
               {paragraphs.length > 0 ? (
                 paragraphs.map((para, idx) => {
-                  const paraComments = comments.filter((c) => c.paragraphIndex === idx);
+                  const paraComments = safeComments.filter((c) => c && c.paragraphIndex === idx);
                   const isActive = activeParagraphIndex === idx;
 
                   return (
@@ -1033,15 +1034,15 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
 
           {/* List of comments */}
           <div className="space-y-2">
-            {displayedComments.filter(c => !c.parentCommentId).length === 0 ? (
+            {(displayedComments || []).filter(c => c && !c.parentCommentId).length === 0 ? (
               <div className={`py-6 text-center text-xs ${storyMutedFont}`} style={{ color: currentTextMuted }}>
                 {commentFilter === 'paragraph'
                   ? 'Chưa có bình luận theo đoạn nào. Bạn có thể bấm vào biểu tượng bình luận bên cạnh mỗi đoạn văn phía trên để viết!'
                   : 'Chưa có bình luận nào cho mục này.'}
               </div>
             ) : (
-              displayedComments.filter(c => !c.parentCommentId).map((cm) => {
-                const currentReplies = comments.filter(c => c.parentCommentId === cm.id);
+              (displayedComments || []).filter(c => c && !c.parentCommentId).map((cm) => {
+                const currentReplies = safeComments.filter(c => c && c.parentCommentId === cm.id);
                 return (
                   <div 
                     key={cm.id} 

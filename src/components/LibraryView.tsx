@@ -22,8 +22,8 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
   onSelectChapter,
   onToggleBookmark,
 }) => {
-  const bookmarkedSet = new Set(bookmarks.map(b => b.storyId));
-  const bookmarkedStories = stories.filter(s => bookmarkedSet.has(s.id));
+  const bookmarkedSet = new Set((bookmarks || []).map(b => b && b.storyId));
+  const bookmarkedStories = (stories || []).filter(s => s && bookmarkedSet.has(s.id));
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 space-y-8 font-mono-code text-[#e0d0d5]">

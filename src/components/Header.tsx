@@ -528,9 +528,9 @@ export const Header: React.FC<HeaderProps> = ({
                 title="Thông báo"
               >
                 <Bell className={`w-4 h-4 ${isCustomTheme ? '' : tone.iconColor}`} />
-                {notifications.some((n) => !n.isRead) && (
+                {(notifications || []).some((n) => n && !n.isRead) && (
                   <span className="absolute -top-1 -right-1 bg-red-600 text-white font-sans text-[8px] font-bold h-3.5 min-w-3.5 px-1 rounded-full flex items-center justify-center border border-current animate-pulse">
-                    {notifications.filter((n) => !n.isRead).length}
+                    {(notifications || []).filter((n) => n && !n.isRead).length}
                   </span>
                 )}
               </button>
