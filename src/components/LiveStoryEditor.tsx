@@ -1558,9 +1558,10 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                 <button
                   type="button"
                   onClick={() => setUseSeparateChapterTheme(!useSeparateChapterTheme)}
-                  className={`w-10 h-6 flex items-center rounded-full p-1 cursor-pointer transition-all duration-300 shrink-0 ${
-                    useSeparateChapterTheme ? 'bg-emerald-600' : 'bg-gray-600'
-                  }`}
+                  className="w-10 h-6 flex items-center rounded-full p-1 cursor-pointer transition-all duration-300 shrink-0"
+                  style={{
+                    backgroundColor: useSeparateChapterTheme ? currentBtnBg : 'rgb(75, 85, 99)'
+                  }}
                 >
                   <div
                     className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-all duration-300 ${
@@ -2185,9 +2186,10 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                 <button
                   type="button"
                   onClick={() => setUseSeparateChapterEffect(!useSeparateChapterEffect)}
-                  className={`w-10 h-6 flex items-center rounded-full p-1 cursor-pointer transition-all duration-300 shrink-0 ${
-                    isSeparatedEffect ? 'bg-emerald-600' : 'bg-gray-600'
-                  }`}
+                  className="w-10 h-6 flex items-center rounded-full p-1 cursor-pointer transition-all duration-300 shrink-0"
+                  style={{
+                    backgroundColor: isSeparatedEffect ? currentBtnBg : 'rgb(75, 85, 99)'
+                  }}
                 >
                   <div
                     className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-all duration-300 ${
@@ -2321,9 +2323,10 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowCharacterWidget(!showCharacterWidget)}
-                  className={`w-10 h-6 flex items-center rounded-full p-1 cursor-pointer transition-all duration-300 shrink-0 ${
-                    showCharacterWidget ? 'bg-emerald-600' : 'bg-gray-600'
-                  }`}
+                  className="w-10 h-6 flex items-center rounded-full p-1 cursor-pointer transition-all duration-300 shrink-0"
+                  style={{
+                    backgroundColor: showCharacterWidget ? currentBtnBg : 'rgb(75, 85, 99)'
+                  }}
                 >
                   <div
                     className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-all duration-300 ${
@@ -2450,9 +2453,10 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                   <button
                     type="button"
                     onClick={() => setShowProgressWidget(!showProgressWidget)}
-                    className={`w-10 h-6 flex items-center rounded-full p-1 cursor-pointer transition-all duration-300 shrink-0 ${
-                      showProgressWidget ? 'bg-emerald-600' : 'bg-gray-600'
-                    }`}
+                    className="w-10 h-6 flex items-center rounded-full p-1 cursor-pointer transition-all duration-300 shrink-0"
+                    style={{
+                      backgroundColor: showProgressWidget ? currentBtnBg : 'rgb(75, 85, 99)'
+                    }}
                   >
                     <div
                       className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-all duration-300 ${
@@ -2499,7 +2503,7 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                     <div className="p-2.5 rounded border space-y-1.5" style={{ background: currentCardBg, borderColor: currentBorder }}>
                       <div className="flex items-center justify-between text-[11px] font-bold">
                         <span style={{ color: currentText }}>{progressWidgetTitle || 'Tiến độ bộ truyện'}</span>
-                        <span className="font-mono text-emerald-400">
+                        <span className="font-mono" style={{ color: currentBtnBg }}>
                           {totalPlannedChapters > 0
                             ? `${Math.min(100, Math.round(((initialStory?.chapterCount || 0) / totalPlannedChapters) * 100))}%`
                             : '0%'}
@@ -2507,8 +2511,9 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                       </div>
                       <div className="w-full h-2 rounded-full overflow-hidden bg-black/30 border" style={{ borderColor: currentBorder }}>
                         <div
-                          className="h-full bg-emerald-500 rounded-full transition-all duration-300"
+                          className="h-full rounded-full transition-all duration-300"
                           style={{
+                            backgroundColor: currentBtnBg,
                             width: `${totalPlannedChapters > 0
                               ? Math.min(100, Math.round(((initialStory?.chapterCount || 0) / totalPlannedChapters) * 100))
                               : 0}%`,
@@ -2545,14 +2550,21 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                         type="button"
                         onClick={() => setChapterListStyle(styleOpt.id as any)}
                         className={`p-2.5 rounded border text-left flex items-start gap-2.5 transition-all cursor-pointer ${
-                          isSelected ? 'ring-2 ring-emerald-500' : 'hover:opacity-90 opacity-75'
+                          isSelected ? 'ring-2' : 'hover:opacity-90 opacity-75'
                         }`}
                         style={{
                           background: isSelected ? currentBtnSecondaryBg : currentBg,
-                          borderColor: isSelected ? currentBorder : currentBorder,
+                          borderColor: isSelected ? currentBtnBg : currentBorder,
                         }}
                       >
-                        <div className={`p-1.5 rounded border shrink-0 mt-0.5 ${isSelected ? 'bg-emerald-600 text-white' : ''}`} style={{ borderColor: currentBorder }}>
+                        <div
+                          className="p-1.5 rounded border shrink-0 mt-0.5"
+                          style={{
+                            borderColor: currentBorder,
+                            backgroundColor: isSelected ? currentBtnBg : 'transparent',
+                            color: isSelected ? currentBtnText : currentText,
+                          }}
+                        >
                           <IconComp className="w-4 h-4" />
                         </div>
                         <div className="flex-1 min-w-0">
@@ -2798,7 +2810,7 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
             color: currentText,
           }}
         >
-          <span className="font-medium">💡 Bạn có thể nhấp chuột trực tiếp vào Tên truyện, Tác giả, Ảnh bìa, Giới thiệu hoặc Tag bên dưới để chỉnh sửa ngay tại chỗ.</span>
+          <span className="font-medium">Bạn có thể nhấp chuột trực tiếp vào Tên truyện, Tác giả, Ảnh bìa, Giới thiệu hoặc Tag bên dưới để chỉnh sửa ngay tại chỗ.</span>
           <button
             onClick={() => setActiveDrawerTab(activeDrawerTab ? null : 'theme')}
             className="shrink-0 px-3 py-1.5 text-[11px] font-bold rounded border hover:opacity-90 transition shadow-xs"
@@ -3333,9 +3345,9 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                       type="button"
                       onClick={() => setShowCharacterWidget(!showCharacterWidget)}
                       className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border transition ${
-                        showCharacterWidget ? 'bg-emerald-600/20 border-emerald-500 text-emerald-400' : 'opacity-60 hover:opacity-100'
+                        showCharacterWidget ? '' : 'opacity-60 hover:opacity-100'
                       }`}
-                      style={!showCharacterWidget ? { borderColor: currentBorder, color: currentTextMuted } : {}}
+                      style={showCharacterWidget ? { backgroundColor: currentBtnBg, borderColor: currentBtnBorder, color: currentBtnText } : { borderColor: currentBorder, color: currentTextMuted }}
                     >
                       {showCharacterWidget ? '✓ Đang bật Widget' : '+ Bật Widget'}
                     </button>
@@ -3520,9 +3532,9 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                     type="button"
                     onClick={() => setShowProgressWidget(!showProgressWidget)}
                     className={`text-[10px] font-bold px-2 py-0.5 rounded border transition ${
-                      showProgressWidget ? 'bg-emerald-600/20 border-emerald-500 text-emerald-400' : 'opacity-60 hover:opacity-100'
+                      showProgressWidget ? '' : 'opacity-60 hover:opacity-100'
                     }`}
-                    style={!showProgressWidget ? { borderColor: currentBorder, color: currentTextMuted } : {}}
+                    style={showProgressWidget ? { backgroundColor: currentBtnBg, borderColor: currentBtnBorder, color: currentBtnText } : { borderColor: currentBorder, color: currentTextMuted }}
                   >
                     {showProgressWidget ? '✓ Đang bật Widget' : '+ Bật Widget'}
                   </button>
@@ -3639,8 +3651,13 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                     {[
                       { id: 'standard', label: 'Thẻ', icon: List },
                       { id: 'grid', label: 'Lưới', icon: LayoutGrid },
+                      { id: 'accordion', label: 'Quyển', icon: Folder },
+                      { id: 'timeline', label: 'Mốc dọc', icon: GitCommit },
                       { id: 'minimal_table', label: 'Bảng', icon: Table },
                       { id: 'book_catalog', label: 'Mục lục', icon: Columns2 },
+                      { id: 'scroll_strip', label: 'Huy hiệu', icon: Tag },
+                      { id: 'cards_bento', label: 'Bento', icon: LayoutList },
+                      { id: 'modern_compact', label: 'Số to', icon: FileText },
                     ].map((st) => {
                       const IconC = st.icon;
                       const active = chapterListStyle === st.id;
@@ -3650,9 +3667,9 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                           type="button"
                           onClick={() => setChapterListStyle(st.id as any)}
                           className={`px-2 py-0.5 text-[10px] font-bold rounded flex items-center gap-1 transition cursor-pointer ${
-                            active ? 'bg-emerald-600 text-white shadow-xs' : 'opacity-70 hover:opacity-100'
+                            active ? 'shadow-xs' : 'opacity-70 hover:opacity-100'
                           }`}
-                          style={!active ? { color: currentText } : {}}
+                          style={active ? { backgroundColor: currentBtnBg, color: currentBtnText } : { color: currentText }}
                           title={`Kiểu ${st.label}`}
                         >
                           <IconC className="w-3 h-3" />

@@ -1070,7 +1070,10 @@ export const StoryDetail: React.FC<StoryDetailProps> = ({
                                       <div className="flex items-center gap-2 truncate pr-2">
                                         <span className="font-bold truncate">{chap.title}</span>
                                         {isReading && (
-                                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-600/30 text-emerald-400 font-mono">
+                                          <span
+                                            className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-600/30 text-emerald-400 font-mono"
+                                            style={isCustomTheme && story.customBtnBgColor ? { backgroundColor: `${story.customBtnBgColor}25`, color: story.customBtnBgColor } : {}}
+                                          >
                                             Đang đọc
                                           </span>
                                         )}
@@ -1129,7 +1132,10 @@ export const StoryDetail: React.FC<StoryDetailProps> = ({
                                   color: customStyles.text.color,
                                 }}
                               >
-                                <div className="absolute -left-[23px] top-3.5 w-3 h-3 rounded-full bg-emerald-500 border border-black/40" />
+                                <div
+                                  className="absolute -left-[23px] top-3.5 w-3 h-3 rounded-full border border-black/40 bg-emerald-500"
+                                  style={isCustomTheme && story.customBtnBgColor ? { backgroundColor: story.customBtnBgColor } : {}}
+                                />
                                 <div className="flex items-center justify-between gap-2">
                                   <span className={`font-bold text-xs ${storyBodyFont}`} style={customStyles.text}>
                                     {chap.title}
@@ -1141,7 +1147,10 @@ export const StoryDetail: React.FC<StoryDetailProps> = ({
                                 {(isReading || chap.isLocked || chap.isPasswordProtected) && (
                                   <div className="flex items-center gap-1.5 flex-wrap text-[10px]">
                                     {isReading && (
-                                      <span className="px-1.5 py-0.5 rounded bg-emerald-600/30 text-emerald-400 font-mono">
+                                      <span
+                                        className="px-1.5 py-0.5 rounded bg-emerald-600/30 text-emerald-400 font-mono"
+                                        style={isCustomTheme && story.customBtnBgColor ? { backgroundColor: `${story.customBtnBgColor}25`, color: story.customBtnBgColor } : {}}
+                                      >
                                         Đang đọc dở ({lastReadProgress?.progressPercent || 0}%)
                                       </span>
                                     )}
@@ -1192,7 +1201,10 @@ export const StoryDetail: React.FC<StoryDetailProps> = ({
                                 <div className="flex items-center gap-2 truncate pr-2">
                                   <span className={`font-medium ${storyBodyFont}`}>{chap.title}</span>
                                   {isReading && (
-                                    <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-600 text-white font-mono">
+                                    <span
+                                      className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-600 text-white font-mono"
+                                      style={isCustomTheme && story.customBtnBgColor ? { backgroundColor: story.customBtnBgColor } : {}}
+                                    >
                                       Đọc dở
                                     </span>
                                   )}
@@ -1242,7 +1254,14 @@ export const StoryDetail: React.FC<StoryDetailProps> = ({
                                 >
                                   <div className="flex items-center gap-1.5 truncate">
                                     <span className="font-medium truncate">{chap.title}</span>
-                                    {isReading && <span className="text-[10px] font-mono px-1 py-0.2 rounded bg-emerald-600/30 text-emerald-400">Đang đọc</span>}
+                                    {isReading && (
+                                      <span
+                                        className="text-[10px] font-mono px-1 py-0.2 rounded bg-emerald-600/30 text-emerald-400"
+                                        style={isCustomTheme && story.customBtnBgColor ? { backgroundColor: `${story.customBtnBgColor}25`, color: story.customBtnBgColor } : {}}
+                                      >
+                                        Đang đọc
+                                      </span>
+                                    )}
                                     {isLocked && <Lock className="w-3 h-3 text-amber-400 shrink-0" />}
                                   </div>
                                   <span className="flex-1 border-b border-dotted mx-1 opacity-40 shrink-0" style={{ borderColor: customStyles.text.color }}></span>
@@ -1338,7 +1357,10 @@ export const StoryDetail: React.FC<StoryDetailProps> = ({
                                       {chap.title}
                                     </span>
                                     {isReading && (
-                                      <span className="text-[10px] px-1.5 py-0.5 rounded font-bold shrink-0 bg-emerald-600 text-white">
+                                      <span
+                                        className="text-[10px] px-1.5 py-0.5 rounded font-bold shrink-0 bg-emerald-600 text-white"
+                                        style={isCustomTheme && story.customBtnBgColor ? { backgroundColor: story.customBtnBgColor, color: story.customBtnTextColor || '#ffffff' } : {}}
+                                      >
                                         Đang đọc ({lastReadProgress?.progressPercent || 0}%)
                                       </span>
                                     )}
