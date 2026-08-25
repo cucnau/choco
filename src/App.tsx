@@ -490,7 +490,7 @@ export default function App() {
           chapterParam = parts[cIdx] || '';
         }
 
-        let foundStory = stories.find(s => slugify(s.title) === storyParam || s.id === storyParam);
+        let foundStory = (stories || []).find(s => s && s.title && (slugify(s.title) === storyParam || s.id === storyParam));
 
         // Nếu có thông tin chương
         if (chapterParam) {
@@ -501,20 +501,20 @@ export default function App() {
           let foundChap: Chapter | undefined;
 
           if (foundStory) {
-            foundChap = chapters.find(c => c.storyId === foundStory?.id && (
+            foundChap = (chapters || []).find(c => c && c.storyId === foundStory?.id && (
               (chapNum !== null && c.chapterNumber === chapNum) ||
               c.id === chapterParam ||
-              slugify(c.title) === chapterParam
+              (c.title && slugify(c.title) === chapterParam)
             ));
           } else {
             // Nếu chưa khớp truyện, tìm chương theo id hoặc slug toàn bộ
-            foundChap = chapters.find(c => 
+            foundChap = (chapters || []).find(c => c && (
               c.id === chapterParam || 
               (chapNum !== null && c.chapterNumber === chapNum) ||
-              slugify(c.title) === chapterParam
-            );
+              (c.title && slugify(c.title) === chapterParam)
+            ));
             if (foundChap) {
-              foundStory = stories.find(s => s.id === foundChap?.storyId);
+              foundStory = (stories || []).find(s => s && s.id === foundChap?.storyId);
             }
           }
 
@@ -583,16 +583,22 @@ export default function App() {
 
   // Story Selection Handler
   const handleSelectStory = (story: Story) => {
+    if (!story) return;
     setSelectedStory(story);
     setSelectedChapter(null);
     setSelectedGameId(null);
-    navigateTo(`/truyen/${slugify(story.title)}`);
+    if (story.title) {
+      navigateTo(`/truyen/${slugify(story.title)}`);
+    } else {
+      navigateTo(`/truyen/${story.id}`);
+    }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   // Chapter Selection Handler
   const handleSelectChapter = (chapter: Chapter) => {
-    const story = stories.find(s => s.id === chapter.storyId);
+    if (!chapter) return;
+    const story = (stories || []).find(s => s && s.id === chapter.storyId);
     if (story) {
       setSelectedStory(story);
       setSelectedChapter(chapter);
@@ -600,7 +606,9 @@ export default function App() {
       incrementChapterViews(chapter.id, story.id);
       saveReadingProgress(story.id, chapter.id, chapter.chapterNumber);
       refreshData();
-      navigateTo(`/truyen/${slugify(story.title)}/chuong-${chapter.chapterNumber}`);
+      if (story.title) {
+        navigateTo(`/truyen/${slugify(story.title)}/chuong-${chapter.chapterNumber}`);
+      }
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };

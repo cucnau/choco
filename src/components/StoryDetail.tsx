@@ -335,13 +335,9 @@ export const StoryDetail: React.FC<StoryDetailProps> = ({
   const [isSynopsisExpanded, setIsSynopsisExpanded] = useState(false);
   const [collapsedVolumes, setCollapsedVolumes] = useState<Record<string, boolean>>({});
 
-  // Lấy tiến trình đọc dở từ localStorage
-  const lastReadProgress = getReadingProgress(story.id);
-  const lastReadChapter = lastReadProgress ? chapters.find(c => c.id === lastReadProgress.chapterId) : null;
-
   // Lắng nghe realtime profile của tác giả/editor từ Firestore nếu có authorUid
   useEffect(() => {
-    if (!story.authorUid) {
+    if (!story || !story.authorUid) {
       setLiveEditorProfile(null);
       return;
     }
@@ -370,7 +366,25 @@ export const StoryDetail: React.FC<StoryDetailProps> = ({
     } catch (err) {
       console.warn('Error setting up editor profile listener:', err);
     }
-  }, [story.authorUid, userProfile]);
+  }, [story?.authorUid, userProfile]);
+
+  if (!story) {
+    return (
+      <div className="max-w-4xl mx-auto p-8 text-center font-mono-code text-rose-400 space-y-4">
+        <p>Không tìm thấy thông tin truyện hoặc bộ truyện đã bị xóa.</p>
+        <button
+          onClick={onBack}
+          className="px-4 py-2 border border-rose-800 bg-rose-950/50 text-xs rounded hover:bg-rose-900 transition cursor-pointer"
+        >
+          Quay lại danh sách
+        </button>
+      </div>
+    );
+  }
+
+  // Lấy tiến trình đọc dở từ localStorage
+  const lastReadProgress = getReadingProgress(story.id);
+  const lastReadChapter = lastReadProgress ? (chapters || []).find(c => c && c.id === lastReadProgress.chapterId) : null;
 
   const handleCommentSubmit = (e: React.FormEvent) => {
     e.preventDefault();

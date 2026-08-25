@@ -72,18 +72,14 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
   onOpenRechargeModal,
 }) => {
   const [fontSize, setFontSize] = useState<number>(16);
-  const [readerFont, setReaderFont] = useState<string>(story.customBodyFont || story.defaultFont || 'font-bevietnam');
+  const [readerFont, setReaderFont] = useState<string>(story?.customBodyFont || story?.defaultFont || 'font-bevietnam');
   const [isUnlocking, setIsUnlocking] = useState(false);
   const [unlockError, setUnlockError] = useState<string | null>(null);
   const [readingProgressPercent, setReadingProgressPercent] = useState<number>(0);
   const [autoResumeNotice, setAutoResumeNotice] = useState<string | null>(null);
 
-  const storyTitleFont = story.customTitleFont || story.defaultFont || 'font-mono';
-  const storyMutedFont = story.customMutedFont || story.defaultFont || 'font-mono';
-  const storyBtnFont = story.customBtnFont || story.defaultFont || 'font-mono';
-  const storyBodyFont = readerFont;
-
   useEffect(() => {
+    if (!story) return;
     const currentBodyFont = story.customBodyFont || story.defaultFont;
     if (currentBodyFont) {
       setReaderFont(currentBodyFont);
@@ -94,7 +90,7 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
         setFontSize(parsed);
       }
     }
-  }, [story.id, story.customBodyFont, story.defaultFont, story.bodyFontSize]);
+  }, [story?.id, story?.customBodyFont, story?.defaultFont, story?.bodyFontSize]);
 
   const [generalCommentText, setGeneralCommentText] = useState('');
   const [activeParagraphIndex, setActiveParagraphIndex] = useState<number | null>(null);
@@ -102,11 +98,6 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
   const [commentFilter, setCommentFilter] = useState<'all' | 'general' | 'paragraph'>('all');
   const [replyingToId, setReplyingToId] = useState<string | null>(null);
   const [replyText, setReplyText] = useState('');
-
-  const sortedChapters = [...allChapters].sort((a, b) => a.chapterNumber - b.chapterNumber);
-  const currentIndex = sortedChapters.findIndex(c => c.id === chapter.id);
-  const prevChapter = currentIndex > 0 ? sortedChapters[currentIndex - 1] : null;
-  const nextChapter = currentIndex < sortedChapters.length - 1 ? sortedChapters[currentIndex + 1] : null;
 
   // Password unlock state
   const [inputPassword, setInputPassword] = useState('');
@@ -119,7 +110,7 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
   useEffect(() => {
     setInputPassword('');
     setPasswordError(null);
-    if (!chapter.isPasswordProtected || !chapter.password) {
+    if (!chapter || !chapter.isPasswordProtected || !chapter.password) {
       setIsPasswordUnlocked(true);
       return;
     }
@@ -128,7 +119,31 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
       unlockedPassLocal.includes(chapter.id) ||
       !!(userProfile?.unlockedPasswordChapters && userProfile.unlockedPasswordChapters.includes(chapter.id));
     setIsPasswordUnlocked(isUnlocked);
-  }, [chapter.id, chapter.isPasswordProtected, chapter.password, currentUser?.uid, userProfile?.unlockedPasswordChapters]);
+  }, [chapter?.id, chapter?.isPasswordProtected, chapter?.password, currentUser?.uid, userProfile?.unlockedPasswordChapters]);
+
+  if (!story || !chapter) {
+    return (
+      <div className="max-w-4xl mx-auto p-8 text-center font-mono-code text-rose-400 space-y-4">
+        <p>Không tìm thấy truyện hoặc chương được yêu cầu.</p>
+        <button
+          onClick={onBackToStory}
+          className="px-4 py-2 border border-rose-800 bg-rose-950/50 text-xs rounded hover:bg-rose-900 transition cursor-pointer"
+        >
+          Quay lại trang truyện
+        </button>
+      </div>
+    );
+  }
+
+  const storyTitleFont = story.customTitleFont || story.defaultFont || 'font-mono';
+  const storyMutedFont = story.customMutedFont || story.defaultFont || 'font-mono';
+  const storyBtnFont = story.customBtnFont || story.defaultFont || 'font-mono';
+  const storyBodyFont = readerFont;
+
+  const sortedChapters = [...(allChapters || [])].filter(Boolean).sort((a, b) => a.chapterNumber - b.chapterNumber);
+  const currentIndex = sortedChapters.findIndex(c => c && c.id === chapter.id);
+  const prevChapter = currentIndex > 0 ? sortedChapters[currentIndex - 1] : null;
+  const nextChapter = currentIndex < sortedChapters.length - 1 ? sortedChapters[currentIndex + 1] : null;
 
   // Kiểm tra quyền đọc chương
   const isAuthorOrOwner = 
@@ -171,11 +186,11 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
     } else {
       window.scrollTo({ top: 0, behavior: 'instant' });
     }
-  }, [story.id, chapter.id, isChapterReadable]);
+  }, [story?.id, chapter?.id, isChapterReadable]);
 
   // Lắng nghe cuộn trang & tự động lưu vị trí đọc
   useEffect(() => {
-    if (!isChapterReadable) return;
+    if (!isChapterReadable || !story || !chapter) return;
 
     let timeoutId: any = null;
 
@@ -199,7 +214,7 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
       window.removeEventListener('scroll', handleScroll);
       if (timeoutId) clearTimeout(timeoutId);
     };
-  }, [story.id, chapter.id, chapter.title, chapter.chapterNumber, isChapterReadable]);
+  }, [story?.id, chapter?.id, chapter?.title, chapter?.chapterNumber, isChapterReadable]);
 
   const handleUnlockClick = async () => {
     if (!currentUser) {
