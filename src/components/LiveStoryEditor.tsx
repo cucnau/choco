@@ -4,7 +4,8 @@ import { User as FirebaseUser } from 'firebase/auth';
 import { auth } from '../lib/firebase';
 import { saveUserFontToCloud, deleteUserFontFromCloud, getUserFontsFromCloud } from '../lib/storage';
 import { getIdbFonts, saveIdbFonts, deleteIdbFont, migrateLocalStorageFonts, StoredUserFont } from '../lib/idbStorage';
-import { Story, UserProfile, CharacterInfo } from '../types';
+import { Story, UserProfile, CharacterInfo, Chapter } from '../types';
+import { BulkChapterModal } from './BulkChapterModal';
 import {
   ArrowLeft,
   Check,
@@ -36,6 +37,13 @@ import {
   Folder,
   GitCommit,
   Table,
+  Columns2,
+  Tag,
+  LayoutList,
+  FileText,
+  Lock,
+  Key,
+  UploadCloud,
 } from 'lucide-react';
 import { ReadingEffects } from './ReadingEffects';
 import {
@@ -331,8 +339,13 @@ interface LiveStoryEditorProps {
   initialStory?: Story | null;
   currentUser: FirebaseUser | null;
   userProfile: UserProfile | null;
+  chapters?: Chapter[];
+  onOpenChapterManager?: (story: Story) => void;
   onSave: (storyData: Partial<Story>) => void;
   onCancel: () => void;
+  onSaveChapter?: (chapter: Chapter) => void;
+  onDeleteChapter?: (chapterId: string, storyId: string) => void;
+  onSaveBatchChapters?: (chapters: Chapter[]) => Promise<void>;
 }
 
 interface LocalColorFieldProps {
@@ -472,8 +485,13 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
   initialStory,
   currentUser,
   userProfile,
+  chapters,
+  onOpenChapterManager,
   onSave,
   onCancel,
+  onSaveChapter,
+  onDeleteChapter,
+  onSaveBatchChapters,
 }) => {
   // Story fields
   const [title, setTitle] = useState(initialStory?.title || '');
@@ -495,6 +513,7 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
   const [synopsis, setSynopsis] = useState(initialStory?.synopsis || '');
   const [tags, setTags] = useState<string[]>(initialStory?.tags || []);
   const [newTagInput, setNewTagInput] = useState('');
+  const currentChapterCount = chapters ? chapters.length : (initialStory?.chapterCount || 0);
 
   // Styles & Theme
   const [themeTone, setThemeTone] = useState<string>(
@@ -532,7 +551,25 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
     (initialStory?.readingEffect as any) || 'none'
   );
 
-  const [previewMode, setPreviewMode] = useState<'story' | 'chapter'>('story');
+  // Working Story ID & Chapter Management States
+  const [workingStoryId] = useState<string>(() => initialStory?.id || 'story-' + Date.now());
+
+  // Editing active chapter state (null => Story Page view; not null => Chapter Reader & Editor view)
+  const [editingChapterItem, setEditingChapterItem] = useState<Chapter | null>(null);
+  const [isBulkUploading, setIsBulkUploading] = useState<boolean>(false);
+  const [chapterToDeleteItem, setChapterToDeleteItem] = useState<Chapter | null>(null);
+
+  // Form fields for active editing chapter
+  const [chapterTitleInput, setChapterTitleInput] = useState<string>('');
+  const [chapterVolumeTitleInput, setChapterVolumeTitleInput] = useState<string>('');
+  const [chapterContentInput, setChapterContentInput] = useState<string>('');
+  const [isChapterLockedInput, setIsChapterLockedInput] = useState<boolean>(false);
+  const [chapterUnlockPriceInput, setChapterUnlockPriceInput] = useState<number>(1);
+  const [isChapterPasswordProtectedInput, setIsChapterPasswordProtectedInput] = useState<boolean>(false);
+  const [chapterPasswordInput, setChapterPasswordInput] = useState<string>('');
+  const [chapterPasswordHintInput, setChapterPasswordHintInput] = useState<string>('');
+
+  const storyChapters = (chapters || []).filter((c) => c.storyId === workingStoryId);
 
   // Trạng thái Tách theme và hiệu ứng chương và truyện riêng biệt
   const [useSeparateChapterTheme, setUseSeparateChapterTheme] = useState<boolean>(initialStory?.useSeparateChapterTheme || false);
@@ -797,7 +834,7 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
   }, []);
 
   // Compute live visual tokens based on active preview page (if split)
-  const isViewingChapterTheme = useSeparateChapterTheme && previewMode === 'chapter';
+  const isViewingChapterTheme = useSeparateChapterTheme && editingChapterItem !== null;
   const activeTone = isViewingChapterTheme ? chapterThemeTone : themeTone;
   const isCustomTheme = activeTone === 'custom';
   const activePreset = PRESET_THEME_COLORS[activeTone] || PRESET_THEME_COLORS['dark-rose'];
@@ -836,7 +873,7 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
   const activeBGlow = isViewingChapterTheme ? chapterBorderGlow : borderGlow;
 
   const isSeparatedEffect = useSeparateChapterEffect || useSeparateChapterTheme;
-  const isViewingChapterEffect = isSeparatedEffect && previewMode === 'chapter';
+  const isViewingChapterEffect = isSeparatedEffect && editingChapterItem !== null;
   const activeReadingEffect = isViewingChapterEffect ? chapterReadingEffect : readingEffect;
 
   const currentBorderObj = {
@@ -1162,6 +1199,73 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
     reader.readAsDataURL(file);
   };
 
+  const handleOpenEditChapterItem = (chap: Chapter) => {
+    setEditingChapterItem(chap);
+    setChapterTitleInput(chap.title || '');
+    setChapterVolumeTitleInput(chap.volumeTitle || '');
+    setChapterContentInput(chap.content || '');
+    setIsChapterLockedInput(!!chap.isLocked);
+    setChapterUnlockPriceInput(chap.unlockPrice && chap.unlockPrice > 0 ? chap.unlockPrice : 1);
+    setIsChapterPasswordProtectedInput(!!chap.isPasswordProtected || !!chap.password);
+    setChapterPasswordInput(chap.password || '');
+    setChapterPasswordHintInput(chap.passwordHint || '');
+  };
+
+  const handleOpenCreateNewChapter = (presetVolume = '') => {
+    const nextNum = storyChapters.length + 1;
+    const newChap: Chapter = {
+      id: 'chap-' + Date.now(),
+      storyId: workingStoryId,
+      chapterNumber: nextNum,
+      title: `Chương ${nextNum}`,
+      volumeTitle: presetVolume,
+      content: '',
+      views: 0,
+      createdAt: new Date().toISOString().split('T')[0],
+      updatedAt: new Date().toISOString().split('T')[0],
+      isLocked: false,
+      unlockPrice: 1,
+      isPasswordProtected: false,
+      password: '',
+      passwordHint: '',
+    };
+    handleOpenEditChapterItem(newChap);
+  };
+
+  const handleSaveChapterItem = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!editingChapterItem) return;
+
+    if (!chapterTitleInput.trim()) {
+      alert('Vui lòng nhập tiêu đề chương.');
+      return;
+    }
+
+    if (isChapterPasswordProtectedInput && !chapterPasswordInput.trim()) {
+      alert('Vui lòng nhập mật khẩu (Pass) cho chương hoặc bỏ chọn ô đặt mật khẩu.');
+      return;
+    }
+
+    const updatedChap: Chapter = {
+      ...editingChapterItem,
+      storyId: workingStoryId,
+      title: chapterTitleInput.trim(),
+      volumeTitle: chapterVolumeTitleInput.trim() || undefined,
+      content: chapterContentInput.trim(),
+      isLocked: isChapterLockedInput,
+      unlockPrice: isChapterLockedInput ? Math.max(1, chapterUnlockPriceInput) : undefined,
+      isPasswordProtected: isChapterPasswordProtectedInput,
+      password: isChapterPasswordProtectedInput ? chapterPasswordInput.trim() : undefined,
+      passwordHint: isChapterPasswordProtectedInput ? (chapterPasswordHintInput.trim() || undefined) : undefined,
+      updatedAt: new Date().toISOString().split('T')[0],
+    };
+
+    if (onSaveChapter) {
+      onSaveChapter(updatedChap);
+    }
+    setEditingChapterItem(null);
+  };
+
   const handleSave = () => {
     if (!title.trim()) {
       alert('Vui lòng nhập tên truyện!');
@@ -1169,6 +1273,7 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
     }
 
     onSave({
+      id: workingStoryId,
       title: title.trim(),
       author: author.trim() || 'Tác giả',
       editorName: editorName.trim() || 'Cục Nâu',
@@ -1467,7 +1572,7 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
 
               {useSeparateChapterTheme && (
                 <div className="p-2 rounded text-[10px] font-mono border text-center font-bold" style={{ background: currentBtnSecondaryBg, borderColor: currentBorder }}>
-                  {previewMode === 'story' ? (
+                  {editingChapterItem === null ? (
                     <span className="text-amber-500">Thiết lập: Giao diện trang truyện</span>
                   ) : (
                     <span className="text-emerald-500">Thiết lập: Giao diện đọc chương</span>
@@ -1780,7 +1885,7 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
             <div className="space-y-4 text-xs">
               {useSeparateChapterTheme && (
                 <div className="p-2 rounded text-[10px] font-mono border text-center font-bold" style={{ background: currentBtnSecondaryBg, borderColor: currentBorder }}>
-                  {previewMode === 'story' ? (
+                  {editingChapterItem === null ? (
                     <span className="text-amber-500">Thiết lập viền: Giao diện trang truyện</span>
                   ) : (
                     <span className="text-emerald-500">Thiết lập viền: Giao diện đọc chương</span>
@@ -2092,52 +2197,33 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                 </button>
               </div>
 
-              {/* Khi bật tách hiệu ứng: Hiển thị cả 2 bộ chọn kèm tab xem trước */}
+              {/* Khi bật tách hiệu ứng: Hiển thị cả 2 bộ chọn */}
               {isSeparatedEffect ? (
                 <div className="space-y-3">
-                  {/* Nút chuyển đổi nhanh preview & mục tiêu cấu hình */}
-                  <div className="grid grid-cols-2 gap-1.5 p-1 rounded bg-black/20 border" style={{ borderColor: currentBorder }}>
-                    <button
-                      type="button"
-                      onClick={() => setPreviewMode('story')}
-                      className={`py-1.5 px-2 rounded text-[11px] font-bold flex items-center justify-center gap-1 transition ${
-                        previewMode === 'story'
-                          ? 'bg-amber-600 text-white shadow'
-                          : 'opacity-70 hover:opacity-100'
-                      }`}
-                      style={previewMode !== 'story' ? { color: currentText } : {}}
-                    >
-                      <span>Trang truyện</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setPreviewMode('chapter')}
-                      className={`py-1.5 px-2 rounded text-[11px] font-bold flex items-center justify-center gap-1 transition ${
-                        previewMode === 'chapter'
-                          ? 'bg-emerald-600 text-white shadow'
-                          : 'opacity-70 hover:opacity-100'
-                      }`}
-                      style={previewMode !== 'chapter' ? { color: currentText } : {}}
-                    >
-                      <span>Đọc chương</span>
-                    </button>
+                  {/* Thông tin mục tiêu cấu hình */}
+                  <div className="p-2 rounded text-[10px] font-mono border text-center font-bold" style={{ background: currentBtnSecondaryBg, borderColor: currentBorder }}>
+                    {editingChapterItem === null ? (
+                      <span className="text-amber-500">Đang hiển thị hiệu ứng: Trang truyện</span>
+                    ) : (
+                      <span className="text-emerald-500">Đang hiển thị hiệu ứng: Đọc chương</span>
+                    )}
                   </div>
 
                   {/* 1. Hiệu ứng Trang giới thiệu truyện */}
                   <div className={`p-2.5 rounded border space-y-1.5 transition-all ${
-                    previewMode === 'story' ? 'ring-1 ring-amber-500/50' : 'opacity-80'
+                    editingChapterItem === null ? 'ring-1 ring-amber-500/50' : 'opacity-80'
                   }`} style={{ background: currentBg, borderColor: currentBorder }}>
                     <div className="flex items-center justify-between">
                       <label className="block text-[11px] font-bold text-amber-500">
                         Hiệu ứng Trang giới thiệu truyện:
                       </label>
-                      {previewMode !== 'story' && (
+                      {editingChapterItem !== null && (
                         <button
                           type="button"
-                          onClick={() => setPreviewMode('story')}
-                          className="text-[10px] text-amber-400 underline hover:opacity-80 font-mono"
+                          onClick={() => setEditingChapterItem(null)}
+                          className="text-[10px] text-amber-400 underline hover:opacity-80 font-mono cursor-pointer"
                         >
-                          Xem trước
+                          Trở về trang truyện
                         </button>
                       )}
                     </div>
@@ -2162,21 +2248,12 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
 
                   {/* 2. Hiệu ứng Trang đọc chương */}
                   <div className={`p-2.5 rounded border space-y-1.5 transition-all ${
-                    previewMode === 'chapter' ? 'ring-1 ring-emerald-500/50' : 'opacity-80'
+                    editingChapterItem !== null ? 'ring-1 ring-emerald-500/50' : 'opacity-80'
                   }`} style={{ background: currentBg, borderColor: currentBorder }}>
                     <div className="flex items-center justify-between">
                       <label className="block text-[11px] font-bold text-emerald-500">
                         Hiệu ứng Trang đọc chương:
                       </label>
-                      {previewMode !== 'chapter' && (
-                        <button
-                          type="button"
-                          onClick={() => setPreviewMode('chapter')}
-                          className="text-[10px] text-emerald-400 underline hover:opacity-80 font-mono"
-                        >
-                          Xem trước
-                        </button>
-                      )}
                     </div>
                     <select
                       value={chapterReadingEffect}
@@ -2450,11 +2527,15 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                 </label>
                 <div className="grid grid-cols-1 gap-2">
                   {[
-                    { id: 'standard', name: 'Thẻ truyền thống', desc: 'Danh sách thẻ dọc chi tiết đầy đủ', icon: List },
-                    { id: 'grid', name: 'Lưới ô gọn gàng', desc: 'Các ô nút chương gọn nhẹ (Grid)', icon: LayoutGrid },
-                    { id: 'accordion', name: 'Gấp gọn theo Quyển', desc: 'Có thể thu/mở từng Quyển / Phần', icon: Folder },
-                    { id: 'timeline', name: 'Dòng thời gian', desc: 'Trục mốc thời gian nối dọc', icon: GitCommit },
-                    { id: 'minimal_table', name: 'Bảng phẳng tối giản', desc: 'Hàng phẳng đơn giản, cổ điển', icon: Table },
+                    { id: 'standard', name: 'Thẻ truyền thống', desc: 'Danh sách thẻ dọc chi tiết đầy đủ với hiệu ứng viền', icon: List },
+                    { id: 'grid', name: 'Lưới ô gọn gàng', desc: 'Các ô nút chương gọn nhẹ kiểu Webtoon/Manga', icon: LayoutGrid },
+                    { id: 'accordion', name: 'Gấp gọn theo Quyển', desc: 'Có thể bấm thu/mở từng Quyển hoặc Tập', icon: Folder },
+                    { id: 'timeline', name: 'Dòng thời gian nghệ thuật', desc: 'Trục mốc thời gian nối dọc phát sáng theo theme', icon: GitCommit },
+                    { id: 'minimal_table', name: 'Bảng phẳng tối giản', desc: 'Hàng phẳng đơn giản, cổ điển thanh lịch', icon: Table },
+                    { id: 'book_catalog', name: 'Mục lục sách xuất bản', desc: 'Chấm lửng nối liền giữa tên chương và số từ', icon: Columns2 },
+                    { id: 'scroll_strip', name: 'Thẻ con nhộng huy hiệu', desc: 'Các thẻ pill bo tròn mềm mại xếp cụm', icon: Tag },
+                    { id: 'cards_bento', name: 'Thẻ Bento đa giác quan', desc: 'Các khối chương to nhỏ nổi bật chương đọc dở', icon: LayoutList },
+                    { id: 'modern_compact', name: 'Hàng ngang số to', desc: 'Đánh số thứ tự 01, 02 nổi bật phong cách hiện đại', icon: List },
                   ].map((styleOpt) => {
                     const IconComp = styleOpt.icon;
                     const isSelected = chapterListStyle === styleOpt.id;
@@ -2731,133 +2812,252 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
           </button>
         </div>
 
-        {/* TOGGLE CHẾ ĐỘ XEM TRƯỚC GIAO DIỆN (TRANG GIỚI THIỆU VS TRANG ĐỌC CHƯƠNG) */}
-        <div className="flex items-center gap-1.5 sm:gap-4 border-b pb-1 font-mono text-xs sm:text-sm overflow-x-auto whitespace-nowrap" style={{ borderColor: currentBorder }}>
-          <button
-            type="button"
-            onClick={() => setPreviewMode('story')}
-            className={`px-3.5 py-2 font-bold uppercase tracking-wider border-b-2 transition-all duration-200 flex items-center gap-1.5 ${
-              previewMode === 'story'
-                ? 'border-current opacity-100 font-extrabold'
-                : 'border-transparent opacity-60 hover:opacity-100'
-            }`}
-            style={{ color: currentText }}
-          >
-            <BookOpen className="w-3.5 h-3.5" />
-            <span>Giao diện trang truyện</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setPreviewMode('chapter')}
-            className={`px-3.5 py-2 font-bold uppercase tracking-wider border-b-2 transition-all duration-200 flex items-center gap-1.5 ${
-              previewMode === 'chapter'
-                ? 'border-current opacity-100 font-extrabold'
-                : 'border-transparent opacity-60 hover:opacity-100'
-            }`}
-            style={{ color: currentText }}
-          >
-            <Bookmark className="w-3.5 h-3.5" />
-            <span>Giao diện đọc chương</span>
-          </button>
-        </div>
-
-        {/* LIVE ARTICLE CONTAINER OR CHAPTER PREVIEW */}
-        {previewMode === 'chapter' ? (
-          <article
-            className="p-6 space-y-6 relative transition-all duration-200 shadow-xl"
-            style={{
-              background: currentCardBg,
-              ...getStoryBorderStyle(currentBorderObj, currentBorder),
-            }}
-          >
-            {/* Vintage/Brackets Corner Decorators */}
-            <StoryCornerAccents accent={activeBCorner} borderStyle={currentBorderObj?.borderStyle} color={currentBorder} />
-
-            {/* Header: Chapter title, word count, date */}
-            <div className="text-center space-y-2 pb-5 border-b border-dashed" style={{ borderColor: currentBorder }}>
-              <span className={`text-[11px] font-bold uppercase tracking-widest ${customMutedFont}`} style={{ color: currentTextMuted }}>
-                Chương 1 (Đọc thử)
-              </span>
-              <h2 className={`text-xl sm:text-2xl font-bold tracking-wide leading-snug ${customTitleFont}`} style={{ color: currentText }}>
-                Đây là tiêu đề chương truyện mẫu
-              </h2>
-              <div className={`flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[10px] font-mono ${customMutedFont}`} style={{ color: currentTextMuted }}>
-                <span>Người đăng: {editorName}</span>
-                <span>•</span>
-                <span>1,250 chữ</span>
-                <span>•</span>
-                <span>Vừa xong</span>
+        {/* CHAPTER EDITOR VIEW VS STORY PAGE VIEW */}
+        {editingChapterItem !== null ? (
+          <div className="space-y-6 font-mono text-xs">
+            {/* Top Action Header */}
+            <div className="flex items-center justify-between gap-3 p-3.5 rounded-lg border font-mono shadow-sm" style={{ background: currentCardBg, borderColor: currentBorder }}>
+              <button
+                type="button"
+                onClick={() => setEditingChapterItem(null)}
+                className="px-3 py-1.5 text-xs font-bold rounded border flex items-center gap-1.5 hover:opacity-80 transition cursor-pointer"
+                style={{ background: currentBtnSecondaryBg, borderColor: currentBorder, color: currentText }}
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span>Quay lại trang truyện</span>
+              </button>
+              <div className="text-xs sm:text-sm font-bold truncate max-w-xs sm:max-w-md" style={{ color: currentText }}>
+                Sửa chương {editingChapterItem.chapterNumber}: {chapterTitleInput || '(Chưa có tiêu đề)'}
               </div>
+              <button
+                type="button"
+                onClick={handleSaveChapterItem}
+                className="px-4 py-1.5 text-xs font-bold uppercase rounded border shadow-sm flex items-center gap-1.5 hover:opacity-90 transition cursor-pointer"
+                style={{ background: currentBtnBg, borderColor: currentBtnBorder, color: currentBtnText }}
+              >
+                <Check className="w-4 h-4" />
+                <span>Lưu chương</span>
+              </button>
             </div>
 
-            {/* Mock Chapter Content Paragraphs */}
-            <div className={`space-y-4 text-sm leading-relaxed ${customBodyFont}`} style={{ color: currentText }}>
-              <p>
-                Đây là nội dung hiển thị dòng thứ nhất của chương truyện mẫu. Bạn có thể sử dụng dòng này để kiểm tra xem phông chữ thân bài hiển thị như thế nào, khoảng cách dòng có vừa vặn và dễ đọc hay không.
-              </p>
-              <p>
-                Đây là nội dung hiển thị dòng thứ hai của chương truyện mẫu. Màu sắc chữ, màu nền, các đường viền họa tiết trang trí và mức độ tương phản so với nền chương đọc sẽ được thể hiện trực tiếp tại đây giúp bạn dễ dàng căn chỉnh tông màu.
-              </p>
-              <p>
-                Đây là nội dung hiển thị dòng thứ ba của chương truyện mẫu. Toàn bộ các cài đặt về phông chữ, khoảng cách lề và khung viền của chương truyện thực tế khi độc giả đọc truyện sẽ xuất hiện giống hệt như thế này.
-              </p>
-            </div>
+            {/* LIVE CHAPTER READER PREVIEW */}
+            <article
+              className="p-6 sm:p-8 space-y-6 relative transition-all duration-200 shadow-xl rounded"
+              style={{
+                background: currentCardBg,
+                ...getStoryBorderStyle(currentBorderObj, currentBorder),
+              }}
+            >
+              <StoryCornerAccents accent={activeBCorner} borderStyle={currentBorderObj?.borderStyle} color={currentBorder} />
 
-            {/* Chapter Navigation controls */}
-            <div className="pt-6 border-t border-dashed space-y-4" style={{ borderColor: currentBorder }}>
-              <div className="flex items-center justify-between gap-2 font-mono text-xs">
-                <button
-                  type="button"
-                  disabled
-                  className="px-3.5 py-1.5 rounded border opacity-50 cursor-not-allowed transition flex items-center gap-1"
-                  style={{
-                    background: currentBtnSecondaryBg,
-                    borderColor: currentBtnBorder,
-                    color: currentText,
-                  }}
-                >
-                  <ChevronLeft className="w-3.5 h-3.5" />
-                  <span>Chương trước</span>
-                </button>
-
-                <button
-                  type="button"
-                  className="px-4 py-1.5 rounded border font-bold transition uppercase tracking-wider"
-                  style={{
-                    background: currentBtnBg,
-                    borderColor: currentBtnBorder,
-                    color: currentBtnText,
-                  }}
-                >
-                  Mục lục
-                </button>
-
-                <button
-                  type="button"
-                  className="px-3.5 py-1.5 rounded border hover:opacity-80 transition flex items-center gap-1"
-                  style={{
-                    background: currentBtnSecondaryBg,
-                    borderColor: currentBtnBorder,
-                    color: currentText,
-                  }}
-                >
-                  <span>Chương sau</span>
-                  <ChevronRight className="w-3.5 h-3.5" />
-                </button>
+              {/* Header: Chapter title, volume, author/editor, word count */}
+              <div className="text-center space-y-2 pb-5 border-b border-dashed" style={{ borderColor: currentBorder }}>
+                {chapterVolumeTitleInput && (
+                  <span className={`text-xs font-bold uppercase tracking-widest block ${customMutedFont}`} style={{ color: currentTextMuted }}>
+                    {chapterVolumeTitleInput}
+                  </span>
+                )}
+                <h2 className={`text-2xl sm:text-3xl font-bold tracking-wide leading-snug ${customTitleFont}`} style={{ color: currentText }}>
+                  {chapterTitleInput || `Chương ${editingChapterItem.chapterNumber}`}
+                </h2>
+                <div className={`flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs font-mono ${customMutedFont}`} style={{ color: currentTextMuted }}>
+                  <span>Người đăng: {editorName}</span>
+                  <span>•</span>
+                  <span>{(chapterContentInput.match(/\S+/g) || []).length} chữ</span>
+                  {isChapterLockedInput && (
+                    <>
+                      <span>•</span>
+                      <span className="text-amber-400 font-bold flex items-center gap-1"><Lock className="w-3 h-3" /> {chapterUnlockPriceInput} Chucu</span>
+                    </>
+                  )}
+                  {isChapterPasswordProtectedInput && (
+                    <>
+                      <span>•</span>
+                      <span className="text-rose-400 font-bold flex items-center gap-1"><Key className="w-3 h-3" /> Có Pass</span>
+                    </>
+                  )}
+                </div>
               </div>
 
-              {/* Back to story main link */}
-              <div className="text-center font-mono">
+              {/* Chapter Content Live Reading */}
+              <div className={`space-y-4 text-base leading-relaxed whitespace-pre-line ${customBodyFont}`} style={{ color: currentText }}>
+                {chapterContentInput.trim() ? (
+                  chapterContentInput
+                ) : (
+                  <span className="italic opacity-50 block text-center py-6">(Chưa có nội dung chữ. Nhập nội dung ở khung bên dưới để xem trực tiếp...)</span>
+                )}
+              </div>
+            </article>
+
+            {/* INTERACTIVE CHAPTER EDITING PANEL */}
+            <div className="p-5 sm:p-6 rounded border space-y-5 font-mono text-xs shadow-md" style={{ background: currentCardBg, borderColor: currentBorder }}>
+              <h3 className="text-sm font-bold uppercase tracking-wider flex items-center gap-2 pb-2 border-b" style={{ borderColor: currentBorder, color: currentText }}>
+                <Edit3 className="w-4 h-4 text-emerald-400" />
+                <span>Nội dung & Thông tin chương</span>
+              </h3>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="font-bold block" style={{ color: currentText }}>Tiêu đề chương *</label>
+                  <input
+                    type="text"
+                    value={chapterTitleInput}
+                    onChange={(e) => setChapterTitleInput(e.target.value)}
+                    placeholder="Ví dụ: Chương 1: Mở đầu định mệnh"
+                    className="w-full px-3 py-2 rounded border focus:outline-none"
+                    style={{ background: currentBtnSecondaryBg, borderColor: currentBorder, color: currentText }}
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="font-bold block" style={{ color: currentText }}>Tên phần / Quyển (Tùy chọn)</label>
+                  <input
+                    type="text"
+                    value={chapterVolumeTitleInput}
+                    onChange={(e) => setChapterVolumeTitleInput(e.target.value)}
+                    placeholder="Ví dụ: Quyển 1: Khởi đầu"
+                    className="w-full px-3 py-2 rounded border focus:outline-none"
+                    style={{ background: currentBtnSecondaryBg, borderColor: currentBorder, color: currentText }}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <div className="flex justify-between items-center">
+                  <label className="font-bold block" style={{ color: currentText }}>Nội dung chữ của chương *</label>
+                  <span style={{ color: currentTextMuted }}>{(chapterContentInput.match(/\S+/g) || []).length} từ</span>
+                </div>
+                <textarea
+                  rows={14}
+                  value={chapterContentInput}
+                  onChange={(e) => setChapterContentInput(e.target.value)}
+                  placeholder="Dán hoặc gõ nội dung chương vào đây..."
+                  className="w-full px-3 py-2 rounded border focus:outline-none leading-relaxed text-sm font-sans"
+                  style={{ background: currentBtnSecondaryBg, borderColor: currentBorder, color: currentText }}
+                />
+              </div>
+
+              {/* Lock & Pass Settings */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-3 border-t" style={{ borderColor: currentBorder }}>
+                {/* Lock Chucu */}
+                <div className="p-3.5 rounded border space-y-3" style={{ background: currentBtnSecondaryBg, borderColor: currentBorder }}>
+                  <label className="flex items-center gap-2 font-bold cursor-pointer" style={{ color: currentText }}>
+                    <input
+                      type="checkbox"
+                      checked={isChapterLockedInput}
+                      onChange={(e) => setIsChapterLockedInput(e.target.checked)}
+                      className="w-4 h-4 accent-amber-500 rounded"
+                    />
+                    <Lock className="w-4 h-4 text-amber-500" />
+                    <span>Khóa chương bằng Chucu</span>
+                  </label>
+                  {isChapterLockedInput && (
+                    <div className="space-y-1 pl-6">
+                      <label className="block text-[11px]" style={{ color: currentTextMuted }}>Số Chucu để mở khóa chương:</label>
+                      <input
+                        type="number"
+                        min={1}
+                        value={chapterUnlockPriceInput}
+                        onChange={(e) => setChapterUnlockPriceInput(Number(e.target.value))}
+                        className="w-full px-3 py-1.5 rounded border focus:outline-none font-bold text-amber-400 text-sm"
+                        style={{ background: currentCardBg, borderColor: currentBorder }}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Password Protection */}
+                <div className="p-3.5 rounded border space-y-3" style={{ background: currentBtnSecondaryBg, borderColor: currentBorder }}>
+                  <label className="flex items-center gap-2 font-bold cursor-pointer" style={{ color: currentText }}>
+                    <input
+                      type="checkbox"
+                      checked={isChapterPasswordProtectedInput}
+                      onChange={(e) => setIsChapterPasswordProtectedInput(e.target.checked)}
+                      className="w-4 h-4 accent-rose-500 rounded"
+                    />
+                    <Key className="w-4 h-4 text-rose-500" />
+                    <span>Đặt mật khẩu (Pass) cho chương</span>
+                  </label>
+                  {isChapterPasswordProtectedInput && (
+                    <div className="space-y-2 pl-6">
+                      <div>
+                        <label className="block text-[11px]" style={{ color: currentTextMuted }}>Mật khẩu mở chương *:</label>
+                        <input
+                          type="text"
+                          value={chapterPasswordInput}
+                          onChange={(e) => setChapterPasswordInput(e.target.value)}
+                          placeholder="Nhập mật khẩu..."
+                          className="w-full px-3 py-1.5 rounded border focus:outline-none font-bold text-rose-400 text-sm"
+                          style={{ background: currentCardBg, borderColor: currentBorder }}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px]" style={{ color: currentTextMuted }}>Gợi ý mật khẩu (Tùy chọn):</label>
+                        <input
+                          type="text"
+                          value={chapterPasswordHintInput}
+                          onChange={(e) => setChapterPasswordHintInput(e.target.value)}
+                          placeholder="VD: Ngày sinh tác giả"
+                          className="w-full px-3 py-1.5 rounded border focus:outline-none text-xs"
+                          style={{ background: currentCardBg, borderColor: currentBorder, color: currentText }}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Separate Chapter Theme & Effects Toggle */}
+              <div className="pt-3 border-t space-y-3" style={{ borderColor: currentBorder }}>
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <label className="flex items-center gap-2 font-bold cursor-pointer" style={{ color: currentText }}>
+                    <input
+                      type="checkbox"
+                      checked={useSeparateChapterTheme}
+                      onChange={(e) => {
+                        setUseSeparateChapterTheme(e.target.checked);
+                        setUseSeparateChapterEffect(e.target.checked);
+                      }}
+                      className="w-4 h-4 accent-emerald-500 rounded"
+                    />
+                    <Palette className="w-4 h-4 text-emerald-500" />
+                    <span>Thiết kế giao diện & hiệu ứng riêng cho chương này (Des giao diện)</span>
+                  </label>
+                  {useSeparateChapterTheme && (
+                    <button
+                      type="button"
+                      onClick={() => setActiveDrawerTab(activeDrawerTab ? null : 'theme')}
+                      className="px-3 py-1 text-[11px] font-bold rounded border hover:opacity-90 transition cursor-pointer"
+                      style={{ background: currentBtnBg, borderColor: currentBtnBorder, color: currentBtnText }}
+                    >
+                      Mở bảng Des giao diện chương
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Bottom Actions inside Chapter Editor */}
+              <div className="flex justify-between items-center pt-4 border-t" style={{ borderColor: currentBorder }}>
                 <button
                   type="button"
-                  className="text-[11px] underline hover:opacity-80 transition"
-                  style={{ color: currentTextMuted }}
+                  onClick={() => setEditingChapterItem(null)}
+                  className="px-4 py-2 rounded border hover:opacity-80 transition cursor-pointer"
+                  style={{ borderColor: currentBorder, color: currentTextMuted }}
                 >
-                  ← Trở về trang giới thiệu truyện
+                  ← Trở về trang truyện
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveChapterItem}
+                  className="px-6 py-2 font-bold uppercase rounded border shadow hover:opacity-90 transition flex items-center gap-2 cursor-pointer"
+                  style={{ background: currentBtnBg, borderColor: currentBtnBorder, color: currentBtnText }}
+                >
+                  <Check className="w-4 h-4" />
+                  <span>Lưu chương</span>
                 </button>
               </div>
             </div>
-          </article>
+          </div>
         ) : (
           <article
             className="p-6 space-y-6 relative transition-all duration-200"
@@ -3376,43 +3576,71 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                       />
                     </div>
 
-                    <div className="flex items-center justify-between text-[11px] gap-2 flex-wrap">
-                      <span style={{ color: currentTextMuted }}>
-                        Đã đăng: <strong style={{ color: currentText }}>{initialStory?.chapterCount || 0}</strong> chương
-                      </span>
-                      <div className="flex items-center gap-1">
-                        <span style={{ color: currentTextMuted }}>Tổng dự kiến:</span>
+                    <div className="flex items-center justify-between text-[11px] gap-2 flex-wrap" style={{ color: currentTextMuted }}>
+                      <span>Tiến độ:</span>
+                      <div className="flex items-center gap-1 font-mono">
+                        <strong style={{ color: currentText }}>{initialStory?.chapterCount || 0}</strong>
+                        <span>/</span>
                         <input
                           type="number"
                           min="1"
                           value={totalPlannedChapters || ''}
                           onChange={(e) => setTotalPlannedChapters(Math.max(0, parseInt(e.target.value) || 0))}
-                          placeholder="Số chương..."
-                          className="w-16 p-0.5 bg-transparent rounded border border-dashed text-xs text-center font-bold focus:outline-none"
+                          placeholder="Tổng..."
+                          className="w-14 p-0.5 bg-transparent rounded border border-dashed text-xs text-center font-bold focus:outline-none"
                           style={{ borderColor: currentBorder, color: currentText }}
                         />
-                        <span style={{ color: currentTextMuted }}>chương</span>
+                        <span>chương</span>
                       </div>
                     </div>
                   </div>
                 )}
               </div>
 
-              {/* Sample / Live Chapter List Preview in Editor */}
-              <div className="space-y-2.5 pt-4 border-t" style={{ borderColor: currentBorder }}>
+              {/* LIVE CHAPTER LIST & MANAGEMENT IN STORY PAGE */}
+              <div className="space-y-3 pt-4 border-t font-mono" style={{ borderColor: currentBorder }}>
                 <div className="flex items-center justify-between flex-wrap gap-2">
-                  <h3 className={`text-xs font-bold uppercase tracking-wider flex items-center gap-2 ${customBodyFont}`} style={{ color: currentText }}>
-                    <BookOpen className="w-4 h-4 opacity-80" />
-                    <span>Danh sách chương (Mẫu xem trước)</span>
-                  </h3>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className={`text-xs font-bold uppercase tracking-wider flex items-center gap-2 ${customBodyFont}`} style={{ color: currentText }}>
+                      <BookOpen className="w-4 h-4 opacity-80" />
+                      <span>Danh sách chương ({storyChapters.length})</span>
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={() => handleOpenCreateNewChapter()}
+                      className="px-2.5 py-1 rounded border text-[11px] font-bold flex items-center gap-1 transition shadow-xs hover:opacity-90 cursor-pointer"
+                      style={{ background: currentBtnBg, borderColor: currentBtnBorder, color: currentBtnText }}
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Thêm chương mới</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleOpenCreateNewChapter('Quyển 1: ...')}
+                      className="px-2.5 py-1 rounded border text-[11px] font-bold flex items-center gap-1 transition shadow-xs hover:opacity-90 cursor-pointer"
+                      style={{ background: currentBtnSecondaryBg, borderColor: currentBorder, color: currentText }}
+                    >
+                      <Folder className="w-3.5 h-3.5" />
+                      <span>Ngắt phần/quyển</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsBulkUploading(true)}
+                      className="px-2.5 py-1 rounded border text-[11px] font-bold flex items-center gap-1 transition shadow-xs hover:opacity-90 cursor-pointer"
+                      style={{ background: currentBtnSecondaryBg, borderColor: currentBorder, color: currentText }}
+                    >
+                      <UploadCloud className="w-3.5 h-3.5" />
+                      <span>Tải file tổng</span>
+                    </button>
+                  </div>
+
                   {/* Quick Layout Style Switcher */}
-                  <div className="flex items-center gap-1 p-0.5 rounded border" style={{ borderColor: currentBorder, background: currentBg }}>
+                  <div className="flex items-center gap-1 p-0.5 rounded border flex-wrap" style={{ borderColor: currentBorder, background: currentBg }}>
                     {[
                       { id: 'standard', label: 'Thẻ', icon: List },
                       { id: 'grid', label: 'Lưới', icon: LayoutGrid },
-                      { id: 'accordion', label: 'Gấp', icon: Folder },
-                      { id: 'timeline', label: 'Mốc', icon: GitCommit },
                       { id: 'minimal_table', label: 'Bảng', icon: Table },
+                      { id: 'book_catalog', label: 'Mục lục', icon: Columns2 },
                     ].map((st) => {
                       const IconC = st.icon;
                       const active = chapterListStyle === st.id;
@@ -3421,7 +3649,7 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                           key={st.id}
                           type="button"
                           onClick={() => setChapterListStyle(st.id as any)}
-                          className={`px-2 py-0.5 text-[10px] font-bold rounded flex items-center gap-1 transition ${
+                          className={`px-2 py-0.5 text-[10px] font-bold rounded flex items-center gap-1 transition cursor-pointer ${
                             active ? 'bg-emerald-600 text-white shadow-xs' : 'opacity-70 hover:opacity-100'
                           }`}
                           style={!active ? { color: currentText } : {}}
@@ -3435,122 +3663,93 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                   </div>
                 </div>
 
-                {/* Dynamic Preview according to selected chapterListStyle */}
-                {chapterListStyle === 'grid' ? (
-                  <div className="space-y-3">
-                    <div
-                      className="px-3 py-1.5 border font-bold text-xs uppercase rounded-xs"
-                      style={{ background: currentBtnSecondaryBg, borderColor: currentBorder, color: currentText }}
-                    >
-                      <span>Quyển 1: Khởi đầu huyền thoại (2 chương)</span>
-                    </div>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-                      <div className="p-2 text-center rounded border font-bold text-xs cursor-pointer hover:opacity-80" style={{ background: currentBtnSecondaryBg, borderColor: currentBorder, color: currentText }}>
-                        Chương 1
-                      </div>
-                      <div className="p-2 text-center rounded border font-bold text-xs cursor-pointer hover:opacity-80" style={{ background: currentBtnSecondaryBg, borderColor: currentBorder, color: currentText }}>
-                        Chương 2
-                      </div>
-                      <div className="p-2 text-center rounded border font-bold text-xs cursor-pointer hover:opacity-80 opacity-60" style={{ background: currentCardBg, borderColor: currentBorder, color: currentTextMuted }}>
-                        Chương 3 (Khoá)
-                      </div>
-                    </div>
-                  </div>
-                ) : chapterListStyle === 'accordion' ? (
-                  <div className="space-y-2">
-                    <div className="p-3 border rounded-xs font-bold text-xs flex items-center justify-between cursor-pointer" style={{ background: currentBtnSecondaryBg, borderColor: currentBorder, color: currentText }}>
-                      <div className="flex items-center gap-2">
-                        <Folder className="w-4 h-4 text-amber-500" />
-                        <span>Quyển 1: Khởi đầu huyền thoại</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-normal" style={{ color: currentTextMuted }}>2 chương</span>
-                        <ChevronUp className="w-4 h-4" />
-                      </div>
-                    </div>
-                    <div className="pl-3 space-y-1.5 border-l-2 ml-2" style={{ borderColor: currentBorder }}>
-                      <div className="p-2 text-xs rounded border flex justify-between" style={{ background: currentBtnSecondaryBg, borderColor: currentBorder, color: currentText }}>
-                        <span>Chương 1: Mở đầu định mệnh</span>
-                        <span className="text-[10px]" style={{ color: currentTextMuted }}>1,500 từ</span>
-                      </div>
-                      <div className="p-2 text-xs rounded border flex justify-between" style={{ background: currentBtnSecondaryBg, borderColor: currentBorder, color: currentText }}>
-                        <span>Chương 2: Sóng gió kéo đến</span>
-                        <span className="text-[10px]" style={{ color: currentTextMuted }}>2,100 từ</span>
-                      </div>
-                    </div>
-                  </div>
-                ) : chapterListStyle === 'timeline' ? (
-                  <div className="relative border-l-2 ml-3 pl-4 space-y-3 font-mono" style={{ borderColor: currentBorder }}>
-                    <div className="relative">
-                      <div className="absolute -left-[23px] top-0.5 w-3 h-3 rounded-full bg-amber-500 ring-4 ring-black/20" />
-                      <span className="text-xs font-bold uppercase block" style={{ color: currentText }}>
-                        Quyển 1: Khởi đầu huyền thoại
-                      </span>
-                    </div>
-                    <div className="relative p-2 rounded border" style={{ background: currentBtnSecondaryBg, borderColor: currentBorder }}>
-                      <div className="absolute -left-[23px] top-2.5 w-3 h-3 rounded-full bg-emerald-500" />
-                      <span className="font-bold text-xs block" style={{ color: currentText }}>Chương 1: Mở đầu định mệnh</span>
-                      <span className="text-[10px] block" style={{ color: currentTextMuted }}>Đã phát hành</span>
-                    </div>
-                    <div className="relative p-2 rounded border" style={{ background: currentBtnSecondaryBg, borderColor: currentBorder }}>
-                      <div className="absolute -left-[23px] top-2.5 w-3 h-3 rounded-full bg-emerald-500" />
-                      <span className="font-bold text-xs block" style={{ color: currentText }}>Chương 2: Sóng gió kéo đến</span>
-                      <span className="text-[10px] block" style={{ color: currentTextMuted }}>Đã phát hành</span>
-                    </div>
-                  </div>
-                ) : chapterListStyle === 'minimal_table' ? (
-                  <div className="border rounded divide-y" style={{ borderColor: currentBorder }}>
-                    <div className="px-3 py-1.5 font-bold text-xs bg-black/10 dark:bg-white/10" style={{ color: currentText }}>
-                      Quyển 1: Khởi đầu huyền thoại
-                    </div>
-                    <div className="p-2 text-xs flex justify-between items-center hover:bg-black/5" style={{ color: currentText }}>
-                      <span className="font-medium">Chương 1: Mở đầu định mệnh</span>
-                      <span className="text-[10px] font-mono" style={{ color: currentTextMuted }}>1,500 từ</span>
-                    </div>
-                    <div className="p-2 text-xs flex justify-between items-center hover:bg-black/5" style={{ color: currentText }}>
-                      <span className="font-medium">Chương 2: Sóng gió kéo đến</span>
-                      <span className="text-[10px] font-mono" style={{ color: currentTextMuted }}>2,100 từ</span>
+                {/* REAL CHAPTERS LIST RENDER */}
+                {storyChapters.length === 0 ? (
+                  <div className="p-8 text-center rounded border space-y-3" style={{ background: currentCardBg, borderColor: currentBorder }}>
+                    <BookOpen className="w-8 h-8 mx-auto opacity-50" style={{ color: currentTextMuted }} />
+                    <p className="text-sm font-medium" style={{ color: currentText }}>Chưa có chương nào trong bộ truyện này.</p>
+                    <p className="text-xs" style={{ color: currentTextMuted }}>Bấm nút "+ Thêm chương mới" hoặc "Tải file tổng" ở trên để tạo chương đầu tiên!</p>
+                    <div className="flex items-center justify-center gap-2 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => handleOpenCreateNewChapter()}
+                        className="px-4 py-2 rounded border text-xs font-bold flex items-center gap-1.5 shadow-sm hover:opacity-90 cursor-pointer"
+                        style={{ background: currentBtnBg, borderColor: currentBtnBorder, color: currentBtnText }}
+                      >
+                        <Plus className="w-4 h-4" />
+                        <span>+ Thêm chương 1</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setIsBulkUploading(true)}
+                        className="px-4 py-2 rounded border text-xs font-bold flex items-center gap-1.5 hover:opacity-90 cursor-pointer"
+                        style={{ background: currentBtnSecondaryBg, borderColor: currentBorder, color: currentText }}
+                      >
+                        <UploadCloud className="w-4 h-4" />
+                        <span>Tải file tổng</span>
+                      </button>
                     </div>
                   </div>
                 ) : (
-                  /* Standard Card List */
                   <div className="space-y-2">
-                    <div className="px-3 py-2 flex items-center justify-between border font-bold text-xs uppercase tracking-wider rounded-xs select-none shadow-xs"
-                      style={{
-                        background: currentBtnSecondaryBg,
-                        borderColor: currentBorder,
-                        color: currentText,
-                      }}
-                    >
-                      <div className="flex items-center gap-2">
-                        <BookOpen className="w-3.5 h-3.5 opacity-80" />
-                        <span className={customBodyFont}>Quyển 1: Khởi đầu huyền thoại</span>
-                      </div>
-                      <span className={`text-[10px] font-normal font-mono`} style={{ color: currentTextMuted }}>
-                        2 chương
-                      </span>
-                    </div>
+                    {storyChapters.map((chap) => (
+                      <div
+                        key={chap.id}
+                        className="p-3 rounded border flex items-center justify-between gap-3 transition hover:opacity-95 group shadow-xs"
+                        style={{ background: currentBtnSecondaryBg, borderColor: currentBorder }}
+                      >
+                        <div
+                          className="flex-1 min-w-0 cursor-pointer"
+                          onClick={() => handleOpenEditChapterItem(chap)}
+                        >
+                          {chap.volumeTitle && (
+                            <span className="text-[10px] font-bold uppercase tracking-wider block opacity-70" style={{ color: currentTextMuted }}>
+                              {chap.volumeTitle}
+                            </span>
+                          )}
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-xs truncate" style={{ color: currentText }}>
+                              {chap.title || `Chương ${chap.chapterNumber}`}
+                            </span>
+                            {chap.isLocked && (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded font-bold bg-amber-500/20 text-amber-400 border border-amber-500/40 flex items-center gap-0.5">
+                                <Lock className="w-2.5 h-2.5" /> {chap.unlockPrice || 1}
+                              </span>
+                            )}
+                            {chap.isPasswordProtected && (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded font-bold bg-rose-500/20 text-rose-400 border border-rose-500/40 flex items-center gap-0.5">
+                                <Key className="w-2.5 h-2.5" /> Pass
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-[10px] font-mono opacity-65 flex items-center gap-2 mt-0.5" style={{ color: currentTextMuted }}>
+                            <span>{(chap.content || '').match(/\S+/g)?.length || 0} từ</span>
+                            <span>•</span>
+                            <span>Cập nhật: {chap.updatedAt || chap.createdAt}</span>
+                          </div>
+                        </div>
 
-                    <div
-                      className="p-2.5 text-xs flex items-center justify-between rounded-xs transition"
-                      style={{
-                        background: currentBtnSecondaryBg,
-                        ...getStoryBorderStyle(
-                          {
-                            borderStyle: 'solid',
-                            borderWidth: 'thin',
-                            borderRadius,
-                            borderGlow: 'none',
-                          },
-                          currentBorder
-                        ),
-                      }}
-                    >
-                      <span className={`font-bold ${customBodyFont}`} style={{ color: currentText, fontSize: bodyFontSize }}>
-                        Chương 1: Mở đầu định mệnh
-                      </span>
-                      <span className="text-[10px] font-mono opacity-60 shrink-0 ml-2" style={{ color: currentTextMuted }}>1,500 từ</span>
-                    </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => handleOpenEditChapterItem(chap)}
+                            className="px-2.5 py-1 text-xs font-bold rounded border flex items-center gap-1 hover:opacity-80 transition cursor-pointer"
+                            style={{ background: currentBtnBg, borderColor: currentBtnBorder, color: currentBtnText }}
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                            <span>Sửa chương</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setChapterToDeleteItem(chap)}
+                            className="p-1.5 text-xs text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded transition cursor-pointer"
+                            title="Xóa chương này"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
@@ -3585,6 +3784,63 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
           </button>
         </div>
       </main>
+
+      {/* BULK CHAPTER UPLOAD MODAL */}
+      <BulkChapterModal
+        isOpen={isBulkUploading}
+        onClose={() => setIsBulkUploading(false)}
+        onImport={(importedChapters) => {
+          if (onSaveBatchChapters && importedChapters.length > 0) {
+            const mapped = importedChapters.map((c, idx) => ({
+              ...c,
+              storyId: workingStoryId,
+              chapterNumber: storyChapters.length + idx + 1,
+            }));
+            onSaveBatchChapters(mapped);
+          }
+          setIsBulkUploading(false);
+        }}
+      />
+
+      {/* DELETE CHAPTER CONFIRMATION MODAL */}
+      {chapterToDeleteItem && (
+        <div className="fixed inset-[#0000] bg-black/70 backdrop-blur-xs flex items-center justify-center p-4 z-[9999]">
+          <div
+            className="w-full max-w-sm p-5 rounded-lg border space-y-4 shadow-xl font-mono"
+            style={{ background: currentCardBg, borderColor: currentBorder, color: currentText }}
+          >
+            <h3 className="text-sm font-bold uppercase tracking-wider text-rose-400">Xác nhận xóa chương</h3>
+            <p className="text-xs">
+              Bạn có chắc chắn muốn xóa chương <strong className="underline">{chapterToDeleteItem.title || `Chương ${chapterToDeleteItem.chapterNumber}`}</strong>?
+            </p>
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setChapterToDeleteItem(null)}
+                className="px-3 py-1.5 text-xs rounded border hover:opacity-80 cursor-pointer"
+                style={{ borderColor: currentBorder, color: currentTextMuted }}
+              >
+                Hủy
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (onDeleteChapter && chapterToDeleteItem) {
+                    onDeleteChapter(chapterToDeleteItem.id);
+                  }
+                  if (editingChapterItem?.id === chapterToDeleteItem.id) {
+                    setEditingChapterItem(null);
+                  }
+                  setChapterToDeleteItem(null);
+                }}
+                className="px-4 py-1.5 text-xs font-bold rounded bg-rose-600 text-white hover:bg-rose-700 cursor-pointer"
+              >
+                Xóa ngay
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

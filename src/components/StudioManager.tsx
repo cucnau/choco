@@ -613,7 +613,7 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
       '';
 
     const newStory: Story = {
-      id: editingStory ? editingStory.id : 'story-' + Date.now(),
+      id: storyData.id || (editingStory ? editingStory.id : 'story-' + Date.now()),
       title: (storyData.title || '').trim(),
       author: (storyData.author || 'Tác giả').trim(),
       authorUid: currentUser?.uid || editingStory?.authorUid,
@@ -1599,14 +1599,6 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
                       )}
 
                       <button
-                        onClick={() => setSelectedStoryForChapters(story)}
-                        className="px-3 py-1.5 bg-[#1f1017] hover:bg-[#2d1822] border border-[#3d202e] text-[#e0c0cc] flex items-center gap-1 transition"
-                      >
-                        <FileText className="w-4 h-4" />
-                        <span>Chương ({storyChaps.length})</span>
-                      </button>
-
-                      <button
                         onClick={() => handleOpenEditStory(story)}
                         className="px-3 py-1.5 bg-[#1f1017] hover:bg-[#2d1822] border border-[#3d202e] text-[#e0c0cc] flex items-center gap-1 transition"
                       >
@@ -1712,6 +1704,14 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
           initialStory={editingStory}
           currentUser={currentUser}
           userProfile={userProfile}
+          chapters={editingStory ? chapters.filter((c) => c.storyId === editingStory.id) : chapters}
+          onSaveChapter={onSaveChapter}
+          onDeleteChapter={onDeleteChapter}
+          onSaveBatchChapters={onSaveBatchChapters}
+          onOpenChapterManager={(story) => {
+            setIsCreatingStory(false);
+            setSelectedStoryForChapters(story);
+          }}
           onSave={handleLiveStorySave}
           onCancel={() => {
             setIsCreatingStory(false);

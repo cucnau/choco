@@ -96,7 +96,7 @@ export interface Story {
   totalPlannedChapters?: number; // Tổng số chương dự kiến của bộ truyện
 
   // Kiểu trình bày danh sách chương (Chapter List Display Style)
-  chapterListStyle?: 'standard' | 'grid' | 'accordion' | 'timeline' | 'minimal_table';
+  chapterListStyle?: 'standard' | 'grid' | 'accordion' | 'timeline' | 'minimal_table' | 'book_catalog' | 'scroll_strip' | 'cards_bento' | 'modern_compact';
 
   readingEffect?: 'none' | 'rain' | 'snow' | 'glitch' | 'star' | 'leaf' | 'cherry_blossom' | 'firefly' | 'soap_bubble' | 'ginkgo'; // Hiệu ứng đọc truyện
   borderStyle?: 'solid' | 'double' | 'dashed' | 'dotted' | 'dash-dot' | 'sketch' | 'stitched' | 'gradient' | 'stamp' | 'film' | 'groove' | 'ridge' | 'offset' | 'none'; // Kiểu nét đường viền
