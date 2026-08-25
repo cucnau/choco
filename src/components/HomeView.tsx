@@ -52,8 +52,8 @@ export const HomeView: React.FC<HomeViewProps> = ({
     if (!s) return false;
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
-      const matchTitle = s.title.toLowerCase().includes(q);
-      const matchAuthor = s.author.toLowerCase().includes(q);
+      const matchTitle = s.title ? s.title.toLowerCase().includes(q) : false;
+      const matchAuthor = s.author ? s.author.toLowerCase().includes(q) : false;
       if (!matchTitle && !matchAuthor) return false;
     }
     return true;

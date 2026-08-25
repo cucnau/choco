@@ -71,9 +71,10 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
           </div>
         ) : (
           <div className="space-y-2">
-            {readingHistory.map((item) => {
-              const story = stories.find(s => s.id === item.storyId);
-              const chapter = chapters.find(c => c.id === item.chapterId);
+            {(readingHistory || []).map((item) => {
+              if (!item) return null;
+              const story = (stories || []).find(s => s && s.id === item.storyId);
+              const chapter = (chapters || []).find(c => c && c.id === item.chapterId);
               if (!story || !chapter) return null;
 
               return (

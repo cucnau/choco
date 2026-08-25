@@ -946,7 +946,11 @@ export default function App() {
             onBackToStory={() => {
               setSelectedChapter(null);
               if (selectedStory) {
-                navigateTo(`/truyen/${slugify(selectedStory.title)}`);
+                if (selectedStory.title) {
+                  navigateTo(`/truyen/${slugify(selectedStory.title)}`);
+                } else {
+                  navigateTo(`/truyen/${selectedStory.id}`);
+                }
               } else {
                 navigateTo('/home');
               }

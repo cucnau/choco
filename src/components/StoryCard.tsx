@@ -13,6 +13,8 @@ export const StoryCard: React.FC<StoryCardProps> = ({
   story,
   onSelectStory,
 }) => {
+  if (!story) return null;
+
   return (
     <article
       onClick={() => onSelectStory(story)}

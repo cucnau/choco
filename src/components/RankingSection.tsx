@@ -12,7 +12,8 @@ export const RankingSection: React.FC<RankingSectionProps> = ({
   onSelectStory,
 }) => {
   // Sort stories by viewsCount descending
-  const rankedStories = [...stories]
+  const rankedStories = [...(stories || [])]
+    .filter(Boolean)
     .sort((a, b) => (b.viewsCount || 0) - (a.viewsCount || 0))
     .slice(0, 3);
 

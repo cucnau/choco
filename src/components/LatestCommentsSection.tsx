@@ -18,14 +18,15 @@ export const LatestCommentsSection: React.FC<LatestCommentsSectionProps> = ({
   onSelectChapter,
 }) => {
   // Sort comments by timestamp/id (newest first)
-  const recentComments = [...comments].slice(0, 3);
+  const recentComments = [...(comments || [])].filter(Boolean).slice(0, 3);
 
   const handleCommentClick = (comment: Comment) => {
-    const story = stories.find((s) => s.id === comment.storyId);
+    if (!comment) return;
+    const story = (stories || []).find((s) => s && s.id === comment.storyId);
     if (!story) return;
 
     if (comment.chapterId) {
-      const chapter = chapters.find((c) => c.id === comment.chapterId);
+      const chapter = (chapters || []).find((c) => c && c.id === comment.chapterId);
       if (chapter) {
         onSelectChapter(chapter);
         return;
@@ -50,9 +51,10 @@ export const LatestCommentsSection: React.FC<LatestCommentsSectionProps> = ({
           </div>
         ) : (
           recentComments.map((comm) => {
-            const story = stories.find((s) => s.id === comm.storyId);
+            if (!comm) return null;
+            const story = (stories || []).find((s) => s && s.id === comm.storyId);
             const chapter = comm.chapterId
-              ? chapters.find((c) => c.id === comm.chapterId)
+              ? (chapters || []).find((c) => c && c.id === comm.chapterId)
               : null;
 
             return (
