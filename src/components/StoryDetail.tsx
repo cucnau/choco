@@ -413,6 +413,10 @@ export const StoryDetail: React.FC<StoryDetailProps> = ({
     ? (story.customBorderColor || '#5e2f46')
     : (tone.buttonBorderPrimary.match(/#([0-9a-fA-F]{6}|[0-9a-fA-F]{3})/)?.[0] ? `#${tone.buttonBorderPrimary.match(/#([0-9a-fA-F]{6}|[0-9a-fA-F]{3})/)![1]}` : activeBorderColor);
 
+  const activeBtnBgColor = isCustomTheme
+    ? (story.customBtnBgColor || '#f59e0b')
+    : (tone.buttonBgPrimary.match(/#([0-9a-fA-F]{6}|[0-9a-fA-F]{3})/)?.[0] ? `#${tone.buttonBgPrimary.match(/#([0-9a-fA-F]{6}|[0-9a-fA-F]{3})/)![1]}` : '#f59e0b');
+
   const storyBorderObj = {
     borderStyle: story.borderStyle || 'solid',
     borderWidth: story.borderWidth || 'thin',
@@ -857,7 +861,7 @@ export const StoryDetail: React.FC<StoryDetailProps> = ({
                   <div className="flex items-center gap-1.5 opacity-90">
                     <TrendingUp className="w-3.5 h-3.5 shrink-0" style={customStyles.text} />
                     <span className={`text-xs font-bold uppercase tracking-wider ${storyBodyFont}`} style={customStyles.text}>
-                      {story.progressWidgetTitle || 'Tiến độ bộ truyện'}
+                      {(!story.progressWidgetTitle || story.progressWidgetTitle === 'Tiến độ bộ truyện') ? 'Tiến độ' : story.progressWidgetTitle}
                     </span>
                   </div>
                   <span className={`text-xs font-bold font-mono ${storyBtnFont}`} style={customStyles.text}>
@@ -884,11 +888,50 @@ export const StoryDetail: React.FC<StoryDetailProps> = ({
                 </div>
 
                 <div className="flex items-center justify-between text-[11px] opacity-90" style={customStyles.textMuted}>
-                  <span>Tiến độ</span>
+                  <span></span>
                   <span className="font-mono">
                     <strong style={customStyles.text}>{chapters.length}</strong>/{story.totalPlannedChapters || '—'} chương
                   </span>
                 </div>
+              </div>
+            )}
+
+            {/* Widget nội dung tùy chỉnh (khi được bật) */}
+            {story?.showCustomWidget && (story.customWidgetTitle || story.customWidgetContent) && (
+              <div
+                className={`p-3 space-y-2 rounded transition border ${isCustomTheme ? '' : `${tone.inputBg}`}`}
+                style={{
+                  ...(isCustomTheme
+                    ? { background: story.customBtnSecondaryBgColor || story.customCardBgColor || story.customBgColor }
+                    : {}),
+                  ...getStoryBorderStyle(
+                    {
+                      borderStyle: story.borderStyle || 'solid',
+                      borderWidth: story.borderWidth || 'thin',
+                      borderRadius: story.borderRadius || 'xs',
+                      borderCornerAccent: story.borderCornerAccent || 'none',
+                      borderGlow: story.borderGlow || 'none',
+                    },
+                    activeBorderColor
+                  ),
+                }}
+              >
+                {story.customWidgetTitle && (
+                  <div className="flex items-center gap-1.5 opacity-90 border-b pb-1.5" style={{ borderColor: isCustomTheme ? story.customBorderColor : tone.border }}>
+                    <FileText className="w-3.5 h-3.5 shrink-0" style={customStyles.text} />
+                    <span className={`text-xs font-bold uppercase tracking-wider ${storyBodyFont}`} style={customStyles.text}>
+                      {story.customWidgetTitle}
+                    </span>
+                  </div>
+                )}
+                {story.customWidgetContent && (
+                  <div 
+                    className={`text-xs leading-relaxed opacity-90 whitespace-pre-wrap ${storyBodyFont}`} 
+                    style={customStyles.text}
+                  >
+                    {story.customWidgetContent}
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -1039,7 +1082,7 @@ export const StoryDetail: React.FC<StoryDetailProps> = ({
                               }}
                             >
                               <div className="flex items-center gap-2">
-                                <Folder className="w-4 h-4 text-amber-500 shrink-0" />
+                                <Folder className="w-4 h-4 shrink-0" style={customStyles.text} />
                                 <span className={storyBodyFont}>{vGroup.title || 'Danh sách chương'}</span>
                               </div>
                               <div className="flex items-center gap-2">
@@ -1071,8 +1114,8 @@ export const StoryDetail: React.FC<StoryDetailProps> = ({
                                         <span className="font-bold truncate">{chap.title}</span>
                                         {isReading && (
                                           <span
-                                            className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-600/30 text-emerald-400 font-mono"
-                                            style={isCustomTheme && story.customBtnBgColor ? { backgroundColor: `${story.customBtnBgColor}25`, color: story.customBtnBgColor } : {}}
+                                            className="text-[10px] px-1.5 py-0.5 rounded font-mono border"
+                                            style={{ backgroundColor: `${activeBtnBgColor}1a`, color: activeBtnBgColor, borderColor: `${activeBtnBgColor}33` }}
                                           >
                                             Đang đọc
                                           </span>
@@ -1113,7 +1156,10 @@ export const StoryDetail: React.FC<StoryDetailProps> = ({
                         <div key={vIdx} className="space-y-3">
                           {vGroup.title && (
                             <div className="relative pt-1 pb-1">
-                              <div className="absolute -left-[23px] top-2 w-3.5 h-3.5 rounded-full ring-4 ring-black/30" style={{ background: isCustomTheme ? (story.customBtnBgColor || '#f59e0b') : '#f59e0b' }} />
+                              <div 
+                                className="absolute -left-[24px] top-2 w-3.5 h-3.5 rounded-full ring-4 ring-black/30 border-2 z-10" 
+                                style={{ background: cardBgColor, borderColor: activeBtnBgColor }} 
+                              />
                               <span className={`text-xs font-bold uppercase tracking-wider block ${storyBodyFont}`} style={customStyles.text}>
                                 {vGroup.title}
                               </span>
@@ -1122,50 +1168,51 @@ export const StoryDetail: React.FC<StoryDetailProps> = ({
                           {vGroup.chapters.map((chap) => {
                             const { isUnlocked, isPassUnlocked, isAuthorOrOwner, isReading } = getChapterStatus(chap);
                             return (
-                              <div
-                                key={chap.id}
-                                onClick={() => onSelectChapter(chap)}
-                                className={`relative p-3 rounded-xs border cursor-pointer transition hover:scale-[1.01] active:scale-95 space-y-1 ${!isCustomTheme ? tone.inputBg : ''}`}
-                                style={{
-                                  ...itemBgStyle,
-                                  borderColor: activeBorderColor,
-                                  color: customStyles.text.color,
-                                }}
-                              >
+                              <div key={chap.id} className="relative">
                                 <div
-                                  className="absolute -left-[23px] top-3.5 w-3 h-3 rounded-full border border-black/40 bg-emerald-500"
-                                  style={isCustomTheme && story.customBtnBgColor ? { backgroundColor: story.customBtnBgColor } : {}}
+                                  className="absolute -left-[24px] top-3.5 w-3 h-3 rounded-full border-2 z-10"
+                                  style={{ backgroundColor: cardBgColor, borderColor: activeBtnBgColor }}
                                 />
-                                <div className="flex items-center justify-between gap-2">
-                                  <span className={`font-bold text-xs ${storyBodyFont}`} style={customStyles.text}>
-                                    {chap.title}
-                                  </span>
-                                  <span className={`text-[10px] font-mono shrink-0 ${storyMutedFont}`} style={customStyles.textMuted}>
-                                    {chap.createdAt}
-                                  </span>
-                                </div>
-                                {(isReading || chap.isLocked || chap.isPasswordProtected) && (
-                                  <div className="flex items-center gap-1.5 flex-wrap text-[10px]">
-                                    {isReading && (
-                                      <span
-                                        className="px-1.5 py-0.5 rounded bg-emerald-600/30 text-emerald-400 font-mono"
-                                        style={isCustomTheme && story.customBtnBgColor ? { backgroundColor: `${story.customBtnBgColor}25`, color: story.customBtnBgColor } : {}}
-                                      >
-                                        Đang đọc dở ({lastReadProgress?.progressPercent || 0}%)
-                                      </span>
-                                    )}
-                                    {chap.isLocked && (
-                                      <span className="px-1.5 py-0.5 rounded bg-amber-600/30 text-amber-400 font-mono">
-                                        {chap.unlockPrice || 1} Chucu
-                                      </span>
-                                    )}
-                                    {chap.isPasswordProtected && (
-                                      <span className="px-1.5 py-0.5 rounded bg-sky-600/30 text-sky-400 font-mono">
-                                        Có Pass
-                                      </span>
-                                    )}
+                                <div
+                                  onClick={() => onSelectChapter(chap)}
+                                  className={`p-3 rounded-xs border cursor-pointer transition hover:scale-[1.01] active:scale-95 space-y-1 ${!isCustomTheme ? tone.inputBg : ''}`}
+                                  style={{
+                                    ...itemBgStyle,
+                                    borderColor: activeBorderColor,
+                                    color: customStyles.text.color,
+                                  }}
+                                >
+                                  <div className="flex items-center justify-between gap-2">
+                                    <span className={`font-bold text-xs ${storyBodyFont}`} style={customStyles.text}>
+                                      {chap.title}
+                                    </span>
+                                    <span className={`text-[10px] font-mono shrink-0 ${storyMutedFont}`} style={customStyles.textMuted}>
+                                      {chap.createdAt}
+                                    </span>
                                   </div>
-                                )}
+                                  {(isReading || chap.isLocked || chap.isPasswordProtected) && (
+                                    <div className="flex items-center gap-1.5 flex-wrap text-[10px]">
+                                      {isReading && (
+                                        <span
+                                          className="px-1.5 py-0.5 rounded font-mono border"
+                                          style={{ backgroundColor: `${activeBtnBgColor}1a`, color: activeBtnBgColor, borderColor: `${activeBtnBgColor}33` }}
+                                        >
+                                          Đang đọc dở ({lastReadProgress?.progressPercent || 0}%)
+                                        </span>
+                                      )}
+                                      {chap.isLocked && (
+                                        <span className="px-1.5 py-0.5 rounded bg-amber-600/30 text-amber-400 font-mono">
+                                          {chap.unlockPrice || 1} Chucu
+                                        </span>
+                                      )}
+                                      {chap.isPasswordProtected && (
+                                        <span className="px-1.5 py-0.5 rounded bg-sky-600/30 text-sky-400 font-mono">
+                                          Có Pass
+                                        </span>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
                               </div>
                             );
                           })}
@@ -1202,8 +1249,8 @@ export const StoryDetail: React.FC<StoryDetailProps> = ({
                                   <span className={`font-medium ${storyBodyFont}`}>{chap.title}</span>
                                   {isReading && (
                                     <span
-                                      className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-600 text-white font-mono"
-                                      style={isCustomTheme && story.customBtnBgColor ? { backgroundColor: story.customBtnBgColor } : {}}
+                                      className="text-[10px] px-1.5 py-0.2 rounded font-mono border"
+                                      style={{ backgroundColor: `${activeBtnBgColor}1a`, color: activeBtnBgColor, borderColor: `${activeBtnBgColor}33` }}
                                     >
                                       Đọc dở
                                     </span>
@@ -1225,7 +1272,7 @@ export const StoryDetail: React.FC<StoryDetailProps> = ({
                 if (listStyle === 'book_catalog') {
                   return (
                     <div 
-                      className={`p-4 border rounded space-y-4 font-serif ${!isCustomTheme ? tone.inputBg : ''}`}
+                      className={`p-4 border rounded space-y-4 ${storyBodyFont} ${!isCustomTheme ? tone.inputBg : ''}`}
                       style={{
                         ...itemBgStyle,
                         borderColor: activeBorderColor,
@@ -1256,8 +1303,8 @@ export const StoryDetail: React.FC<StoryDetailProps> = ({
                                     <span className="font-medium truncate">{chap.title}</span>
                                     {isReading && (
                                       <span
-                                        className="text-[10px] font-mono px-1 py-0.2 rounded bg-emerald-600/30 text-emerald-400"
-                                        style={isCustomTheme && story.customBtnBgColor ? { backgroundColor: `${story.customBtnBgColor}25`, color: story.customBtnBgColor } : {}}
+                                        className="text-[10px] font-mono px-1 py-0.2 rounded border"
+                                        style={{ backgroundColor: `${activeBtnBgColor}1a`, color: activeBtnBgColor, borderColor: `${activeBtnBgColor}33` }}
                                       >
                                         Đang đọc
                                       </span>
@@ -1302,14 +1349,14 @@ export const StoryDetail: React.FC<StoryDetailProps> = ({
                                   onClick={() => onSelectChapter(chap)}
                                   className={`px-3 py-1.5 rounded-full border text-xs font-bold flex items-center gap-1.5 cursor-pointer transition shadow-xs hover:scale-105 active:scale-95 ${storyBodyFont} ${!isCustomTheme ? tone.inputBg : ''}`}
                                   style={{
-                                    ...(isReading && isCustomTheme && story.customBtnBgColor ? { background: story.customBtnBgColor, color: story.customTextColor } : itemBgStyle),
-                                    borderColor: isReading && isCustomTheme && story.customBtnBgColor ? story.customBtnBgColor : activeBorderColor,
-                                    color: customStyles.text.color,
+                                    ...(isReading ? { background: `${activeBtnBgColor}1a`, color: activeBtnBgColor } : itemBgStyle),
+                                    borderColor: isReading ? activeBtnBgColor : activeBorderColor,
+                                    color: isReading ? activeBtnBgColor : customStyles.text.color,
                                   }}
                                   title={chap.title}
                                 >
                                   <span>C.{chap.chapterNumber}: {chap.title}</span>
-                                  {isReading && <BookmarkCheck className="w-3 h-3 text-emerald-400" />}
+                                  {isReading && <BookmarkCheck className="w-3 h-3" style={{ color: activeBtnBgColor }} />}
                                   {isLocked && <Lock className="w-3 h-3 text-amber-400" />}
                                   {isPass && <Key className="w-3 h-3 text-sky-400" />}
                                 </button>
@@ -1358,8 +1405,8 @@ export const StoryDetail: React.FC<StoryDetailProps> = ({
                                     </span>
                                     {isReading && (
                                       <span
-                                        className="text-[10px] px-1.5 py-0.5 rounded font-bold shrink-0 bg-emerald-600 text-white"
-                                        style={isCustomTheme && story.customBtnBgColor ? { backgroundColor: story.customBtnBgColor, color: story.customBtnTextColor || '#ffffff' } : {}}
+                                        className="text-[10px] px-1.5 py-0.5 rounded font-bold shrink-0 border"
+                                        style={{ backgroundColor: `${activeBtnBgColor}1a`, color: activeBtnBgColor, borderColor: `${activeBtnBgColor}33` }}
                                       >
                                         Đang đọc ({lastReadProgress?.progressPercent || 0}%)
                                       </span>
@@ -1415,7 +1462,7 @@ export const StoryDetail: React.FC<StoryDetailProps> = ({
                                   color: customStyles.text.color,
                                 }}
                               >
-                                <span className="text-lg font-black font-mono w-8 text-center opacity-40 shrink-0" style={{ color: isReading ? '#10b981' : customStyles.text.color }}>
+                                <span className="text-lg font-black font-mono w-8 text-center opacity-40 shrink-0" style={{ color: isReading ? activeBtnBgColor : customStyles.text.color }}>
                                   {formattedNum}
                                 </span>
                                 <div className="flex-1 min-w-0">
@@ -1424,7 +1471,7 @@ export const StoryDetail: React.FC<StoryDetailProps> = ({
                                   </div>
                                   <div className={`text-[10px] flex items-center gap-2 ${storyMutedFont}`} style={customStyles.textMuted}>
                                     <span>{chap.createdAt}</span>
-                                    {isReading && <span className="text-emerald-400 font-bold">• Đang đọc dở</span>}
+                                    {isReading && <span className="font-bold" style={{ color: activeBtnBgColor }}>• Đang đọc dở</span>}
                                     {isLocked && <span className="text-amber-400 font-bold">• Khóa ({chap.unlockPrice || 1} Chucu)</span>}
                                     {isPass && <span className="text-sky-400 font-bold">• Có mật khẩu</span>}
                                   </div>
@@ -1438,7 +1485,55 @@ export const StoryDetail: React.FC<StoryDetailProps> = ({
                   );
                 }
 
-                // 9. KIỂU THẺ TRUYỀN THỐNG (STANDARD - DEFAULT)
+                // 9. KIỂU CHỈ HIỆN SỐ CHƯƠNG (NUMBERS_ONLY)
+                if (listStyle === 'numbers_only') {
+                  return (
+                    <div className="space-y-4">
+                      {volumeMap.map((vGroup, vIdx) => (
+                        <div key={vIdx} className="space-y-2">
+                          {vGroup.title && (
+                            <div className="px-3 py-1.5 font-bold text-xs uppercase tracking-wider" style={{ color: customStyles.textMuted.color || customStyles.text.color }}>
+                              {vGroup.title}
+                            </div>
+                          )}
+                          <div className="flex flex-wrap gap-2">
+                            {vGroup.chapters.map((chap) => {
+                              const { isUnlocked, isPassUnlocked, isAuthorOrOwner, isReading } = getChapterStatus(chap);
+                              const isLocked = chap.isLocked && !(isUnlocked || isAuthorOrOwner);
+                              const isPass = chap.isPasswordProtected && !(isPassUnlocked || isAuthorOrOwner);
+                              const formattedNum = String(chap.chapterNumber).padStart(2, '0');
+
+                              return (
+                                <button
+                                  key={chap.id}
+                                  type="button"
+                                  onClick={() => onSelectChapter(chap)}
+                                  className={`w-11 h-11 rounded-full border flex items-center justify-center font-bold text-sm relative transition-all hover:scale-105 active:scale-95 cursor-pointer shadow-xs ${storyBodyFont} ${!isCustomTheme ? tone.inputBg : ''}`}
+                                  style={{
+                                    ...itemBgStyle,
+                                    color: isReading ? activeBtnBgColor : customStyles.text.color,
+                                    borderColor: isReading ? activeBtnBgColor : activeBorderColor,
+                                    backgroundColor: isReading ? `${activeBtnBgColor}1a` : undefined,
+                                  }}
+                                  title={`Chương ${chap.chapterNumber}${chap.title ? `: ${chap.title}` : ''}`}
+                                >
+                                  <span>{formattedNum}</span>
+                                  {(isLocked || isPass) && (
+                                    <div className="absolute -top-1 -right-1 p-0.5 rounded-full bg-black/60 text-white border border-white/20">
+                                      {isLocked ? <Lock className="w-2 h-2 text-amber-400" /> : <Key className="w-2 h-2 text-rose-400" />}
+                                    </div>
+                                  )}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                }
+
+                // 10. KIỂU THẺ TRUYỀN THỐNG (STANDARD - DEFAULT)
                 return (
                   <div className="space-y-2">
                     {sorted.map((chap, idx) => {
@@ -1520,8 +1615,12 @@ export const StoryDetail: React.FC<StoryDetailProps> = ({
                               
                               {isReading && (
                                 <span 
-                                  className={`inline-flex items-center gap-1 px-2 py-0.5 border text-[11px] font-semibold ${storyBtnFont} ${isCustomTheme ? '' : `${tone.badgeLocked} ${tone.badgeLockedBorder} ${tone.badgeLockedText}`}`}
-                                  style={isCustomTheme ? { backgroundColor: story.customBtnBgColor, borderColor: story.customBorderColor, color: story.customTextColor } : {}}
+                                  className={`inline-flex items-center gap-1 px-2 py-0.5 border text-[11px] font-semibold ${storyBtnFont}`}
+                                  style={{
+                                    backgroundColor: `${activeBtnBgColor}1a`,
+                                    borderColor: `${activeBtnBgColor}33`,
+                                    color: activeBtnBgColor
+                                  }}
                                 >
                                   <BookmarkCheck className="w-3.5 h-3.5 opacity-80" />
                                   <span>Đang đọc dở ({lastReadProgress?.progressPercent || 0}%)</span>

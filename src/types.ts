@@ -95,8 +95,13 @@ export interface Story {
   progressWidgetTitle?: string; // Tiêu đề ô Widget (Mặc định: "Tiến độ hoàn thành" hoặc "Tiến độ bộ truyện")
   totalPlannedChapters?: number; // Tổng số chương dự kiến của bộ truyện
 
+  // Widget nội dung tùy chỉnh (Custom Content Widget)
+  showCustomWidget?: boolean; // Editor chọn bật/tắt hiển thị Widget tùy chỉnh
+  customWidgetTitle?: string; // Tiêu đề ô Widget tự đặt
+  customWidgetContent?: string; // Nội dung ô Widget tự viết
+
   // Kiểu trình bày danh sách chương (Chapter List Display Style)
-  chapterListStyle?: 'standard' | 'grid' | 'accordion' | 'timeline' | 'minimal_table' | 'book_catalog' | 'scroll_strip' | 'cards_bento' | 'modern_compact';
+  chapterListStyle?: 'standard' | 'grid' | 'accordion' | 'timeline' | 'minimal_table' | 'book_catalog' | 'scroll_strip' | 'cards_bento' | 'modern_compact' | 'numbers_only';
 
   readingEffect?: 'none' | 'rain' | 'snow' | 'glitch' | 'star' | 'leaf' | 'cherry_blossom' | 'firefly' | 'soap_bubble' | 'ginkgo'; // Hiệu ứng đọc truyện
   borderStyle?: 'solid' | 'double' | 'dashed' | 'dotted' | 'dash-dot' | 'sketch' | 'stitched' | 'gradient' | 'stamp' | 'film' | 'groove' | 'ridge' | 'offset' | 'none'; // Kiểu nét đường viền

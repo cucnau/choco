@@ -658,6 +658,11 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
       progressWidgetTitle: storyData.progressWidgetTitle,
       totalPlannedChapters: storyData.totalPlannedChapters,
 
+      // Widget nội dung tùy chỉnh
+      showCustomWidget: storyData.showCustomWidget,
+      customWidgetTitle: storyData.customWidgetTitle,
+      customWidgetContent: storyData.customWidgetContent,
+
       // Kiểu trình bày danh sách chương
       chapterListStyle: storyData.chapterListStyle,
 
