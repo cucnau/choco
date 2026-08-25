@@ -3786,21 +3786,29 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
       </main>
 
       {/* BULK CHAPTER UPLOAD MODAL */}
-      <BulkChapterModal
-        isOpen={isBulkUploading}
-        onClose={() => setIsBulkUploading(false)}
-        onImport={(importedChapters) => {
-          if (onSaveBatchChapters && importedChapters.length > 0) {
-            const mapped = importedChapters.map((c, idx) => ({
-              ...c,
-              storyId: workingStoryId,
-              chapterNumber: storyChapters.length + idx + 1,
-            }));
-            onSaveBatchChapters(mapped);
-          }
-          setIsBulkUploading(false);
-        }}
-      />
+      {isBulkUploading && (
+        <BulkChapterModal
+          story={{
+            id: workingStoryId,
+            title: title || 'Truyện mới',
+            author: author,
+            coverUrl: coverUrl,
+            synopsis: synopsis,
+            tags: tags,
+            viewsCount: initialStory?.viewsCount || 0,
+            createdAt: initialStory?.createdAt || new Date().toISOString().split('T')[0],
+            updatedAt: new Date().toISOString().split('T')[0],
+          }}
+          existingChapters={chapters || []}
+          onClose={() => setIsBulkUploading(false)}
+          onSaveBatch={async (importedChapters) => {
+            if (onSaveBatchChapters && importedChapters.length > 0) {
+              await onSaveBatchChapters(importedChapters);
+            }
+            setIsBulkUploading(false);
+          }}
+        />
+      )}
 
       {/* DELETE CHAPTER CONFIRMATION MODAL */}
       {chapterToDeleteItem && (

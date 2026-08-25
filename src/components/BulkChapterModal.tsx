@@ -133,7 +133,7 @@ export const BulkChapterModal: React.FC<BulkChapterModalProps> = ({
   onClose,
   onSaveBatch,
 }) => {
-  const storyChapters = (existingChapters || []).filter(c => c && story && c.storyId === story.id);
+  const storyChapters = (existingChapters || []).filter(c => c && story && c.storyId === story?.id);
   const defaultStartNum = storyChapters.length + 1;
 
   const [rawText, setRawText] = useState('');
@@ -311,7 +311,7 @@ export const BulkChapterModal: React.FC<BulkChapterModalProps> = ({
     const today = new Date().toISOString().split('T')[0];
     const newChaptersToSave: Chapter[] = toSave.map((item, idx) => ({
       id: 'chap-' + (Date.now() + idx),
-      storyId: story.id,
+      storyId: story?.id || '',
       chapterNumber: item.chapterNumber,
       title: item.title,
       volumeTitle: item.volumeTitle || undefined,
@@ -351,7 +351,7 @@ export const BulkChapterModal: React.FC<BulkChapterModalProps> = ({
                 </span>
               </h2>
               <p className="text-[11px] text-[#8a717a] mt-0.5">
-                Truyện: <span className="text-[#ffd6e2] font-semibold">{story.title}</span> (Đang có {storyChapters.length} chương)
+                Truyện: <span className="text-[#ffd6e2] font-semibold">{story?.title || 'Truyện mới'}</span> (Đang có {storyChapters.length} chương)
               </p>
             </div>
           </div>
@@ -842,7 +842,7 @@ export const BulkChapterModal: React.FC<BulkChapterModalProps> = ({
               {/* Footer Save Actions */}
               <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-[#23151b]">
                 <div className="text-[11px] text-[#8a717a]">
-                  Sẵn sàng đăng <span className="text-[#ffd6e2] font-bold">{selectedCount}</span> chương vào truyện "{story.title}".
+                  Sẵn sàng đăng <span className="text-[#ffd6e2] font-bold">{selectedCount}</span> chương vào truyện "{story?.title || 'Truyện mới'}".
                 </div>
 
                 <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
