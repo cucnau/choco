@@ -623,6 +623,8 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
   const [chapterListStyle, setChapterListStyle] = useState<NonNullable<Story['chapterListStyle']>>(
     initialStory?.chapterListStyle || 'standard'
   );
+  const [collapsedVolumes, setCollapsedVolumes] = useState<Record<string, boolean>>({});
+  const [showNewVolumeInput, setShowNewVolumeInput] = useState(false);
 
   // Form thêm/sửa nhân vật
   const [editingCharId, setEditingCharId] = useState<string | null>(null);
@@ -1209,6 +1211,14 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
     setIsChapterPasswordProtectedInput(!!chap.isPasswordProtected || !!chap.password);
     setChapterPasswordInput(chap.password || '');
     setChapterPasswordHintInput(chap.passwordHint || '');
+
+    const existingVols = Array.from(new Set(
+      storyChapters
+        .map(c => c.volumeTitle?.trim())
+        .filter((v): v is string => !!v)
+    ));
+    const isCustom = chap.volumeTitle ? !existingVols.includes(chap.volumeTitle.trim()) : false;
+    setShowNewVolumeInput(isCustom);
   };
 
   const handleOpenCreateNewChapter = (presetVolume = '') => {
@@ -2852,7 +2862,7 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
               </button>
             </div>
 
-            {/* LIVE CHAPTER READER PREVIEW */}
+            {/* LIVE CHAPTER READER PREVIEW (NOW AN INLINE DIRECT EDITOR) */}
             <article
               className="p-6 sm:p-8 space-y-6 relative transition-all duration-200 shadow-xl rounded"
               style={{
@@ -2863,18 +2873,86 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
               <StoryCornerAccents accent={activeBCorner} borderStyle={currentBorderObj?.borderStyle} color={currentBorder} />
 
               {/* Header: Chapter title, volume, author/editor, word count */}
-              <div className="text-center space-y-2 pb-5 border-b border-dashed" style={{ borderColor: currentBorder }}>
-                {chapterVolumeTitleInput && (
-                  <span className={`text-xs font-bold uppercase tracking-widest block ${customMutedFont}`} style={{ color: currentTextMuted }}>
-                    {chapterVolumeTitleInput}
+              <div className="text-center space-y-3 pb-5 border-b border-dashed" style={{ borderColor: currentBorder }}>
+                {/* Volume / Part Selector */}
+                <div className="flex flex-col items-center gap-1.5 max-w-sm mx-auto">
+                  <span className={`text-[10px] uppercase tracking-widest font-bold block ${customMutedFont}`} style={{ color: currentTextMuted }}>
+                    Phần / Quyển sách
                   </span>
-                )}
-                <h2 className={`text-2xl sm:text-3xl font-bold tracking-wide leading-snug ${customTitleFont}`} style={{ color: currentText }}>
-                  {chapterTitleInput || `Chương ${editingChapterItem.chapterNumber}`}
-                </h2>
+                  <div className="flex items-center gap-2 w-full justify-center">
+                    {(() => {
+                      const existingVols = Array.from(new Set(
+                        storyChapters
+                          .map(c => c.volumeTitle?.trim())
+                          .filter((v): v is string => !!v)
+                      ));
+                      const isPredefined = existingVols.includes(chapterVolumeTitleInput);
+                      const currentSelectValue = isPredefined ? chapterVolumeTitleInput : (chapterVolumeTitleInput === '' ? '' : '__new__');
+
+                      return (
+                        <select
+                          value={currentSelectValue}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            if (val === '__new__') {
+                              setChapterVolumeTitleInput('');
+                              setShowNewVolumeInput(true);
+                            } else {
+                              setChapterVolumeTitleInput(val);
+                              setShowNewVolumeInput(false);
+                            }
+                          }}
+                          className="px-2 py-1 text-xs rounded border bg-transparent focus:outline-none max-w-[220px]"
+                          style={{ borderColor: currentBorder, color: currentText, backgroundColor: currentBtnSecondaryBg }}
+                        >
+                          <option value="" style={{ color: '#000' }}>-- Chọn phần (Không phân phần) --</option>
+                          {existingVols.map((vol) => (
+                            <option key={vol} value={vol} style={{ color: '#000' }}>{vol}</option>
+                          ))}
+                          <option value="__new__" style={{ color: '#000' }}>+ Thêm phần mới...</option>
+                        </select>
+                      );
+                    })()}
+                  </div>
+
+                  {/* Text input to enter custom/new volume title */}
+                  {(showNewVolumeInput || (chapterVolumeTitleInput !== '' && !Array.from(new Set(storyChapters.map(c => c.volumeTitle?.trim()).filter((v): v is string => !!v))).includes(chapterVolumeTitleInput))) && (
+                    <input
+                      type="text"
+                      value={chapterVolumeTitleInput}
+                      onChange={(e) => setChapterVolumeTitleInput(e.target.value)}
+                      placeholder="Nhập tên phần mới..."
+                      className="px-2 py-1 text-xs rounded border text-center w-full max-w-[220px] focus:outline-none"
+                      style={{ borderColor: currentBorder, color: currentText, backgroundColor: currentBtnSecondaryBg }}
+                    />
+                  )}
+                </div>
+
+                {/* Chapter Title Inline Input */}
+                <div className="max-w-lg mx-auto">
+                  <input
+                    type="text"
+                    value={chapterTitleInput}
+                    onChange={(e) => setChapterTitleInput(e.target.value)}
+                    placeholder={`Chương ${editingChapterItem.chapterNumber}: Tiêu đề`}
+                    className={`w-full text-center bg-transparent border-b border-dashed focus:border-solid focus:outline-none text-2xl sm:text-3xl font-bold tracking-wide leading-snug ${customTitleFont} py-1 px-2`}
+                    style={{ color: currentText, borderColor: currentBorder }}
+                  />
+                </div>
+
                 <div className={`flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs font-mono ${customMutedFont}`} style={{ color: currentTextMuted }}>
-                  <span>Người đăng: {editorName}</span>
-                  <span>•</span>
+                  {author && (
+                    <>
+                      <span>Tác giả: {author}</span>
+                      <span>•</span>
+                    </>
+                  )}
+                  {editorName && (
+                    <>
+                      <span>Người đăng: {editorName}</span>
+                      <span>•</span>
+                    </>
+                  )}
                   <span>{(chapterContentInput.match(/\S+/g) || []).length} chữ</span>
                   {isChapterLockedInput && (
                     <>
@@ -2891,66 +2969,23 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                 </div>
               </div>
 
-              {/* Chapter Content Live Reading */}
-              <div className={`space-y-4 text-base leading-relaxed whitespace-pre-line ${customBodyFont}`} style={{ color: currentText }}>
-                {chapterContentInput.trim() ? (
-                  chapterContentInput
-                ) : (
-                  <span className="italic opacity-50 block text-center py-6">(Chưa có nội dung chữ. Nhập nội dung ở khung bên dưới để xem trực tiếp...)</span>
-                )}
-              </div>
-            </article>
-
-            {/* INTERACTIVE CHAPTER EDITING PANEL */}
-            <div className="p-5 sm:p-6 rounded border space-y-5 font-mono text-xs shadow-md" style={{ background: currentCardBg, borderColor: currentBorder }}>
-              <h3 className="text-sm font-bold uppercase tracking-wider flex items-center gap-2 pb-2 border-b" style={{ borderColor: currentBorder, color: currentText }}>
-                <Edit3 className="w-4 h-4 text-emerald-400" />
-                <span>Nội dung & Thông tin chương</span>
-              </h3>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="font-bold block" style={{ color: currentText }}>Tiêu đề chương *</label>
-                  <input
-                    type="text"
-                    value={chapterTitleInput}
-                    onChange={(e) => setChapterTitleInput(e.target.value)}
-                    placeholder="Ví dụ: Chương 1: Mở đầu định mệnh"
-                    className="w-full px-3 py-2 rounded border focus:outline-none"
-                    style={{ background: currentBtnSecondaryBg, borderColor: currentBorder, color: currentText }}
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="font-bold block" style={{ color: currentText }}>Tên phần / Quyển (Tùy chọn)</label>
-                  <input
-                    type="text"
-                    value={chapterVolumeTitleInput}
-                    onChange={(e) => setChapterVolumeTitleInput(e.target.value)}
-                    placeholder="Ví dụ: Quyển 1: Khởi đầu"
-                    className="w-full px-3 py-2 rounded border focus:outline-none"
-                    style={{ background: currentBtnSecondaryBg, borderColor: currentBorder, color: currentText }}
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <div className="flex justify-between items-center">
-                  <label className="font-bold block" style={{ color: currentText }}>Nội dung chữ của chương *</label>
-                  <span style={{ color: currentTextMuted }}>{(chapterContentInput.match(/\S+/g) || []).length} từ</span>
-                </div>
+              {/* Chapter Content Live Reading -> DIRECT INLINE TEXTAREA */}
+              <div className={`space-y-4 text-base leading-relaxed ${customBodyFont}`} style={{ color: currentText }}>
                 <textarea
-                  rows={14}
+                  rows={15}
                   value={chapterContentInput}
                   onChange={(e) => setChapterContentInput(e.target.value)}
                   placeholder="Dán hoặc gõ nội dung chương vào đây..."
-                  className="w-full px-3 py-2 rounded border focus:outline-none leading-relaxed text-sm font-sans"
-                  style={{ background: currentBtnSecondaryBg, borderColor: currentBorder, color: currentText }}
+                  className="w-full min-h-[450px] bg-transparent focus:outline-none resize-y leading-relaxed text-base border-none p-2"
+                  style={{ color: currentText }}
                 />
               </div>
+            </article>
 
+            {/* CONFIGURATION & SETTINGS PANEL */}
+            <div className="p-5 sm:p-6 rounded border space-y-5 font-mono text-xs shadow-md" style={{ background: currentCardBg, borderColor: currentBorder }}>
               {/* Lock & Pass Settings */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-3 border-t" style={{ borderColor: currentBorder }}>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4" style={{ borderColor: currentBorder }}>
                 {/* Lock Chucu */}
                 <div className="p-3.5 rounded border space-y-3" style={{ background: currentBtnSecondaryBg, borderColor: currentBorder }}>
                   <label className="flex items-center gap-2 font-bold cursor-pointer" style={{ color: currentText }}>
@@ -3707,68 +3742,526 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                       </button>
                     </div>
                   </div>
-                ) : (
-                  <div className="space-y-2">
-                    {storyChapters.map((chap) => (
+                ) : (() => {
+                  // Nhóm chương theo Volume để hiển thị tương tự giao diện độc giả
+                  const volumeMap: Array<{ title: string | null; chapters: Chapter[] }> = [];
+                  storyChapters.forEach((chap) => {
+                    const vTitle = chap.volumeTitle || null;
+                    let vObj = volumeMap.find((v) => v.title === vTitle);
+                    if (!vObj) {
+                      vObj = { title: vTitle, chapters: [] };
+                      volumeMap.push(vObj);
+                    }
+                    vObj.chapters.push(chap);
+                  });
+
+                  // 1. KIỂU LƯỚI Ô GỌN GÀNG (GRID)
+                  if (chapterListStyle === 'grid') {
+                    return (
+                      <div className="space-y-4">
+                        {volumeMap.map((vGroup, vIdx) => (
+                          <div key={vIdx} className="space-y-2">
+                            {vGroup.title && (
+                              <div
+                                className="px-3 py-1.5 flex items-center justify-between border font-bold text-xs uppercase tracking-wider rounded-xs select-none shadow-xs"
+                                style={{
+                                  background: currentBtnSecondaryBg,
+                                  borderColor: currentBorder,
+                                  color: currentText,
+                                }}
+                              >
+                                <div className="flex items-center gap-2">
+                                  <BookOpen className="w-3.5 h-3.5 opacity-80" />
+                                  <span>{vGroup.title}</span>
+                                </div>
+                                <span className="text-[10px] font-mono opacity-70">
+                                  {vGroup.chapters.length} chương
+                                </span>
+                              </div>
+                            )}
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                              {vGroup.chapters.map((chap) => (
+                                <div
+                                  key={chap.id}
+                                  className="p-2.5 rounded border text-center font-bold text-xs relative flex flex-col items-center justify-center gap-1 cursor-pointer transition-all hover:scale-[1.02] group shadow-xs"
+                                  style={{
+                                    background: currentBtnSecondaryBg,
+                                    borderColor: currentBorder,
+                                    color: currentText,
+                                  }}
+                                  onClick={() => handleOpenEditChapterItem(chap)}
+                                >
+                                  <span className="truncate max-w-full font-bold">Chương {chap.chapterNumber}</span>
+                                  <div className="flex items-center gap-1 text-[10px]">
+                                    {chap.isLocked && <Lock className="w-3 h-3 text-amber-400" />}
+                                    {chap.isPasswordProtected && <Key className="w-3 h-3 text-rose-400" />}
+                                  </div>
+                                  <div className="absolute inset-0 bg-black/70 rounded flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button
+                                      type="button"
+                                      onClick={(e) => { e.stopPropagation(); setChapterToDeleteItem(chap); }}
+                                      className="p-2 rounded bg-red-600/80 hover:bg-red-600 text-white"
+                                      title="Xóa chương"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  }
+
+                  // 2. KIỂU GẤP GỌN THEO QUYỂN (ACCORDION)
+                  if (chapterListStyle === 'accordion') {
+                    return (
+                      <div className="space-y-3">
+                        {volumeMap.map((vGroup, vIdx) => {
+                          const volKey = vGroup.title || `vol_none_${vIdx}`;
+                          const isCollapsed = !!collapsedVolumes[volKey];
+                          return (
+                            <div key={vIdx} className="space-y-2">
+                              <div
+                                onClick={() => setCollapsedVolumes(prev => ({ ...prev, [volKey]: !prev[volKey] }))}
+                                className="p-3 border rounded-xs font-bold text-xs flex items-center justify-between cursor-pointer select-none transition hover:opacity-90"
+                                style={{
+                                  background: currentBtnSecondaryBg,
+                                  borderColor: currentBorder,
+                                  color: currentText,
+                                }}
+                              >
+                                <div className="flex items-center gap-2">
+                                  <Folder className="w-4 h-4 text-amber-500 shrink-0" />
+                                  <span>{vGroup.title || 'Danh sách chương'}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-[10px] font-mono opacity-70">
+                                    {vGroup.chapters.length} chương
+                                  </span>
+                                  {isCollapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+                                </div>
+                              </div>
+
+                              {!isCollapsed && (
+                                <div className="pl-2 space-y-1.5 border-l-2 ml-2 transition-all animate-fade-in" style={{ borderColor: currentBorder }}>
+                                  {vGroup.chapters.map((chap) => (
+                                    <div
+                                      key={chap.id}
+                                      className="p-2.5 text-xs flex items-center justify-between rounded-xs transition hover:opacity-95 cursor-pointer"
+                                      style={{
+                                        background: currentBtnSecondaryBg,
+                                        borderColor: currentBorder,
+                                        color: currentText,
+                                      }}
+                                      onClick={() => handleOpenEditChapterItem(chap)}
+                                    >
+                                      <div className="flex-1 min-w-0 flex items-center gap-2 pr-2">
+                                        <span className="font-bold truncate">{chap.title || `Chương ${chap.chapterNumber}`}</span>
+                                        {chap.isLocked && <Lock className="w-3 h-3 text-amber-400 shrink-0" />}
+                                        {chap.isPasswordProtected && <Key className="w-3 h-3 text-rose-400 shrink-0" />}
+                                      </div>
+                                      <div className="flex items-center shrink-0">
+                                        <button
+                                          type="button"
+                                          onClick={(e) => { e.stopPropagation(); setChapterToDeleteItem(chap); }}
+                                          className="p-1 rounded text-rose-400 hover:text-rose-300"
+                                        >
+                                          <Trash2 className="w-3.5 h-3.5" />
+                                        </button>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  }
+
+                  // 3. KIỂU DÒNG THỜI GIAN NGHỆ THUẬT (TIMELINE)
+                  if (chapterListStyle === 'timeline') {
+                    return (
+                      <div className="relative border-l-2 ml-4 pl-4 space-y-4 pt-1" style={{ borderColor: currentBorder }}>
+                        {volumeMap.map((vGroup, vIdx) => (
+                          <div key={vIdx} className="space-y-3">
+                            {vGroup.title && (
+                              <div className="relative pt-1 pb-1">
+                                <div className="absolute -left-[23px] top-2 w-3.5 h-3.5 rounded-full ring-4 ring-black/30" style={{ background: currentBtnBg }} />
+                                <span className="text-xs font-bold uppercase tracking-wider block" style={{ color: currentText }}>
+                                  {vGroup.title}
+                                </span>
+                              </div>
+                            )}
+                            {vGroup.chapters.map((chap) => (
+                              <div
+                                key={chap.id}
+                                className="relative p-3 rounded-xs border flex items-center justify-between gap-3 transition hover:scale-[1.01] shadow-xs cursor-pointer"
+                                style={{
+                                  background: currentBtnSecondaryBg,
+                                  borderColor: currentBorder,
+                                }}
+                                onClick={() => handleOpenEditChapterItem(chap)}
+                              >
+                                <div
+                                  className="absolute -left-[23px] top-3.5 w-3 h-3 rounded-full border border-black/40"
+                                  style={{ backgroundColor: currentBtnBg }}
+                                />
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-bold text-xs truncate" style={{ color: currentText }}>
+                                      {chap.title || `Chương ${chap.chapterNumber}`}
+                                    </span>
+                                    {chap.isLocked && <Lock className="w-3 h-3 text-amber-400 shrink-0" />}
+                                    {chap.isPasswordProtected && <Key className="w-3 h-3 text-rose-400 shrink-0" />}
+                                  </div>
+                                  <div className="text-[10px] opacity-65 font-mono mt-0.5" style={{ color: currentTextMuted }}>
+                                    Cập nhật: {chap.updatedAt || chap.createdAt}
+                                  </div>
+                                </div>
+                                <div className="flex items-center shrink-0">
+                                  <button
+                                    type="button"
+                                    onClick={(e) => { e.stopPropagation(); setChapterToDeleteItem(chap); }}
+                                    className="p-1 rounded text-rose-400 hover:text-rose-300"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  }
+
+                  // 4. KIỂU BẢNG PHẲNG TỐI GIẢN (MINIMAL_TABLE)
+                  if (chapterListStyle === 'minimal_table') {
+                    return (
+                      <div className="border rounded-xs divide-y overflow-hidden" style={{ borderColor: currentBorder }}>
+                        {volumeMap.map((vGroup, vIdx) => (
+                          <React.Fragment key={vIdx}>
+                            {vGroup.title && (
+                              <div className="px-3 py-2 font-bold text-xs bg-black/10 dark:bg-white/10 flex justify-between items-center" style={{ color: currentText }}>
+                                <span>{vGroup.title}</span>
+                                <span className="text-[10px] font-mono opacity-75">{vGroup.chapters.length} chương</span>
+                              </div>
+                            )}
+                            {vGroup.chapters.map((chap) => (
+                              <div
+                                key={chap.id}
+                                className="p-2.5 text-xs flex items-center justify-between transition hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer"
+                                style={{ color: currentText }}
+                                onClick={() => handleOpenEditChapterItem(chap)}
+                              >
+                                <div className="flex-1 min-w-0 flex items-center gap-2 pr-2">
+                                  <span className="font-medium truncate">{chap.title || `Chương ${chap.chapterNumber}`}</span>
+                                  {chap.isLocked && <Lock className="w-3 h-3 text-amber-400 shrink-0" />}
+                                  {chap.isPasswordProtected && <Key className="w-3 h-3 text-rose-400 shrink-0" />}
+                                </div>
+                                <div className="flex items-center shrink-0">
+                                  <button
+                                    type="button"
+                                    onClick={(e) => { e.stopPropagation(); setChapterToDeleteItem(chap); }}
+                                    className="p-1 rounded text-rose-400 hover:text-rose-300"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </React.Fragment>
+                        ))}
+                      </div>
+                    );
+                  }
+
+                  // 5. KIỂU MỤC LỤC SÁCH XUẤT BẢN (BOOK_CATALOG)
+                  if (chapterListStyle === 'book_catalog') {
+                    return (
                       <div
-                        key={chap.id}
-                        className="p-3 rounded border flex items-center justify-between gap-3 transition hover:opacity-95 group shadow-xs"
-                        style={{ background: currentBtnSecondaryBg, borderColor: currentBorder }}
+                        className="p-4 border rounded space-y-4 font-serif shadow-xs"
+                        style={{
+                          background: currentBtnSecondaryBg,
+                          borderColor: currentBorder,
+                        }}
                       >
+                        <div className="text-center font-bold text-xs uppercase tracking-widest pb-1 border-b" style={{ borderColor: currentBorder, color: currentText }}>
+                          — Mục Lục —
+                        </div>
+                        {volumeMap.map((vGroup, vIdx) => (
+                          <div key={vIdx} className="space-y-2">
+                            {vGroup.title && (
+                              <div className="font-bold text-xs uppercase tracking-wider opacity-85 animate-pulse" style={{ color: currentText }}>
+                                {vGroup.title}
+                              </div>
+                            )}
+                            <div className="space-y-1.5 text-xs">
+                              {vGroup.chapters.map((chap) => (
+                                <div
+                                  key={chap.id}
+                                  className="flex items-baseline justify-between gap-2 py-0.5 cursor-pointer hover:opacity-85"
+                                  style={{ color: currentText }}
+                                  onClick={() => handleOpenEditChapterItem(chap)}
+                                >
+                                  <div className="flex-1 min-w-0 flex items-center gap-1.5 truncate">
+                                    <span className="font-medium truncate">{chap.title || `Chương ${chap.chapterNumber}`}</span>
+                                    {chap.isLocked && <Lock className="w-3 h-3 text-amber-400 shrink-0" />}
+                                    {chap.isPasswordProtected && <Key className="w-3 h-3 text-rose-400 shrink-0" />}
+                                  </div>
+                                  <span className="flex-1 border-b border-dotted mx-1 opacity-40 shrink-0" style={{ borderColor: currentText }}></span>
+                                  <div className="flex items-center shrink-0 font-sans ml-1">
+                                    <button
+                                      type="button"
+                                      onClick={(e) => { e.stopPropagation(); setChapterToDeleteItem(chap); }}
+                                      className="p-1 rounded text-rose-400 hover:text-rose-300"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  }
+
+                  // 6. KIỂU THẺ CON NHỘNG HUY HIỆU (SCROLL_STRIP / BADGES)
+                  if (chapterListStyle === 'scroll_strip') {
+                    return (
+                      <div className="space-y-4">
+                        {volumeMap.map((vGroup, vIdx) => (
+                          <div key={vIdx} className="space-y-2">
+                            {vGroup.title && (
+                              <div className="text-xs font-bold uppercase tracking-wider" style={{ color: currentTextMuted }}>
+                                {vGroup.title} ({vGroup.chapters.length} chương)
+                              </div>
+                            )}
+                            <div className="flex flex-wrap gap-2">
+                              {vGroup.chapters.map((chap) => (
+                                <div
+                                  key={chap.id}
+                                  className="px-3 py-1.5 rounded-full border text-xs font-bold flex items-center gap-1.5 transition shadow-xs group cursor-pointer hover:opacity-90"
+                                  style={{
+                                    background: currentBtnSecondaryBg,
+                                    borderColor: currentBorder,
+                                    color: currentText,
+                                  }}
+                                  onClick={() => handleOpenEditChapterItem(chap)}
+                                >
+                                  <span className="font-bold">
+                                    C.{chap.chapterNumber}: {chap.title || `Chương ${chap.chapterNumber}`}
+                                  </span>
+                                  {chap.isLocked && <Lock className="w-3 h-3 text-amber-400 shrink-0" />}
+                                  {chap.isPasswordProtected && <Key className="w-3 h-3 text-rose-400 shrink-0" />}
+                                  <div className="flex items-center shrink-0 opacity-60 group-hover:opacity-100 transition ml-1">
+                                    <button
+                                      type="button"
+                                      onClick={(e) => { e.stopPropagation(); setChapterToDeleteItem(chap); }}
+                                      className="p-0.5 rounded text-rose-400 hover:text-rose-300"
+                                    >
+                                      <Trash2 className="w-3 h-3" />
+                                    </button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  }
+
+                  // 7. KIỂU THẺ BENTO ĐA GIÁC QUAN (CARDS_BENTO)
+                  if (chapterListStyle === 'cards_bento') {
+                    return (
+                      <div className="space-y-4">
+                        {volumeMap.map((vGroup, vIdx) => (
+                          <div key={vIdx} className="space-y-2">
+                            {vGroup.title && (
+                              <div
+                                className="px-3 py-1.5 flex items-center justify-between border font-bold text-xs uppercase rounded-xs"
+                                style={{
+                                  background: currentBtnSecondaryBg,
+                                  borderColor: currentBorder,
+                                  color: currentText,
+                                }}
+                              >
+                                <span>{vGroup.title}</span>
+                                <span className="text-[10px] font-mono opacity-75">{vGroup.chapters.length} chương</span>
+                              </div>
+                            )}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
+                              {vGroup.chapters.map((chap, cIdx) => {
+                                const isFeatured = cIdx === vGroup.chapters.length - 1;
+                                return (
+                                  <div
+                                    key={chap.id}
+                                    className={`p-3 rounded border flex flex-col justify-between gap-2.5 transition hover:scale-[1.01] shadow-xs cursor-pointer ${
+                                      isFeatured ? 'sm:col-span-2' : ''
+                                    }`}
+                                    style={{
+                                      background: currentBtnSecondaryBg,
+                                      borderColor: currentBorder,
+                                    }}
+                                    onClick={() => handleOpenEditChapterItem(chap)}
+                                  >
+                                    <div>
+                                      <div className="flex justify-between items-start gap-2">
+                                        <span
+                                          className="font-bold text-xs line-clamp-1 flex-1"
+                                          style={{ color: currentText }}
+                                        >
+                                          {chap.title || `Chương ${chap.chapterNumber}`}
+                                        </span>
+                                        {isFeatured && (
+                                          <span className="text-[10px] px-1.5 py-0.5 rounded font-bold shrink-0 bg-sky-600 text-white">
+                                            Mới nhất
+                                          </span>
+                                        )}
+                                      </div>
+                                      <div className="flex items-center justify-between text-[10px] mt-1.5" style={{ color: currentTextMuted }}>
+                                        <span>Cập nhật: {chap.updatedAt || chap.createdAt}</span>
+                                        <div className="flex items-center gap-1">
+                                          {chap.isLocked && <Lock className="w-3.5 h-3.5 text-amber-400 shrink-0" />}
+                                          {chap.isPasswordProtected && <Key className="w-3.5 h-3.5 text-rose-400 shrink-0" />}
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center justify-end gap-1 border-t pt-1.5 mt-1.5" style={{ borderColor: currentBorder }}>
+                                      <button
+                                        type="button"
+                                        onClick={(e) => { e.stopPropagation(); setChapterToDeleteItem(chap); }}
+                                        className="p-1 rounded text-rose-400 hover:text-rose-300 text-xs flex items-center gap-0.5"
+                                      >
+                                        <Trash2 className="w-3 h-3" />
+                                        <span className="text-[10px]">Xóa</span>
+                                      </button>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  }
+
+                  // 8. KIỂU HÀNG NGANG SỐ TO (MODERN_COMPACT)
+                  if (chapterListStyle === 'modern_compact') {
+                    return (
+                      <div className="space-y-2">
+                        {volumeMap.map((vGroup, vIdx) => (
+                          <div key={vIdx} className="space-y-1.5">
+                            {vGroup.title && (
+                              <div className="px-3 py-1.5 font-bold text-xs uppercase tracking-wider" style={{ color: currentTextMuted }}>
+                                {vGroup.title}
+                              </div>
+                            )}
+                            {vGroup.chapters.map((chap) => {
+                              const formattedNum = chap.chapterNumber < 10 ? `0${chap.chapterNumber}` : `${chap.chapterNumber}`;
+                              return (
+                                <div
+                                  key={chap.id}
+                                  className="p-2.5 rounded border flex items-center gap-3 transition shadow-xs hover:opacity-95 cursor-pointer"
+                                  style={{
+                                    background: currentBtnSecondaryBg,
+                                    borderColor: currentBorder,
+                                  }}
+                                  onClick={() => handleOpenEditChapterItem(chap)}
+                                >
+                                  <span className="text-lg font-black font-mono w-8 text-center opacity-40 shrink-0" style={{ color: currentText }}>
+                                    {formattedNum}
+                                  </span>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="font-bold text-xs truncate" style={{ color: currentText }}>
+                                      {chap.title || `Chương ${chap.chapterNumber}`}
+                                    </div>
+                                    <div className="text-[10px] flex items-center gap-2 mt-0.5" style={{ color: currentTextMuted }}>
+                                      <span>Cập nhật: {chap.updatedAt || chap.createdAt}</span>
+                                      {chap.isLocked && <span className="text-amber-400 font-bold">• Khóa</span>}
+                                      {chap.isPasswordProtected && <span className="text-rose-400 font-bold">• Có Pass</span>}
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center shrink-0">
+                                    <button
+                                      type="button"
+                                      onClick={(e) => { e.stopPropagation(); setChapterToDeleteItem(chap); }}
+                                      className="p-1 rounded text-rose-400 hover:text-rose-300"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  }
+
+                  // 9. KIỂU THẺ TRUYỀN THỐNG (STANDARD - DEFAULT)
+                  return (
+                    <div className="space-y-2">
+                      {storyChapters.map((chap) => (
                         <div
-                          className="flex-1 min-w-0 cursor-pointer"
+                          key={chap.id}
+                          className="p-3 rounded border flex items-center justify-between gap-3 transition hover:opacity-95 group shadow-xs cursor-pointer"
+                          style={{ background: currentBtnSecondaryBg, borderColor: currentBorder }}
                           onClick={() => handleOpenEditChapterItem(chap)}
                         >
-                          {chap.volumeTitle && (
-                            <span className="text-[10px] font-bold uppercase tracking-wider block opacity-70" style={{ color: currentTextMuted }}>
-                              {chap.volumeTitle}
-                            </span>
-                          )}
-                          <div className="flex items-center gap-2">
-                            <span className="font-bold text-xs truncate" style={{ color: currentText }}>
-                              {chap.title || `Chương ${chap.chapterNumber}`}
-                            </span>
-                            {chap.isLocked && (
-                              <span className="text-[10px] px-1.5 py-0.5 rounded font-bold bg-amber-500/20 text-amber-400 border border-amber-500/40 flex items-center gap-0.5">
-                                <Lock className="w-2.5 h-2.5" /> {chap.unlockPrice || 1}
+                          <div className="flex-1 min-w-0">
+                            {chap.volumeTitle && (
+                              <span className="text-[10px] font-bold uppercase tracking-wider block opacity-70" style={{ color: currentTextMuted }}>
+                                {chap.volumeTitle}
                               </span>
                             )}
-                            {chap.isPasswordProtected && (
-                              <span className="text-[10px] px-1.5 py-0.5 rounded font-bold bg-rose-500/20 text-rose-400 border border-rose-500/40 flex items-center gap-0.5">
-                                <Key className="w-2.5 h-2.5" /> Pass
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-xs truncate" style={{ color: currentText }}>
+                                {chap.title || `Chương ${chap.chapterNumber}`}
                               </span>
-                            )}
+                              {chap.isLocked && (
+                                <span className="text-[10px] px-1.5 py-0.5 rounded font-bold bg-amber-500/20 text-amber-400 border border-amber-500/40 flex items-center gap-0.5">
+                                  <Lock className="w-2.5 h-2.5" /> {chap.unlockPrice || 1}
+                                </span>
+                              )}
+                              {chap.isPasswordProtected && (
+                                <span className="text-[10px] px-1.5 py-0.5 rounded font-bold bg-rose-500/20 text-rose-400 border border-rose-500/40 flex items-center gap-0.5">
+                                  <Key className="w-2.5 h-2.5" /> Pass
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-[10px] font-mono opacity-65 flex items-center gap-2 mt-0.5" style={{ color: currentTextMuted }}>
+                              <span>{(chap.content || '').match(/\S+/g)?.length || 0} từ</span>
+                              <span>•</span>
+                              <span>Cập nhật: {chap.updatedAt || chap.createdAt}</span>
+                            </div>
                           </div>
-                          <div className="text-[10px] font-mono opacity-65 flex items-center gap-2 mt-0.5" style={{ color: currentTextMuted }}>
-                            <span>{(chap.content || '').match(/\S+/g)?.length || 0} từ</span>
-                            <span>•</span>
-                            <span>Cập nhật: {chap.updatedAt || chap.createdAt}</span>
-                          </div>
-                        </div>
 
-                        <div className="flex items-center gap-1 shrink-0">
-                          <button
-                            type="button"
-                            onClick={() => handleOpenEditChapterItem(chap)}
-                            className="px-2.5 py-1 text-xs font-bold rounded border flex items-center gap-1 hover:opacity-80 transition cursor-pointer"
-                            style={{ background: currentBtnBg, borderColor: currentBtnBorder, color: currentBtnText }}
-                          >
-                            <Edit3 className="w-3.5 h-3.5" />
-                            <span>Sửa chương</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setChapterToDeleteItem(chap)}
-                            className="p-1.5 text-xs text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded transition cursor-pointer"
-                            title="Xóa chương này"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          <div className="flex items-center shrink-0">
+                            <button
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); setChapterToDeleteItem(chap); }}
+                              className="p-1.5 text-xs text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded transition cursor-pointer"
+                              title="Xóa chương này"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                      ))}
+                    </div>
+                  );
+                })()}
               </div>
             </div>
           </div>

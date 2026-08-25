@@ -550,8 +550,18 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
               )}
             </div>
             <div className={`flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[10px] font-mono ${storyMutedFont}`} style={{ color: currentTextMuted }}>
-              {story.author && <span>Người đăng: {story.author}</span>}
-              {story.author && <span>•</span>}
+              {story.author && (
+                <>
+                  <span>Tác giả: {story.author}</span>
+                  <span>•</span>
+                </>
+              )}
+              {story.editorName && (
+                <>
+                  <span>Người đăng: {story.editorName}</span>
+                  <span>•</span>
+                </>
+              )}
               <span>{calculatedWordCount.toLocaleString()} chữ</span>
               <span>•</span>
               <span>Cập nhật: {chapter.createdAt}</span>
