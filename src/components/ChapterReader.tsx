@@ -958,17 +958,7 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
               </button>
             </div>
 
-            {/* Return link */}
-            <div className="text-center font-mono">
-              <button
-                type="button"
-                onClick={onBackToStory}
-                className="text-[11px] underline hover:opacity-80 transition"
-                style={{ color: currentTextMuted }}
-              >
-                ← Trở về trang giới thiệu truyện
-              </button>
-            </div>
+
           </div>
 
           {/* Chapter Comments Section */}

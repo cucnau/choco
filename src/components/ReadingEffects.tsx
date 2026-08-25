@@ -1,7 +1,7 @@
 import React from 'react';
 
 interface ReadingEffectsProps {
-  effect?: 'none' | 'rain' | 'snow' | 'glitch' | 'star' | 'leaf' | 'ginkgo' | 'cherry_blossom' | 'firefly' | 'soap_bubble';
+  effect?: 'none' | 'rain' | 'snow' | 'glitch' | 'star' | 'leaf' | 'ginkgo' | 'cherry_blossom' | 'firefly' | 'soap_bubble' | 'fireworks' | 'fire_sparks';
   isDarkTheme: boolean;
 }
 
@@ -57,6 +57,8 @@ export const ReadingEffects: React.FC<ReadingEffectsProps> = ({ effect = 'none',
       effect === 'cherry_blossom' ? 20 : 
       effect === 'firefly' ? 28 : 
       effect === 'soap_bubble' ? 18 :
+      effect === 'fire_sparks' ? 42 :
+      effect === 'fireworks' ? 0 : // fireworks managed dynamically
       0;
 
     class RainParticle {
@@ -552,6 +554,184 @@ export const ReadingEffects: React.FC<ReadingEffectsProps> = ({ effect = 'none',
       }
     }
 
+    class FireSparkParticle {
+      x: number = Math.random() * width;
+      y: number = Math.random() * height;
+      size: number = 2 + Math.random() * 8;
+      vx: number = (Math.random() - 0.5) * 1.2;
+      vy: number = -(0.8 + Math.random() * 1.4);
+      alpha: number = 0.3 + Math.random() * 0.7;
+      wobble: number = Math.random() * Math.PI * 2;
+      wobbleSpeed: number = 0.01 + Math.random() * 0.03;
+      color: string = '';
+      sparkType: 'curve' | 'dot' = Math.random() > 0.45 ? 'curve' : 'dot';
+      angle: number = Math.random() * Math.PI * 2;
+      rotationSpeed: number = (Math.random() - 0.5) * 0.03;
+
+      constructor() {
+        this.reset();
+        this.y = Math.random() * height; // stagger initial heights
+      }
+
+      reset() {
+        this.x = Math.random() * width;
+        this.y = height + 10 + Math.random() * 100;
+        this.size = 2 + Math.random() * 8;
+        this.vx = (Math.random() - 0.5) * 0.8;
+        this.vy = -(0.8 + Math.random() * 1.4);
+        this.alpha = 0.3 + Math.random() * 0.7;
+        this.wobble = Math.random() * Math.PI * 2;
+        this.wobbleSpeed = 0.01 + Math.random() * 0.03;
+        this.sparkType = Math.random() > 0.45 ? 'curve' : 'dot';
+        this.angle = Math.random() * Math.PI * 2;
+        this.rotationSpeed = (Math.random() - 0.5) * 0.03;
+
+        const colors = [
+          'rgba(255, 80, 0, ',   // bright orange-red
+          'rgba(255, 140, 0, ',  // dark orange
+          'rgba(255, 200, 0, ',  // golden yellow
+          'rgba(239, 68, 68, ',  // red
+        ];
+        this.color = colors[Math.floor(Math.random() * colors.length)];
+      }
+
+      update() {
+        this.y += this.vy;
+        this.wobble += this.wobbleSpeed;
+        this.x += this.vx + Math.sin(this.wobble) * 0.4;
+        this.angle += this.rotationSpeed;
+
+        const lifeRatio = this.y / height;
+        this.alpha = (0.2 + lifeRatio * 0.8) * (0.4 + Math.random() * 0.6);
+
+        if (this.y < -50 || this.alpha <= 0.05) {
+          this.reset();
+        }
+      }
+
+      draw() {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.rotate(this.angle);
+
+        if (isDarkTheme) {
+          ctx.shadowColor = 'rgba(239, 68, 68, 0.6)';
+          ctx.shadowBlur = this.size * 1.2;
+        }
+
+        ctx.fillStyle = `${this.color}${this.alpha})`;
+        ctx.beginPath();
+
+        if (this.sparkType === 'curve') {
+          const w = this.size * 0.3;
+          const h = this.size;
+          ctx.moveTo(-w/2, -h/2);
+          ctx.quadraticCurveTo(w * 1.2, 0, -w/2, h/2);
+          ctx.quadraticCurveTo(0, 0, -w/2, -h/2);
+          ctx.fill();
+        } else {
+          ctx.arc(0, 0, this.size * 0.25, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        ctx.restore();
+      }
+    }
+
+    class FireworkSpark {
+      x: number;
+      y: number;
+      vx: number;
+      vy: number;
+      color: string;
+      alpha: number = 1;
+      decay: number;
+      gravity: number = 0.04;
+      drag: number = 0.95;
+
+      constructor(x: number, y: number, color: string) {
+        this.x = x;
+        this.y = y;
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 1.0 + Math.random() * 4.0;
+        this.vx = Math.cos(angle) * speed;
+        this.vy = Math.sin(angle) * speed;
+        this.color = color;
+        this.decay = 0.01 + Math.random() * 0.015;
+      }
+
+      update() {
+        this.vx *= this.drag;
+        this.vy *= this.drag;
+        this.vy += this.gravity;
+        this.x += this.vx;
+        this.y += this.vy;
+        this.alpha -= this.decay;
+      }
+
+      draw() {
+        if (this.alpha <= 0) return;
+        ctx.save();
+        ctx.beginPath();
+        if (isDarkTheme) {
+          ctx.shadowColor = this.color;
+          ctx.shadowBlur = 4;
+        }
+        ctx.fillStyle = this.color.replace(')', `, ${this.alpha})`);
+        ctx.arc(this.x, this.y, 1.0 + Math.random() * 1.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    class FireworkRocket {
+      x: number;
+      y: number;
+      targetY: number;
+      vy: number;
+      color: string;
+      exploded: boolean = false;
+
+      constructor() {
+        this.x = 100 + Math.random() * (width - 200);
+        this.y = height;
+        this.targetY = 50 + Math.random() * (height * 0.5);
+        this.vy = -(5 + Math.random() * 4);
+        
+        const hues = [15, 35, 60, 130, 190, 250, 290, 330];
+        const randomHue = hues[Math.floor(Math.random() * hues.length)];
+        this.color = `rgba(hsla(${randomHue}, 100%, 65%, 1)`;
+      }
+
+      update(spawnSparks: (sparks: FireworkSpark[]) => void) {
+        this.y += this.vy;
+        
+        if (this.vy < 0 && this.y <= this.targetY) {
+          this.exploded = true;
+          const newSparks: FireworkSpark[] = [];
+          const numSparks = 20 + Math.floor(Math.random() * 15);
+          for (let i = 0; i < numSparks; i++) {
+            newSparks.push(new FireworkSpark(this.x, this.y, this.color));
+          }
+          spawnSparks(newSparks);
+        }
+      }
+
+      draw() {
+        if (this.exploded) return;
+        ctx.save();
+        ctx.beginPath();
+        ctx.fillStyle = this.color;
+        ctx.arc(this.x, this.y, 1.8, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    let fireworkRockets: FireworkRocket[] = [];
+    let fireworkSparks: FireworkSpark[] = [];
+    let fireworkLaunchTimer = 0;
+
     // Initialize particles
     for (let i = 0; i < maxParticles; i++) {
       if (effect === 'rain') {
@@ -570,6 +750,8 @@ export const ReadingEffects: React.FC<ReadingEffectsProps> = ({ effect = 'none',
         particles.push(new FireflyParticle());
       } else if (effect === 'soap_bubble') {
         particles.push(new SoapBubbleParticle());
+      } else if (effect === 'fire_sparks') {
+        particles.push(new FireSparkParticle());
       }
     }
 
@@ -611,6 +793,11 @@ export const ReadingEffects: React.FC<ReadingEffectsProps> = ({ effect = 'none',
         if (shootingStar) {
           shootingStar.y -= scrollDelta;
         }
+
+        if (effect === 'fireworks') {
+          fireworkRockets.forEach((r) => r.y -= scrollDelta);
+          fireworkSparks.forEach((s) => s.y -= scrollDelta);
+        }
       }
 
       if (effect === 'glitch') {
@@ -648,11 +835,43 @@ export const ReadingEffects: React.FC<ReadingEffectsProps> = ({ effect = 'none',
           }
         }
       } else {
-        // Render general particles
-        particles.forEach((p) => {
-          p.update();
-          p.draw();
-        });
+        if (effect === 'fireworks') {
+          fireworkLaunchTimer++;
+          // Launch a rocket occasionally
+          if (fireworkLaunchTimer % 100 === 0 || (fireworkRockets.length === 0 && fireworkSparks.length === 0 && Math.random() < 0.03)) {
+            fireworkRockets.push(new FireworkRocket());
+          }
+
+          // Update and draw rockets
+          for (let i = fireworkRockets.length - 1; i >= 0; i--) {
+            const rocket = fireworkRockets[i];
+            rocket.update((newSparks) => {
+              fireworkSparks.push(...newSparks);
+            });
+            if (rocket.exploded) {
+              fireworkRockets.splice(i, 1);
+            } else {
+              rocket.draw();
+            }
+          }
+
+          // Update and draw sparks
+          for (let i = fireworkSparks.length - 1; i >= 0; i--) {
+            const spark = fireworkSparks[i];
+            spark.update();
+            if (spark.alpha <= 0) {
+              fireworkSparks.splice(i, 1);
+            } else {
+              spark.draw();
+            }
+          }
+        } else {
+          // Render general particles
+          particles.forEach((p) => {
+            p.update();
+            p.draw();
+          });
+        }
 
         // Shooting Star
         if (effect === 'star') {

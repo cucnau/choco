@@ -548,7 +548,7 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
   const [customBorderGlowColor2, setCustomBorderGlowColor2] = useState<string>(initialStory?.customBorderGlowColor2 || '#38bdf8');
 
   // Reading Effect
-  const [readingEffect, setReadingEffect] = useState<'none' | 'rain' | 'snow' | 'glitch' | 'star' | 'leaf' | 'cherry_blossom' | 'firefly' | 'soap_bubble' | 'ginkgo'>(
+  const [readingEffect, setReadingEffect] = useState<'none' | 'rain' | 'snow' | 'glitch' | 'star' | 'leaf' | 'cherry_blossom' | 'firefly' | 'soap_bubble' | 'ginkgo' | 'fireworks' | 'fire_sparks'>(
     (initialStory?.readingEffect as any) || 'none'
   );
 
@@ -594,7 +594,7 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
   const [chapterCustomBorderGradientColor2, setChapterCustomBorderGradientColor2] = useState<string>(initialStory?.chapterCustomBorderGradientColor2 || '#ff6b9d');
   const [chapterCustomBorderGlowColor1, setChapterCustomBorderGlowColor1] = useState<string>(initialStory?.chapterCustomBorderGlowColor1 || '#ff6b9d');
   const [chapterCustomBorderGlowColor2, setChapterCustomBorderGlowColor2] = useState<string>(initialStory?.chapterCustomBorderGlowColor2 || '#38bdf8');
-  const [chapterReadingEffect, setChapterReadingEffect] = useState<'none' | 'rain' | 'snow' | 'glitch' | 'star' | 'leaf' | 'cherry_blossom' | 'firefly' | 'soap_bubble' | 'ginkgo'>(
+  const [chapterReadingEffect, setChapterReadingEffect] = useState<'none' | 'rain' | 'snow' | 'glitch' | 'star' | 'leaf' | 'cherry_blossom' | 'firefly' | 'soap_bubble' | 'ginkgo' | 'fireworks' | 'fire_sparks'>(
     (initialStory?.chapterReadingEffect as any) || 'none'
   );
 
@@ -2273,6 +2273,8 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                       <option value="cherry_blossom" style={{ background: currentCardBg, color: currentText }}>Cánh hoa đào rơi</option>
                       <option value="firefly" style={{ background: currentCardBg, color: currentText }}>Đom đóm</option>
                       <option value="soap_bubble" style={{ background: currentCardBg, color: currentText }}>Bong bóng xà phòng</option>
+                      <option value="fireworks" style={{ background: currentCardBg, color: currentText }}>Pháo hoa rực rỡ</option>
+                      <option value="fire_sparks" style={{ background: currentCardBg, color: currentText }}>Tàn lửa bay</option>
                       <option value="glitch" style={{ background: currentCardBg, color: currentText }}>Nhiễu sóng</option>
                     </select>
                   </div>
@@ -2301,6 +2303,8 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                       <option value="cherry_blossom" style={{ background: currentCardBg, color: currentText }}>Cánh hoa đào rơi</option>
                       <option value="firefly" style={{ background: currentCardBg, color: currentText }}>Đom đóm</option>
                       <option value="soap_bubble" style={{ background: currentCardBg, color: currentText }}>Bong bóng xà phòng</option>
+                      <option value="fireworks" style={{ background: currentCardBg, color: currentText }}>Pháo hoa rực rỡ</option>
+                      <option value="fire_sparks" style={{ background: currentCardBg, color: currentText }}>Tàn lửa bay</option>
                       <option value="glitch" style={{ background: currentCardBg, color: currentText }}>Nhiễu sóng</option>
                     </select>
                   </div>
@@ -2330,6 +2334,8 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                     <option value="cherry_blossom" style={{ background: currentCardBg, color: currentText }}>Cánh hoa đào rơi</option>
                     <option value="firefly" style={{ background: currentCardBg, color: currentText }}>Đom đóm</option>
                     <option value="soap_bubble" style={{ background: currentCardBg, color: currentText }}>Bong bóng xà phòng</option>
+                    <option value="fireworks" style={{ background: currentCardBg, color: currentText }}>Pháo hoa rực rỡ</option>
+                    <option value="fire_sparks" style={{ background: currentCardBg, color: currentText }}>Tàn lửa bay</option>
                     <option value="glitch" style={{ background: currentCardBg, color: currentText }}>Nhiễu sóng</option>
                   </select>
                 </div>

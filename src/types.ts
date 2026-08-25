@@ -103,7 +103,7 @@ export interface Story {
   // Kiểu trình bày danh sách chương (Chapter List Display Style)
   chapterListStyle?: 'standard' | 'grid' | 'accordion' | 'timeline' | 'minimal_table' | 'book_catalog' | 'scroll_strip' | 'cards_bento' | 'modern_compact' | 'numbers_only';
 
-  readingEffect?: 'none' | 'rain' | 'snow' | 'glitch' | 'star' | 'leaf' | 'cherry_blossom' | 'firefly' | 'soap_bubble' | 'ginkgo'; // Hiệu ứng đọc truyện
+  readingEffect?: 'none' | 'rain' | 'snow' | 'glitch' | 'star' | 'leaf' | 'cherry_blossom' | 'firefly' | 'soap_bubble' | 'ginkgo' | 'fireworks' | 'fire_sparks'; // Hiệu ứng đọc truyện
   borderStyle?: 'solid' | 'double' | 'dashed' | 'dotted' | 'dash-dot' | 'sketch' | 'stitched' | 'gradient' | 'stamp' | 'film' | 'groove' | 'ridge' | 'offset' | 'none'; // Kiểu nét đường viền
   borderWidth?: 'thin' | 'medium' | 'thick' | 'heavy' | 'bold' | 'frame'; // Độ dày đường viền
   borderRadius?: 'none' | 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'leaf' | 'chamfer' | 'ticket' | 'petal' | 'tab'; // Kiểu bo góc viền đa dạng
@@ -132,7 +132,7 @@ export interface Story {
   chapterCustomBorderGradientColor2?: string;
   chapterCustomBorderGlowColor1?: string;
   chapterCustomBorderGlowColor2?: string;
-  chapterReadingEffect?: 'none' | 'rain' | 'snow' | 'glitch' | 'star' | 'leaf' | 'cherry_blossom' | 'firefly' | 'soap_bubble' | 'ginkgo';
+  chapterReadingEffect?: 'none' | 'rain' | 'snow' | 'glitch' | 'star' | 'leaf' | 'cherry_blossom' | 'firefly' | 'soap_bubble' | 'ginkgo' | 'fireworks' | 'fire_sparks';
 }
 
 export interface ReadingProgress {
