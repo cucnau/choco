@@ -981,8 +981,8 @@ export default function App() {
           >
             <StoryDetail
               story={selectedStory}
-              chapters={chapters.filter(c => c.storyId === selectedStory.id)}
-              comments={comments.filter(c => c.storyId === selectedStory.id && !c.chapterId)}
+              chapters={(chapters || []).filter(c => c && c.storyId === selectedStory.id)}
+              comments={(comments || []).filter(c => c && c.storyId === selectedStory.id && !c.chapterId)}
               isBookmarked={bookmarkedSet.has(selectedStory.id)}
               userProfile={userProfile}
               currentUser={currentUser}
@@ -1049,7 +1049,7 @@ export default function App() {
                 <div className="max-w-6xl mx-auto px-4 pb-12 font-mono-code text-[#e0d0d5] space-y-4">
                   <div className="bg-[#11090c] border border-[#2d1822] p-6 space-y-4">
                     <h2 className="text-xs sm:text-sm font-bold font-mono-code uppercase tracking-[0.15em] text-[#e0c0cc] border-b border-[#23151b] pb-2">
-                      Hệ thống phê duyệt Editor ({allRequests.filter(r => r.status === 'pending').length} đang chờ)
+                      Hệ thống phê duyệt Editor ({(allRequests || []).filter(r => r && r.status === 'pending').length} đang chờ)
                     </h2>
                     {allRequests.length === 0 ? (
                       <div className="text-xs text-[#8a717a] py-4 text-center">

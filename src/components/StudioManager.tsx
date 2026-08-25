@@ -477,8 +477,8 @@ const ColorField: React.FC<ColorFieldProps> = ({ label, value, onChange, allowGr
 };
 
 export const StudioManager: React.FC<StudioManagerProps> = ({
-  stories,
-  chapters,
+  stories = [],
+  chapters = [],
   currentUser,
   userProfile,
   isAdmin = false,
@@ -499,7 +499,7 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
 
   // Filter stories strictly owned by this editor
   // Cho phép hiển thị cả các bộ truyện cũ chưa gán authorUid để editor (askerhater21 / tác giả) có thể quản lý và nhận quyền
-  const visibleStories = stories.filter((story) => {
+  const visibleStories = (stories || []).filter((story) => {
     if (story.authorUid) {
       return story.authorUid === currentUser?.uid;
     }
@@ -1227,8 +1227,8 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
               {/* List of chapters with Volume Breaks / Ngắt Phần */}
               <div className="space-y-2">
                 {(() => {
-                  const storyChaps = chapters
-                    .filter((c) => c.storyId === selectedStoryForChapters.id)
+                  const storyChaps = (chapters || [])
+                    .filter((c) => c && c.storyId === selectedStoryForChapters.id)
                     .sort((a, b) => a.chapterNumber - b.chapterNumber);
 
                   if (storyChaps.length === 0) {
@@ -1544,8 +1544,8 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
             </div>
           ) : (
             <div className="space-y-3">
-              {visibleStories.map((story) => {
-                const storyChaps = chapters.filter(c => c.storyId === story.id);
+              {(visibleStories || []).map((story) => {
+                const storyChaps = (chapters || []).filter(c => c && c.storyId === story.id);
                 const isOwnedByCurrent = story.authorUid === currentUser?.uid || (story.authorEmail && story.authorEmail === currentUser?.email);
 
                 return (
@@ -1704,7 +1704,7 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
           initialStory={editingStory}
           currentUser={currentUser}
           userProfile={userProfile}
-          chapters={editingStory ? chapters.filter((c) => c.storyId === editingStory.id) : chapters}
+          chapters={editingStory ? (chapters || []).filter((c) => c && c.storyId === editingStory.id) : (chapters || [])}
           onSaveChapter={onSaveChapter}
           onDeleteChapter={onDeleteChapter}
           onSaveBatchChapters={onSaveBatchChapters}
