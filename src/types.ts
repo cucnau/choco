@@ -47,6 +47,14 @@ export interface Notification {
   createdAt: string; // ISOString
 }
 
+export interface CharacterInfo {
+  id: string;
+  name: string;
+  role?: string; // Tùy chọn: Nam chính, Nữ chính, Phản diện, Sư phụ, v.v.
+  avatarUrl?: string; // Tùy chọn: URL ảnh đại diện nhân vật
+  description?: string; // Tùy chọn: Mô tả ngắn nhân vật
+}
+
 export interface Story {
   id: string;
   title: string;
@@ -76,6 +84,20 @@ export interface Story {
   customBtnBgColor?: string; // Màu nền nút bấm chính (Màu đơn hoặc Gradient CSS)
   customBtnSecondaryBgColor?: string; // Màu nền nút phụ / ô editor / danh sách chương (Màu đơn hoặc Gradient CSS)
   tags?: string[]; // Danh sách các tag thể loại của truyện
+
+  // Widget thông tin nhân vật (Character Info Widget)
+  showCharacterWidget?: boolean; // Editor chọn bật/tắt hiển thị Widget nhân vật
+  characterWidgetTitle?: string; // Tiêu đề ô Widget (Mặc định: "Thông tin nhân vật")
+  characters?: CharacterInfo[]; // Danh sách các nhân vật trong widget
+
+  // Widget tiến độ truyện (Story Progress Widget)
+  showProgressWidget?: boolean; // Editor chọn bật/tắt hiển thị Widget tiến độ
+  progressWidgetTitle?: string; // Tiêu đề ô Widget (Mặc định: "Tiến độ hoàn thành" hoặc "Tiến độ bộ truyện")
+  totalPlannedChapters?: number; // Tổng số chương dự kiến của bộ truyện
+
+  // Kiểu trình bày danh sách chương (Chapter List Display Style)
+  chapterListStyle?: 'standard' | 'grid' | 'accordion' | 'timeline' | 'minimal_table';
+
   readingEffect?: 'none' | 'rain' | 'snow' | 'glitch' | 'star' | 'leaf' | 'cherry_blossom' | 'firefly' | 'soap_bubble' | 'ginkgo'; // Hiệu ứng đọc truyện
   borderStyle?: 'solid' | 'double' | 'dashed' | 'dotted' | 'dash-dot' | 'sketch' | 'stitched' | 'gradient' | 'stamp' | 'film' | 'groove' | 'ridge' | 'offset' | 'none'; // Kiểu nét đường viền
   borderWidth?: 'thin' | 'medium' | 'thick' | 'heavy' | 'bold' | 'frame'; // Độ dày đường viền

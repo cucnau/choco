@@ -232,14 +232,15 @@ export function getStoryBorderStyle(
     style.outlineOffset = '4px';
     style.boxShadow = `inset 0 0 0 2px ${borderColor}44, 0 0 0 7px ${borderColor}22, 0 4px 12px rgba(0,0,0,0.4)`;
   } else if (bStyle === 'film') {
-    // Khung cuộn phim 35mm điện ảnh: Dải cuộn phim màu tùy chỉnh theo theme kèm hàng lỗ răng cưa
+    // Khung cuộn phim 35mm điện ảnh: Dải cuộn phim màu đen cổ điển sát mép trên/dưới bao ngoài thẻ
     style.borderLeft = `${strokeWidth} solid ${borderColor}`;
     style.borderRight = `${strokeWidth} solid ${borderColor}`;
-    style.borderTop = `${strokeWidth} solid ${borderColor}`;
-    style.borderBottom = `${strokeWidth} solid ${borderColor}`;
-    style.paddingTop = '26px';
-    style.paddingBottom = '26px';
+    style.borderTop = 'none';
+    style.borderBottom = 'none';
+    style.paddingTop = '48px';
+    style.paddingBottom = '48px';
     style.position = 'relative';
+    style.overflow = 'hidden';
     style.boxShadow = `0 4px 14px rgba(0,0,0,0.35)`;
   } else if (bStyle === 'offset') {
     // Viền đôi lệch tầng
@@ -376,25 +377,47 @@ export const StoryCornerAccents: React.FC<{
   const accentColor = color || borderColor || '#1a1a1a';
 
   const filmSprocketsOverlay = isFilm ? (
-    <div className="pointer-events-none absolute inset-0 z-10 overflow-hidden rounded-[inherit]">
-      {/* Top Film Rail with Sprocket Holes */}
+    <div 
+      className="pointer-events-none z-10 overflow-hidden rounded-[inherit]"
+      style={{
+        position: 'absolute',
+        top: 0,
+        bottom: 0,
+        left: 0,
+        right: 0,
+        pointerEvents: 'none',
+      }}
+    >
+      {/* Top Film Rail with Sprocket Holes - Nằm gọn sát mép trên thẻ */}
       <div 
-        className="absolute top-0 left-0 right-0 h-[22px] border-b border-black/30 shadow-xs"
         style={{
-          backgroundColor: accentColor,
-          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='22'%3E%3Crect width='18' height='22' fill='${encodeURIComponent(accentColor)}'/%3E%3Crect x='4' y='4' width='10' height='14' rx='3' fill='%23ffffff'/%3E%3C/svg%3E")`,
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: '30px',
+          backgroundColor: '#0d0d0d',
+          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='30'%3E%3Crect width='16' height='30' fill='%230d0d0d'/%3E%3Crect x='3' y='5.5' width='10' height='19' rx='3' fill='%23ffffff'/%3E%3C/svg%3E")`,
           backgroundRepeat: 'repeat-x',
           backgroundPosition: 'center',
+          borderBottom: '2px solid rgba(0,0,0,0.9)',
+          boxShadow: '0 2px 6px rgba(0,0,0,0.4)',
         }}
       />
-      {/* Bottom Film Rail with Sprocket Holes */}
+      {/* Bottom Film Rail with Sprocket Holes - Nằm gọn sát mép dưới thẻ */}
       <div 
-        className="absolute bottom-0 left-0 right-0 h-[22px] border-t border-black/30 shadow-xs"
         style={{
-          backgroundColor: accentColor,
-          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='22'%3E%3Crect width='18' height='22' fill='${encodeURIComponent(accentColor)}'/%3E%3Crect x='4' y='4' width='10' height='14' rx='3' fill='%23ffffff'/%3E%3C/svg%3E")`,
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          height: '30px',
+          backgroundColor: '#0d0d0d',
+          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='30'%3E%3Crect width='16' height='30' fill='%230d0d0d'/%3E%3Crect x='3' y='5.5' width='10' height='19' rx='3' fill='%23ffffff'/%3E%3C/svg%3E")`,
           backgroundRepeat: 'repeat-x',
           backgroundPosition: 'center',
+          borderTop: '2px solid rgba(0,0,0,0.9)',
+          boxShadow: '0 -2px 6px rgba(0,0,0,0.4)',
         }}
       />
     </div>

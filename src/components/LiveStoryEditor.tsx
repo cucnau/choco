@@ -4,7 +4,7 @@ import { User as FirebaseUser } from 'firebase/auth';
 import { auth } from '../lib/firebase';
 import { saveUserFontToCloud, deleteUserFontFromCloud, getUserFontsFromCloud } from '../lib/storage';
 import { getIdbFonts, saveIdbFonts, deleteIdbFont, migrateLocalStorageFonts, StoredUserFont } from '../lib/idbStorage';
-import { Story, UserProfile } from '../types';
+import { Story, UserProfile, CharacterInfo } from '../types';
 import {
   ArrowLeft,
   Check,
@@ -14,6 +14,8 @@ import {
   Bookmark,
   RotateCcw,
   User,
+  Users,
+  TrendingUp,
   Palette,
   Type,
   Square,
@@ -21,12 +23,19 @@ import {
   Sliders,
   X,
   Plus,
+  Trash2,
+  Edit3,
   Pipette,
   Layers,
   ChevronDown,
   ChevronUp,
   ChevronLeft,
   ChevronRight,
+  LayoutGrid,
+  List,
+  Folder,
+  GitCommit,
+  Table,
 } from 'lucide-react';
 import { ReadingEffects } from './ReadingEffects';
 import {
@@ -551,8 +560,45 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
     (initialStory?.chapterReadingEffect as any) || 'none'
   );
 
+  // Widget thông tin nhân vật (Character Info Widget)
+  const [showCharacterWidget, setShowCharacterWidget] = useState<boolean>(
+    initialStory?.showCharacterWidget ?? false
+  );
+  const [characterWidgetTitle, setCharacterWidgetTitle] = useState<string>(
+    initialStory?.characterWidgetTitle || 'Thông tin nhân vật'
+  );
+  const [characters, setCharacters] = useState<CharacterInfo[]>(
+    initialStory?.characters || []
+  );
+
+  // Widget tiến độ bộ truyện (Story Progress Widget)
+  const [showProgressWidget, setShowProgressWidget] = useState<boolean>(
+    initialStory?.showProgressWidget ?? false
+  );
+  const [progressWidgetTitle, setProgressWidgetTitle] = useState<string>(
+    initialStory?.progressWidgetTitle || 'Tiến độ bộ truyện'
+  );
+  const [totalPlannedChapters, setTotalPlannedChapters] = useState<number>(
+    initialStory?.totalPlannedChapters || 0
+  );
+
+  // Kiểu trình bày danh sách chương (Chapter List Display Style)
+  const [chapterListStyle, setChapterListStyle] = useState<NonNullable<Story['chapterListStyle']>>(
+    initialStory?.chapterListStyle || 'standard'
+  );
+
+  // Form thêm/sửa nhân vật
+  const [editingCharId, setEditingCharId] = useState<string | null>(null);
+  const [charName, setCharName] = useState('');
+  const [charRole, setCharRole] = useState('');
+  const [charDesc, setCharDesc] = useState('');
+  const [charAvatar, setCharAvatar] = useState('');
+  const [showCharModal, setShowCharModal] = useState(false);
+  const [isCompressingCharAvatar, setIsCompressingCharAvatar] = useState(false);
+  const charAvatarFileInputRef = useRef<HTMLInputElement>(null);
+
   // Floating Design Drawer Tabs
-  const [activeDrawerTab, setActiveDrawerTab] = useState<'theme' | 'fonts' | 'borders' | 'effects' | null>(null);
+  const [activeDrawerTab, setActiveDrawerTab] = useState<'theme' | 'fonts' | 'borders' | 'effects' | 'widgets' | null>(null);
   const [isCompressingCover, setIsCompressingCover] = useState(false);
   const [isCompressingAvatar, setIsCompressingAvatar] = useState(false);
   const [showCoverUrlModal, setShowCoverUrlModal] = useState(false);
@@ -1027,6 +1073,95 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
     setTags(tags.filter((t) => t !== tagToRemove));
   };
 
+  // Helper functions cho Widget nhân vật
+  const handleOpenAddChar = () => {
+    setEditingCharId(null);
+    setCharName('');
+    setCharRole('');
+    setCharDesc('');
+    setCharAvatar('');
+    setShowCharModal(true);
+  };
+
+  const handleOpenEditChar = (char: CharacterInfo) => {
+    setEditingCharId(char.id);
+    setCharName(char.name);
+    setCharRole(char.role || '');
+    setCharDesc(char.description || '');
+    setCharAvatar(char.avatarUrl || '');
+    setShowCharModal(true);
+  };
+
+  const handleSaveChar = () => {
+    if (!charName.trim()) {
+      alert('Vui lòng nhập tên nhân vật!');
+      return;
+    }
+    if (editingCharId) {
+      setCharacters((prev) =>
+        prev.map((c) =>
+          c.id === editingCharId
+            ? {
+                id: editingCharId,
+                name: charName.trim(),
+                role: charRole.trim() || undefined,
+                description: charDesc.trim() || undefined,
+                avatarUrl: charAvatar.trim() || undefined,
+              }
+            : c
+        )
+      );
+    } else {
+      const newChar: CharacterInfo = {
+        id: 'char-' + Date.now(),
+        name: charName.trim(),
+        role: charRole.trim() || undefined,
+        description: charDesc.trim() || undefined,
+        avatarUrl: charAvatar.trim() || undefined,
+      };
+      setCharacters((prev) => [...prev, newChar]);
+    }
+    setShowCharModal(false);
+    setEditingCharId(null);
+  };
+
+  const handleDeleteChar = (id: string) => {
+    setCharacters((prev) => prev.filter((c) => c.id !== id));
+  };
+
+  const handleCompressCharAvatar = (file: File) => {
+    setIsCompressingCharAvatar(true);
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+        const maxDim = 256;
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          setCharAvatar(canvas.toDataURL('image/jpeg', 0.85));
+        }
+        setIsCompressingCharAvatar(false);
+      };
+      img.src = e.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleSave = () => {
     if (!title.trim()) {
       alert('Vui lòng nhập tên truyện!');
@@ -1041,6 +1176,19 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
       coverUrl: coverUrl.trim() || 'https://images.unsplash.com/photo-1457369804613-52c61a468e7d?w=600&auto=format&fit=crop&q=80',
       synopsis: synopsis.trim(),
       tags: tags.length > 0 ? tags : undefined,
+
+      // Widget thông tin nhân vật
+      showCharacterWidget,
+      characterWidgetTitle: characterWidgetTitle.trim() || 'Thông tin nhân vật',
+      characters: characters.length > 0 ? characters : undefined,
+
+      // Widget tiến độ bộ truyện
+      showProgressWidget,
+      progressWidgetTitle: progressWidgetTitle.trim() || 'Tiến độ bộ truyện',
+      totalPlannedChapters: totalPlannedChapters || 0,
+
+      // Kiểu trình bày danh sách chương
+      chapterListStyle,
       themeTone,
       defaultFont: customBodyFont,
       customTitleFont,
@@ -1225,6 +1373,22 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
             <span className="hidden md:inline">Hiệu ứng</span>
           </button>
 
+          <button
+            onClick={() => setActiveDrawerTab(activeDrawerTab === 'widgets' ? null : 'widgets')}
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-mono rounded border transition ${
+              activeDrawerTab === 'widgets' ? 'ring-2 ring-white/50' : 'hover:opacity-90'
+            }`}
+            style={{
+              background: currentBtnSecondaryBg,
+              borderColor: currentBtnBorder,
+              color: currentText,
+            }}
+            title="Cài đặt Widget Nhân vật"
+          >
+            <Users className="w-3.5 h-3.5" />
+            <span className="hidden md:inline">Nhân vật</span>
+          </button>
+
           {/* Primary Save Button */}
           <button
             onClick={handleSave}
@@ -1258,11 +1422,13 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
               {activeDrawerTab === 'fonts' && <Type className="w-4 h-4" />}
               {activeDrawerTab === 'borders' && <Square className="w-4 h-4" />}
               {activeDrawerTab === 'effects' && <Sparkles className="w-4 h-4" />}
+              {activeDrawerTab === 'widgets' && <Users className="w-4 h-4" />}
               <span>
                 {activeDrawerTab === 'theme' && 'Cài đặt màu sắc & Tông nền'}
                 {activeDrawerTab === 'fonts' && 'Cài đặt Font chữ'}
                 {activeDrawerTab === 'borders' && 'Cài đặt Viền & Khung trang trí'}
                 {activeDrawerTab === 'effects' && 'Cài đặt Hiệu ứng nền'}
+                {activeDrawerTab === 'widgets' && 'Cài đặt Widget Nhân vật'}
               </span>
             </span>
             <button
@@ -2066,6 +2232,418 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
               </p>
             </div>
           )}
+
+          {/* TAB 5: WIDGETS (WIDGET NHÂN VẬT) */}
+          {activeDrawerTab === 'widgets' && (
+            <div className="space-y-4 text-xs">
+              {/* Switch bật/tắt widget */}
+              <div className="p-3 rounded border border-dashed flex items-center justify-between" style={{ borderColor: currentBorder, background: currentBg }}>
+                <div className="pr-2">
+                  <span className="font-bold block text-xs" style={{ color: currentText }}>Bật ô Widget nhân vật</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowCharacterWidget(!showCharacterWidget)}
+                  className={`w-10 h-6 flex items-center rounded-full p-1 cursor-pointer transition-all duration-300 shrink-0 ${
+                    showCharacterWidget ? 'bg-emerald-600' : 'bg-gray-600'
+                  }`}
+                >
+                  <div
+                    className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-all duration-300 ${
+                      showCharacterWidget ? 'translate-x-4' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {showCharacterWidget && (
+                <>
+                  {/* Cấu hình tiêu đề widget */}
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-semibold block" style={{ color: currentText }}>
+                      Tiêu đề ô Widget:
+                    </label>
+                    <input
+                      type="text"
+                      value={characterWidgetTitle}
+                      onChange={(e) => setCharacterWidgetTitle(e.target.value)}
+                      placeholder="Thông tin nhân vật"
+                      className="w-full p-2 rounded border text-xs focus:outline-none"
+                      style={{ background: currentBg, borderColor: currentBorder, color: currentText }}
+                    />
+                  </div>
+
+                  {/* Nút thêm nhân vật */}
+                  <div className="flex items-center justify-between pt-1">
+                    <span className="font-bold text-[11px]" style={{ color: currentText }}>
+                      Danh sách nhân vật ({characters.length}):
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleOpenAddChar}
+                      className="px-2.5 py-1 text-[11px] font-bold rounded border flex items-center gap-1 hover:opacity-90 transition"
+                      style={{
+                        background: currentBtnBg,
+                        borderColor: currentBtnBorder,
+                        color: currentBtnText,
+                      }}
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Thêm nhân vật</span>
+                    </button>
+                  </div>
+
+                  {/* Danh sách nhân vật hiện tại */}
+                  <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                    {characters.length === 0 ? (
+                      <p className="text-[11px] italic text-center py-3 opacity-70" style={{ color: currentTextMuted }}>
+                        Chưa có nhân vật nào. Nhấp "Thêm nhân vật" để bắt đầu tạo.
+                      </p>
+                    ) : (
+                      characters.map((char) => (
+                        <div
+                          key={char.id}
+                          className="p-2 rounded border flex items-center justify-between gap-2"
+                          style={{ background: currentBg, borderColor: currentBorder }}
+                        >
+                          <div className="flex items-center gap-2 min-w-0 flex-1">
+                            <div
+                              className="w-8 h-8 rounded-full border shrink-0 overflow-hidden flex items-center justify-center bg-black/20"
+                              style={{ borderColor: currentBorder }}
+                            >
+                              {char.avatarUrl ? (
+                                <img src={char.avatarUrl} alt={char.name} className="w-full h-full object-cover" />
+                              ) : (
+                                <User className="w-4 h-4 opacity-60" style={{ color: currentText }} />
+                              )}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-bold truncate text-xs" style={{ color: currentText }}>
+                                  {char.name}
+                                </span>
+                                {char.role && (
+                                  <span
+                                    className="text-[9px] px-1 rounded font-mono shrink-0"
+                                    style={{ background: currentBtnBg, color: currentBtnText }}
+                                  >
+                                    {char.role}
+                                  </span>
+                                )}
+                              </div>
+                              {char.description && (
+                                <p className="text-[10px] truncate opacity-75" style={{ color: currentTextMuted }}>
+                                  {char.description}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-1 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => handleOpenEditChar(char)}
+                              className="p-1 hover:opacity-80 transition rounded text-blue-400"
+                              title="Chỉnh sửa nhân vật"
+                            >
+                              <Edit3 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteChar(char.id)}
+                              className="p-1 hover:opacity-80 transition rounded text-red-400"
+                              title="Xóa nhân vật"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </>
+              )}
+
+              {/* PHẦN 2: WIDGET TIẾN ĐỘ BỘ TRUYỆN */}
+              <div className="pt-3 border-t space-y-3" style={{ borderColor: currentBorder }}>
+                <div className="p-3 rounded border border-dashed flex items-center justify-between" style={{ borderColor: currentBorder, background: currentBg }}>
+                  <div className="pr-2">
+                    <span className="font-bold block text-xs" style={{ color: currentText }}>Bật ô Widget Tiến độ</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowProgressWidget(!showProgressWidget)}
+                    className={`w-10 h-6 flex items-center rounded-full p-1 cursor-pointer transition-all duration-300 shrink-0 ${
+                      showProgressWidget ? 'bg-emerald-600' : 'bg-gray-600'
+                    }`}
+                  >
+                    <div
+                      className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-all duration-300 ${
+                        showProgressWidget ? 'translate-x-4' : 'translate-x-0'
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                {showProgressWidget && (
+                  <div className="space-y-3 p-3 rounded border" style={{ borderColor: currentBorder, background: currentBg }}>
+                    {/* Cấu hình tiêu đề widget tiến độ */}
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-semibold block" style={{ color: currentText }}>
+                        Tiêu đề Widget Tiến độ:
+                      </label>
+                      <input
+                        type="text"
+                        value={progressWidgetTitle}
+                        onChange={(e) => setProgressWidgetTitle(e.target.value)}
+                        placeholder="Tiến độ bộ truyện"
+                        className="w-full p-2 rounded border text-xs focus:outline-none"
+                        style={{ background: currentCardBg, borderColor: currentBorder, color: currentText }}
+                      />
+                    </div>
+
+                    {/* Cấu hình tổng số chương dự kiến */}
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-semibold block" style={{ color: currentText }}>
+                        Tổng số chương dự kiến của bộ truyện:
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={totalPlannedChapters || ''}
+                        onChange={(e) => setTotalPlannedChapters(Math.max(0, parseInt(e.target.value) || 0))}
+                        placeholder="Ví dụ: 100, 500, 1000..."
+                        className="w-full p-2 rounded border text-xs focus:outline-none font-mono"
+                        style={{ background: currentCardBg, borderColor: currentBorder, color: currentText }}
+                      />
+                    </div>
+
+                    {/* Xem trước tiến độ */}
+                    <div className="p-2.5 rounded border space-y-1.5" style={{ background: currentCardBg, borderColor: currentBorder }}>
+                      <div className="flex items-center justify-between text-[11px] font-bold">
+                        <span style={{ color: currentText }}>{progressWidgetTitle || 'Tiến độ bộ truyện'}</span>
+                        <span className="font-mono text-emerald-400">
+                          {totalPlannedChapters > 0
+                            ? `${Math.min(100, Math.round(((initialStory?.chapterCount || 0) / totalPlannedChapters) * 100))}%`
+                            : '0%'}
+                        </span>
+                      </div>
+                      <div className="w-full h-2 rounded-full overflow-hidden bg-black/30 border" style={{ borderColor: currentBorder }}>
+                        <div
+                          className="h-full bg-emerald-500 rounded-full transition-all duration-300"
+                          style={{
+                            width: `${totalPlannedChapters > 0
+                              ? Math.min(100, Math.round(((initialStory?.chapterCount || 0) / totalPlannedChapters) * 100))
+                              : 0}%`,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* PHẦN 3: KIỂU TRÌNH BÀY DANH SÁCH CHƯƠNG */}
+              <div className="pt-3 border-t space-y-2.5" style={{ borderColor: currentBorder }}>
+                <label className="text-[11px] font-bold uppercase tracking-wider block" style={{ color: currentText }}>
+                  Kiểu trình bày Danh sách chương:
+                </label>
+                <div className="grid grid-cols-1 gap-2">
+                  {[
+                    { id: 'standard', name: 'Thẻ truyền thống', desc: 'Danh sách thẻ dọc chi tiết đầy đủ', icon: List },
+                    { id: 'grid', name: 'Lưới ô gọn gàng', desc: 'Các ô nút chương gọn nhẹ (Grid)', icon: LayoutGrid },
+                    { id: 'accordion', name: 'Gấp gọn theo Quyển', desc: 'Có thể thu/mở từng Quyển / Phần', icon: Folder },
+                    { id: 'timeline', name: 'Dòng thời gian', desc: 'Trục mốc thời gian nối dọc', icon: GitCommit },
+                    { id: 'minimal_table', name: 'Bảng phẳng tối giản', desc: 'Hàng phẳng đơn giản, cổ điển', icon: Table },
+                  ].map((styleOpt) => {
+                    const IconComp = styleOpt.icon;
+                    const isSelected = chapterListStyle === styleOpt.id;
+                    return (
+                      <button
+                        key={styleOpt.id}
+                        type="button"
+                        onClick={() => setChapterListStyle(styleOpt.id as any)}
+                        className={`p-2.5 rounded border text-left flex items-start gap-2.5 transition-all cursor-pointer ${
+                          isSelected ? 'ring-2 ring-emerald-500' : 'hover:opacity-90 opacity-75'
+                        }`}
+                        style={{
+                          background: isSelected ? currentBtnSecondaryBg : currentBg,
+                          borderColor: isSelected ? currentBorder : currentBorder,
+                        }}
+                      >
+                        <div className={`p-1.5 rounded border shrink-0 mt-0.5 ${isSelected ? 'bg-emerald-600 text-white' : ''}`} style={{ borderColor: currentBorder }}>
+                          <IconComp className="w-4 h-4" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <span className="font-bold block text-xs" style={{ color: currentText }}>
+                            {styleOpt.name} {isSelected && '✓'}
+                          </span>
+                          <span className="text-[10px] leading-tight block opacity-75" style={{ color: currentTextMuted }}>
+                            {styleOpt.desc}
+                          </span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* MODAL THÊM / SỬA NHÂN VẬT */}
+      {showCharModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs font-mono">
+          <div
+            className="w-full max-w-md p-5 rounded-lg border shadow-2xl space-y-4"
+            style={{
+              background: currentCardBg,
+              borderColor: currentBorder,
+              color: currentText,
+            }}
+          >
+            <div className="flex items-center justify-between border-b pb-2" style={{ borderColor: currentBorder }}>
+              <span className="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5" style={{ color: currentText }}>
+                <Users className="w-4 h-4" />
+                <span>{editingCharId ? 'Chỉnh sửa nhân vật' : 'Thêm nhân vật mới'}</span>
+              </span>
+              <button onClick={() => setShowCharModal(false)} className="hover:opacity-70">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              {/* Ảnh đại diện nhân vật */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-semibold block" style={{ color: currentText }}>
+                  Ảnh đại diện nhân vật:
+                </label>
+                <div className="flex items-center gap-3">
+                  <div
+                    className="w-12 h-12 rounded-full border overflow-hidden shrink-0 flex items-center justify-center bg-black/30 relative"
+                    style={{ borderColor: currentBorder }}
+                  >
+                    {charAvatar ? (
+                      <img src={charAvatar} alt="Avatar" className="w-full h-full object-cover" />
+                    ) : (
+                      <User className="w-6 h-6 opacity-50" style={{ color: currentTextMuted }} />
+                    )}
+                  </div>
+                  <div className="flex-1 space-y-1.5">
+                    <input
+                      type="text"
+                      placeholder="Dán URL ảnh đại diện..."
+                      value={charAvatar}
+                      onChange={(e) => setCharAvatar(e.target.value)}
+                      className="w-full p-2 rounded border text-xs focus:outline-none"
+                      style={{ background: currentBg, borderColor: currentBorder, color: currentText }}
+                    />
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => charAvatarFileInputRef.current?.click()}
+                        className="px-2 py-1 text-[10px] rounded border flex items-center gap-1 hover:opacity-80 transition"
+                        style={{ background: currentBtnSecondaryBg, borderColor: currentBtnBorder, color: currentText }}
+                      >
+                        <Upload className="w-3 h-3" />
+                        <span>{isCompressingCharAvatar ? 'Đang xử lý...' : 'Tải ảnh từ máy'}</span>
+                      </button>
+                      {charAvatar && (
+                        <button
+                          type="button"
+                          onClick={() => setCharAvatar('')}
+                          className="text-[10px] text-red-400 hover:underline"
+                        >
+                          Xóa ảnh
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <input
+                  type="file"
+                  ref={charAvatarFileInputRef}
+                  className="hidden"
+                  accept="image/*"
+                  onChange={(e) => {
+                    if (e.target.files && e.target.files[0]) {
+                      handleCompressCharAvatar(e.target.files[0]);
+                    }
+                  }}
+                />
+              </div>
+
+              {/* Tên nhân vật */}
+              <div className="space-y-1">
+                <label className="text-[11px] font-semibold block" style={{ color: currentText }}>
+                  Tên nhân vật <span className="text-red-400">*</span>:
+                </label>
+                <input
+                  type="text"
+                  placeholder="Ví dụ: Lâm Nhược Vũ"
+                  value={charName}
+                  onChange={(e) => setCharName(e.target.value)}
+                  className="w-full p-2 rounded border text-xs focus:outline-none"
+                  style={{ background: currentBg, borderColor: currentBorder, color: currentText }}
+                />
+              </div>
+
+              {/* Vai trò / Danh xưng */}
+              <div className="space-y-1">
+                <label className="text-[11px] font-semibold block" style={{ color: currentText }}>
+                  Vai trò / Danh xưng (Tùy chọn):
+                </label>
+                <input
+                  type="text"
+                  placeholder="Ví dụ: Nam chính, Nữ chính, Sư phụ, Phản diện..."
+                  value={charRole}
+                  onChange={(e) => setCharRole(e.target.value)}
+                  className="w-full p-2 rounded border text-xs focus:outline-none"
+                  style={{ background: currentBg, borderColor: currentBorder, color: currentText }}
+                />
+              </div>
+
+              {/* Mô tả nhân vật */}
+              <div className="space-y-1">
+                <label className="text-[11px] font-semibold block" style={{ color: currentText }}>
+                  Mô tả ngắn nhân vật (Tùy chọn):
+                </label>
+                <textarea
+                  rows={3}
+                  placeholder="Ví dụ: Tộc trưởng Lâm gia, sở hữu Thái Cổ Thần Thể..."
+                  value={charDesc}
+                  onChange={(e) => setCharDesc(e.target.value)}
+                  className="w-full p-2 rounded border text-xs focus:outline-none resize-none"
+                  style={{ background: currentBg, borderColor: currentBorder, color: currentText }}
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t" style={{ borderColor: currentBorder }}>
+              <button
+                type="button"
+                onClick={() => setShowCharModal(false)}
+                className="px-3 py-1.5 text-xs rounded border hover:opacity-80"
+                style={{ borderColor: currentBorder, color: currentTextMuted }}
+              >
+                Hủy
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveChar}
+                className="px-4 py-1.5 text-xs font-bold rounded border shadow-sm flex items-center gap-1.5"
+                style={{
+                  background: currentBtnBg,
+                  borderColor: currentBtnBorder,
+                  color: currentBtnText,
+                }}
+              >
+                <Check className="w-3.5 h-3.5" />
+                <span>Lưu nhân vật</span>
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -2543,6 +3121,129 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                     </button>
                   </div>
                 </div>
+
+                {/* Character Info Widget (nằm dưới Tag) */}
+                <div className="pt-2 border-t border-dashed space-y-2" style={{ borderColor: currentBorder }}>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] uppercase tracking-wider font-mono font-bold flex items-center gap-1" style={{ color: currentTextMuted }}>
+                      <Users className="w-3 h-3" />
+                      <span>Widget Nhân vật:</span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setShowCharacterWidget(!showCharacterWidget)}
+                      className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border transition ${
+                        showCharacterWidget ? 'bg-emerald-600/20 border-emerald-500 text-emerald-400' : 'opacity-60 hover:opacity-100'
+                      }`}
+                      style={!showCharacterWidget ? { borderColor: currentBorder, color: currentTextMuted } : {}}
+                    >
+                      {showCharacterWidget ? '✓ Đang bật Widget' : '+ Bật Widget'}
+                    </button>
+                  </div>
+
+                  {showCharacterWidget && (
+                    <div
+                      className="p-2.5 space-y-2 rounded transition font-mono"
+                      style={{
+                        background: currentBtnSecondaryBg,
+                        ...getStoryBorderStyle(
+                          {
+                            borderStyle: 'solid',
+                            borderWidth: 'thin',
+                            borderRadius,
+                            borderGlow: 'none',
+                          },
+                          currentBorder
+                        ),
+                      }}
+                    >
+                      <div className="flex items-center justify-between border-b pb-1" style={{ borderColor: currentBorder }}>
+                        <div className="flex items-center gap-1 flex-1 min-w-0 pr-2">
+                          <Users className="w-3 h-3 shrink-0" style={{ color: currentText }} />
+                          <input
+                            type="text"
+                            value={characterWidgetTitle}
+                            onChange={(e) => setCharacterWidgetTitle(e.target.value)}
+                            placeholder="Tiêu đề widget..."
+                            className="text-[11px] font-bold bg-transparent border-b border-dashed focus:outline-none w-full"
+                            style={{ borderColor: currentBorder, color: currentText }}
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleOpenAddChar}
+                          className="px-1.5 py-0.5 text-[10px] font-bold rounded border flex items-center gap-0.5 hover:opacity-80 shrink-0"
+                          style={{ background: currentBtnBg, borderColor: currentBtnBorder, color: currentBtnText }}
+                          title="Thêm nhân vật mới"
+                        >
+                          <Plus className="w-3 h-3" />
+                          <span>Thêm</span>
+                        </button>
+                      </div>
+
+                      <div className="space-y-2 max-h-56 overflow-y-auto pr-0.5">
+                        {characters.length === 0 ? (
+                          <p className="text-[10px] italic text-center py-2 opacity-70" style={{ color: currentTextMuted }}>
+                            Chưa có nhân vật nào. Nhấp "+ Thêm" để tạo nhân vật.
+                          </p>
+                        ) : (
+                          characters.map((char) => (
+                            <div key={char.id} className="flex items-start gap-2 text-[11px] group/char">
+                              <div
+                                className="w-7 h-7 rounded-full border shrink-0 overflow-hidden flex items-center justify-center bg-black/20"
+                                style={{ borderColor: currentBorder }}
+                              >
+                                {char.avatarUrl ? (
+                                  <img src={char.avatarUrl} alt={char.name} className="w-full h-full object-cover" />
+                                ) : (
+                                  <User className="w-3.5 h-3.5 opacity-60" style={{ color: currentText }} />
+                                )}
+                              </div>
+                              <div className="min-w-0 flex-1 space-y-0.5">
+                                <div className="flex items-center gap-1 flex-wrap">
+                                  <span className="font-bold" style={{ color: currentText }}>
+                                    {char.name}
+                                  </span>
+                                  {char.role && (
+                                    <span
+                                      className="text-[9px] px-1 py-0.1 rounded font-mono"
+                                      style={{ background: currentBtnBg, color: currentBtnText }}
+                                    >
+                                      {char.role}
+                                    </span>
+                                  )}
+                                </div>
+                                {char.description && (
+                                  <p className="text-[10px] leading-tight opacity-75" style={{ color: currentTextMuted }}>
+                                    {char.description}
+                                  </p>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-0.5 opacity-60 group-hover/char:opacity-100 transition shrink-0">
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenEditChar(char)}
+                                  className="p-0.5 hover:text-blue-400"
+                                  title="Sửa"
+                                >
+                                  <Edit3 className="w-3 h-3" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteChar(char.id)}
+                                  className="p-0.5 hover:text-red-400"
+                                  title="Xóa"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </button>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -2606,6 +3307,252 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                     fontSize: bodyFontSize,
                   }}
                 />
+              </div>
+
+              {/* Progress Widget Preview / Editable under Synopsis */}
+              <div className="pt-2 border-t border-dashed space-y-2 font-mono" style={{ borderColor: currentBorder }}>
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] uppercase tracking-wider font-bold flex items-center gap-1" style={{ color: currentTextMuted }}>
+                    <TrendingUp className="w-3 h-3" />
+                    <span>Widget Tiến độ bộ truyện:</span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setShowProgressWidget(!showProgressWidget)}
+                    className={`text-[10px] font-bold px-2 py-0.5 rounded border transition ${
+                      showProgressWidget ? 'bg-emerald-600/20 border-emerald-500 text-emerald-400' : 'opacity-60 hover:opacity-100'
+                    }`}
+                    style={!showProgressWidget ? { borderColor: currentBorder, color: currentTextMuted } : {}}
+                  >
+                    {showProgressWidget ? '✓ Đang bật Widget' : '+ Bật Widget'}
+                  </button>
+                </div>
+
+                {showProgressWidget && (
+                  <div
+                    className="p-3 space-y-2.5 rounded transition"
+                    style={{
+                      background: currentBtnSecondaryBg,
+                      ...getStoryBorderStyle(
+                        {
+                          borderStyle: 'solid',
+                          borderWidth: 'thin',
+                          borderRadius,
+                          borderGlow: 'none',
+                        },
+                        currentBorder
+                      ),
+                    }}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                        <TrendingUp className="w-3.5 h-3.5 shrink-0" style={{ color: currentText }} />
+                        <input
+                          type="text"
+                          value={progressWidgetTitle}
+                          onChange={(e) => setProgressWidgetTitle(e.target.value)}
+                          placeholder="Tiêu đề widget..."
+                          className="text-xs font-bold bg-transparent border-b border-dashed focus:outline-none w-full"
+                          style={{ borderColor: currentBorder, color: currentText }}
+                        />
+                      </div>
+                      <span className="text-xs font-bold font-mono shrink-0" style={{ color: currentText }}>
+                        {totalPlannedChapters > 0
+                          ? `${Math.min(100, Math.round(((initialStory?.chapterCount || 0) / totalPlannedChapters) * 100))}%`
+                          : '0%'}
+                      </span>
+                    </div>
+
+                    {/* Progress Bar */}
+                    <div className="w-full h-2.5 rounded-full overflow-hidden bg-black/20 border" style={{ borderColor: currentBorder }}>
+                      <div
+                        className="h-full transition-all duration-300 rounded-full"
+                        style={{
+                          width: `${totalPlannedChapters > 0
+                            ? Math.min(100, Math.round(((initialStory?.chapterCount || 0) / totalPlannedChapters) * 100))
+                            : 0}%`,
+                          background: currentBtnBg || currentBorder,
+                        }}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between text-[11px] gap-2 flex-wrap">
+                      <span style={{ color: currentTextMuted }}>
+                        Đã đăng: <strong style={{ color: currentText }}>{initialStory?.chapterCount || 0}</strong> chương
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <span style={{ color: currentTextMuted }}>Tổng dự kiến:</span>
+                        <input
+                          type="number"
+                          min="1"
+                          value={totalPlannedChapters || ''}
+                          onChange={(e) => setTotalPlannedChapters(Math.max(0, parseInt(e.target.value) || 0))}
+                          placeholder="Số chương..."
+                          className="w-16 p-0.5 bg-transparent rounded border border-dashed text-xs text-center font-bold focus:outline-none"
+                          style={{ borderColor: currentBorder, color: currentText }}
+                        />
+                        <span style={{ color: currentTextMuted }}>chương</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Sample / Live Chapter List Preview in Editor */}
+              <div className="space-y-2.5 pt-4 border-t" style={{ borderColor: currentBorder }}>
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <h3 className={`text-xs font-bold uppercase tracking-wider flex items-center gap-2 ${customBodyFont}`} style={{ color: currentText }}>
+                    <BookOpen className="w-4 h-4 opacity-80" />
+                    <span>Danh sách chương (Mẫu xem trước)</span>
+                  </h3>
+                  {/* Quick Layout Style Switcher */}
+                  <div className="flex items-center gap-1 p-0.5 rounded border" style={{ borderColor: currentBorder, background: currentBg }}>
+                    {[
+                      { id: 'standard', label: 'Thẻ', icon: List },
+                      { id: 'grid', label: 'Lưới', icon: LayoutGrid },
+                      { id: 'accordion', label: 'Gấp', icon: Folder },
+                      { id: 'timeline', label: 'Mốc', icon: GitCommit },
+                      { id: 'minimal_table', label: 'Bảng', icon: Table },
+                    ].map((st) => {
+                      const IconC = st.icon;
+                      const active = chapterListStyle === st.id;
+                      return (
+                        <button
+                          key={st.id}
+                          type="button"
+                          onClick={() => setChapterListStyle(st.id as any)}
+                          className={`px-2 py-0.5 text-[10px] font-bold rounded flex items-center gap-1 transition ${
+                            active ? 'bg-emerald-600 text-white shadow-xs' : 'opacity-70 hover:opacity-100'
+                          }`}
+                          style={!active ? { color: currentText } : {}}
+                          title={`Kiểu ${st.label}`}
+                        >
+                          <IconC className="w-3 h-3" />
+                          <span>{st.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Dynamic Preview according to selected chapterListStyle */}
+                {chapterListStyle === 'grid' ? (
+                  <div className="space-y-3">
+                    <div
+                      className="px-3 py-1.5 border font-bold text-xs uppercase rounded-xs"
+                      style={{ background: currentBtnSecondaryBg, borderColor: currentBorder, color: currentText }}
+                    >
+                      <span>Quyển 1: Khởi đầu huyền thoại (2 chương)</span>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                      <div className="p-2 text-center rounded border font-bold text-xs cursor-pointer hover:opacity-80" style={{ background: currentBtnSecondaryBg, borderColor: currentBorder, color: currentText }}>
+                        Chương 1
+                      </div>
+                      <div className="p-2 text-center rounded border font-bold text-xs cursor-pointer hover:opacity-80" style={{ background: currentBtnSecondaryBg, borderColor: currentBorder, color: currentText }}>
+                        Chương 2
+                      </div>
+                      <div className="p-2 text-center rounded border font-bold text-xs cursor-pointer hover:opacity-80 opacity-60" style={{ background: currentCardBg, borderColor: currentBorder, color: currentTextMuted }}>
+                        Chương 3 (Khoá)
+                      </div>
+                    </div>
+                  </div>
+                ) : chapterListStyle === 'accordion' ? (
+                  <div className="space-y-2">
+                    <div className="p-3 border rounded-xs font-bold text-xs flex items-center justify-between cursor-pointer" style={{ background: currentBtnSecondaryBg, borderColor: currentBorder, color: currentText }}>
+                      <div className="flex items-center gap-2">
+                        <Folder className="w-4 h-4 text-amber-500" />
+                        <span>Quyển 1: Khởi đầu huyền thoại</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-normal" style={{ color: currentTextMuted }}>2 chương</span>
+                        <ChevronUp className="w-4 h-4" />
+                      </div>
+                    </div>
+                    <div className="pl-3 space-y-1.5 border-l-2 ml-2" style={{ borderColor: currentBorder }}>
+                      <div className="p-2 text-xs rounded border flex justify-between" style={{ background: currentBtnSecondaryBg, borderColor: currentBorder, color: currentText }}>
+                        <span>Chương 1: Mở đầu định mệnh</span>
+                        <span className="text-[10px]" style={{ color: currentTextMuted }}>1,500 từ</span>
+                      </div>
+                      <div className="p-2 text-xs rounded border flex justify-between" style={{ background: currentBtnSecondaryBg, borderColor: currentBorder, color: currentText }}>
+                        <span>Chương 2: Sóng gió kéo đến</span>
+                        <span className="text-[10px]" style={{ color: currentTextMuted }}>2,100 từ</span>
+                      </div>
+                    </div>
+                  </div>
+                ) : chapterListStyle === 'timeline' ? (
+                  <div className="relative border-l-2 ml-3 pl-4 space-y-3 font-mono" style={{ borderColor: currentBorder }}>
+                    <div className="relative">
+                      <div className="absolute -left-[23px] top-0.5 w-3 h-3 rounded-full bg-amber-500 ring-4 ring-black/20" />
+                      <span className="text-xs font-bold uppercase block" style={{ color: currentText }}>
+                        Quyển 1: Khởi đầu huyền thoại
+                      </span>
+                    </div>
+                    <div className="relative p-2 rounded border" style={{ background: currentBtnSecondaryBg, borderColor: currentBorder }}>
+                      <div className="absolute -left-[23px] top-2.5 w-3 h-3 rounded-full bg-emerald-500" />
+                      <span className="font-bold text-xs block" style={{ color: currentText }}>Chương 1: Mở đầu định mệnh</span>
+                      <span className="text-[10px] block" style={{ color: currentTextMuted }}>Đã phát hành</span>
+                    </div>
+                    <div className="relative p-2 rounded border" style={{ background: currentBtnSecondaryBg, borderColor: currentBorder }}>
+                      <div className="absolute -left-[23px] top-2.5 w-3 h-3 rounded-full bg-emerald-500" />
+                      <span className="font-bold text-xs block" style={{ color: currentText }}>Chương 2: Sóng gió kéo đến</span>
+                      <span className="text-[10px] block" style={{ color: currentTextMuted }}>Đã phát hành</span>
+                    </div>
+                  </div>
+                ) : chapterListStyle === 'minimal_table' ? (
+                  <div className="border rounded divide-y" style={{ borderColor: currentBorder }}>
+                    <div className="px-3 py-1.5 font-bold text-xs bg-black/10 dark:bg-white/10" style={{ color: currentText }}>
+                      Quyển 1: Khởi đầu huyền thoại
+                    </div>
+                    <div className="p-2 text-xs flex justify-between items-center hover:bg-black/5" style={{ color: currentText }}>
+                      <span className="font-medium">Chương 1: Mở đầu định mệnh</span>
+                      <span className="text-[10px] font-mono" style={{ color: currentTextMuted }}>1,500 từ</span>
+                    </div>
+                    <div className="p-2 text-xs flex justify-between items-center hover:bg-black/5" style={{ color: currentText }}>
+                      <span className="font-medium">Chương 2: Sóng gió kéo đến</span>
+                      <span className="text-[10px] font-mono" style={{ color: currentTextMuted }}>2,100 từ</span>
+                    </div>
+                  </div>
+                ) : (
+                  /* Standard Card List */
+                  <div className="space-y-2">
+                    <div className="px-3 py-2 flex items-center justify-between border font-bold text-xs uppercase tracking-wider rounded-xs select-none shadow-xs"
+                      style={{
+                        background: currentBtnSecondaryBg,
+                        borderColor: currentBorder,
+                        color: currentText,
+                      }}
+                    >
+                      <div className="flex items-center gap-2">
+                        <BookOpen className="w-3.5 h-3.5 opacity-80" />
+                        <span className={customBodyFont}>Quyển 1: Khởi đầu huyền thoại</span>
+                      </div>
+                      <span className={`text-[10px] font-normal font-mono`} style={{ color: currentTextMuted }}>
+                        2 chương
+                      </span>
+                    </div>
+
+                    <div
+                      className="p-2.5 text-xs flex items-center justify-between rounded-xs transition"
+                      style={{
+                        background: currentBtnSecondaryBg,
+                        ...getStoryBorderStyle(
+                          {
+                            borderStyle: 'solid',
+                            borderWidth: 'thin',
+                            borderRadius,
+                            borderGlow: 'none',
+                          },
+                          currentBorder
+                        ),
+                      }}
+                    >
+                      <span className={`font-bold ${customBodyFont}`} style={{ color: currentText, fontSize: bodyFontSize }}>
+                        Chương 1: Mở đầu định mệnh
+                      </span>
+                      <span className="text-[10px] font-mono opacity-60 shrink-0 ml-2" style={{ color: currentTextMuted }}>1,500 từ</span>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>

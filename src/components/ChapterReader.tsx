@@ -944,16 +944,14 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
               </button>
             </div>
           </div>
-        </article>
 
-        {/* Chapter Comments Section */}
-        <div 
-          className="p-5 space-y-4 transition-colors duration-300 rounded shadow-md border"
-          style={{
-            backgroundColor: currentCardBg,
-            borderColor: currentBorder,
-          }}
-        >
+          {/* Chapter Comments Section */}
+          <div 
+            className="pt-6 border-t space-y-4 font-sans"
+            style={{
+              borderColor: currentBorder,
+            }}
+          >
           <div className="flex flex-wrap items-center justify-between gap-2 border-b pb-2.5" style={{ borderColor: currentBorder }}>
             <h3 
               className={`text-xs font-bold uppercase tracking-[0.15em] flex items-center gap-2 ${storyBodyFont}`}
@@ -1192,6 +1190,7 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
             )}
           </div>
         </div>
+      </article>
 
       </main>
     </div>

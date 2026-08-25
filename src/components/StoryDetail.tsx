@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { Story, Chapter, Comment, UserProfile } from '../types';
-import { ArrowLeft, Bookmark, BookOpen, Send, MessageSquare, Lock, Unlock, Key, CheckCircle2, User, RotateCcw, BookmarkCheck, Share2, Check } from 'lucide-react';
+import { ArrowLeft, Bookmark, BookOpen, Send, MessageSquare, Lock, Unlock, Key, CheckCircle2, User, RotateCcw, BookmarkCheck, Share2, Check, Users, TrendingUp, ChevronDown, ChevronUp, LayoutGrid, List, Folder, GitCommit, Table } from 'lucide-react';
 import { getReadingProgress } from '../lib/readingProgress';
 import { getUserUnlockedPasswordChaptersLocal } from '../lib/storage';
 import { ReadingEffects } from './ReadingEffects';
@@ -333,6 +333,7 @@ export const StoryDetail: React.FC<StoryDetailProps> = ({
   const [commentText, setCommentText] = useState('');
   const [liveEditorProfile, setLiveEditorProfile] = useState<{ displayName?: string; photoURL?: string } | null>(null);
   const [isSynopsisExpanded, setIsSynopsisExpanded] = useState(false);
+  const [collapsedVolumes, setCollapsedVolumes] = useState<Record<string, boolean>>({});
 
   // Lấy tiến trình đọc dở từ localStorage
   const lastReadProgress = getReadingProgress(story.id);
@@ -476,14 +477,15 @@ export const StoryDetail: React.FC<StoryDetailProps> = ({
         {/* Corner Accents */}
         <StoryCornerAccents
           accent={story.borderCornerAccent}
-          borderStyle={story.borderStyle}
+          borderStyle={storyBorderObj.borderStyle}
           color={activeBorderColor}
         />
 
         <div className="grid grid-cols-1 sm:grid-cols-[224px_1fr] gap-6 items-start">
-          {/* Cover: Luôn ở trên cùng hoặc cột trái */}
-          {story.coverUrl && (
-            <div className="order-1 sm:col-start-1 sm:row-start-1 w-full max-w-[224px] sm:max-w-none mx-auto sm:mx-0 shrink-0">
+          {/* Left Column: Cover + Editor Info + Action Buttons + Tags */}
+          <div className="w-full max-w-[224px] sm:max-w-none mx-auto sm:mx-0 shrink-0 flex flex-col gap-3.5">
+            {/* Cover: Hiển thị nếu có */}
+            {story.coverUrl && (
               <div 
                 className="w-full aspect-[3/4] overflow-hidden flex justify-center items-center relative"
                 style={{
@@ -508,86 +510,8 @@ export const StoryDetail: React.FC<StoryDetailProps> = ({
                   className="w-full h-full object-cover"
                 />
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Right Column (Title + Metadata + Synopsis): Trên mobile sẽ đứng thứ 2 (dưới ảnh bìa, trên editor/nút) */}
-          <div className="order-2 sm:col-start-2 sm:row-start-1 sm:row-span-2 space-y-4">
-            <h1 
-              className={`font-bold tracking-[0.02em] ${storyTitleFont} ${story.titleFontSize ? '' : 'text-lg sm:text-2xl'}`}
-              style={{
-                ...customStyles.text,
-                ...(story.titleFontSize ? { fontSize: story.titleFontSize } : {})
-              }}
-            >
-              {story.title}
-            </h1>
-
-            <div 
-              className={`text-xs space-y-1 border-b pb-3 ${storyMutedFont}`}
-              style={isCustomTheme ? { borderColor: story.customBorderColor, color: story.customTextMutedColor } : { borderColor: tone.border, color: tone.textMuted }}
-            >
-              <p>Tác giả: <span className="font-semibold" style={customStyles.text}>{story.author}</span></p>
-              <p>Ngày đăng: <span>{story.createdAt}</span></p>
-              <p>Lượt xem: <span>{story.viewsCount}</span></p>
-            </div>
-
-            <div className="space-y-2">
-              <h4 className={`text-xs font-bold uppercase tracking-wider mb-1 ${storyBodyFont}`} style={customStyles.textMuted}>Giới thiệu:</h4>
-              {story.synopsis ? (
-                <div className="space-y-2">
-                  <div 
-                    className={`space-y-3 relative transition-all duration-300 ${
-                      !isSynopsisExpanded ? 'max-h-72 sm:max-h-80 overflow-hidden' : ''
-                    }`}
-                  >
-                    {story.synopsis
-                      .split('\n')
-                      .map((line) => line.trim())
-                      .filter(Boolean)
-                      .map((para, idx) => (
-                        <p 
-                          key={idx} 
-                          className={`leading-relaxed opacity-90 text-justify ${story.bodyFontSize ? '' : 'text-sm'}`}
-                          style={{
-                            ...customStyles.text,
-                            ...(story.bodyFontSize ? { fontSize: story.bodyFontSize } : {})
-                          }}
-                        >
-                          {para}
-                        </p>
-                      ))}
-
-                    {/* Gradient dải màu làm mờ chân chữ theo đúng màu nền của theme truyện */}
-                    {!isSynopsisExpanded && story.synopsis.length > 250 && (
-                      <div 
-                        className="absolute bottom-0 inset-x-0 h-16 pointer-events-none"
-                        style={{
-                          background: `linear-gradient(to top, ${cardBgColor} 15%, transparent 100%)`
-                        }}
-                      />
-                    )}
-                  </div>
-
-                  {story.synopsis.length > 250 && (
-                    <button
-                      type="button"
-                      onClick={() => setIsSynopsisExpanded(!isSynopsisExpanded)}
-                      className="text-xs font-bold underline hover:opacity-80 transition cursor-pointer pt-0.5"
-                      style={customStyles.textMuted}
-                    >
-                      {isSynopsisExpanded ? 'Thu gọn' : 'Xem thêm...'}
-                    </button>
-                  )}
-                </div>
-              ) : (
-                <p className="text-xs italic" style={customStyles.textMuted}>Chưa có phần giới thiệu.</p>
-              )}
-            </div>
-          </div>
-
-          {/* Left Column Controls: Editor Info + Action Buttons + Tags (Trên mobile đứng thứ 3) */}
-          <div className="order-3 sm:col-start-1 sm:row-start-2 w-full max-w-[224px] sm:max-w-none mx-auto sm:mx-0 shrink-0 flex flex-col gap-3.5">
             {/* Editor Info (Avatar + Name) */}
             <div 
               className={`p-2.5 flex items-center gap-2.5 ${isCustomTheme ? '' : `${tone.inputBg}`}`}
@@ -749,6 +673,208 @@ export const StoryDetail: React.FC<StoryDetailProps> = ({
                 ))}
               </div>
             )}
+
+            {/* Widget Thông Tin Nhân Vật (Editor có thể bật/tắt hiển thị) */}
+            {story?.showCharacterWidget && story.characters && story.characters.length > 0 && (
+              <div
+                className={`p-3 space-y-2.5 rounded transition ${isCustomTheme ? '' : `${tone.inputBg}`}`}
+                style={{
+                  ...(isCustomTheme
+                    ? { background: story.customBtnSecondaryBgColor || story.customCardBgColor || story.customBgColor }
+                    : {}),
+                  ...getStoryBorderStyle(
+                    {
+                      borderStyle: story.borderStyle || 'solid',
+                      borderWidth: story.borderWidth || 'thin',
+                      borderRadius: story.borderRadius || 'xs',
+                      borderCornerAccent: story.borderCornerAccent || 'none',
+                      borderGlow: story.borderGlow || 'none',
+                    },
+                    activeBorderColor
+                  ),
+                }}
+              >
+                <div className="flex items-center gap-1.5 border-b pb-1.5 opacity-90" style={{ borderColor: isCustomTheme ? story.customBorderColor : tone.border }}>
+                  <Users className="w-3.5 h-3.5 shrink-0" style={customStyles.text} />
+                  <span className={`text-xs font-bold uppercase tracking-wider ${storyBodyFont}`} style={customStyles.text}>
+                    {story.characterWidgetTitle || 'Thông tin nhân vật'}
+                  </span>
+                </div>
+
+                <div className="space-y-2.5 max-h-72 overflow-y-auto pr-0.5">
+                  {story.characters.map((char) => (
+                    <div key={char.id} className="flex items-start gap-2 text-xs">
+                      {/* Avatar nhân vật */}
+                      <div
+                        className="w-8 h-8 rounded-full border shrink-0 overflow-hidden flex items-center justify-center bg-black/20"
+                        style={{ borderColor: isCustomTheme ? story.customBorderColor : tone.border }}
+                      >
+                        {char.avatarUrl ? (
+                          <img src={char.avatarUrl} alt={char.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <User className="w-4 h-4 opacity-60" style={customStyles.text} />
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1 space-y-0.5">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className={`font-bold ${storyBodyFont}`} style={customStyles.text}>
+                            {char.name}
+                          </span>
+                          {char.role && (
+                            <span
+                              className={`text-[9px] px-1.5 py-0.2 rounded font-mono ${storyBtnFont} ${isCustomTheme ? '' : `${tone.buttonBgPrimary} ${tone.text}`}`}
+                              style={{
+                                background: isCustomTheme ? (story.customBtnBgColor || story.customBorderColor) : undefined,
+                                color: isCustomTheme ? story.customTextColor : undefined,
+                              }}
+                            >
+                              {char.role}
+                            </span>
+                          )}
+                        </div>
+                        {char.description && (
+                          <p className={`text-[11px] leading-relaxed opacity-80 ${storyMutedFont}`} style={customStyles.textMuted}>
+                            {char.description}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Right Column: Title + Metadata + Synopsis */}
+          <div className="space-y-4">
+            <h1 
+              className={`font-bold tracking-[0.02em] ${storyTitleFont} ${story.titleFontSize ? '' : 'text-lg sm:text-2xl'}`}
+              style={{
+                ...customStyles.text,
+                ...(story.titleFontSize ? { fontSize: story.titleFontSize } : {})
+              }}
+            >
+              {story.title}
+            </h1>
+
+            <div 
+              className={`text-xs space-y-1 border-b pb-3 ${storyMutedFont}`}
+              style={isCustomTheme ? { borderColor: story.customBorderColor, color: story.customTextMutedColor } : { borderColor: tone.border, color: tone.textMuted }}
+            >
+              <p>Tác giả: <span className="font-semibold" style={customStyles.text}>{story.author}</span></p>
+              <p>Ngày đăng: <span>{story.createdAt}</span></p>
+              <p>Lượt xem: <span>{story.viewsCount}</span></p>
+            </div>
+
+            <div className="space-y-2">
+              <h4 className={`text-xs font-bold uppercase tracking-wider mb-1 ${storyBodyFont}`} style={customStyles.textMuted}>Giới thiệu:</h4>
+              {story.synopsis ? (
+                <div className="space-y-2">
+                  <div 
+                    className={`space-y-3 relative transition-all duration-300 ${
+                      !isSynopsisExpanded ? 'max-h-72 sm:max-h-80 overflow-hidden' : ''
+                    }`}
+                  >
+                    {story.synopsis
+                      .split('\n')
+                      .map((line) => line.trim())
+                      .filter(Boolean)
+                      .map((para, idx) => (
+                        <p 
+                          key={idx} 
+                          className={`leading-relaxed opacity-90 text-justify ${story.bodyFontSize ? '' : 'text-sm'}`}
+                          style={{
+                            ...customStyles.text,
+                            ...(story.bodyFontSize ? { fontSize: story.bodyFontSize } : {})
+                          }}
+                        >
+                          {para}
+                        </p>
+                      ))}
+
+                    {/* Gradient dải màu làm mờ chân chữ theo đúng màu nền của theme truyện */}
+                    {!isSynopsisExpanded && story.synopsis.length > 250 && (
+                      <div 
+                        className="absolute bottom-0 inset-x-0 h-16 pointer-events-none"
+                        style={{
+                          background: `linear-gradient(to top, ${cardBgColor} 15%, transparent 100%)`
+                        }}
+                      />
+                    )}
+                  </div>
+
+                  {story.synopsis.length > 250 && (
+                    <button
+                      type="button"
+                      onClick={() => setIsSynopsisExpanded(!isSynopsisExpanded)}
+                      className="text-xs font-bold underline hover:opacity-80 transition cursor-pointer pt-0.5"
+                      style={customStyles.textMuted}
+                    >
+                      {isSynopsisExpanded ? 'Thu gọn' : 'Xem thêm...'}
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <p className="text-xs italic" style={customStyles.textMuted}>Chưa có phần giới thiệu.</p>
+              )}
+            </div>
+
+            {/* Widget Tiến độ bộ truyện (khi được bật) */}
+            {story?.showProgressWidget && (
+              <div
+                className={`p-3 space-y-2 rounded transition border ${isCustomTheme ? '' : `${tone.inputBg}`}`}
+                style={{
+                  ...(isCustomTheme
+                    ? { background: story.customBtnSecondaryBgColor || story.customCardBgColor || story.customBgColor }
+                    : {}),
+                  ...getStoryBorderStyle(
+                    {
+                      borderStyle: story.borderStyle || 'solid',
+                      borderWidth: story.borderWidth || 'thin',
+                      borderRadius: story.borderRadius || 'xs',
+                      borderCornerAccent: story.borderCornerAccent || 'none',
+                      borderGlow: story.borderGlow || 'none',
+                    },
+                    activeBorderColor
+                  ),
+                }}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 opacity-90">
+                    <TrendingUp className="w-3.5 h-3.5 shrink-0" style={customStyles.text} />
+                    <span className={`text-xs font-bold uppercase tracking-wider ${storyBodyFont}`} style={customStyles.text}>
+                      {story.progressWidgetTitle || 'Tiến độ bộ truyện'}
+                    </span>
+                  </div>
+                  <span className={`text-xs font-bold font-mono ${storyBtnFont}`} style={customStyles.text}>
+                    {story.totalPlannedChapters && story.totalPlannedChapters > 0
+                      ? `${Math.min(100, Math.round((chapters.length / story.totalPlannedChapters) * 100))}%`
+                      : '0%'}
+                  </span>
+                </div>
+
+                {/* Thanh tiến độ */}
+                <div
+                  className="w-full h-2.5 rounded-full overflow-hidden bg-black/20 border"
+                  style={{ borderColor: isCustomTheme ? story.customBorderColor : tone.border }}
+                >
+                  <div
+                    className={`h-full transition-all duration-500 rounded-full ${isCustomTheme ? '' : tone.buttonBgPrimary}`}
+                    style={{
+                      width: `${story.totalPlannedChapters && story.totalPlannedChapters > 0
+                        ? Math.min(100, Math.round((chapters.length / story.totalPlannedChapters) * 100))
+                        : 0}%`,
+                      background: isCustomTheme ? (story.customBtnBgColor || story.customBorderColor) : undefined,
+                    }}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between text-[11px] opacity-80" style={customStyles.textMuted}>
+                  <span>Đã phát hành: <strong style={customStyles.text}>{chapters.length}</strong> chương</span>
+                  <span>Tổng dự kiến: <strong style={customStyles.text}>{story.totalPlannedChapters || '—'}</strong> chương</span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -757,21 +883,27 @@ export const StoryDetail: React.FC<StoryDetailProps> = ({
           className="space-y-3 pt-4 border-t"
           style={customStyles.border}
         >
-          <h3 className={`text-xs font-bold uppercase tracking-[0.15em] flex items-center justify-between ${storyBodyFont}`} style={customStyles.text}>
-            <span>Danh sách chương ({chapters.length})</span>
-          </h3>
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <h3 className={`text-xs font-bold uppercase tracking-[0.15em] flex items-center gap-2 ${storyBodyFont}`} style={customStyles.text}>
+              <BookOpen className="w-4 h-4 opacity-80" />
+              <span>Danh sách chương ({chapters.length})</span>
+            </h3>
+          </div>
 
           {chapters.length === 0 ? (
-            <p className="text-xs italic py-4" style={customStyles.textMuted}>Chưa có chương nào được đăng.</p>
+            <div className="py-6 text-center">
+              <p className="text-xs italic opacity-70" style={customStyles.textMuted}>
+                Chưa có chương nào được đăng.
+              </p>
+            </div>
           ) : (
-            <div className="space-y-2">
+            <div>
               {(() => {
                 const sorted = [...chapters].sort((a, b) => a.chapterNumber - b.chapterNumber);
-                return sorted.map((chap, idx) => {
-                  const prevChap = idx > 0 ? sorted[idx - 1] : null;
-                  const isNewVolume = !!(chap.volumeTitle && (!prevChap || prevChap.volumeTitle !== chap.volumeTitle));
-                  const isTransitionToNoVolume = !chap.volumeTitle && !!(prevChap && prevChap.volumeTitle);
+                const listStyle = story.chapterListStyle || 'standard';
 
+                // Helper kiểm tra unlock/lock/pass
+                const getChapterStatus = (chap: Chapter) => {
                   const isUnlocked = !!(userProfile?.unlockedChapters && userProfile.unlockedChapters.includes(chap.id));
                   const unlockedPassLocal = getUserUnlockedPasswordChaptersLocal(currentUser?.uid);
                   const isPassUnlocked = !!(
@@ -782,137 +914,407 @@ export const StoryDetail: React.FC<StoryDetailProps> = ({
                     (currentUser?.uid && story.authorUid && currentUser.uid === story.authorUid) ||
                     (currentUser?.email && story.authorEmail && currentUser.email.toLowerCase() === story.authorEmail.toLowerCase()) ||
                     isAdmin;
+                  const isReading = lastReadProgress && lastReadProgress.chapterId === chap.id;
 
-                  return (
-                    <React.Fragment key={chap.id}>
-                      {/* Section Break / Ngắt Phần Header */}
-                      {isNewVolume && (
-                        <div className="pt-3 pb-1">
-                          <div 
-                            className="px-3.5 py-2 flex items-center justify-between border font-bold text-xs uppercase tracking-wider rounded-xs select-none shadow-xs"
-                            style={{
-                              background: isCustomTheme
-                                ? (story.customBtnSecondaryBgColor || story.customCardBgColor || story.customBgColor)
-                                : undefined,
-                              borderColor: activeBorderColor,
-                              color: customStyles.text.color,
-                            }}
-                          >
-                            <div className="flex items-center gap-2">
-                              <BookOpen className="w-3.5 h-3.5 opacity-80" />
-                              <span className={storyBodyFont}>{chap.volumeTitle}</span>
-                            </div>
-                            <span className={`text-[10px] font-normal font-mono ${storyMutedFont}`} style={customStyles.textMuted}>
-                              {sorted.filter(c => c.volumeTitle === chap.volumeTitle).length} chương
-                            </span>
-                          </div>
-                        </div>
-                      )}
+                  return { isUnlocked, isPassUnlocked, isAuthorOrOwner, isReading };
+                };
 
-                      {/* Divider when transitioning to chapters without a volume */}
-                      {isTransitionToNoVolume && (
-                        <div className="pt-3 pb-1">
-                          <div 
-                            className="px-3 py-1.5 flex items-center gap-2 border border-dashed text-xs opacity-75 rounded-xs"
-                            style={{
-                              borderColor: activeBorderColor,
-                              color: customStyles.textMuted.color,
-                            }}
-                          >
-                            <BookOpen className="w-3 h-3 opacity-60" />
-                            <span className={`text-[11px] uppercase tracking-wider font-semibold ${storyMutedFont}`}>Các chương tiếp theo</span>
-                          </div>
-                        </div>
-                      )}
-
-                      <div
-                        onClick={() => onSelectChapter(chap)}
-                        className={`p-3 text-xs flex items-center justify-between cursor-pointer transition ${isCustomTheme ? '' : `${tone.inputBg}`}`}
-                        style={{
-                          ...(isCustomTheme
-                            ? { background: story.customBtnSecondaryBgColor || story.customCardBgColor || story.customBgColor }
-                            : {}),
-                          ...getStoryBorderStyle(
-                            {
-                              borderStyle: 'solid',
-                              borderWidth: 'thin',
-                              borderRadius: story.borderRadius,
-                              borderGlow: 'none',
-                            },
-                            activeBorderColor
-                          ),
-                        }}
-                      >
-                        <div className="flex items-center gap-2.5 flex-wrap">
-                          <span 
-                            className={`font-bold ${storyBodyFont} ${story.bodyFontSize ? '' : 'text-sm'}`} 
-                            style={{
-                              ...customStyles.text,
-                              ...(story.bodyFontSize ? { fontSize: story.bodyFontSize } : {})
-                            }}
-                          >
-                            {chap.title}
-                          </span>
-                          
-                          {lastReadProgress && lastReadProgress.chapterId === chap.id && (
-                            <span 
-                              className={`inline-flex items-center gap-1 px-2 py-0.5 border text-[11px] font-semibold ${storyBtnFont} ${isCustomTheme ? '' : `${tone.badgeLocked} ${tone.badgeLockedBorder} ${tone.badgeLockedText}`}`}
-                              style={isCustomTheme ? { backgroundColor: story.customBtnBgColor, borderColor: story.customBorderColor, color: story.customTextColor } : {}}
-                            >
-                              <BookmarkCheck className="w-3.5 h-3.5 opacity-80" />
-                              <span>Đang đọc dở ({lastReadProgress.progressPercent || 0}%)</span>
-                            </span>
-                          )}
-                          {chap.isLocked ? (
-                            (isUnlocked && !isAuthorOrOwner) ? (
-                              <span 
-                                className={`inline-flex items-center gap-1.5 px-2 py-0.5 border text-[11px] font-semibold ${storyBtnFont} ${isCustomTheme ? '' : `${tone.badgeFree} ${tone.badgeFreeBorder} ${tone.badgeFreeText}`}`}
-                                style={isCustomTheme ? { backgroundColor: story.customCardBgColor, borderColor: story.customBorderColor, color: story.customTextColor } : {}}
-                              >
-                                <CheckCircle2 className="w-3.5 h-3.5 opacity-80" />
-                                <span>Đã mở khóa</span>
-                              </span>
-                            ) : (
-                              <span 
-                                className={`inline-flex items-center gap-1.5 px-2 py-0.5 border text-[11px] font-semibold shadow-xs ${storyBtnFont} ${isCustomTheme ? '' : `${tone.badgeLocked} ${tone.badgeLockedBorder} ${tone.badgeLockedText}`}`}
-                                style={isCustomTheme ? { backgroundColor: story.customBtnBgColor || story.customCardBgColor, borderColor: story.customBorderColor, color: story.customTextColor } : {}}
-                              >
-                                <Lock 
-                                  className={`w-3.5 h-3.5 ${isCustomTheme ? '' : tone.badgeLockedIcon}`} 
-                                  style={isCustomTheme ? { color: story.customTextColor } : {}}
-                                />
-                                <span>{chap.unlockPrice || 1} Chucu</span>
-                              </span>
-                            )
-                          ) : null}
-                          {chap.isPasswordProtected ? (
-                            (isPassUnlocked && !isAuthorOrOwner) ? (
-                              <span 
-                                className={`inline-flex items-center gap-1.5 px-2 py-0.5 border text-[11px] font-semibold ${storyBtnFont} ${isCustomTheme ? '' : `${tone.badgeFree} ${tone.badgeFreeBorder} ${tone.badgeFreeText}`}`}
-                                style={isCustomTheme ? { backgroundColor: story.customCardBgColor, borderColor: story.customBorderColor, color: story.customTextColor } : {}}
-                              >
-                                <CheckCircle2 className="w-3.5 h-3.5 opacity-80" />
-                                <span>Đã mở Pass</span>
-                              </span>
-                            ) : (
-                              <span 
-                                className={`inline-flex items-center gap-1.5 px-2 py-0.5 border text-[11px] font-semibold shadow-xs ${storyBtnFont} ${isCustomTheme ? '' : `${tone.badgeLocked} ${tone.badgeLockedBorder} ${tone.badgeLockedText}`}`}
-                                style={isCustomTheme ? { backgroundColor: story.customBtnBgColor || story.customCardBgColor, borderColor: story.customBorderColor, color: story.customTextColor } : {}}
-                              >
-                                <Key 
-                                  className={`w-3.5 h-3.5 ${isCustomTheme ? '' : tone.badgeLockedIcon}`} 
-                                  style={isCustomTheme ? { color: story.customTextColor } : {}}
-                                />
-                                <span>Có Pass</span>
-                              </span>
-                            )
-                          ) : null}
-                        </div>
-                        <span className={`text-xs ${storyMutedFont}`} style={customStyles.textMuted}>{chap.createdAt}</span>
-                      </div>
-                    </React.Fragment>
-                  );
+                // Nhóm chương theo Volume
+                const volumeMap: Array<{ title: string | null; chapters: Chapter[] }> = [];
+                sorted.forEach(chap => {
+                  const vTitle = chap.volumeTitle || null;
+                  let vObj = volumeMap.find(v => v.title === vTitle);
+                  if (!vObj) {
+                    vObj = { title: vTitle, chapters: [] };
+                    volumeMap.push(vObj);
+                  }
+                  vObj.chapters.push(chap);
                 });
+
+                // 1. KIỂU LƯỚI Ô GỌN GÀNG (GRID)
+                if (listStyle === 'grid') {
+                  return (
+                    <div className="space-y-4">
+                      {volumeMap.map((vGroup, vIdx) => (
+                        <div key={vIdx} className="space-y-2">
+                          {vGroup.title && (
+                            <div 
+                              className="px-3 py-1.5 flex items-center justify-between border font-bold text-xs uppercase tracking-wider rounded-xs"
+                              style={{
+                                background: isCustomTheme ? (story.customBtnSecondaryBgColor || story.customCardBgColor) : undefined,
+                                borderColor: activeBorderColor,
+                                color: customStyles.text.color,
+                              }}
+                            >
+                              <div className="flex items-center gap-2">
+                                <BookOpen className="w-3.5 h-3.5 opacity-80" />
+                                <span className={storyBodyFont}>{vGroup.title}</span>
+                              </div>
+                              <span className={`text-[10px] font-mono ${storyMutedFont}`} style={customStyles.textMuted}>
+                                {vGroup.chapters.length} chương
+                              </span>
+                            </div>
+                          )}
+                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
+                            {vGroup.chapters.map((chap) => {
+                              const { isUnlocked, isPassUnlocked, isAuthorOrOwner, isReading } = getChapterStatus(chap);
+                              const isLocked = chap.isLocked && !(isUnlocked || isAuthorOrOwner);
+                              const isPass = chap.isPasswordProtected && !(isPassUnlocked || isAuthorOrOwner);
+
+                              return (
+                                <button
+                                  key={chap.id}
+                                  type="button"
+                                  onClick={() => onSelectChapter(chap)}
+                                  className={`p-2.5 rounded border text-center font-bold text-xs relative transition-all flex flex-col items-center justify-center gap-1 cursor-pointer hover:scale-[1.02] active:scale-95 ${storyBodyFont}`}
+                                  style={{
+                                    ...(isCustomTheme
+                                      ? { background: isReading ? story.customBtnBgColor : (story.customBtnSecondaryBgColor || story.customCardBgColor), color: story.customTextColor }
+                                      : {}),
+                                    ...getStoryBorderStyle(
+                                      {
+                                        borderStyle: 'solid',
+                                        borderWidth: 'thin',
+                                        borderRadius: story.borderRadius,
+                                        borderGlow: 'none',
+                                      },
+                                      activeBorderColor
+                                    ),
+                                  }}
+                                  title={chap.title}
+                                >
+                                  <span className="truncate max-w-full">Chương {chap.chapterNumber}</span>
+                                  <div className="flex items-center gap-1 text-[10px]">
+                                    {isReading && <BookmarkCheck className="w-3 h-3 text-emerald-400" />}
+                                    {isLocked && <Lock className="w-3 h-3 text-amber-400" />}
+                                    {isPass && <Key className="w-3 h-3 text-sky-400" />}
+                                  </div>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                }
+
+                // 2. KIỂU GẤP GỌN THEO QUYỂN (ACCORDION)
+                if (listStyle === 'accordion') {
+                  return (
+                    <div className="space-y-3">
+                      {volumeMap.map((vGroup, vIdx) => {
+                        const volKey = vGroup.title || `vol_none_${vIdx}`;
+                        const isCollapsed = !!collapsedVolumes[volKey];
+                        return (
+                          <div key={vIdx} className="space-y-2">
+                            <div
+                              onClick={() => setCollapsedVolumes(prev => ({ ...prev, [volKey]: !prev[volKey] }))}
+                              className="p-3 border rounded-xs font-bold text-xs flex items-center justify-between cursor-pointer select-none transition hover:opacity-90"
+                              style={{
+                                background: isCustomTheme ? (story.customBtnSecondaryBgColor || story.customCardBgColor) : undefined,
+                                borderColor: activeBorderColor,
+                                color: customStyles.text.color,
+                              }}
+                            >
+                              <div className="flex items-center gap-2">
+                                <Folder className="w-4 h-4 text-amber-500 shrink-0" />
+                                <span className={storyBodyFont}>{vGroup.title || 'Danh sách chương'}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className={`text-[10px] font-mono ${storyMutedFont}`} style={customStyles.textMuted}>
+                                  {vGroup.chapters.length} chương
+                                </span>
+                                {isCollapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+                              </div>
+                            </div>
+
+                            {!isCollapsed && (
+                              <div className="pl-2 space-y-1.5 border-l-2 ml-2 transition-all" style={{ borderColor: activeBorderColor }}>
+                                {vGroup.chapters.map((chap) => {
+                                  const { isUnlocked, isPassUnlocked, isAuthorOrOwner, isReading } = getChapterStatus(chap);
+                                  return (
+                                    <div
+                                      key={chap.id}
+                                      onClick={() => onSelectChapter(chap)}
+                                      className={`p-2.5 text-xs flex items-center justify-between cursor-pointer transition rounded-xs hover:opacity-90 ${storyBodyFont}`}
+                                      style={{
+                                        background: isCustomTheme ? (story.customBtnSecondaryBgColor || story.customCardBgColor) : undefined,
+                                        borderColor: activeBorderColor,
+                                        color: customStyles.text.color,
+                                      }}
+                                    >
+                                      <div className="flex items-center gap-2 truncate pr-2">
+                                        <span className="font-bold truncate">{chap.title}</span>
+                                        {isReading && (
+                                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-600/30 text-emerald-400 font-mono">
+                                            Đang đọc
+                                          </span>
+                                        )}
+                                      </div>
+                                      <span className={`text-[10px] font-mono shrink-0 ${storyMutedFont}`} style={customStyles.textMuted}>
+                                        {chap.createdAt}
+                                      </span>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                }
+
+                // 3. KIỂU DÒNG THỜI GIAN NGHỆ THUẬT (TIMELINE)
+                if (listStyle === 'timeline') {
+                  return (
+                    <div className="relative border-l-2 ml-4 pl-4 space-y-4 pt-1" style={{ borderColor: activeBorderColor }}>
+                      {volumeMap.map((vGroup, vIdx) => (
+                        <div key={vIdx} className="space-y-3">
+                          {vGroup.title && (
+                            <div className="relative pt-1 pb-1">
+                              <div className="absolute -left-[23px] top-2 w-3.5 h-3.5 rounded-full bg-amber-500 ring-4 ring-black/30" />
+                              <span className={`text-xs font-bold uppercase tracking-wider block ${storyBodyFont}`} style={customStyles.text}>
+                                {vGroup.title}
+                              </span>
+                            </div>
+                          )}
+                          {vGroup.chapters.map((chap) => {
+                            const { isUnlocked, isPassUnlocked, isAuthorOrOwner, isReading } = getChapterStatus(chap);
+                            return (
+                              <div
+                                key={chap.id}
+                                onClick={() => onSelectChapter(chap)}
+                                className="relative p-3 rounded-xs border cursor-pointer transition hover:scale-[1.01] active:scale-95 space-y-1"
+                                style={{
+                                  background: isCustomTheme ? (story.customBtnSecondaryBgColor || story.customCardBgColor) : undefined,
+                                  borderColor: activeBorderColor,
+                                  color: customStyles.text.color,
+                                }}
+                              >
+                                <div className="absolute -left-[23px] top-3.5 w-3 h-3 rounded-full bg-emerald-500 border border-black/40" />
+                                <div className="flex items-center justify-between gap-2">
+                                  <span className={`font-bold text-xs ${storyBodyFont}`} style={customStyles.text}>
+                                    {chap.title}
+                                  </span>
+                                  <span className={`text-[10px] font-mono shrink-0 ${storyMutedFont}`} style={customStyles.textMuted}>
+                                    {chap.createdAt}
+                                  </span>
+                                </div>
+                                {(isReading || chap.isLocked || chap.isPasswordProtected) && (
+                                  <div className="flex items-center gap-1.5 flex-wrap text-[10px]">
+                                    {isReading && (
+                                      <span className="px-1.5 py-0.5 rounded bg-emerald-600/30 text-emerald-400 font-mono">
+                                        Đang đọc dở ({lastReadProgress?.progressPercent || 0}%)
+                                      </span>
+                                    )}
+                                    {chap.isLocked && (
+                                      <span className="px-1.5 py-0.5 rounded bg-amber-600/30 text-amber-400 font-mono">
+                                        {chap.unlockPrice || 1} Chucu
+                                      </span>
+                                    )}
+                                    {chap.isPasswordProtected && (
+                                      <span className="px-1.5 py-0.5 rounded bg-sky-600/30 text-sky-400 font-mono">
+                                        Có Pass
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ))}
+                    </div>
+                  );
+                }
+
+                // 4. KIỂU BẢNG PHẲNG TỐI GIẢN (MINIMAL_TABLE)
+                if (listStyle === 'minimal_table') {
+                  return (
+                    <div className="border rounded-xs divide-y overflow-hidden" style={{ borderColor: activeBorderColor }}>
+                      {volumeMap.map((vGroup, vIdx) => (
+                        <React.Fragment key={vIdx}>
+                          {vGroup.title && (
+                            <div className="px-3 py-2 font-bold text-xs bg-black/10 dark:bg-white/10 flex justify-between items-center" style={{ color: customStyles.text.color }}>
+                              <span className={storyBodyFont}>{vGroup.title}</span>
+                              <span className={`text-[10px] font-mono ${storyMutedFont}`} style={customStyles.textMuted}>
+                                {vGroup.chapters.length} chương
+                              </span>
+                            </div>
+                          )}
+                          {vGroup.chapters.map((chap) => {
+                            const { isReading } = getChapterStatus(chap);
+                            return (
+                              <div
+                                key={chap.id}
+                                onClick={() => onSelectChapter(chap)}
+                                className="p-2.5 text-xs flex items-center justify-between cursor-pointer transition hover:bg-black/5 dark:hover:bg-white/5"
+                                style={{ color: customStyles.text.color }}
+                              >
+                                <div className="flex items-center gap-2 truncate pr-2">
+                                  <span className={`font-medium ${storyBodyFont}`}>{chap.title}</span>
+                                  {isReading && (
+                                    <span className="text-[10px] px-1 py-0.2 rounded bg-emerald-600 text-white font-mono">
+                                      Đọc dở
+                                    </span>
+                                  )}
+                                </div>
+                                <span className={`text-[10px] font-mono shrink-0 ${storyMutedFont}`} style={customStyles.textMuted}>
+                                  {chap.createdAt}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </React.Fragment>
+                      ))}
+                    </div>
+                  );
+                }
+
+                // 5. KIỂU THẺ TRUYỀN THỐNG (STANDARD - DEFAULT)
+                return (
+                  <div className="space-y-2">
+                    {sorted.map((chap, idx) => {
+                      const prevChap = idx > 0 ? sorted[idx - 1] : null;
+                      const isNewVolume = !!(chap.volumeTitle && (!prevChap || prevChap.volumeTitle !== chap.volumeTitle));
+                      const isTransitionToNoVolume = !chap.volumeTitle && !!(prevChap && prevChap.volumeTitle);
+                      const { isUnlocked, isPassUnlocked, isAuthorOrOwner, isReading } = getChapterStatus(chap);
+
+                      return (
+                        <React.Fragment key={chap.id}>
+                          {/* Section Break / Ngắt Phần Header */}
+                          {isNewVolume && (
+                            <div className="pt-3 pb-1">
+                              <div 
+                                className="px-3.5 py-2 flex items-center justify-between border font-bold text-xs uppercase tracking-wider rounded-xs select-none shadow-xs"
+                                style={{
+                                  background: isCustomTheme
+                                    ? (story.customBtnSecondaryBgColor || story.customCardBgColor || story.customBgColor)
+                                    : undefined,
+                                  borderColor: activeBorderColor,
+                                  color: customStyles.text.color,
+                                }}
+                              >
+                                <div className="flex items-center gap-2">
+                                  <BookOpen className="w-3.5 h-3.5 opacity-80" />
+                                  <span className={storyBodyFont}>{chap.volumeTitle}</span>
+                                </div>
+                                <span className={`text-[10px] font-normal font-mono ${storyMutedFont}`} style={customStyles.textMuted}>
+                                  {sorted.filter(c => c.volumeTitle === chap.volumeTitle).length} chương
+                                </span>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Divider when transitioning to chapters without a volume */}
+                          {isTransitionToNoVolume && (
+                            <div className="pt-3 pb-1">
+                              <div 
+                                className="px-3 py-1.5 flex items-center gap-2 border border-dashed text-xs opacity-75 rounded-xs"
+                                style={{
+                                  borderColor: activeBorderColor,
+                                  color: customStyles.textMuted.color,
+                                }}
+                              >
+                                <BookOpen className="w-3 h-3 opacity-60" />
+                                <span className={`text-[11px] uppercase tracking-wider font-semibold ${storyMutedFont}`}>Các chương tiếp theo</span>
+                              </div>
+                            </div>
+                          )}
+
+                          <div
+                            onClick={() => onSelectChapter(chap)}
+                            className={`p-3 text-xs flex items-center justify-between cursor-pointer transition ${isCustomTheme ? '' : `${tone.inputBg}`}`}
+                            style={{
+                              ...(isCustomTheme
+                                ? { background: story.customBtnSecondaryBgColor || story.customCardBgColor || story.customBgColor }
+                                : {}),
+                              ...getStoryBorderStyle(
+                                {
+                                  borderStyle: 'solid',
+                                  borderWidth: 'thin',
+                                  borderRadius: story.borderRadius,
+                                  borderGlow: 'none',
+                                },
+                                activeBorderColor
+                              ),
+                            }}
+                          >
+                            <div className="flex items-center gap-2.5 flex-wrap">
+                              <span 
+                                className={`font-bold ${storyBodyFont} ${story.bodyFontSize ? '' : 'text-sm'}`} 
+                                style={{
+                                  ...customStyles.text,
+                                  ...(story.bodyFontSize ? { fontSize: story.bodyFontSize } : {})
+                                }}
+                              >
+                                {chap.title}
+                              </span>
+                              
+                              {isReading && (
+                                <span 
+                                  className={`inline-flex items-center gap-1 px-2 py-0.5 border text-[11px] font-semibold ${storyBtnFont} ${isCustomTheme ? '' : `${tone.badgeLocked} ${tone.badgeLockedBorder} ${tone.badgeLockedText}`}`}
+                                  style={isCustomTheme ? { backgroundColor: story.customBtnBgColor, borderColor: story.customBorderColor, color: story.customTextColor } : {}}
+                                >
+                                  <BookmarkCheck className="w-3.5 h-3.5 opacity-80" />
+                                  <span>Đang đọc dở ({lastReadProgress?.progressPercent || 0}%)</span>
+                                </span>
+                              )}
+                              {chap.isLocked ? (
+                                (isUnlocked && !isAuthorOrOwner) ? (
+                                  <span 
+                                    className={`inline-flex items-center gap-1.5 px-2 py-0.5 border text-[11px] font-semibold ${storyBtnFont} ${isCustomTheme ? '' : `${tone.badgeFree} ${tone.badgeFreeBorder} ${tone.badgeFreeText}`}`}
+                                    style={isCustomTheme ? { backgroundColor: story.customCardBgColor, borderColor: story.customBorderColor, color: story.customTextColor } : {}}
+                                  >
+                                    <CheckCircle2 className="w-3.5 h-3.5 opacity-80" />
+                                    <span>Đã mở khóa</span>
+                                  </span>
+                                ) : (
+                                  <span 
+                                    className={`inline-flex items-center gap-1.5 px-2 py-0.5 border text-[11px] font-semibold shadow-xs ${storyBtnFont} ${isCustomTheme ? '' : `${tone.badgeLocked} ${tone.badgeLockedBorder} ${tone.badgeLockedText}`}`}
+                                    style={isCustomTheme ? { backgroundColor: story.customBtnBgColor || story.customCardBgColor, borderColor: story.customBorderColor, color: story.customTextColor } : {}}
+                                  >
+                                    <Lock 
+                                      className={`w-3.5 h-3.5 ${isCustomTheme ? '' : tone.badgeLockedIcon}`} 
+                                      style={isCustomTheme ? { color: story.customTextColor } : {}}
+                                    />
+                                    <span>{chap.unlockPrice || 1} Chucu</span>
+                                  </span>
+                                )
+                              ) : null}
+                              {chap.isPasswordProtected ? (
+                                (isPassUnlocked && !isAuthorOrOwner) ? (
+                                  <span 
+                                    className={`inline-flex items-center gap-1.5 px-2 py-0.5 border text-[11px] font-semibold ${storyBtnFont} ${isCustomTheme ? '' : `${tone.badgeFree} ${tone.badgeFreeBorder} ${tone.badgeFreeText}`}`}
+                                    style={isCustomTheme ? { backgroundColor: story.customCardBgColor, borderColor: story.customBorderColor, color: story.customTextColor } : {}}
+                                  >
+                                    <CheckCircle2 className="w-3.5 h-3.5 opacity-80" />
+                                    <span>Đã mở Pass</span>
+                                  </span>
+                                ) : (
+                                  <span 
+                                    className={`inline-flex items-center gap-1.5 px-2 py-0.5 border text-[11px] font-semibold shadow-xs ${storyBtnFont} ${isCustomTheme ? '' : `${tone.badgeLocked} ${tone.badgeLockedBorder} ${tone.badgeLockedText}`}`}
+                                    style={isCustomTheme ? { backgroundColor: story.customBtnBgColor || story.customCardBgColor, borderColor: story.customBorderColor, color: story.customTextColor } : {}}
+                                  >
+                                    <Key 
+                                      className={`w-3.5 h-3.5 ${isCustomTheme ? '' : tone.badgeLockedIcon}`} 
+                                      style={isCustomTheme ? { color: story.customTextColor } : {}}
+                                    />
+                                    <span>Có Pass</span>
+                                  </span>
+                                )
+                              ) : null}
+                            </div>
+                            <span className={`text-xs ${storyMutedFont}`} style={customStyles.textMuted}>{chap.createdAt}</span>
+                          </div>
+                        </React.Fragment>
+                      );
+                    })}
+                  </div>
+                );
               })()}
             </div>
           )}

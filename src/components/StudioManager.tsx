@@ -648,6 +648,19 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
       borderCornerAccent: storyData.borderCornerAccent,
       borderGlow: storyData.borderGlow,
 
+      // Widget thông tin nhân vật
+      showCharacterWidget: storyData.showCharacterWidget,
+      characterWidgetTitle: storyData.characterWidgetTitle,
+      characters: storyData.characters,
+
+      // Widget tiến độ truyện
+      showProgressWidget: storyData.showProgressWidget,
+      progressWidgetTitle: storyData.progressWidgetTitle,
+      totalPlannedChapters: storyData.totalPlannedChapters,
+
+      // Kiểu trình bày danh sách chương
+      chapterListStyle: storyData.chapterListStyle,
+
       // Theme và Hiệu ứng chương riêng biệt
       useSeparateChapterTheme: storyData.useSeparateChapterTheme,
       useSeparateChapterEffect: storyData.useSeparateChapterEffect,

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Gamepad2, Flame, Play, Trophy, LayoutGrid } from 'lucide-react';
+import { Gamepad2, Play, Trophy, LayoutGrid } from 'lucide-react';
 import { UserProfile } from '../types';
 import { User as FirebaseUser } from 'firebase/auth';
 import { BlockBlastGame } from './BlockBlastGame';
@@ -83,22 +83,6 @@ export const GamesHub: React.FC<GamesHubProps> = ({
               TRUNG TÂM TRÒ CHƠI
             </h1>
           </div>
-
-          {currentUser && userProfile && (
-            <div className="bg-[#14080e] border border-[#3b1f2d] p-3 rounded-xs flex items-center gap-4 text-xs font-mono-code self-start md:self-auto">
-              <div>
-                <span className="text-[10px] text-[#8a717a] block">Số dư Chucu</span>
-                <span className="text-[#ff4d79] font-bold text-sm">{(userProfile.chucuBalance || 0).toLocaleString()} ¢</span>
-              </div>
-              <div className="border-l border-[#2d1822] pl-4">
-                <span className="text-[10px] text-[#8a717a] block">Điểm danh liên tục</span>
-                <span className="text-[#fbbf24] font-bold text-sm flex items-center gap-1">
-                  <Flame className="w-3.5 h-3.5 text-[#fbbf24]" />
-                  {userProfile.checkInStreak || 0} ngày
-                </span>
-              </div>
-            </div>
-          )}
         </div>
       </div>
 

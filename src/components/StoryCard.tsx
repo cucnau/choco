@@ -13,36 +13,11 @@ export const StoryCard: React.FC<StoryCardProps> = ({
   story,
   onSelectStory,
 }) => {
-  // Chỉ khi người dùng chọn kiểu nét viền trang trí đặc biệt (dashed, dotted, sketch, gradient, stamp, film,...)
-  // hoặc bật hiệu ứng phát sáng thì mới dùng màu customBorderColor cho viền ngoài.
-  // Còn với nét viền chuẩn (solid/mặc định) thì giữ màu viền tối chuẩn #2d1822 để các thẻ trên danh sách đồng nhất, không bị sáng chói.
-  const hasCustomStyle = Boolean(
-    (story.borderStyle && story.borderStyle !== 'solid' && story.borderStyle !== 'none') ||
-    (story.borderGlow && story.borderGlow !== 'none')
-  );
-
-  const cardBorderColor = hasCustomStyle ? (story.customBorderColor || '#5e2f46') : '#2d1822';
-  const customCardStyle = getStoryBorderStyle(
-    {
-      ...story,
-      customBorderColor: cardBorderColor,
-    },
-    '#2d1822'
-  );
-
   return (
     <article
       onClick={() => onSelectStory(story)}
-      className="bg-[#11090c] p-2.5 transition-all duration-200 cursor-pointer flex flex-col group font-mono-code relative hover:scale-[1.01]"
-      style={customCardStyle}
+      className="bg-[#11090c] border border-[#2d1822] hover:border-[#5e2f46] p-2.5 transition-all duration-200 cursor-pointer flex flex-col group font-mono-code relative hover:scale-[1.01] rounded-xs shadow-xs"
     >
-      {/* Corner Accents nếu có */}
-      <StoryCornerAccents
-        accent={story.borderCornerAccent}
-        borderStyle={story.borderStyle}
-        color={story.customBorderColor || '#5e2f46'}
-      />
-
       <div className="space-y-2.5 relative z-10">
         {/* Cover image if available */}
         {story.coverUrl ? (

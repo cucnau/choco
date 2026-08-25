@@ -26,7 +26,25 @@ export const ReadingEffects: React.FC<ReadingEffectsProps> = ({ effect = 'none',
       width = canvas.width = window.innerWidth;
       height = canvas.height = window.innerHeight;
     };
+
+    // Track scroll position to shift particles with document scroll
+    const getScrollPos = () => window.scrollY || window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
+    let currentScrollY = getScrollPos();
+    let lastScrollY = currentScrollY;
+
+    const handleScroll = (e: Event) => {
+      if (e.target && e.target !== document && e.target !== window) {
+        const target = e.target as HTMLElement;
+        if (target.scrollTop !== undefined && target.scrollTop > 0) {
+          currentScrollY = target.scrollTop;
+          return;
+        }
+      }
+      currentScrollY = getScrollPos();
+    };
+
     window.addEventListener('resize', handleResize);
+    window.addEventListener('scroll', handleScroll, { capture: true, passive: true });
 
     // Particle system containers
     let particles: any[] = [];
@@ -574,6 +592,27 @@ export const ReadingEffects: React.FC<ReadingEffectsProps> = ({ effect = 'none',
     const render = () => {
       ctx.clearRect(0, 0, width, height);
 
+      // Scroll delta calculation for smooth continuous effect flow
+      const scrollDelta = currentScrollY - lastScrollY;
+      lastScrollY = currentScrollY;
+
+      if (scrollDelta !== 0 && effect !== 'glitch') {
+        particles.forEach((p) => {
+          p.y -= scrollDelta;
+          if (p.y < -50) {
+            p.y = height + Math.random() * 40;
+            p.x = Math.random() * width;
+          } else if (p.y > height + 50) {
+            p.y = -40 - Math.random() * 40;
+            p.x = Math.random() * width;
+          }
+        });
+
+        if (shootingStar) {
+          shootingStar.y -= scrollDelta;
+        }
+      }
+
       if (effect === 'glitch') {
         // CRT Scanlines
         ctx.beginPath();
@@ -652,6 +691,7 @@ export const ReadingEffects: React.FC<ReadingEffectsProps> = ({ effect = 'none',
     return () => {
       cancelAnimationFrame(animationFrameId);
       window.removeEventListener('resize', handleResize);
+      window.removeEventListener('scroll', handleScroll, true);
     };
   }, [effect, isDarkTheme]);
 
