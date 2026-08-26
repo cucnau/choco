@@ -1,5 +1,5 @@
 import React from 'react';
-import { Story, Chapter, Comment, StoryLayoutBlockId, StoryLayoutMode } from '../types';
+import { Story, Chapter, Comment, StoryLayoutBlockId, StoryLayoutSection, StoryLayoutSectionType, StoryLayoutColumnRatio } from '../types';
 import {
   Bookmark,
   BookOpen,
@@ -34,43 +34,61 @@ import {
 } from 'lucide-react';
 import { getStoryBorderStyle, getStoryButtonBorderStyle } from '../lib/borderStyles';
 
-export const DEFAULT_LAYOUT_LEFT: StoryLayoutBlockId[] = [
-  'cover',
-  'editor_info',
-  'action_buttons',
-  'tags',
-  'character_widget',
+export const DEFAULT_STORY_LAYOUT_SECTIONS: StoryLayoutSection[] = [
+  {
+    id: 'sec-header',
+    type: '2_columns',
+    title: 'Phần 1: Thông tin đầu truyện',
+    columnRatio: 'left_fixed',
+    leftBlocks: ['cover', 'editor_info', 'action_buttons', 'tags', 'character_widget'],
+    rightBlocks: ['title', 'meta', 'synopsis', 'progress_widget', 'custom_widget', 'gallery_widget'],
+  },
+  {
+    id: 'sec-chapters',
+    type: '1_column',
+    title: 'Phần 2: Danh sách chương',
+    blocks: ['chapter_list'],
+  },
+  {
+    id: 'sec-comments',
+    type: '1_column',
+    title: 'Phần 3: Bình luận',
+    blocks: ['comments'],
+  },
 ];
 
-export const DEFAULT_LAYOUT_RIGHT: StoryLayoutBlockId[] = [
-  'title',
-  'meta',
-  'synopsis',
-  'progress_widget',
-  'custom_widget',
-  'gallery_widget',
-];
-
-export const DEFAULT_LAYOUT_BOTTOM: StoryLayoutBlockId[] = [
-  'chapter_list',
-  'comments',
-];
-
-export const DEFAULT_LAYOUT_SINGLE: StoryLayoutBlockId[] = [
-  'cover',
-  'title',
-  'meta',
-  'editor_info',
-  'action_buttons',
-  'tags',
-  'synopsis',
-  'gallery_widget',
-  'character_widget',
-  'progress_widget',
-  'custom_widget',
-  'chapter_list',
-  'comments',
-];
+export function normalizeStorySections(story?: Partial<Story>): StoryLayoutSection[] {
+  if (story?.storyLayoutSections && Array.isArray(story.storyLayoutSections) && story.storyLayoutSections.length > 0) {
+    return story.storyLayoutSections;
+  }
+  // Tương thích ngược với các trường cũ nếu có
+  if (story?.storyLayoutLeft || story?.storyLayoutRight || story?.storyLayoutBottom) {
+    const left = story.storyLayoutLeft || [];
+    const right = story.storyLayoutRight || [];
+    const bottom = story.storyLayoutBottom || [];
+    const sections: StoryLayoutSection[] = [];
+    if (left.length > 0 || right.length > 0) {
+      sections.push({
+        id: 'sec-header',
+        type: '2_columns',
+        title: 'Phần 1: Thông tin đầu truyện',
+        columnRatio: 'left_fixed',
+        leftBlocks: left,
+        rightBlocks: right,
+      });
+    }
+    if (bottom.length > 0) {
+      sections.push({
+        id: 'sec-bottom',
+        type: '1_column',
+        title: 'Phần 2: Danh sách & Bình luận',
+        blocks: bottom,
+      });
+    }
+    if (sections.length > 0) return sections;
+  }
+  return DEFAULT_STORY_LAYOUT_SECTIONS;
+}
 
 export interface StoryBlockRendererProps {
   blockId: StoryLayoutBlockId;
@@ -170,7 +188,7 @@ export const StoryBlockRenderer: React.FC<StoryBlockRendererProps> = (props) => 
     return (
       <div
         key="cover"
-        className="w-full aspect-[3/4] max-w-[260px] mx-auto sm:max-w-none overflow-hidden flex justify-center items-center relative"
+        className="w-full aspect-[3/4] max-w-[220px] mx-auto overflow-hidden flex justify-center items-center relative shrink-0"
         style={{
           ...(isCustomTheme
             ? { background: story.customBtnSecondaryBgColor || story.customBgColor }
@@ -401,43 +419,53 @@ export const StoryBlockRenderer: React.FC<StoryBlockRendererProps> = (props) => 
         </div>
 
         <div className="space-y-2.5 max-h-72 overflow-y-auto pr-0.5">
-          {story.characters.map((char) => (
-            <div key={char.id} className="flex items-start gap-2 text-xs">
-              <div
-                className="w-8 h-8 rounded-full border shrink-0 overflow-hidden flex items-center justify-center bg-black/20"
-                style={{ borderColor: isCustomTheme ? story.customBorderColor : tone.border }}
-              >
-                {char.avatarUrl ? (
-                  <img src={char.avatarUrl} alt={char.name} className="w-full h-full object-cover" />
-                ) : (
-                  <User className="w-4 h-4 opacity-60" style={customStyles.text} />
-                )}
-              </div>
-              <div className="min-w-0 flex-1 space-y-0.5">
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <span className={`font-bold ${storyBodyFont}`} style={customStyles.text}>
-                    {char.name}
-                  </span>
-                  {char.role && (
-                    <span
-                      className={`text-[9px] px-1.5 py-0.2 rounded font-mono ${storyBtnFont} ${isCustomTheme ? '' : `${tone.buttonBgPrimary} ${tone.text}`}`}
-                      style={{
-                        background: isCustomTheme ? (story.customBtnBgColor || story.customBorderColor) : undefined,
-                        color: isCustomTheme ? story.customTextColor : undefined,
-                      }}
-                    >
-                      {char.role}
-                    </span>
+          {story.characters.map((char) => {
+            const effectiveShape = char.avatarShape || story.characterAvatarShape || 'circle';
+            let shapeClass = 'w-9 h-9 rounded-full aspect-square';
+            if (effectiveShape === 'square') shapeClass = 'w-10 h-10 rounded-md aspect-square';
+            else if (effectiveShape === 'portrait_34') shapeClass = 'w-12 h-16 rounded-md aspect-[3/4]';
+            else if (effectiveShape === 'portrait_23') shapeClass = 'w-12 h-18 rounded-md aspect-[2/3]';
+            else if (effectiveShape === 'landscape_43') shapeClass = 'w-16 h-12 rounded-md aspect-[4/3]';
+            else if (effectiveShape === 'landscape_169') shapeClass = 'w-20 h-11 rounded-md aspect-[16/9]';
+
+            return (
+              <div key={char.id} className="flex items-start gap-2 text-xs">
+                <div
+                  className={`${shapeClass} border shrink-0 overflow-hidden flex items-center justify-center bg-black/20`}
+                  style={{ borderColor: isCustomTheme ? story.customBorderColor : tone.border }}
+                >
+                  {char.avatarUrl ? (
+                    <img src={char.avatarUrl} alt={char.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <User className="w-4 h-4 opacity-60" style={customStyles.text} />
                   )}
                 </div>
-                {char.description && (
-                  <p className={`text-[11px] leading-relaxed opacity-80 ${storyMutedFont}`} style={customStyles.textMuted}>
-                    {char.description}
-                  </p>
-                )}
+                <div className="min-w-0 flex-1 space-y-0.5">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className={`font-bold ${storyBodyFont}`} style={customStyles.text}>
+                      {char.name}
+                    </span>
+                    {char.role && (
+                      <span
+                        className={`text-[9px] px-1.5 py-0.2 rounded font-mono ${storyBtnFont} ${isCustomTheme ? '' : `${tone.buttonBgPrimary} ${tone.text}`}`}
+                        style={{
+                          background: isCustomTheme ? (story.customBtnBgColor || story.customBorderColor) : undefined,
+                          color: isCustomTheme ? story.customTextColor : undefined,
+                        }}
+                      >
+                        {char.role}
+                      </span>
+                    )}
+                  </div>
+                  {char.description && (
+                    <p className={`text-[11px] leading-relaxed opacity-80 ${storyMutedFont}`} style={customStyles.textMuted}>
+                      {char.description}
+                    </p>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     );
@@ -1003,82 +1031,54 @@ export const StoryBlockRenderer: React.FC<StoryBlockRendererProps> = (props) => 
 
 export const StoryLayoutContainer: React.FC<Omit<StoryBlockRendererProps, 'blockId'>> = (props) => {
   const { story } = props;
-  const layoutMode = story.storyLayoutMode || 'two_columns';
+  const sections = normalizeStorySections(story);
 
-  // Lấy danh sách block cho từng vùng (hoặc dùng mặc định nếu chưa cấu hình)
-  const leftBlocks = story.storyLayoutLeft || DEFAULT_LAYOUT_LEFT;
-  const rightBlocks = story.storyLayoutRight || DEFAULT_LAYOUT_RIGHT;
-  const bottomBlocks = story.storyLayoutBottom || DEFAULT_LAYOUT_BOTTOM;
-  const singleBlocks = story.storyLayoutOrder || DEFAULT_LAYOUT_SINGLE;
-
-  if (layoutMode === 'single_column') {
-    return (
-      <div className="flex flex-col gap-5 max-w-3xl mx-auto w-full">
-        {singleBlocks.map((blockId) => (
-          <StoryBlockRenderer key={blockId} blockId={blockId} {...props} />
-        ))}
-      </div>
-    );
-  }
-
-  if (layoutMode === 'inverted_two_columns') {
-    return (
-      <div className="space-y-6 w-full">
-        <div className="grid grid-cols-1 sm:grid-cols-[1fr_240px] gap-6 items-start">
-          {/* Cột chính bên trái */}
-          <div className="w-full flex flex-col gap-4">
-            {rightBlocks.map((blockId) => (
-              <StoryBlockRenderer key={blockId} blockId={blockId} {...props} />
-            ))}
-          </div>
-
-          {/* Cột phụ bên phải */}
-          <div className="w-full max-w-[240px] sm:max-w-none mx-auto sm:mx-0 shrink-0 flex flex-col gap-3.5">
-            {leftBlocks.map((blockId) => (
-              <StoryBlockRenderer key={blockId} blockId={blockId} {...props} />
-            ))}
-          </div>
-        </div>
-
-        {/* Chân trang toàn chiều rộng */}
-        {bottomBlocks.length > 0 && (
-          <div className="space-y-6 w-full">
-            {bottomBlocks.map((blockId) => (
-              <StoryBlockRenderer key={blockId} blockId={blockId} {...props} />
-            ))}
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  // Mặc định: 'two_columns'
   return (
     <div className="space-y-6 w-full">
-      <div className="grid grid-cols-1 sm:grid-cols-[224px_1fr] gap-6 items-start">
-        {/* Cột trái */}
-        <div className="w-full max-w-[224px] sm:max-w-none mx-auto sm:mx-0 shrink-0 flex flex-col gap-3.5">
-          {leftBlocks.map((blockId) => (
-            <StoryBlockRenderer key={blockId} blockId={blockId} {...props} />
-          ))}
-        </div>
+      {sections.map((sec, secIdx) => {
+        if (sec.type === '1_column') {
+          const blocks = sec.blocks || [];
+          if (blocks.length === 0) return null;
+          return (
+            <div key={sec.id || `sec-1col-${secIdx}`} className="w-full flex flex-col gap-4">
+              {blocks.map((blockId) => (
+                <StoryBlockRenderer key={blockId} blockId={blockId} {...props} />
+              ))}
+            </div>
+          );
+        }
 
-        {/* Cột phải */}
-        <div className="w-full flex flex-col gap-4">
-          {rightBlocks.map((blockId) => (
-            <StoryBlockRenderer key={blockId} blockId={blockId} {...props} />
-          ))}
-        </div>
-      </div>
+        // 2_columns
+        const leftBlocks = sec.leftBlocks || [];
+        const rightBlocks = sec.rightBlocks || [];
+        if (leftBlocks.length === 0 && rightBlocks.length === 0) return null;
 
-      {/* Chân trang toàn chiều rộng */}
-      {bottomBlocks.length > 0 && (
-        <div className="space-y-6 w-full">
-          {bottomBlocks.map((blockId) => (
-            <StoryBlockRenderer key={blockId} blockId={blockId} {...props} />
-          ))}
-        </div>
-      )}
+        const ratio = sec.columnRatio || 'left_fixed';
+        let gridColsClass = 'grid-cols-1 sm:grid-cols-[224px_1fr]';
+        if (ratio === 'equal') {
+          gridColsClass = 'grid-cols-1 sm:grid-cols-2';
+        } else if (ratio === 'right_fixed') {
+          gridColsClass = 'grid-cols-1 sm:grid-cols-[1fr_224px]';
+        }
+
+        return (
+          <div key={sec.id || `sec-2col-${secIdx}`} className={`grid ${gridColsClass} gap-6 items-start w-full`}>
+            {/* Cột trái */}
+            <div className="w-full flex flex-col gap-3.5 min-w-0">
+              {leftBlocks.map((blockId) => (
+                <StoryBlockRenderer key={blockId} blockId={blockId} {...props} />
+              ))}
+            </div>
+
+            {/* Cột phải */}
+            <div className="w-full flex flex-col gap-4 min-w-0">
+              {rightBlocks.map((blockId) => (
+                <StoryBlockRenderer key={blockId} blockId={blockId} {...props} />
+              ))}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 };

@@ -25,7 +25,8 @@ import {
   Download,
   RefreshCw,
   Settings,
-  Check
+  Check,
+  Palette
 } from 'lucide-react';
 import { BulkChapterModal } from './BulkChapterModal';
 import { LiveStoryEditor } from './LiveStoryEditor';
@@ -675,7 +676,8 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
       // Kiểu trình bày danh sách chương
       chapterListStyle: storyData.chapterListStyle,
 
-      // Tùy chỉnh Bố cục & Vị trí các phần trang truyện
+      // Tùy chỉnh Bố cục & Vị trí các phân đoạn trang truyện
+      storyLayoutSections: storyData.storyLayoutSections,
       storyLayoutMode: storyData.storyLayoutMode,
       storyLayoutLeft: storyData.storyLayoutLeft,
       storyLayoutRight: storyData.storyLayoutRight,
@@ -1886,10 +1888,10 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
                       <button
                         type="button"
                         onClick={() => setStoryCoverUrl('')}
-                        className="absolute -top-1.5 -right-1.5 bg-[#471b20] hover:bg-[#5a2329] border border-[#7a2e36] text-[#fecaca] text-[8px] font-bold uppercase p-0.5 rounded-full"
+                        className="absolute -top-1.5 -right-1.5 bg-[#471b20] hover:bg-[#5a2329] border border-[#7a2e36] text-[#fecaca] p-0.5 rounded-full"
                         title="Xóa ảnh"
                       >
-                        ✕
+                        <X className="w-2.5 h-2.5" />
                       </button>
                     </div>
                   ) : (
@@ -2187,7 +2189,10 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
                       ))}
                     </select>
                     {storyBorderStyle === 'sketch' && (
-                      <span className="text-[10px] text-amber-400/90 block font-mono-code">🔒 Mặc định vuông vức khi chọn Nét vẽ tay</span>
+                      <span className="text-[10px] text-amber-400/90 flex items-center gap-1 font-mono-code">
+                        <Lock className="w-3 h-3 shrink-0" />
+                        <span>Mặc định vuông vức khi chọn Nét vẽ tay</span>
+                      </span>
                     )}
                   </div>
 
@@ -2209,7 +2214,10 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
                       ))}
                     </select>
                     {storyBorderStyle === 'sketch' && (
-                      <span className="text-[10px] text-amber-400/90 block font-mono-code">🔒 Mặc định không họa tiết khi chọn Nét vẽ tay</span>
+                      <span className="text-[10px] text-amber-400/90 flex items-center gap-1 font-mono-code">
+                        <Lock className="w-3 h-3 shrink-0" />
+                        <span>Mặc định không họa tiết khi chọn Nét vẽ tay</span>
+                      </span>
                     )}
                   </div>
 
@@ -2235,8 +2243,9 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
                   <div className="p-3 bg-[#10070a] border border-[#2d1822] rounded space-y-3">
                     {storyBorderStyle === 'gradient' && (
                       <div className="space-y-2">
-                        <div className="text-xs font-bold text-[#ffd6e2] font-mono-code flex items-center gap-1">
-                          <span>🎨 Tùy chỉnh 2 màu dải chuyển sắc (Gradient):</span>
+                        <div className="text-xs font-bold text-[#ffd6e2] font-mono-code flex items-center gap-1.5">
+                          <Palette className="w-3.5 h-3.5" />
+                          <span>Tùy chỉnh 2 màu dải chuyển sắc (Gradient):</span>
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                           {/* Màu 1 */}

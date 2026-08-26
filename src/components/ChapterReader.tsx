@@ -326,6 +326,7 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
 
   const hasSeparateEffect = story.useSeparateChapterEffect || story.useSeparateChapterTheme;
   const activeReadingEffect = hasSeparateEffect ? (story.chapterReadingEffect || 'none') : (story.readingEffect || 'none');
+  const activeReadingEffectColor = hasSeparateEffect ? (story.chapterReadingEffectColor || story.readingEffectColor) : story.readingEffectColor;
 
   const activeBorderGradientColor2 = hasSeparateTheme
     ? (story.chapterCustomBorderGradientColor2 || story.customBorderGradientColor2)
@@ -377,7 +378,7 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
       }}
     >
       {/* Hiệu ứng hạt rơi ở trang đọc chương */}
-      {activeReadingEffect !== 'none' && <ReadingEffects effect={activeReadingEffect} isDarkTheme={isDarkTheme} />}
+      {activeReadingEffect !== 'none' && <ReadingEffects effect={activeReadingEffect} effectColor={activeReadingEffectColor} isDarkTheme={isDarkTheme} />}
       
       {/* Top Fixed Control Bar */}
       <div 

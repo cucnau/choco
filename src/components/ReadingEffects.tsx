@@ -1,11 +1,27 @@
 import React from 'react';
 
 interface ReadingEffectsProps {
-  effect?: 'none' | 'rain' | 'snow' | 'glitch' | 'star' | 'leaf' | 'ginkgo' | 'cherry_blossom' | 'firefly' | 'soap_bubble' | 'fireworks' | 'fire_sparks';
+  effect?: 'none' | 'rain' | 'snow' | 'glitch' | 'star' | 'leaf' | 'ginkgo' | 'cherry_blossom' | 'firefly' | 'soap_bubble' | 'fireworks' | 'fire_sparks' | 'sci_fi_hud';
+  effectColor?: string;
   isDarkTheme: boolean;
 }
 
-export const ReadingEffects: React.FC<ReadingEffectsProps> = ({ effect = 'none', isDarkTheme }) => {
+const hexToRgb = (hex?: string) => {
+  let c = hex ? hex.replace('#', '').trim() : '00f0ff';
+  if (c.length === 3) {
+    c = c.split('').map((x) => x + x).join('');
+  }
+  if (c.length !== 6) c = '00f0ff';
+  const num = parseInt(c, 16);
+  if (isNaN(num)) return { r: 0, g: 240, b: 255 };
+  return {
+    r: (num >> 16) & 255,
+    g: (num >> 8) & 255,
+    b: num & 255,
+  };
+};
+
+export const ReadingEffects: React.FC<ReadingEffectsProps> = ({ effect = 'none', effectColor = '#00f0ff', isDarkTheme }) => {
   const canvasRef = React.useRef<HTMLCanvasElement | null>(null);
 
   React.useEffect(() => {
@@ -58,6 +74,7 @@ export const ReadingEffects: React.FC<ReadingEffectsProps> = ({ effect = 'none',
       effect === 'firefly' ? 28 : 
       effect === 'soap_bubble' ? 18 :
       effect === 'fire_sparks' ? 42 :
+      effect === 'sci_fi_hud' ? 10 :
       effect === 'fireworks' ? 0 : // fireworks managed dynamically
       0;
 
@@ -638,99 +655,566 @@ export const ReadingEffects: React.FC<ReadingEffectsProps> = ({ effect = 'none',
       }
     }
 
-    class FireworkSpark {
+    // Golden Radial Starburst Firework Classes (Matching golden radial fireworks image)
+    class GoldenFireworkRay {
       x: number;
       y: number;
       vx: number;
       vy: number;
-      color: string;
+      trail: { x: number; y: number }[] = [];
+      maxTrailLength: number;
       alpha: number = 1;
       decay: number;
-      gravity: number = 0.04;
-      drag: number = 0.95;
+      gravity: number = 0.025;
+      drag: number = 0.968;
+      color: string;
+      sparkleSize: number;
+      twinklePhase: number;
 
-      constructor(x: number, y: number, color: string) {
+      constructor(x: number, y: number, angle: number, speed: number) {
         this.x = x;
         this.y = y;
-        const angle = Math.random() * Math.PI * 2;
-        const speed = 1.0 + Math.random() * 4.0;
         this.vx = Math.cos(angle) * speed;
         this.vy = Math.sin(angle) * speed;
-        this.color = color;
-        this.decay = 0.01 + Math.random() * 0.015;
+        this.maxTrailLength = 10 + Math.floor(Math.random() * 8);
+        this.decay = 0.007 + Math.random() * 0.01;
+        this.sparkleSize = 1.0 + Math.random() * 2.2;
+        this.twinklePhase = Math.random() * Math.PI * 2;
+
+        const colors = [
+          'rgba(255, 255, 235', // White-hot gold center
+          'rgba(255, 225, 135', // Bright golden champagne
+          'rgba(255, 195, 80',  // Warm gold
+          'rgba(255, 165, 40',  // Amber gold
+        ];
+        this.color = colors[Math.floor(Math.random() * colors.length)];
       }
 
       update() {
+        this.trail.push({ x: this.x, y: this.y });
+        if (this.trail.length > this.maxTrailLength) {
+          this.trail.shift();
+        }
+
         this.vx *= this.drag;
         this.vy *= this.drag;
         this.vy += this.gravity;
         this.x += this.vx;
         this.y += this.vy;
         this.alpha -= this.decay;
+        this.twinklePhase += 0.25;
+      }
+
+      draw() {
+        if (this.alpha <= 0 || this.trail.length === 0) return;
+        ctx.save();
+
+        // Glow
+        ctx.shadowColor = 'rgba(255, 205, 100, 0.9)';
+        ctx.shadowBlur = 6;
+
+        // Draw radial trail line
+        ctx.beginPath();
+        ctx.moveTo(this.trail[0].x, this.trail[0].y);
+        for (let i = 1; i < this.trail.length; i++) {
+          ctx.lineTo(this.trail[i].x, this.trail[i].y);
+        }
+        ctx.lineTo(this.x, this.y);
+
+        ctx.strokeStyle = `${this.color}, ${Math.max(0, this.alpha * 0.85)})`;
+        ctx.lineWidth = Math.max(0.6, 1.4 * this.alpha);
+        ctx.stroke();
+
+        // Draw glowing golden tip/sparkle
+        const twinkleAlpha = Math.max(0, this.alpha * (0.6 + Math.sin(this.twinklePhase) * 0.4));
+        ctx.fillStyle = `rgba(255, 255, 240, ${twinkleAlpha})`;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.sparkleSize * (0.5 + this.alpha * 0.5), 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
+      }
+    }
+
+    class GoldenGlitterDot {
+      x: number;
+      y: number;
+      vx: number;
+      vy: number;
+      alpha: number;
+      decay: number;
+      size: number;
+      twinkleSpeed: number;
+      twinkleVal: number;
+
+      constructor(x: number, y: number) {
+        this.x = x + (Math.random() - 0.5) * 12;
+        this.y = y + (Math.random() - 0.5) * 12;
+        this.vx = (Math.random() - 0.5) * 0.7;
+        this.vy = 0.1 + Math.random() * 0.4;
+        this.alpha = 0.8 + Math.random() * 0.2;
+        this.decay = 0.006 + Math.random() * 0.012;
+        this.size = 0.8 + Math.random() * 1.8;
+        this.twinkleSpeed = 0.15 + Math.random() * 0.25;
+        this.twinkleVal = Math.random() * Math.PI * 2;
+      }
+
+      update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        this.alpha -= this.decay;
+        this.twinkleVal += this.twinkleSpeed;
       }
 
       draw() {
         if (this.alpha <= 0) return;
         ctx.save();
+        const curAlpha = Math.max(0, this.alpha * (0.4 + Math.sin(this.twinkleVal) * 0.6));
+        ctx.fillStyle = `rgba(255, 235, 170, ${curAlpha})`;
+        ctx.shadowColor = 'rgba(255, 215, 110, 0.9)';
+        ctx.shadowBlur = 5;
         ctx.beginPath();
-        if (isDarkTheme) {
-          ctx.shadowColor = this.color;
-          ctx.shadowBlur = 4;
-        }
-        ctx.fillStyle = this.color.replace(')', `, ${this.alpha})`);
-        ctx.arc(this.x, this.y, 1.0 + Math.random() * 1.5, 0, Math.PI * 2);
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
         ctx.fill();
         ctx.restore();
       }
     }
 
-    class FireworkRocket {
+    class GoldenFireworkCore {
+      x: number;
+      y: number;
+      radius: number = 0;
+      maxRadius: number;
+      alpha: number = 1;
+      decay: number = 0.045;
+
+      constructor(x: number, y: number) {
+        this.x = x;
+        this.y = y;
+        this.maxRadius = 35 + Math.random() * 25;
+      }
+
+      update() {
+        if (this.radius < this.maxRadius) {
+          this.radius += (this.maxRadius - this.radius) * 0.25;
+        }
+        this.alpha -= this.decay;
+      }
+
+      draw() {
+        if (this.alpha <= 0) return;
+        ctx.save();
+        const grad = ctx.createRadialGradient(
+          this.x, this.y, 0,
+          this.x, this.y, Math.max(1, this.radius)
+        );
+        grad.addColorStop(0, `rgba(255, 255, 255, ${this.alpha * 0.95})`);
+        grad.addColorStop(0.25, `rgba(255, 235, 170, ${this.alpha * 0.8})`);
+        grad.addColorStop(0.55, `rgba(255, 195, 90, ${this.alpha * 0.4})`);
+        grad.addColorStop(1, 'rgba(255, 160, 40, 0)');
+
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, Math.max(1, this.radius), 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = `rgba(255, 255, 255, ${this.alpha})`;
+        ctx.shadowColor = 'rgba(255, 230, 150, 1)';
+        ctx.shadowBlur = 16;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, 3.5 + this.alpha * 4, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
+      }
+    }
+
+    class GoldenFireworkRocket {
       x: number;
       y: number;
       targetY: number;
       vy: number;
-      color: string;
       exploded: boolean = false;
+      sparkTrail: { x: number; y: number; alpha: number }[] = [];
 
       constructor() {
-        this.x = 100 + Math.random() * (width - 200);
-        this.y = height;
-        this.targetY = 50 + Math.random() * (height * 0.5);
-        this.vy = -(5 + Math.random() * 4);
-        
-        const hues = [15, 35, 60, 130, 190, 250, 290, 330];
-        const randomHue = hues[Math.floor(Math.random() * hues.length)];
-        this.color = `rgba(hsla(${randomHue}, 100%, 65%, 1)`;
+        this.x = 80 + Math.random() * (width - 160);
+        this.y = height + 10;
+        this.targetY = 60 + Math.random() * (height * 0.45);
+        this.vy = -(6 + Math.random() * 3.5);
       }
 
-      update(spawnSparks: (sparks: FireworkSpark[]) => void) {
+      update(spawnBurst: (x: number, y: number) => void) {
+        this.sparkTrail.push({ x: this.x, y: this.y, alpha: 1 });
+        if (this.sparkTrail.length > 10) this.sparkTrail.shift();
+        this.sparkTrail.forEach((t) => (t.alpha -= 0.1));
+
         this.y += this.vy;
-        
+
         if (this.vy < 0 && this.y <= this.targetY) {
           this.exploded = true;
-          const newSparks: FireworkSpark[] = [];
-          const numSparks = 20 + Math.floor(Math.random() * 15);
-          for (let i = 0; i < numSparks; i++) {
-            newSparks.push(new FireworkSpark(this.x, this.y, this.color));
-          }
-          spawnSparks(newSparks);
+          spawnBurst(this.x, this.y);
         }
       }
 
       draw() {
         if (this.exploded) return;
         ctx.save();
+        ctx.shadowColor = 'rgba(255, 220, 130, 1)';
+        ctx.shadowBlur = 8;
+        ctx.fillStyle = 'rgba(255, 255, 240, 1)';
         ctx.beginPath();
-        ctx.fillStyle = this.color;
-        ctx.arc(this.x, this.y, 1.8, 0, Math.PI * 2);
+        ctx.arc(this.x, this.y, 2.2, 0, Math.PI * 2);
         ctx.fill();
+
+        this.sparkTrail.forEach((t) => {
+          if (t.alpha > 0) {
+            ctx.fillStyle = `rgba(255, 200, 100, ${t.alpha * 0.7})`;
+            ctx.beginPath();
+            ctx.arc(t.x + (Math.random() - 0.5) * 2, t.y, 1.2, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        });
+
         ctx.restore();
       }
     }
 
-    let fireworkRockets: FireworkRocket[] = [];
-    let fireworkSparks: FireworkSpark[] = [];
+    class SciFiHudParticle {
+      x: number;
+      y: number;
+      radius: number;
+      scale: number;
+      type: number;
+      rotation: number;
+      rotSpeed: number;
+      innerRot: number;
+      innerRotSpeed: number;
+      alpha: number = 0;
+      maxAlpha: number;
+      state: 'fade_in' | 'active' | 'fade_out' = 'fade_in';
+      fadeInSpeed: number;
+      fadeOutSpeed: number;
+      activeTimer: number;
+      pulseTimer: number;
+
+      constructor(isInitial: boolean = false) {
+        this.x = 80 + Math.random() * (width - 160);
+        this.y = 80 + Math.random() * (height - 160);
+        this.radius = 45 + Math.random() * 55;
+        this.scale = 0.6 + Math.random() * 0.7;
+        this.type = Math.floor(Math.random() * 6);
+        this.rotation = Math.random() * Math.PI * 2;
+        this.rotSpeed = (Math.random() - 0.5) * 0.012;
+        if (Math.abs(this.rotSpeed) < 0.003) this.rotSpeed = 0.004;
+        this.innerRot = Math.random() * Math.PI * 2;
+        this.innerRotSpeed = -this.rotSpeed * 1.5;
+
+        this.maxAlpha = 0.45 + Math.random() * 0.45;
+        this.fadeInSpeed = 0.008 + Math.random() * 0.012;
+        this.fadeOutSpeed = 0.005 + Math.random() * 0.01;
+        this.activeTimer = 140 + Math.floor(Math.random() * 200);
+        this.pulseTimer = Math.random() * Math.PI * 2;
+
+        if (isInitial && Math.random() < 0.5) {
+          this.state = 'active';
+          this.alpha = this.maxAlpha * (0.3 + Math.random() * 0.7);
+        }
+      }
+
+      reset() {
+        this.x = 80 + Math.random() * (width - 160);
+        this.y = 80 + Math.random() * (height - 160);
+        this.radius = 45 + Math.random() * 55;
+        this.scale = 0.6 + Math.random() * 0.7;
+        this.type = Math.floor(Math.random() * 6);
+        this.rotation = Math.random() * Math.PI * 2;
+        this.alpha = 0;
+        this.state = 'fade_in';
+        this.maxAlpha = 0.45 + Math.random() * 0.45;
+        this.activeTimer = 140 + Math.floor(Math.random() * 200);
+      }
+
+      update() {
+        this.rotation += this.rotSpeed;
+        this.innerRot += this.innerRotSpeed;
+        this.pulseTimer += 0.03;
+
+        if (this.state === 'fade_in') {
+          this.alpha += this.fadeInSpeed;
+          if (this.alpha >= this.maxAlpha) {
+            this.alpha = this.maxAlpha;
+            this.state = 'active';
+          }
+        } else if (this.state === 'active') {
+          this.activeTimer--;
+          if (this.activeTimer <= 0) {
+            this.state = 'fade_out';
+          }
+        } else if (this.state === 'fade_out') {
+          this.alpha -= this.fadeOutSpeed;
+          if (this.alpha <= 0) {
+            this.alpha = 0;
+            this.reset();
+          }
+        }
+      }
+
+      draw(c: CanvasRenderingContext2D, rgb: { r: number; g: number; b: number }) {
+        if (this.alpha <= 0) return;
+
+        const currentAlpha = Math.max(0, Math.min(1, this.alpha * (0.85 + Math.sin(this.pulseTimer) * 0.15)));
+        const colorStr = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${currentAlpha})`;
+        const glowStr = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${currentAlpha * 0.75})`;
+        const dimColorStr = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${currentAlpha * 0.35})`;
+
+        c.save();
+        c.translate(this.x, this.y);
+        c.scale(this.scale, this.scale);
+
+        c.shadowColor = glowStr;
+        c.shadowBlur = 8;
+        c.strokeStyle = colorStr;
+        c.fillStyle = colorStr;
+        c.lineWidth = 1.2;
+
+        const r = this.radius;
+
+        if (this.type === 0) {
+          // Type 0: Radial Rays HUD (Top Left)
+          c.beginPath();
+          c.arc(0, 0, r, 0, Math.PI * 2);
+          c.stroke();
+
+          const rays = 12;
+          for (let i = 0; i < rays; i++) {
+            const angle = (Math.PI * 2 * i) / rays + this.rotation;
+            const len = (i % 3 === 0) ? 35 : (i % 2 === 0 ? 22 : 12);
+            c.beginPath();
+            c.moveTo(Math.cos(angle) * (r + 4), Math.sin(angle) * (r + 4));
+            c.lineTo(Math.cos(angle) * (r + 4 + len), Math.sin(angle) * (r + 4 + len));
+            c.stroke();
+          }
+
+          c.save();
+          c.rotate(this.rotation);
+          c.lineWidth = 2.5;
+          for (let i = 0; i < 3; i++) {
+            c.beginPath();
+            c.arc(0, 0, r * 0.72, (i * Math.PI * 2) / 3, (i * Math.PI * 2) / 3 + 1.2);
+            c.stroke();
+          }
+          c.restore();
+
+          c.save();
+          c.rotate(this.innerRot);
+          c.strokeStyle = dimColorStr;
+          c.lineWidth = 1;
+          c.setLineDash([3, 4]);
+          c.beginPath();
+          c.arc(0, 0, r * 0.48, 0, Math.PI * 2);
+          c.stroke();
+          c.restore();
+
+          c.beginPath();
+          c.arc(0, 0, 4, 0, Math.PI * 2);
+          c.fill();
+
+        } else if (this.type === 1) {
+          // Type 1: Concentric Slash Ticks (Top Middle)
+          const slashCount = 36;
+          c.save();
+          c.rotate(this.rotation * 0.5);
+          for (let i = 0; i < slashCount; i++) {
+            if (i % 6 === 0) continue;
+            const angle = (Math.PI * 2 * i) / slashCount;
+            const x1 = Math.cos(angle) * r;
+            const y1 = Math.sin(angle) * r;
+            const x2 = Math.cos(angle + 0.08) * (r + 8);
+            const y2 = Math.sin(angle + 0.08) * (r + 8);
+            c.beginPath();
+            c.moveTo(x1, y1);
+            c.lineTo(x2, y2);
+            c.stroke();
+          }
+          c.restore();
+
+          c.beginPath();
+          c.arc(0, 0, r * 0.85, 0, Math.PI * 2);
+          c.stroke();
+
+          c.beginPath();
+          c.arc(0, 0, r * 0.6, 0, Math.PI * 2);
+          c.stroke();
+
+          c.save();
+          c.rotate(this.rotation);
+          c.lineWidth = 4;
+          c.beginPath();
+          c.arc(0, 0, r * 0.42, 0, Math.PI * 0.7);
+          c.stroke();
+          c.beginPath();
+          c.arc(0, 0, r * 0.42, Math.PI * 1.1, Math.PI * 1.8);
+          c.stroke();
+          c.restore();
+
+          c.beginPath();
+          c.arc(0, 0, 5, 0, Math.PI * 2);
+          c.fill();
+
+        } else if (this.type === 2) {
+          // Type 2: 3-Sector Target HUD (Top Right)
+          c.save();
+          c.strokeStyle = dimColorStr;
+          c.lineWidth = 0.9;
+          for (let i = 0; i < 60; i++) {
+            const angle = (Math.PI * 2 * i) / 60;
+            const tLen = (i % 5 === 0) ? 9 : 4;
+            c.beginPath();
+            c.moveTo(Math.cos(angle) * r, Math.sin(angle) * r);
+            c.lineTo(Math.cos(angle) * (r - tLen), Math.sin(angle) * (r - tLen));
+            c.stroke();
+          }
+          c.restore();
+
+          c.beginPath();
+          c.arc(0, 0, r + 4, 0, Math.PI * 2);
+          c.stroke();
+
+          c.save();
+          c.rotate(this.rotation);
+          c.lineWidth = 6;
+          for (let i = 0; i < 3; i++) {
+            const startA = (i * Math.PI * 2) / 3;
+            c.beginPath();
+            c.arc(0, 0, r * 0.55, startA, startA + 0.6);
+            c.stroke();
+          }
+          c.restore();
+
+          c.beginPath();
+          c.arc(0, 0, r * 0.25, 0, Math.PI * 2);
+          c.stroke();
+          c.beginPath();
+          c.arc(0, 0, 3, 0, Math.PI * 2);
+          c.fill();
+
+        } else if (this.type === 3) {
+          // Type 3: Framed Bracket HUD (Bottom Left)
+          c.beginPath();
+          c.arc(0, 0, r, 0, Math.PI * 2);
+          c.stroke();
+
+          const frameDist = r + 10;
+          const bracketSize = 14;
+          c.lineWidth = 1.8;
+          [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([sx, sy]) => {
+            const cx = sx * (frameDist * 0.7);
+            const cy = sy * (frameDist * 0.7);
+            c.beginPath();
+            c.moveTo(cx, cy - sy * bracketSize);
+            c.lineTo(cx, cy);
+            c.lineTo(cx - sx * bracketSize, cy);
+            c.stroke();
+          });
+
+          c.save();
+          c.rotate(this.rotation);
+          c.setLineDash([6, 6]);
+          c.beginPath();
+          c.arc(0, 0, r * 0.75, 0, Math.PI * 2);
+          c.stroke();
+          c.restore();
+
+          c.setLineDash([]);
+          c.beginPath();
+          c.arc(0, 0, r * 0.45, 0, Math.PI * 2);
+          c.stroke();
+
+        } else if (this.type === 4) {
+          // Type 4: Sci-Fi Circuit Board Diagram (Bottom Right)
+          const lines = [
+            [[-r, -r * 0.8], [-r * 0.3, -r * 0.8], [0, -r * 0.5], [0, r * 0.6], [r * 0.5, r * 0.6]],
+            [[-r, -r * 0.4], [-r * 0.5, -r * 0.4], [-r * 0.2, -r * 0.1], [r * 0.4, -r * 0.1], [r * 0.7, r * 0.2]],
+            [[-r, 0], [-r * 0.6, 0], [-r * 0.1, r * 0.4], [r * 0.6, r * 0.4]],
+            [[-r, r * 0.4], [-r * 0.4, r * 0.4], [r * 0.2, r * 0.8]],
+            [[r * 0.2, -r * 0.8], [r * 0.5, -r * 0.5], [r * 0.5, 0]],
+          ];
+
+          lines.forEach((pts, lIdx) => {
+            c.beginPath();
+            c.moveTo(pts[0][0], pts[0][1]);
+            for (let i = 1; i < pts.length; i++) {
+              c.lineTo(pts[i][0], pts[i][1]);
+            }
+            c.lineWidth = lIdx === 1 ? 2.5 : 1.2;
+            c.stroke();
+
+            const endP = pts[pts.length - 1];
+            c.beginPath();
+            c.arc(endP[0], endP[1], lIdx === 1 ? 4 : 2.8, 0, Math.PI * 2);
+            c.fill();
+
+            const startP = pts[0];
+            c.beginPath();
+            c.arc(startP[0], startP[1], 2.5, 0, Math.PI * 2);
+            c.fill();
+          });
+
+        } else {
+          // Type 5: HUD Signal Line with Node (Bottom Left callout)
+          c.lineWidth = 1.5;
+          c.beginPath();
+          c.moveTo(-r * 1.4, -r * 0.3);
+          c.lineTo(-r * 0.6, -r * 0.3);
+          c.lineTo(-r * 0.3, 0);
+          c.lineTo(r * 1.2, 0);
+          c.stroke();
+
+          c.beginPath();
+          c.arc(-r * 1.4, -r * 0.3, 3.5, 0, Math.PI * 2);
+          c.stroke();
+
+          c.beginPath();
+          c.arc(r * 1.2, 0, 3.5, 0, Math.PI * 2);
+          c.fill();
+
+          c.save();
+          c.rotate(this.rotation);
+          c.lineWidth = 1.8;
+          c.setLineDash([4, 4]);
+          c.beginPath();
+          c.arc(0, 0, r * 0.5, 0, Math.PI * 2);
+          c.stroke();
+          c.restore();
+        }
+
+        c.restore();
+      }
+    }
+
+    let fireworkRockets: GoldenFireworkRocket[] = [];
+    let fireworkRays: GoldenFireworkRay[] = [];
+    let fireworkGlitter: GoldenGlitterDot[] = [];
+    let fireworkCores: GoldenFireworkCore[] = [];
     let fireworkLaunchTimer = 0;
+
+    const spawnGoldenStarburst = (cx: number, cy: number) => {
+      fireworkCores.push(new GoldenFireworkCore(cx, cy));
+
+      // 100 - 130 radial rays shooting 360 degrees out
+      const numRays = 110 + Math.floor(Math.random() * 30);
+      for (let i = 0; i < numRays; i++) {
+        const angle = (Math.PI * 2 * i) / numRays + (Math.random() - 0.5) * 0.08;
+        const speed = 1.6 + Math.random() * 4.2;
+        fireworkRays.push(new GoldenFireworkRay(cx, cy, angle, speed));
+      }
+
+      const numGlitter = 50 + Math.floor(Math.random() * 30);
+      for (let i = 0; i < numGlitter; i++) {
+        fireworkGlitter.push(new GoldenGlitterDot(cx, cy));
+      }
+    };
 
     // Initialize particles
     for (let i = 0; i < maxParticles; i++) {
@@ -752,6 +1236,8 @@ export const ReadingEffects: React.FC<ReadingEffectsProps> = ({ effect = 'none',
         particles.push(new SoapBubbleParticle());
       } else if (effect === 'fire_sparks') {
         particles.push(new FireSparkParticle());
+      } else if (effect === 'sci_fi_hud') {
+        particles.push(new SciFiHudParticle(true));
       }
     }
 
@@ -795,8 +1281,10 @@ export const ReadingEffects: React.FC<ReadingEffectsProps> = ({ effect = 'none',
         }
 
         if (effect === 'fireworks') {
-          fireworkRockets.forEach((r) => r.y -= scrollDelta);
-          fireworkSparks.forEach((s) => s.y -= scrollDelta);
+          fireworkRockets.forEach((r) => (r.y -= scrollDelta));
+          fireworkRays.forEach((r) => (r.y -= scrollDelta));
+          fireworkGlitter.forEach((g) => (g.y -= scrollDelta));
+          fireworkCores.forEach((c) => (c.y -= scrollDelta));
         }
       }
 
@@ -837,16 +1325,22 @@ export const ReadingEffects: React.FC<ReadingEffectsProps> = ({ effect = 'none',
       } else {
         if (effect === 'fireworks') {
           fireworkLaunchTimer++;
-          // Launch a rocket occasionally
-          if (fireworkLaunchTimer % 100 === 0 || (fireworkRockets.length === 0 && fireworkSparks.length === 0 && Math.random() < 0.03)) {
-            fireworkRockets.push(new FireworkRocket());
+          // Launch rockets regularly or when screen is quiet
+          if (
+            fireworkLaunchTimer % 80 === 0 ||
+            (fireworkRockets.length === 0 &&
+              fireworkRays.length === 0 &&
+              fireworkCores.length === 0 &&
+              Math.random() < 0.05)
+          ) {
+            fireworkRockets.push(new GoldenFireworkRocket());
           }
 
-          // Update and draw rockets
+          // Update & draw rockets
           for (let i = fireworkRockets.length - 1; i >= 0; i--) {
             const rocket = fireworkRockets[i];
-            rocket.update((newSparks) => {
-              fireworkSparks.push(...newSparks);
+            rocket.update((cx, cy) => {
+              spawnGoldenStarburst(cx, cy);
             });
             if (rocket.exploded) {
               fireworkRockets.splice(i, 1);
@@ -855,16 +1349,44 @@ export const ReadingEffects: React.FC<ReadingEffectsProps> = ({ effect = 'none',
             }
           }
 
-          // Update and draw sparks
-          for (let i = fireworkSparks.length - 1; i >= 0; i--) {
-            const spark = fireworkSparks[i];
-            spark.update();
-            if (spark.alpha <= 0) {
-              fireworkSparks.splice(i, 1);
+          // Update & draw Golden Cores
+          for (let i = fireworkCores.length - 1; i >= 0; i--) {
+            const core = fireworkCores[i];
+            core.update();
+            if (core.alpha <= 0) {
+              fireworkCores.splice(i, 1);
             } else {
-              spark.draw();
+              core.draw();
             }
           }
+
+          // Update & draw Golden Radial Rays
+          for (let i = fireworkRays.length - 1; i >= 0; i--) {
+            const ray = fireworkRays[i];
+            ray.update();
+            if (ray.alpha <= 0) {
+              fireworkRays.splice(i, 1);
+            } else {
+              ray.draw();
+            }
+          }
+
+          // Update & draw Golden Glitter
+          for (let i = fireworkGlitter.length - 1; i >= 0; i--) {
+            const g = fireworkGlitter[i];
+            g.update();
+            if (g.alpha <= 0) {
+              fireworkGlitter.splice(i, 1);
+            } else {
+              g.draw();
+            }
+          }
+        } else if (effect === 'sci_fi_hud') {
+          const rgb = hexToRgb(effectColor);
+          particles.forEach((p) => {
+            p.update();
+            p.draw(ctx, rgb);
+          });
         } else {
           // Render general particles
           particles.forEach((p) => {

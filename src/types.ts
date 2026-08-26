@@ -52,6 +52,7 @@ export interface CharacterInfo {
   name: string;
   role?: string; // Tùy chọn: Nam chính, Nữ chính, Phản diện, Sư phụ, v.v.
   avatarUrl?: string; // Tùy chọn: URL ảnh đại diện nhân vật
+  avatarShape?: 'circle' | 'square' | 'portrait_34' | 'portrait_23' | 'landscape_43' | 'landscape_169'; // Tỉ lệ/hình dáng ảnh nhân vật riêng
   description?: string; // Tùy chọn: Mô tả ngắn nhân vật
 }
 
@@ -94,6 +95,7 @@ export interface Story {
   // Widget thông tin nhân vật (Character Info Widget)
   showCharacterWidget?: boolean; // Editor chọn bật/tắt hiển thị Widget nhân vật
   characterWidgetTitle?: string; // Tiêu đề ô Widget (Mặc định: "Thông tin nhân vật")
+  characterAvatarShape?: 'circle' | 'square' | 'portrait_34' | 'portrait_23' | 'landscape_43' | 'landscape_169'; // Hình dáng / tỉ lệ khung ảnh nhân vật chung
   characters?: CharacterInfo[]; // Danh sách các nhân vật trong widget
 
   // Widget tiến độ truyện (Story Progress Widget)
@@ -118,14 +120,16 @@ export interface Story {
   // Kiểu trình bày danh sách chương (Chapter List Display Style)
   chapterListStyle?: 'standard' | 'grid' | 'accordion' | 'timeline' | 'minimal_table' | 'book_catalog' | 'scroll_strip' | 'cards_bento' | 'modern_compact' | 'numbers_only';
 
-  // Tùy chỉnh Bố cục & Thứ tự các phần trong trang truyện (Story Page Layout & Block Reordering)
-  storyLayoutMode?: StoryLayoutMode; // 'two_columns' (2 Cột chuẩn) | 'single_column' (1 Cột) | 'inverted_two_columns' (2 Cột đảo)
-  storyLayoutLeft?: StoryLayoutBlockId[]; // Danh sách khối ở cột trái
-  storyLayoutRight?: StoryLayoutBlockId[]; // Danh sách khối ở cột phải
-  storyLayoutBottom?: StoryLayoutBlockId[]; // Danh sách khối ở phần dưới (chân trang)
-  storyLayoutOrder?: StoryLayoutBlockId[]; // Danh sách thứ tự khối khi dùng chế độ 1 Cột (Single Column)
+  // Tùy chỉnh Bố cục & Thứ tự các phân đoạn trong trang truyện (Story Sections & Block Reordering)
+  storyLayoutSections?: StoryLayoutSection[]; // Danh sách các phân đoạn (hàng 1 cột hoặc 2 cột linh hoạt)
+  storyLayoutMode?: StoryLayoutMode; // Dữ liệu cũ để tương thích ngược
+  storyLayoutLeft?: StoryLayoutBlockId[]; // Dữ liệu cũ để tương thích ngược
+  storyLayoutRight?: StoryLayoutBlockId[]; // Dữ liệu cũ để tương thích ngược
+  storyLayoutBottom?: StoryLayoutBlockId[]; // Dữ liệu cũ để tương thích ngược
+  storyLayoutOrder?: StoryLayoutBlockId[]; // Dữ liệu cũ để tương thích ngược
 
-  readingEffect?: 'none' | 'rain' | 'snow' | 'glitch' | 'star' | 'leaf' | 'cherry_blossom' | 'firefly' | 'soap_bubble' | 'ginkgo' | 'fireworks' | 'fire_sparks'; // Hiệu ứng đọc truyện
+  readingEffect?: 'none' | 'rain' | 'snow' | 'glitch' | 'star' | 'leaf' | 'cherry_blossom' | 'firefly' | 'soap_bubble' | 'ginkgo' | 'fireworks' | 'fire_sparks' | 'sci_fi_hud'; // Hiệu ứng đọc truyện
+  readingEffectColor?: string; // Tùy chỉnh màu sắc cho hiệu ứng (đặc biệt là Sci-Fi HUD)
   borderStyle?: 'solid' | 'double' | 'dashed' | 'dotted' | 'dash-dot' | 'sketch' | 'stitched' | 'gradient' | 'stamp' | 'film' | 'groove' | 'ridge' | 'offset' | 'none'; // Kiểu nét đường viền
   borderWidth?: 'thin' | 'medium' | 'thick' | 'heavy' | 'bold' | 'frame'; // Độ dày đường viền
   borderRadius?: 'none' | 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'leaf' | 'chamfer' | 'ticket' | 'petal' | 'tab'; // Kiểu bo góc viền đa dạng
@@ -154,7 +158,8 @@ export interface Story {
   chapterCustomBorderGradientColor2?: string;
   chapterCustomBorderGlowColor1?: string;
   chapterCustomBorderGlowColor2?: string;
-  chapterReadingEffect?: 'none' | 'rain' | 'snow' | 'glitch' | 'star' | 'leaf' | 'cherry_blossom' | 'firefly' | 'soap_bubble' | 'ginkgo' | 'fireworks' | 'fire_sparks';
+  chapterReadingEffect?: 'none' | 'rain' | 'snow' | 'glitch' | 'star' | 'leaf' | 'cherry_blossom' | 'firefly' | 'soap_bubble' | 'ginkgo' | 'fireworks' | 'fire_sparks' | 'sci_fi_hud';
+  chapterReadingEffectColor?: string;
 }
 
 export interface ReadingProgress {
@@ -240,6 +245,19 @@ export type StoryLayoutBlockId =
   | 'gallery_widget'
   | 'chapter_list'
   | 'comments';
+
+export type StoryLayoutSectionType = '1_column' | '2_columns';
+export type StoryLayoutColumnRatio = 'left_fixed' | 'equal' | 'right_fixed';
+
+export interface StoryLayoutSection {
+  id: string;
+  type: StoryLayoutSectionType; // '1_column' (1 Cột toàn chiều rộng) | '2_columns' (2 Cột phân chia)
+  title?: string; // Tên gợi nhớ phân đoạn (ví dụ: 'Phần 1', 'Phần 2')
+  columnRatio?: StoryLayoutColumnRatio; // Tỉ lệ 2 cột: 'left_fixed' (Trái 224px & Phải tự co giãn) | 'equal' (50/50) | 'right_fixed' (Trái tự co giãn & Phải 224px)
+  blocks?: StoryLayoutBlockId[]; // Danh sách khối khi là 1 Cột
+  leftBlocks?: StoryLayoutBlockId[]; // Danh sách khối ở Cột Trái khi là 2 Cột
+  rightBlocks?: StoryLayoutBlockId[]; // Danh sách khối ở Cột Phải khi là 2 Cột
+}
 
 export type StoryLayoutMode = 'two_columns' | 'single_column' | 'inverted_two_columns';
 

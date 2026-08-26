@@ -499,11 +499,17 @@ export const StoryDetail: React.FC<StoryDetailProps> = ({
     return { isUnlocked, isPassUnlocked, isAuthorOrOwner, isReading };
   };
 
+  const currentBgVal = isCustomTheme ? (story.customBgColor || '#080406') : tone.containerBg;
+  const isDarkTheme = !currentBgVal.toLowerCase().includes('#fff') && !currentBgVal.toLowerCase().includes('255, 255, 255');
+
   return (
     <div 
-      className={`max-w-4xl mx-auto px-4 py-6 space-y-6 ${storyBodyFont} ${isCustomTheme ? '' : tone.text}`}
+      className={`max-w-4xl mx-auto px-4 py-6 space-y-6 relative ${storyBodyFont} ${isCustomTheme ? '' : tone.text}`}
       style={customStyles.container}
     >
+      {story.readingEffect && story.readingEffect !== 'none' && (
+        <ReadingEffects effect={story.readingEffect} effectColor={story.readingEffectColor} isDarkTheme={isDarkTheme} />
+      )}
       
       {/* Back Button */}
       <button
