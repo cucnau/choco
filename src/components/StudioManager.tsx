@@ -663,8 +663,24 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
       customWidgetTitle: storyData.customWidgetTitle,
       customWidgetContent: storyData.customWidgetContent,
 
+      // Widget ảnh lẻ / album di chuyển
+      showGalleryWidget: storyData.showGalleryWidget,
+      galleryWidgetTitle: storyData.galleryWidgetTitle,
+      galleryMode: storyData.galleryMode,
+      gallerySingleImageUrl: storyData.gallerySingleImageUrl,
+      gallerySingleImageCaption: storyData.gallerySingleImageCaption,
+      galleryImages: storyData.galleryImages,
+      galleryAutoScrollSpeed: storyData.galleryAutoScrollSpeed,
+
       // Kiểu trình bày danh sách chương
       chapterListStyle: storyData.chapterListStyle,
+
+      // Tùy chỉnh Bố cục & Vị trí các phần trang truyện
+      storyLayoutMode: storyData.storyLayoutMode,
+      storyLayoutLeft: storyData.storyLayoutLeft,
+      storyLayoutRight: storyData.storyLayoutRight,
+      storyLayoutBottom: storyData.storyLayoutBottom,
+      storyLayoutOrder: storyData.storyLayoutOrder,
 
       // Theme và Hiệu ứng chương riêng biệt
       useSeparateChapterTheme: storyData.useSeparateChapterTheme,

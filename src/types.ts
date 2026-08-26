@@ -55,6 +55,12 @@ export interface CharacterInfo {
   description?: string; // Tùy chọn: Mô tả ngắn nhân vật
 }
 
+export interface StoryGalleryImage {
+  id: string;
+  url: string;
+  caption?: string; // Chú thích cho từng ảnh
+}
+
 export interface Story {
   id: string;
   title: string;
@@ -100,8 +106,24 @@ export interface Story {
   customWidgetTitle?: string; // Tiêu đề ô Widget tự đặt
   customWidgetContent?: string; // Nội dung ô Widget tự viết
 
+  // Widget ảnh lẻ / Album ảnh di chuyển (Gallery / Single Image / Moving Album Widget)
+  showGalleryWidget?: boolean; // Editor chọn bật/tắt hiển thị Widget ảnh lẻ / album
+  galleryWidgetTitle?: string; // Tiêu đề ô Widget ảnh/album
+  galleryMode?: 'single' | 'album'; // Kiểu: 'single' (Ảnh lẻ) | 'album' (Album dải ảnh di chuyển)
+  gallerySingleImageUrl?: string; // Đường dẫn ảnh lẻ
+  gallerySingleImageCaption?: string; // Chú thích cho ảnh lẻ
+  galleryImages?: StoryGalleryImage[]; // Danh sách các ảnh trong album
+  galleryAutoScrollSpeed?: 'slow' | 'normal' | 'fast'; // Tốc độ di chuyển dải album (chậm/vừa/nhanh)
+
   // Kiểu trình bày danh sách chương (Chapter List Display Style)
   chapterListStyle?: 'standard' | 'grid' | 'accordion' | 'timeline' | 'minimal_table' | 'book_catalog' | 'scroll_strip' | 'cards_bento' | 'modern_compact' | 'numbers_only';
+
+  // Tùy chỉnh Bố cục & Thứ tự các phần trong trang truyện (Story Page Layout & Block Reordering)
+  storyLayoutMode?: StoryLayoutMode; // 'two_columns' (2 Cột chuẩn) | 'single_column' (1 Cột) | 'inverted_two_columns' (2 Cột đảo)
+  storyLayoutLeft?: StoryLayoutBlockId[]; // Danh sách khối ở cột trái
+  storyLayoutRight?: StoryLayoutBlockId[]; // Danh sách khối ở cột phải
+  storyLayoutBottom?: StoryLayoutBlockId[]; // Danh sách khối ở phần dưới (chân trang)
+  storyLayoutOrder?: StoryLayoutBlockId[]; // Danh sách thứ tự khối khi dùng chế độ 1 Cột (Single Column)
 
   readingEffect?: 'none' | 'rain' | 'snow' | 'glitch' | 'star' | 'leaf' | 'cherry_blossom' | 'firefly' | 'soap_bubble' | 'ginkgo' | 'fireworks' | 'fire_sparks'; // Hiệu ứng đọc truyện
   borderStyle?: 'solid' | 'double' | 'dashed' | 'dotted' | 'dash-dot' | 'sketch' | 'stitched' | 'gradient' | 'stamp' | 'film' | 'groove' | 'ridge' | 'offset' | 'none'; // Kiểu nét đường viền
@@ -203,5 +225,22 @@ export interface Game2048LeaderboardEntry {
   maxTile: number;
   updatedAt: string;
 }
+
+export type StoryLayoutBlockId = 
+  | 'cover'
+  | 'title'
+  | 'meta'
+  | 'synopsis'
+  | 'editor_info'
+  | 'action_buttons'
+  | 'tags'
+  | 'character_widget'
+  | 'progress_widget'
+  | 'custom_widget'
+  | 'gallery_widget'
+  | 'chapter_list'
+  | 'comments';
+
+export type StoryLayoutMode = 'two_columns' | 'single_column' | 'inverted_two_columns';
 
 

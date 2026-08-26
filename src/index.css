@@ -255,4 +255,42 @@
   scrollbar-width: none !important;
 }
 
+/* Gallery Album Moving Strip Animation */
+@keyframes continuousScrollAlbum {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.gallery-strip-track {
+  display: flex;
+  width: max-content;
+  will-change: transform;
+}
+
+.gallery-strip-track-moving {
+  animation: continuousScrollAlbum 25s linear infinite;
+}
+
+.gallery-strip-track-slow {
+  animation-duration: 40s;
+}
+
+.gallery-strip-track-normal {
+  animation-duration: 25s;
+}
+
+.gallery-strip-track-fast {
+  animation-duration: 15s;
+}
+
+.gallery-strip-track:hover,
+.gallery-strip-paused {
+  animation-play-state: paused !important;
+}
+
+
 
