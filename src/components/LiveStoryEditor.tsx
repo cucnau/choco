@@ -2803,7 +2803,7 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                       style={{ background: currentCardBg, borderColor: currentBorder, color: currentText }}
                     >
                       <option value="none" style={{ background: currentCardBg, color: currentText }}>Không hiệu ứng (Tắt)</option>
-                      <option value="sci_fi_hud" style={{ background: currentCardBg, color: currentText }}>⚡ Sci-Fi HUD & Mạch điện (Tùy chỉnh màu & Ẩn hiện)</option>
+                      <option value="sci_fi_hud" style={{ background: currentCardBg, color: currentText }}>Sci-fi</option>
                       <option value="rain" style={{ background: currentCardBg, color: currentText }}>Mưa rơi</option>
                       <option value="snow" style={{ background: currentCardBg, color: currentText }}>Tuyết rơi</option>
                       <option value="star" style={{ background: currentCardBg, color: currentText }}>Bụi sao</option>
@@ -2812,7 +2812,7 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                       <option value="cherry_blossom" style={{ background: currentCardBg, color: currentText }}>Cánh hoa đào rơi</option>
                       <option value="firefly" style={{ background: currentCardBg, color: currentText }}>Đom đóm</option>
                       <option value="soap_bubble" style={{ background: currentCardBg, color: currentText }}>Bong bóng xà phòng</option>
-                      <option value="fireworks" style={{ background: currentCardBg, color: currentText }}>Pháo hoa rực rỡ</option>
+                      <option value="fireworks" style={{ background: currentCardBg, color: currentText }}>Pháo hoa</option>
                       <option value="fire_sparks" style={{ background: currentCardBg, color: currentText }}>Tàn lửa bay</option>
                       <option value="glitch" style={{ background: currentCardBg, color: currentText }}>Nhiễu sóng</option>
                     </select>
@@ -2821,7 +2821,7 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                     {chapterReadingEffect === 'sci_fi_hud' && (
                       <div className="mt-2 p-2 rounded border space-y-1.5 bg-black/20" style={{ borderColor: currentBorder }}>
                         <div className="flex items-center justify-between text-[10px]">
-                          <span className="font-bold text-emerald-500">Màu sắc Sci-Fi HUD Chương:</span>
+                          <span className="font-bold text-emerald-500">Màu sắc Sci-fi Chương:</span>
                           <span className="font-mono uppercase" style={{ color: currentTextMuted }}>{chapterReadingEffectColor}</span>
                         </div>
                         <div className="flex items-center gap-1.5 flex-wrap">
@@ -2873,7 +2873,7 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                     style={{ background: currentBg, borderColor: currentBorder, color: currentText }}
                   >
                     <option value="none" style={{ background: currentCardBg, color: currentText }}>Không hiệu ứng (Tắt)</option>
-                    <option value="sci_fi_hud" style={{ background: currentCardBg, color: currentText }}>⚡ Sci-Fi HUD & Mạch điện (Tùy chỉnh màu & Ẩn hiện)</option>
+                    <option value="sci_fi_hud" style={{ background: currentCardBg, color: currentText }}>Sci-fi</option>
                     <option value="rain" style={{ background: currentCardBg, color: currentText }}>Mưa rơi</option>
                     <option value="snow" style={{ background: currentCardBg, color: currentText }}>Tuyết rơi</option>
                     <option value="star" style={{ background: currentCardBg, color: currentText }}>Bụi sao</option>
@@ -2882,7 +2882,7 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                     <option value="cherry_blossom" style={{ background: currentCardBg, color: currentText }}>Cánh hoa đào rơi</option>
                     <option value="firefly" style={{ background: currentCardBg, color: currentText }}>Đom đóm</option>
                     <option value="soap_bubble" style={{ background: currentCardBg, color: currentText }}>Bong bóng xà phòng</option>
-                    <option value="fireworks" style={{ background: currentCardBg, color: currentText }}>Pháo hoa rực rỡ</option>
+                    <option value="fireworks" style={{ background: currentCardBg, color: currentText }}>Pháo hoa</option>
                     <option value="fire_sparks" style={{ background: currentCardBg, color: currentText }}>Tàn lửa bay</option>
                     <option value="glitch" style={{ background: currentCardBg, color: currentText }}>Nhiễu sóng</option>
                   </select>
@@ -2891,7 +2891,7 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                   {readingEffect === 'sci_fi_hud' && (
                     <div className="mt-2 p-2 rounded border space-y-1.5 bg-black/20" style={{ borderColor: currentBorder }}>
                       <div className="flex items-center justify-between text-[10px]">
-                        <span className="font-bold" style={{ color: currentText }}>Màu sắc Sci-Fi HUD:</span>
+                        <span className="font-bold" style={{ color: currentText }}>Màu sắc Sci-fi:</span>
                         <span className="font-mono uppercase" style={{ color: currentTextMuted }}>{readingEffectColor}</span>
                       </div>
                       <div className="flex items-center gap-1.5 flex-wrap">

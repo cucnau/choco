@@ -57,7 +57,7 @@ export const ReadingEffects: React.FC<ReadingEffectsProps> = ({ effect = 'none',
       effect === 'firefly' ? 28 : 
       effect === 'soap_bubble' ? 18 :
       effect === 'fire_sparks' ? 75 :
-      effect === 'sci_fi_hud' ? 10 :
+      effect === 'sci_fi_hud' ? 6 :
       effect === 'fireworks' ? 0 : // fireworks managed dynamically
       0;
 
@@ -926,65 +926,121 @@ export const ReadingEffects: React.FC<ReadingEffectsProps> = ({ effect = 'none',
       }
     }
 
-    class SciFiHudParticle {
-      x: number;
-      y: number;
-      radius: number;
-      scale: number;
-      type: number;
-      rotation: number;
-      rotSpeed: number;
-      innerRot: number;
-      innerRotSpeed: number;
+    class SciFiHudElement {
+      slotIndex: number;
+      x: number = 0;
+      y: number = 0;
+      radius: number = 0;
+      scale: number = 1;
+      type: number = 0;
+      rotation: number = 0;
+      rotSpeed: number = 0;
+      innerRot: number = 0;
+      innerRotSpeed: number = 0;
       alpha: number = 0;
-      maxAlpha: number;
+      maxAlpha: number = 0.35;
       state: 'fade_in' | 'active' | 'fade_out' = 'fade_in';
-      fadeInSpeed: number;
-      fadeOutSpeed: number;
-      activeTimer: number;
-      pulseTimer: number;
+      fadeInSpeed: number = 0.0015;
+      fadeOutSpeed: number = 0.0015;
+      activeTimer: number = 400;
+      pulseTimer: number = 0;
+      sweepAngle: number = 0;
 
-      constructor(isInitial: boolean = false) {
-        this.x = 80 + Math.random() * (width - 160);
-        this.y = 80 + Math.random() * (height - 160);
-        this.radius = 45 + Math.random() * 55;
-        this.scale = 0.6 + Math.random() * 0.7;
-        this.type = Math.floor(Math.random() * 6);
+      constructor(slotIndex: number, isInitial: boolean = false, allParticles?: any[]) {
+        this.slotIndex = slotIndex;
+        this.reset(isInitial, undefined, allParticles);
+      }
+
+      reset(isInitial: boolean = false, spawnPosition?: 'top' | 'bottom', allParticles?: any[]) {
+        const otherElements = (allParticles || []).filter(
+          (p) => p !== this && p instanceof SciFiHudElement
+        );
+        const minDistance = 210; // Minimum 2D Euclidean distance to prevent overlapping
+
+        let bestX = 0;
+        let bestY = 0;
+        let foundSafe = false;
+
+        for (let attempt = 0; attempt < 25; attempt++) {
+          // Scatter across the width of the story page (with padding)
+          const margin = Math.min(60, width * 0.08);
+          let candX = margin + Math.random() * (width - margin * 2);
+
+          let candY = 0;
+          if (spawnPosition === 'bottom') {
+            candY = height + 90 + Math.random() * 250;
+          } else if (spawnPosition === 'top') {
+            candY = -90 - Math.random() * 250;
+          } else {
+            // Initial scatter across page height
+            candY = Math.random() * (height - 100) + 50;
+          }
+
+          // Check 2D distance against all existing SciFi HUD elements
+          const hasConflict = otherElements.some((other) => {
+            const dx = other.x - candX;
+            const dy = other.y - candY;
+            return Math.hypot(dx, dy) < minDistance;
+          });
+
+          if (!hasConflict) {
+            bestX = candX;
+            bestY = candY;
+            foundSafe = true;
+            break;
+          }
+        }
+
+        if (!foundSafe) {
+          // Fallback if safe candidate wasn't found in 25 tries
+          const margin = Math.min(60, width * 0.08);
+          bestX = margin + Math.random() * (width - margin * 2);
+          if (spawnPosition === 'bottom') {
+            let maxOtherY = height + 100;
+            otherElements.forEach((o) => { if (o.y > maxOtherY) maxOtherY = o.y; });
+            bestY = maxOtherY + minDistance;
+          } else if (spawnPosition === 'top') {
+            let minOtherY = -100;
+            otherElements.forEach((o) => { if (o.y < minOtherY) minOtherY = o.y; });
+            bestY = minOtherY - minDistance;
+          } else {
+            bestY = (this.slotIndex * (height / 6)) + 60;
+          }
+        }
+
+        this.x = bestX;
+        this.y = bestY;
+
+        this.radius = 24 + Math.random() * 16;
+        this.scale = 0.45 + Math.random() * 0.3;
+        this.type = Math.floor(Math.random() * 5);
         this.rotation = Math.random() * Math.PI * 2;
-        this.rotSpeed = (Math.random() - 0.5) * 0.012;
-        if (Math.abs(this.rotSpeed) < 0.003) this.rotSpeed = 0.004;
+        this.rotSpeed = (Math.random() - 0.5) * 0.005;
+        if (Math.abs(this.rotSpeed) < 0.0015) this.rotSpeed = 0.002;
         this.innerRot = Math.random() * Math.PI * 2;
         this.innerRotSpeed = -this.rotSpeed * 1.5;
 
-        this.maxAlpha = 0.45 + Math.random() * 0.45;
-        this.fadeInSpeed = 0.008 + Math.random() * 0.012;
-        this.fadeOutSpeed = 0.005 + Math.random() * 0.01;
-        this.activeTimer = 140 + Math.floor(Math.random() * 200);
+        this.maxAlpha = 0.16 + Math.random() * 0.14;
+        this.fadeInSpeed = 0.001 + Math.random() * 0.001;
+        this.fadeOutSpeed = 0.001 + Math.random() * 0.001;
+        this.activeTimer = 350 + Math.floor(Math.random() * 300);
         this.pulseTimer = Math.random() * Math.PI * 2;
+        this.sweepAngle = Math.random() * Math.PI * 2;
 
         if (isInitial && Math.random() < 0.5) {
           this.state = 'active';
           this.alpha = this.maxAlpha * (0.3 + Math.random() * 0.7);
+        } else {
+          this.state = 'fade_in';
+          this.alpha = 0;
         }
       }
 
-      reset() {
-        this.x = 80 + Math.random() * (width - 160);
-        this.y = 80 + Math.random() * (height - 160);
-        this.radius = 45 + Math.random() * 55;
-        this.scale = 0.6 + Math.random() * 0.7;
-        this.type = Math.floor(Math.random() * 6);
-        this.rotation = Math.random() * Math.PI * 2;
-        this.alpha = 0;
-        this.state = 'fade_in';
-        this.maxAlpha = 0.45 + Math.random() * 0.45;
-        this.activeTimer = 140 + Math.floor(Math.random() * 200);
-      }
-
-      update() {
+      update(allParticles?: any[]) {
         this.rotation += this.rotSpeed;
         this.innerRot += this.innerRotSpeed;
-        this.pulseTimer += 0.03;
+        this.pulseTimer += 0.02;
+        this.sweepAngle += 0.025;
 
         if (this.state === 'fade_in') {
           this.alpha += this.fadeInSpeed;
@@ -1001,237 +1057,314 @@ export const ReadingEffects: React.FC<ReadingEffectsProps> = ({ effect = 'none',
           this.alpha -= this.fadeOutSpeed;
           if (this.alpha <= 0) {
             this.alpha = 0;
-            this.reset();
+            this.reset(false, undefined, allParticles);
           }
         }
       }
 
       draw(c: CanvasRenderingContext2D, rgb: { r: number; g: number; b: number }) {
-        if (this.alpha <= 0) return;
+        if (this.alpha <= 0.01) return;
 
-        const currentAlpha = Math.max(0, Math.min(1, this.alpha * (0.85 + Math.sin(this.pulseTimer) * 0.15)));
-        const colorStr = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${currentAlpha})`;
-        const glowStr = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${currentAlpha * 0.75})`;
-        const dimColorStr = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${currentAlpha * 0.35})`;
+        const pulse = Math.sin(this.pulseTimer) * 0.12;
+        const currentAlpha = Math.max(0, Math.min(1, (this.alpha + pulse)));
+        const strokeColor = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${currentAlpha})`;
+        const glowColor = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${currentAlpha * 0.7})`;
+        const dimColor = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${currentAlpha * 0.35})`;
+        const fillColor = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${currentAlpha * 0.12})`;
 
         c.save();
         c.translate(this.x, this.y);
         c.scale(this.scale, this.scale);
 
-        c.shadowColor = glowStr;
-        c.shadowBlur = 8;
-        c.strokeStyle = colorStr;
-        c.fillStyle = colorStr;
-        c.lineWidth = 1.2;
+        c.shadowColor = glowColor;
+        c.shadowBlur = isDarkTheme ? 6 : 3;
+        c.strokeStyle = strokeColor;
+        c.fillStyle = strokeColor;
+        c.lineWidth = 1.1;
 
         const r = this.radius;
 
         if (this.type === 0) {
-          // Type 0: Radial Rays HUD (Top Left)
+          // TYPE 0: Ultra-Detailed Tactical Reticle & Compass
+          // Outer degree tick marks
+          c.save();
+          c.strokeStyle = dimColor;
+          c.lineWidth = 0.8;
+          const ticks = 36;
+          for (let i = 0; i < ticks; i++) {
+            const angle = (Math.PI * 2 * i) / ticks;
+            const isMajor = i % 9 === 0;
+            const isMid = i % 3 === 0;
+            const len = isMajor ? 8 : (isMid ? 5 : 3);
+            c.beginPath();
+            c.moveTo(Math.cos(angle) * r, Math.sin(angle) * r);
+            c.lineTo(Math.cos(angle) * (r - len), Math.sin(angle) * (r - len));
+            c.stroke();
+          }
+          c.restore();
+
+          // Outer solid ring
           c.beginPath();
           c.arc(0, 0, r, 0, Math.PI * 2);
           c.stroke();
 
-          const rays = 12;
-          for (let i = 0; i < rays; i++) {
-            const angle = (Math.PI * 2 * i) / rays + this.rotation;
-            const len = (i % 3 === 0) ? 35 : (i % 2 === 0 ? 22 : 12);
-            c.beginPath();
-            c.moveTo(Math.cos(angle) * (r + 4), Math.sin(angle) * (r + 4));
-            c.lineTo(Math.cos(angle) * (r + 4 + len), Math.sin(angle) * (r + 4 + len));
-            c.stroke();
-          }
-
+          // Counter-rotating dashed ring
           c.save();
           c.rotate(this.rotation);
-          c.lineWidth = 2.5;
-          for (let i = 0; i < 3; i++) {
-            c.beginPath();
-            c.arc(0, 0, r * 0.72, (i * Math.PI * 2) / 3, (i * Math.PI * 2) / 3 + 1.2);
-            c.stroke();
-          }
+          c.setLineDash([4, 6]);
+          c.beginPath();
+          c.arc(0, 0, r * 0.82, 0, Math.PI * 2);
+          c.stroke();
           c.restore();
 
+          // Inner rotating segmented ring with corner notches
           c.save();
           c.rotate(this.innerRot);
-          c.strokeStyle = dimColorStr;
-          c.lineWidth = 1;
-          c.setLineDash([3, 4]);
-          c.beginPath();
-          c.arc(0, 0, r * 0.48, 0, Math.PI * 2);
-          c.stroke();
+          c.lineWidth = 1.8;
+          for (let i = 0; i < 4; i++) {
+            const startA = (i * Math.PI) / 2 + 0.15;
+            c.beginPath();
+            c.arc(0, 0, r * 0.62, startA, startA + 0.7);
+            c.stroke();
+          }
           c.restore();
 
+          // Center precision crosshair
+          c.lineWidth = 1;
           c.beginPath();
-          c.arc(0, 0, 4, 0, Math.PI * 2);
+          c.moveTo(-r * 0.45, 0); c.lineTo(-r * 0.15, 0);
+          c.moveTo(r * 0.15, 0); c.lineTo(r * 0.45, 0);
+          c.moveTo(0, -r * 0.45); c.lineTo(0, -r * 0.15);
+          c.moveTo(0, r * 0.15); c.lineTo(0, r * 0.45);
+          c.stroke();
+
+          // Center micro target dot
+          c.beginPath();
+          c.arc(0, 0, 2.5, 0, Math.PI * 2);
           c.fill();
+
+          // Telemetry micro label
+          c.save();
+          c.font = '8px monospace';
+          c.fillStyle = strokeColor;
+          c.fillText('SYS // 84.1°', -r * 0.6, r + 14);
+          c.restore();
 
         } else if (this.type === 1) {
-          // Type 1: Concentric Slash Ticks (Top Middle)
-          const slashCount = 36;
-          c.save();
-          c.rotate(this.rotation * 0.5);
-          for (let i = 0; i < slashCount; i++) {
-            if (i % 6 === 0) continue;
-            const angle = (Math.PI * 2 * i) / slashCount;
-            const x1 = Math.cos(angle) * r;
-            const y1 = Math.sin(angle) * r;
-            const x2 = Math.cos(angle + 0.08) * (r + 8);
-            const y2 = Math.sin(angle + 0.08) * (r + 8);
+          // TYPE 1: Sci-Fi Corner Bracket & Digital Frequency Analyzer
+          const boxSize = r * 0.9;
+          const cornerLen = 16;
+          c.lineWidth = 1.4;
+
+          // Corner L-Brackets
+          [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([sx, sy]) => {
+            const cx = sx * boxSize;
+            const cy = sy * boxSize;
             c.beginPath();
-            c.moveTo(x1, y1);
-            c.lineTo(x2, y2);
+            c.moveTo(cx - sx * cornerLen, cy);
+            c.lineTo(cx, cy);
+            c.lineTo(cx, cy - sy * cornerLen);
             c.stroke();
-          }
-          c.restore();
 
-          c.beginPath();
-          c.arc(0, 0, r * 0.85, 0, Math.PI * 2);
-          c.stroke();
+            c.beginPath();
+            c.arc(cx, cy, 2, 0, Math.PI * 2);
+            c.fill();
+          });
 
-          c.beginPath();
-          c.arc(0, 0, r * 0.6, 0, Math.PI * 2);
-          c.stroke();
-
+          // Inner boundary box (dim dashed)
           c.save();
-          c.rotate(this.rotation);
-          c.lineWidth = 4;
-          c.beginPath();
-          c.arc(0, 0, r * 0.42, 0, Math.PI * 0.7);
-          c.stroke();
-          c.beginPath();
-          c.arc(0, 0, r * 0.42, Math.PI * 1.1, Math.PI * 1.8);
-          c.stroke();
+          c.strokeStyle = dimColor;
+          c.setLineDash([3, 3]);
+          c.strokeRect(-boxSize + 4, -boxSize + 4, boxSize * 2 - 8, boxSize * 2 - 8);
           c.restore();
 
-          c.beginPath();
-          c.arc(0, 0, 5, 0, Math.PI * 2);
-          c.fill();
+          // 5 Digital spectrum bars pulsing
+          const barWidth = 6;
+          const barGap = 4;
+          const totalW = 5 * barWidth + 4 * barGap;
+          const startX = -totalW / 2;
+          for (let i = 0; i < 5; i++) {
+            const barH = 8 + Math.sin(this.pulseTimer * 2 + i * 1.2) * 12 + (i % 2) * 6;
+            const bx = startX + i * (barWidth + barGap);
+            c.fillStyle = fillColor;
+            c.fillRect(bx, -barH / 2, barWidth, barH);
+            c.strokeStyle = strokeColor;
+            c.strokeRect(bx, -barH / 2, barWidth, barH);
+          }
+
+          // Data stream label
+          c.save();
+          c.font = '8px monospace';
+          c.fillStyle = strokeColor;
+          c.fillText('DATA // 0x7F9B', -boxSize, boxSize + 14);
+          c.restore();
 
         } else if (this.type === 2) {
-          // Type 2: 3-Sector Target HUD (Top Right)
-          c.save();
-          c.strokeStyle = dimColorStr;
-          c.lineWidth = 0.9;
-          for (let i = 0; i < 60; i++) {
-            const angle = (Math.PI * 2 * i) / 60;
-            const tLen = (i % 5 === 0) ? 9 : 4;
-            c.beginPath();
-            c.moveTo(Math.cos(angle) * r, Math.sin(angle) * r);
-            c.lineTo(Math.cos(angle) * (r - tLen), Math.sin(angle) * (r - tLen));
-            c.stroke();
-          }
-          c.restore();
-
+          // TYPE 2: Cyber Circuit Diagram & Hex Core
+          const hexR = r * 0.55;
+          
+          // Outer Hexagon
           c.beginPath();
-          c.arc(0, 0, r + 4, 0, Math.PI * 2);
+          for (let i = 0; i < 6; i++) {
+            const a = (Math.PI / 3) * i + this.rotation * 0.3;
+            const px = Math.cos(a) * hexR;
+            const py = Math.sin(a) * hexR;
+            if (i === 0) c.moveTo(px, py);
+            else c.lineTo(px, py);
+          }
+          c.closePath();
           c.stroke();
 
-          c.save();
-          c.rotate(this.rotation);
-          c.lineWidth = 6;
-          for (let i = 0; i < 3; i++) {
-            const startA = (i * Math.PI * 2) / 3;
+          // Circuit Trace lines extending outwards
+          const traceAngles = [0, Math.PI * 0.5, Math.PI, Math.PI * 1.5];
+          traceAngles.forEach((angle, idx) => {
+            const cos = Math.cos(angle);
+            const sin = Math.sin(angle);
+            const p1x = cos * hexR;
+            const p1y = sin * hexR;
+            const p2x = cos * (r * 1.15);
+            const p2y = sin * (r * 1.15);
+            const cornerDir = (idx % 2 === 0 ? 1 : -1) * 12;
+            const p3x = p2x + (cos === 0 ? cornerDir : 0);
+            const p3y = p2y + (sin === 0 ? cornerDir : 0);
+
             c.beginPath();
-            c.arc(0, 0, r * 0.55, startA, startA + 0.6);
+            c.moveTo(p1x, p1y);
+            c.lineTo(p2x, p2y);
+            c.lineTo(p3x, p3y);
             c.stroke();
+
+            // Terminal node dot
+            c.beginPath();
+            c.arc(p3x, p3y, 2.8, 0, Math.PI * 2);
+            c.fill();
+          });
+
+          // Inner Hexagon (pulse)
+          c.save();
+          c.rotate(-this.innerRot);
+          c.beginPath();
+          for (let i = 0; i < 6; i++) {
+            const a = (Math.PI / 3) * i;
+            const px = Math.cos(a) * (hexR * 0.45);
+            const py = Math.sin(a) * (hexR * 0.45);
+            if (i === 0) c.moveTo(px, py);
+            else c.lineTo(px, py);
           }
+          c.closePath();
+          c.fillStyle = fillColor;
+          c.fill();
+          c.stroke();
           c.restore();
 
-          c.beginPath();
-          c.arc(0, 0, r * 0.25, 0, Math.PI * 2);
-          c.stroke();
+          // Center core dot
           c.beginPath();
           c.arc(0, 0, 3, 0, Math.PI * 2);
           c.fill();
 
         } else if (this.type === 3) {
-          // Type 3: Framed Bracket HUD (Bottom Left)
+          // TYPE 3: Orbital Quantum Radar Scanner
+          // 2 Concentric Radar circles
           c.beginPath();
           c.arc(0, 0, r, 0, Math.PI * 2);
           c.stroke();
 
-          const frameDist = r + 10;
-          const bracketSize = 14;
-          c.lineWidth = 1.8;
-          [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([sx, sy]) => {
-            const cx = sx * (frameDist * 0.7);
-            const cy = sy * (frameDist * 0.7);
-            c.beginPath();
-            c.moveTo(cx, cy - sy * bracketSize);
-            c.lineTo(cx, cy);
-            c.lineTo(cx - sx * bracketSize, cy);
-            c.stroke();
-          });
-
-          c.save();
-          c.rotate(this.rotation);
-          c.setLineDash([6, 6]);
           c.beginPath();
-          c.arc(0, 0, r * 0.75, 0, Math.PI * 2);
+          c.arc(0, 0, r * 0.55, 0, Math.PI * 2);
+          c.stroke();
+
+          // Quadrant crosshair lines
+          c.save();
+          c.strokeStyle = dimColor;
+          c.lineWidth = 0.8;
+          c.beginPath();
+          c.moveTo(-r, 0); c.lineTo(r, 0);
+          c.moveTo(0, -r); c.lineTo(0, r);
           c.stroke();
           c.restore();
 
-          c.setLineDash([]);
+          // Rotating Radar Scanner Sweep Wedge
+          c.save();
+          const sweepGrad = c.createConicGradient(this.sweepAngle, 0, 0);
+          sweepGrad.addColorStop(0, `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${currentAlpha * 0.4})`);
+          sweepGrad.addColorStop(0.18, `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.0)`);
+          sweepGrad.addColorStop(1, `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.0)`);
+          c.fillStyle = sweepGrad;
           c.beginPath();
-          c.arc(0, 0, r * 0.45, 0, Math.PI * 2);
+          c.arc(0, 0, r, 0, Math.PI * 2);
+          c.fill();
+
+          // Sweep line
+          c.strokeStyle = strokeColor;
+          c.lineWidth = 1.6;
+          c.beginPath();
+          c.moveTo(0, 0);
+          c.lineTo(Math.cos(this.sweepAngle) * r, Math.sin(this.sweepAngle) * r);
           c.stroke();
+          c.restore();
 
-        } else if (this.type === 4) {
-          // Type 4: Sci-Fi Circuit Board Diagram (Bottom Right)
-          const lines = [
-            [[-r, -r * 0.8], [-r * 0.3, -r * 0.8], [0, -r * 0.5], [0, r * 0.6], [r * 0.5, r * 0.6]],
-            [[-r, -r * 0.4], [-r * 0.5, -r * 0.4], [-r * 0.2, -r * 0.1], [r * 0.4, -r * 0.1], [r * 0.7, r * 0.2]],
-            [[-r, 0], [-r * 0.6, 0], [-r * 0.1, r * 0.4], [r * 0.6, r * 0.4]],
-            [[-r, r * 0.4], [-r * 0.4, r * 0.4], [r * 0.2, r * 0.8]],
-            [[r * 0.2, -r * 0.8], [r * 0.5, -r * 0.5], [r * 0.5, 0]],
-          ];
-
-          lines.forEach((pts, lIdx) => {
-            c.beginPath();
-            c.moveTo(pts[0][0], pts[0][1]);
-            for (let i = 1; i < pts.length; i++) {
-              c.lineTo(pts[i][0], pts[i][1]);
-            }
-            c.lineWidth = lIdx === 1 ? 2.5 : 1.2;
-            c.stroke();
-
-            const endP = pts[pts.length - 1];
-            c.beginPath();
-            c.arc(endP[0], endP[1], lIdx === 1 ? 4 : 2.8, 0, Math.PI * 2);
-            c.fill();
-
-            const startP = pts[0];
-            c.beginPath();
-            c.arc(startP[0], startP[1], 2.5, 0, Math.PI * 2);
-            c.fill();
-          });
-
-        } else {
-          // Type 5: HUD Signal Line with Node (Bottom Left callout)
-          c.lineWidth = 1.5;
+          // 2 Micro Target Blips
+          const blip1A = this.sweepAngle - 0.5;
+          const blip1R = r * 0.7;
           c.beginPath();
-          c.moveTo(-r * 1.4, -r * 0.3);
-          c.lineTo(-r * 0.6, -r * 0.3);
-          c.lineTo(-r * 0.3, 0);
-          c.lineTo(r * 1.2, 0);
-          c.stroke();
-
-          c.beginPath();
-          c.arc(-r * 1.4, -r * 0.3, 3.5, 0, Math.PI * 2);
-          c.stroke();
-
-          c.beginPath();
-          c.arc(r * 1.2, 0, 3.5, 0, Math.PI * 2);
+          c.arc(Math.cos(blip1A) * blip1R, Math.sin(blip1A) * blip1R, 2.5, 0, Math.PI * 2);
           c.fill();
 
           c.save();
+          c.font = '8px monospace';
+          c.fillStyle = strokeColor;
+          c.fillText('RADAR // 360°', -r * 0.5, r + 14);
+          c.restore();
+
+        } else {
+          // TYPE 4: Dual Arc Target Reticle with Notch Teeth
+          c.save();
           c.rotate(this.rotation);
-          c.lineWidth = 1.8;
-          c.setLineDash([4, 4]);
+
+          // Top & Bottom Heavy Arcs
+          c.lineWidth = 2.4;
           c.beginPath();
-          c.arc(0, 0, r * 0.5, 0, Math.PI * 2);
+          c.arc(0, 0, r, Math.PI * 0.1, Math.PI * 0.9);
           c.stroke();
+
+          c.beginPath();
+          c.arc(0, 0, r, Math.PI * 1.1, Math.PI * 1.9);
+          c.stroke();
+
+          // Left & Right Dash Arcs
+          c.setLineDash([3, 4]);
+          c.lineWidth = 1;
+          c.beginPath();
+          c.arc(0, 0, r * 0.75, Math.PI * 0.85, Math.PI * 1.15);
+          c.stroke();
+          c.beginPath();
+          c.arc(0, 0, r * 0.75, -Math.PI * 0.15, Math.PI * 0.15);
+          c.stroke();
+          c.restore();
+
+          // Inner rotating diamond target
+          c.save();
+          c.rotate(this.innerRot);
+          c.lineWidth = 1.2;
+          const dR = r * 0.38;
+          c.beginPath();
+          c.moveTo(0, -dR);
+          c.lineTo(dR, 0);
+          c.lineTo(0, dR);
+          c.lineTo(-dR, 0);
+          c.closePath();
+          c.stroke();
+          c.restore();
+
+          // Center dot & crosshair
+          c.beginPath();
+          c.arc(0, 0, 2.5, 0, Math.PI * 2);
+          c.fill();
+
+          c.save();
+          c.font = '8px monospace';
+          c.fillStyle = strokeColor;
+          c.fillText('TARGET // LOCK', -r * 0.6, r + 14);
           c.restore();
         }
 
@@ -1283,7 +1416,7 @@ export const ReadingEffects: React.FC<ReadingEffectsProps> = ({ effect = 'none',
       } else if (effect === 'fire_sparks') {
         particles.push(new FireSparkParticle());
       } else if (effect === 'sci_fi_hud') {
-        particles.push(new SciFiHudParticle(true));
+        particles.push(new SciFiHudElement(i, true, particles));
       }
     }
 
@@ -1302,9 +1435,54 @@ export const ReadingEffects: React.FC<ReadingEffectsProps> = ({ effect = 'none',
     };
 
     let glitchTimer = 0;
+    let prevScrollY = window.scrollY;
 
     const render = () => {
       ctx.clearRect(0, 0, width, height);
+
+      // Track scroll delta so particles & fireworks scroll naturally with document content
+      const currentScrollY = window.scrollY;
+      const scrollDelta = currentScrollY - prevScrollY;
+      prevScrollY = currentScrollY;
+
+      if (scrollDelta !== 0) {
+        if (effect === 'fireworks') {
+          for (let i = 0; i < fireworkRockets.length; i++) {
+            const r = fireworkRockets[i];
+            r.y -= scrollDelta;
+            r.targetY -= scrollDelta;
+            if (r.sparkTrail) {
+              r.sparkTrail.forEach((t) => (t.y -= scrollDelta));
+            }
+          }
+          for (let i = 0; i < fireworkCores.length; i++) {
+            fireworkCores[i].y -= scrollDelta;
+          }
+          for (let i = 0; i < fireworkRays.length; i++) {
+            const ray = fireworkRays[i];
+            ray.y -= scrollDelta;
+            if (ray.trail) {
+              ray.trail.forEach((t) => (t.y -= scrollDelta));
+            }
+          }
+          for (let i = 0; i < fireworkGlitter.length; i++) {
+            fireworkGlitter[i].y -= scrollDelta;
+          }
+        } else if (particles && particles.length > 0) {
+          particles.forEach((p) => {
+            if (p.y !== undefined) p.y -= scrollDelta;
+
+            // When scrolling sci-fi HUD off screen, re-position ahead of scroll direction
+            if (effect === 'sci_fi_hud') {
+              if (p.y < -160) {
+                p.reset(false, 'bottom', particles);
+              } else if (p.y > height + 160) {
+                p.reset(false, 'top', particles);
+              }
+            }
+          });
+        }
+      }
 
       if (effect === 'glitch') {
         // CRT Scanlines
@@ -1402,7 +1580,7 @@ export const ReadingEffects: React.FC<ReadingEffectsProps> = ({ effect = 'none',
         } else if (effect === 'sci_fi_hud') {
           const rgb = hexToRgb(effectColor);
           particles.forEach((p) => {
-            p.update();
+            p.update(particles);
             p.draw(ctx, rgb);
           });
         } else {
