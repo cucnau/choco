@@ -336,10 +336,17 @@ export const StoryBlockRenderer: React.FC<StoryBlockRendererProps> = (props) => 
 
         <button
           onClick={() => onToggleBookmark(story.id)}
-          className={`w-full py-2 px-3 text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition ${storyBtnFont} ${isCustomTheme ? '' : `${tone.buttonBgSecondary} ${tone.text}`}`}
+          className={`w-full py-2 px-3 text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition ${storyBtnFont} ${
+            isCustomTheme
+              ? ''
+              : `${tone.buttonBgSecondary} ${isBookmarked && tone.badgeLockedIcon ? tone.badgeLockedIcon : tone.text}`
+          }`}
           style={{
             ...(isCustomTheme
-              ? { background: story.customBtnSecondaryBgColor || story.customCardBgColor, color: story.customTextColor }
+              ? {
+                  background: story.customBtnSecondaryBgColor || story.customCardBgColor,
+                  color: isBookmarked ? (story.customBorderColor || story.customTextColor) : story.customTextColor,
+                }
               : {}),
             ...getStoryButtonBorderStyle(
               {
@@ -350,7 +357,7 @@ export const StoryBlockRenderer: React.FC<StoryBlockRendererProps> = (props) => 
             ),
           }}
         >
-          <Bookmark className={`w-4 h-4 shrink-0 ${isBookmarked ? 'fill-[#d0a0b0] text-[#d0a0b0]' : ''}`} />
+          <Bookmark className={`w-4 h-4 shrink-0 transition-all ${isBookmarked ? 'fill-current' : ''}`} />
           <span>{isBookmarked ? 'Đã lưu truyện' : 'Lưu truyện'}</span>
         </button>
       </div>

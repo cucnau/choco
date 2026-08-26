@@ -32,7 +32,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
       <section className="space-y-4">
         <div className="border-b border-[#2d1822] pb-3 flex items-center justify-between">
           <h2 className="text-xs sm:text-sm font-bold font-mono-code uppercase tracking-[0.15em] text-[#e0c0cc] flex items-center gap-2">
-            <Bookmark className="w-5 h-5 text-[#d0a0b0]" />
+            <Bookmark className="w-5 h-5 text-[#e0c0cc] fill-current" />
             <span>Danh sách truyện đã lưu ({bookmarkedStories.length})</span>
           </h2>
         </div>

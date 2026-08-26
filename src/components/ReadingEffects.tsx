@@ -43,24 +43,7 @@ export const ReadingEffects: React.FC<ReadingEffectsProps> = ({ effect = 'none',
       height = canvas.height = window.innerHeight;
     };
 
-    // Track scroll position to shift particles with document scroll
-    const getScrollPos = () => window.scrollY || window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
-    let currentScrollY = getScrollPos();
-    let lastScrollY = currentScrollY;
-
-    const handleScroll = (e: Event) => {
-      if (e.target && e.target !== document && e.target !== window) {
-        const target = e.target as HTMLElement;
-        if (target.scrollTop !== undefined && target.scrollTop > 0) {
-          currentScrollY = target.scrollTop;
-          return;
-        }
-      }
-      currentScrollY = getScrollPos();
-    };
-
     window.addEventListener('resize', handleResize);
-    window.addEventListener('scroll', handleScroll, { capture: true, passive: true });
 
     // Particle system containers
     let particles: any[] = [];
@@ -73,7 +56,7 @@ export const ReadingEffects: React.FC<ReadingEffectsProps> = ({ effect = 'none',
       effect === 'cherry_blossom' ? 20 : 
       effect === 'firefly' ? 28 : 
       effect === 'soap_bubble' ? 18 :
-      effect === 'fire_sparks' ? 42 :
+      effect === 'fire_sparks' ? 75 :
       effect === 'sci_fi_hud' ? 10 :
       effect === 'fireworks' ? 0 : // fireworks managed dynamically
       0;
@@ -572,82 +555,145 @@ export const ReadingEffects: React.FC<ReadingEffectsProps> = ({ effect = 'none',
     }
 
     class FireSparkParticle {
-      x: number = Math.random() * width;
-      y: number = Math.random() * height;
-      size: number = 2 + Math.random() * 8;
-      vx: number = (Math.random() - 0.5) * 1.2;
-      vy: number = -(0.8 + Math.random() * 1.4);
-      alpha: number = 0.3 + Math.random() * 0.7;
-      wobble: number = Math.random() * Math.PI * 2;
-      wobbleSpeed: number = 0.01 + Math.random() * 0.03;
-      color: string = '';
-      sparkType: 'curve' | 'dot' = Math.random() > 0.45 ? 'curve' : 'dot';
-      angle: number = Math.random() * Math.PI * 2;
-      rotationSpeed: number = (Math.random() - 0.5) * 0.03;
+      x: number = 0;
+      y: number = 0;
+      size: number = 0;
+      aspectRatio: number = 0;
+      curvature: number = 0;
+      vx: number = 0;
+      vy: number = 0;
+      baseAlpha: number = 1;
+      alpha: number = 1;
+      wobble: number = 0;
+      wobbleSpeed: number = 0;
+      wobbleAmp: number = 0;
+      sparkType: 'crescent' | 'streak' | 'dot' = 'crescent';
+      angle: number = 0;
+      rotationSpeed: number = 0;
+      coreColor: string = '';
+      glowColor: string = '';
+      edgeColor: string = '';
+      flickerOffset: number = 0;
 
       constructor() {
-        this.reset();
-        this.y = Math.random() * height; // stagger initial heights
+        this.reset(true);
       }
 
-      reset() {
+      reset(isInitial = false) {
         this.x = Math.random() * width;
-        this.y = height + 10 + Math.random() * 100;
-        this.size = 2 + Math.random() * 8;
-        this.vx = (Math.random() - 0.5) * 0.8;
-        this.vy = -(0.8 + Math.random() * 1.4);
-        this.alpha = 0.3 + Math.random() * 0.7;
-        this.wobble = Math.random() * Math.PI * 2;
-        this.wobbleSpeed = 0.01 + Math.random() * 0.03;
-        this.sparkType = Math.random() > 0.45 ? 'curve' : 'dot';
-        this.angle = Math.random() * Math.PI * 2;
-        this.rotationSpeed = (Math.random() - 0.5) * 0.03;
+        this.y = isInitial ? Math.random() * height : height + 10 + Math.random() * 80;
 
-        const colors = [
-          'rgba(255, 80, 0, ',   // bright orange-red
-          'rgba(255, 140, 0, ',  // dark orange
-          'rgba(255, 200, 0, ',  // golden yellow
-          'rgba(239, 68, 68, ',  // red
+        const randType = Math.random();
+        if (randType < 0.60) {
+          this.sparkType = 'crescent';
+          this.size = 8 + Math.random() * 16; // Length of ember blade (8px - 24px)
+          this.aspectRatio = 0.16 + Math.random() * 0.14; // Thickness ratio
+          this.curvature = (Math.random() < 0.5 ? 1 : -1) * (0.35 + Math.random() * 0.55);
+        } else if (randType < 0.82) {
+          this.sparkType = 'streak';
+          this.size = 6 + Math.random() * 14;
+          this.aspectRatio = 0.12 + Math.random() * 0.1;
+          this.curvature = 0.15 + Math.random() * 0.25;
+        } else {
+          this.sparkType = 'dot';
+          this.size = 1.2 + Math.random() * 2.8;
+          this.aspectRatio = 1;
+          this.curvature = 0;
+        }
+
+        this.vx = (Math.random() - 0.5) * 0.6;
+        this.vy = -(0.7 + Math.random() * 1.5); // Floating upwards
+        this.baseAlpha = 0.45 + Math.random() * 0.5;
+        this.alpha = this.baseAlpha;
+        this.wobble = Math.random() * Math.PI * 2;
+        this.wobbleSpeed = 0.015 + Math.random() * 0.035;
+        this.wobbleAmp = 0.35 + Math.random() * 0.65;
+        this.angle = (Math.random() - 0.5) * Math.PI * 0.8;
+        this.rotationSpeed = (Math.random() - 0.5) * 0.025;
+        this.flickerOffset = Math.random() * Math.PI * 2;
+
+        // Vivid fiery palettes matching the reference image (yellow glowing core, golden mid, crimson orange edges)
+        const palettes = [
+          { core: '#fff8cc', glow: '#ffaa00', edge: '#ff3300' }, // Classic burning amber
+          { core: '#ffffff', glow: '#ffc107', edge: '#ff5722' }, // White-hot ember
+          { core: '#ffe57f', glow: '#ff9100', edge: '#dd2c00' }, // Crimson fire spark
+          { core: '#fffde7', glow: '#ffd54f', edge: '#ff6d00' }, // Golden fire spark
         ];
-        this.color = colors[Math.floor(Math.random() * colors.length)];
+        const p = palettes[Math.floor(Math.random() * palettes.length)];
+        this.coreColor = p.core;
+        this.glowColor = p.glow;
+        this.edgeColor = p.edge;
       }
 
       update() {
         this.y += this.vy;
         this.wobble += this.wobbleSpeed;
-        this.x += this.vx + Math.sin(this.wobble) * 0.4;
+        this.x += this.vx + Math.sin(this.wobble) * this.wobbleAmp;
         this.angle += this.rotationSpeed;
 
-        const lifeRatio = this.y / height;
-        this.alpha = (0.2 + lifeRatio * 0.8) * (0.4 + Math.random() * 0.6);
+        const flicker = Math.sin(this.wobble * 3 + this.flickerOffset) * 0.18;
+        const topFade = Math.min(1, Math.max(0, (this.y - 15) / (height * 0.18)));
+        const bottomFade = Math.min(1, Math.max(0, (height + 25 - this.y) / 45));
 
-        if (this.y < -50 || this.alpha <= 0.05) {
-          this.reset();
+        this.alpha = Math.max(0, Math.min(1, (this.baseAlpha + flicker) * topFade * bottomFade));
+
+        if (this.y < -30 || this.alpha <= 0.01) {
+          this.reset(false);
         }
       }
 
       draw() {
+        if (this.alpha <= 0.02) return;
+
         ctx.save();
         ctx.translate(this.x, this.y);
         ctx.rotate(this.angle);
 
-        if (isDarkTheme) {
-          ctx.shadowColor = 'rgba(239, 68, 68, 0.6)';
-          ctx.shadowBlur = this.size * 1.2;
-        }
+        ctx.globalAlpha = this.alpha;
 
-        ctx.fillStyle = `${this.color}${this.alpha})`;
-        ctx.beginPath();
+        if (this.sparkType === 'crescent' || this.sparkType === 'streak') {
+          const len = this.size;
+          const thick = len * this.aspectRatio;
+          const curve = len * 0.35 * this.curvature;
 
-        if (this.sparkType === 'curve') {
-          const w = this.size * 0.3;
-          const h = this.size;
-          ctx.moveTo(-w/2, -h/2);
-          ctx.quadraticCurveTo(w * 1.2, 0, -w/2, h/2);
-          ctx.quadraticCurveTo(0, 0, -w/2, -h/2);
+          // Drawing slender crescent curved ember tapering at both ends (exact match to image)
+          ctx.beginPath();
+          ctx.moveTo(0, -len / 2);
+          ctx.quadraticCurveTo(curve + thick * 2, 0, 0, len / 2);
+          ctx.quadraticCurveTo(curve, 0, 0, -len / 2);
+          ctx.closePath();
+
+          const grad = ctx.createLinearGradient(-thick, 0, thick + Math.abs(curve), 0);
+          grad.addColorStop(0, this.edgeColor);
+          grad.addColorStop(0.35, this.glowColor);
+          grad.addColorStop(0.7, this.coreColor);
+          grad.addColorStop(1, this.edgeColor);
+
+          ctx.fillStyle = grad;
           ctx.fill();
+
+          if (len > 9) {
+            ctx.shadowColor = this.glowColor;
+            ctx.shadowBlur = isDarkTheme ? 8 : 4;
+            ctx.fillStyle = this.coreColor;
+            ctx.fill();
+          }
         } else {
-          ctx.arc(0, 0, this.size * 0.25, 0, Math.PI * 2);
+          // Tiny glowing ember dot
+          const r = this.size;
+          const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, r * 2.5);
+          grad.addColorStop(0, this.coreColor);
+          grad.addColorStop(0.4, this.glowColor);
+          grad.addColorStop(1, 'rgba(255, 60, 0, 0)');
+
+          ctx.beginPath();
+          ctx.fillStyle = grad;
+          ctx.arc(0, 0, r * 2.5, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.beginPath();
+          ctx.fillStyle = '#ffffff';
+          ctx.arc(0, 0, r * 0.6, 0, Math.PI * 2);
           ctx.fill();
         }
 
@@ -1260,34 +1306,6 @@ export const ReadingEffects: React.FC<ReadingEffectsProps> = ({ effect = 'none',
     const render = () => {
       ctx.clearRect(0, 0, width, height);
 
-      // Scroll delta calculation for smooth continuous effect flow
-      const scrollDelta = currentScrollY - lastScrollY;
-      lastScrollY = currentScrollY;
-
-      if (scrollDelta !== 0 && effect !== 'glitch') {
-        particles.forEach((p) => {
-          p.y -= scrollDelta;
-          if (p.y < -50) {
-            p.y = height + Math.random() * 40;
-            p.x = Math.random() * width;
-          } else if (p.y > height + 50) {
-            p.y = -40 - Math.random() * 40;
-            p.x = Math.random() * width;
-          }
-        });
-
-        if (shootingStar) {
-          shootingStar.y -= scrollDelta;
-        }
-
-        if (effect === 'fireworks') {
-          fireworkRockets.forEach((r) => (r.y -= scrollDelta));
-          fireworkRays.forEach((r) => (r.y -= scrollDelta));
-          fireworkGlitter.forEach((g) => (g.y -= scrollDelta));
-          fireworkCores.forEach((c) => (c.y -= scrollDelta));
-        }
-      }
-
       if (effect === 'glitch') {
         // CRT Scanlines
         ctx.beginPath();
@@ -1432,7 +1450,6 @@ export const ReadingEffects: React.FC<ReadingEffectsProps> = ({ effect = 'none',
     return () => {
       cancelAnimationFrame(animationFrameId);
       window.removeEventListener('resize', handleResize);
-      window.removeEventListener('scroll', handleScroll, true);
     };
   }, [effect, isDarkTheme]);
 
