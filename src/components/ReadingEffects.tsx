@@ -1,7 +1,7 @@
 import React from 'react';
 
 interface ReadingEffectsProps {
-  effect?: 'none' | 'rain' | 'snow' | 'glitch' | 'star' | 'leaf' | 'ginkgo' | 'cherry_blossom' | 'firefly' | 'soap_bubble' | 'fireworks' | 'fire_sparks' | 'sci_fi_hud';
+  effect?: 'none' | 'rain' | 'snow' | 'glitch' | 'star' | 'leaf' | 'ginkgo' | 'cherry_blossom' | 'firefly' | 'soap_bubble' | 'fireworks' | 'fire_sparks' | 'sci_fi_hud' | 'money_100k' | 'fruits' | 'planets' | 'ocean' | 'butterflies' | 'clouds' | 'feathers' | 'lightning' | 'storm' | 'fog' | 'paper_pages';
   effectColor?: string;
   isDarkTheme: boolean;
 }
@@ -56,7 +56,18 @@ export const ReadingEffects: React.FC<ReadingEffectsProps> = ({ effect = 'none',
       effect === 'cherry_blossom' ? 20 : 
       effect === 'firefly' ? 28 : 
       effect === 'soap_bubble' ? 18 :
-      effect === 'fire_sparks' ? 75 :
+      effect === 'fire_sparks' ? 20 :
+      effect === 'money_100k' ? 22 :
+      effect === 'fruits' ? 18 :
+      effect === 'planets' ? 12 :
+      effect === 'ocean' ? 25 :
+      effect === 'butterflies' ? 15 :
+      effect === 'clouds' ? 8 :
+      effect === 'feathers' ? 18 :
+      effect === 'lightning' ? 1 :
+      effect === 'storm' ? 80 :
+      effect === 'fog' ? 10 :
+      effect === 'paper_pages' ? 16 :
       effect === 'sci_fi_hud' ? 6 :
       effect === 'fireworks' ? 0 : // fireworks managed dynamically
       0;
@@ -554,6 +565,775 @@ export const ReadingEffects: React.FC<ReadingEffectsProps> = ({ effect = 'none',
       }
     }
 
+    class Money100kParticle {
+      x: number = 0;
+      y: number = 0;
+      width: number = 0;
+      height: number = 0;
+      vy: number = 0;
+      vx: number = 0;
+      rotX: number = 0;
+      rotY: number = 0;
+      rotZ: number = 0;
+      vRotX: number = 0;
+      vRotY: number = 0;
+      vRotZ: number = 0;
+      swayPhase: number = 0;
+      swaySpeed: number = 0;
+      swayAmp: number = 0;
+      opacity: number = 1;
+
+      constructor() {
+        this.reset(true);
+      }
+
+      reset(isInitial = false) {
+        this.x = Math.random() * width;
+        this.y = isInitial ? Math.random() * height : -35 - Math.random() * (height * 0.5);
+
+        this.width = 40 + Math.random() * 18;
+        this.height = this.width * 0.52;
+
+        this.vy = 1.1 + Math.random() * 1.5;
+        this.vx = (Math.random() - 0.5) * 0.4;
+
+        this.rotX = Math.random() * Math.PI * 2;
+        this.rotY = Math.random() * Math.PI * 2;
+        this.rotZ = (Math.random() - 0.5) * 0.8;
+
+        this.vRotX = (Math.random() - 0.5) * 0.035;
+        this.vRotY = (Math.random() - 0.5) * 0.04;
+        this.vRotZ = (Math.random() - 0.5) * 0.015;
+
+        this.swayPhase = Math.random() * Math.PI * 2;
+        this.swaySpeed = 0.02 + Math.random() * 0.025;
+        this.swayAmp = 0.7 + Math.random() * 0.9;
+
+        this.opacity = 0.88 + Math.random() * 0.12;
+      }
+
+      update() {
+        this.y += this.vy;
+        this.swayPhase += this.swaySpeed;
+        this.x += this.vx + Math.sin(this.swayPhase) * this.swayAmp;
+
+        this.rotX += this.vRotX;
+        this.rotY += this.vRotY;
+        this.rotZ += this.vRotZ;
+
+        if (this.y > height + 60) {
+          this.reset(false);
+        }
+      }
+
+      draw() {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+
+        const scaleX = Math.cos(this.rotY);
+        const scaleY = Math.cos(this.rotX);
+
+        ctx.rotate(this.rotZ);
+        ctx.scale(scaleX, scaleY);
+        ctx.globalAlpha = this.opacity;
+
+        const w = this.width;
+        const h = this.height;
+        const isFront = scaleX * scaleY > 0;
+
+        const baseGrad = ctx.createLinearGradient(-w / 2, -h / 2, w / 2, h / 2);
+        if (isFront) {
+          baseGrad.addColorStop(0, '#047857');
+          baseGrad.addColorStop(0.3, '#10b981');
+          baseGrad.addColorStop(0.7, '#059669');
+          baseGrad.addColorStop(1, '#065f46');
+        } else {
+          baseGrad.addColorStop(0, '#065f46');
+          baseGrad.addColorStop(0.4, '#047857');
+          baseGrad.addColorStop(0.8, '#059669');
+          baseGrad.addColorStop(1, '#022c22');
+        }
+
+        ctx.beginPath();
+        ctx.roundRect(-w / 2, -h / 2, w, h, Math.min(3, w * 0.06));
+        ctx.fillStyle = baseGrad;
+        ctx.fill();
+
+        ctx.strokeStyle = isFront ? '#a7f3d0' : '#047857';
+        ctx.lineWidth = 0.8;
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.roundRect(-w / 2 + 2, -h / 2 + 1.5, w - 4, h - 3, 1.5);
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
+        ctx.lineWidth = 0.5;
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.ellipse(-w / 3, 0, w * 0.12, h * 0.3, 0, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(254, 240, 138, 0.45)';
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+        ctx.lineWidth = 0.4;
+        ctx.stroke();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = `bold ${Math.max(6, Math.floor(h * 0.38))}px sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+        ctx.shadowBlur = 2;
+        ctx.fillText('100K', w * 0.15, 0);
+
+        const sheenGrad = ctx.createLinearGradient(-w / 2, -h / 2, w / 2, h / 2);
+        sheenGrad.addColorStop(0, 'rgba(255,255,255,0)');
+        sheenGrad.addColorStop(0.45, 'rgba(255,255,255,0.05)');
+        sheenGrad.addColorStop(0.5, 'rgba(255,255,255,0.25)');
+        sheenGrad.addColorStop(0.55, 'rgba(255,255,255,0.05)');
+        sheenGrad.addColorStop(1, 'rgba(255,255,255,0)');
+
+        ctx.fillStyle = sheenGrad;
+        ctx.fill();
+
+        ctx.restore();
+      }
+    }
+
+    class FruitParticle {
+      x: number = 0; y: number = 0; size: number = 0; vy: number = 0; vx: number = 0; rot: number = 0; vRot: number = 0;
+      fruitType: 'apple' | 'strawberry' | 'orange' | 'watermelon' | 'banana' | 'grapes' | 'kiwi' = 'apple';
+      opacity: number = 1; swayPhase: number = 0; swaySpeed: number = 0; swayAmp: number = 0;
+
+      constructor() { this.reset(true); }
+
+      reset(isInitial = false) {
+        this.x = Math.random() * width;
+        this.y = isInitial ? Math.random() * height : -30 - Math.random() * (height * 0.4);
+        this.size = 18 + Math.random() * 12;
+        this.vy = 1.0 + Math.random() * 1.5;
+        this.vx = (Math.random() - 0.5) * 0.5;
+        this.rot = Math.random() * Math.PI * 2;
+        this.vRot = (Math.random() - 0.5) * 0.04;
+        this.swayPhase = Math.random() * Math.PI * 2;
+        this.swaySpeed = 0.02 + Math.random() * 0.02;
+        this.swayAmp = 0.5 + Math.random() * 0.8;
+        this.opacity = 0.85 + Math.random() * 0.15;
+        const types: ('apple' | 'strawberry' | 'orange' | 'watermelon' | 'banana' | 'grapes' | 'kiwi')[] = ['apple', 'strawberry', 'orange', 'watermelon', 'banana', 'grapes', 'kiwi'];
+        this.fruitType = types[Math.floor(Math.random() * types.length)];
+      }
+
+      update() {
+        this.y += this.vy;
+        this.swayPhase += this.swaySpeed;
+        this.x += this.vx + Math.sin(this.swayPhase) * this.swayAmp;
+        this.rot += this.vRot;
+        if (this.y > height + 40) this.reset(false);
+      }
+
+      draw() {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.rotate(this.rot);
+        ctx.globalAlpha = this.opacity;
+        const s = this.size;
+
+        if (this.fruitType === 'apple') {
+          ctx.beginPath();
+          ctx.arc(-s * 0.2, 0, s * 0.45, 0, Math.PI * 2);
+          ctx.arc(s * 0.2, 0, s * 0.45, 0, Math.PI * 2);
+          ctx.fillStyle = '#ef4444';
+          ctx.fill();
+          ctx.beginPath();
+          ctx.moveTo(0, -s * 0.4);
+          ctx.lineTo(0, -s * 0.65);
+          ctx.strokeStyle = '#78350f';
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.ellipse(s * 0.2, -s * 0.6, s * 0.2, s * 0.1, Math.PI / 4, 0, Math.PI * 2);
+          ctx.fillStyle = '#22c55e';
+          ctx.fill();
+        } else if (this.fruitType === 'strawberry') {
+          ctx.beginPath();
+          ctx.moveTo(0, s * 0.5);
+          ctx.bezierCurveTo(-s * 0.6, -s * 0.1, -s * 0.5, -s * 0.4, 0, -s * 0.35);
+          ctx.bezierCurveTo(s * 0.5, -s * 0.4, s * 0.6, -s * 0.1, 0, s * 0.5);
+          ctx.fillStyle = '#f43f5e';
+          ctx.fill();
+          ctx.beginPath();
+          ctx.arc(0, -s * 0.35, s * 0.2, 0, Math.PI * 2);
+          ctx.fillStyle = '#10b981';
+          ctx.fill();
+        } else if (this.fruitType === 'orange') {
+          ctx.beginPath();
+          ctx.arc(0, 0, s * 0.45, 0, Math.PI * 2);
+          ctx.fillStyle = '#f97316';
+          ctx.fill();
+          ctx.beginPath();
+          ctx.arc(-s * 0.12, -s * 0.12, s * 0.12, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(255,255,255,0.3)';
+          ctx.fill();
+        } else if (this.fruitType === 'watermelon') {
+          ctx.beginPath();
+          ctx.arc(0, 0, s * 0.5, 0, Math.PI);
+          ctx.fillStyle = '#15803d';
+          ctx.fill();
+          ctx.beginPath();
+          ctx.arc(0, 0, s * 0.42, 0, Math.PI);
+          ctx.fillStyle = '#dc2626';
+          ctx.fill();
+        } else if (this.fruitType === 'banana') {
+          ctx.beginPath();
+          ctx.arc(0, 0, s * 0.5, 0.2, Math.PI - 0.2);
+          ctx.strokeStyle = '#eab308';
+          ctx.lineWidth = s * 0.25;
+          ctx.lineCap = 'round';
+          ctx.stroke();
+        } else if (this.fruitType === 'grapes') {
+          ctx.fillStyle = '#a855f7';
+          [[-s * 0.15, -s * 0.2], [s * 0.15, -s * 0.2], [0, 0], [0, s * 0.25]].forEach(([gx, gy]) => {
+            ctx.beginPath();
+            ctx.arc(gx, gy, s * 0.2, 0, Math.PI * 2);
+            ctx.fill();
+          });
+        } else {
+          ctx.beginPath();
+          ctx.arc(0, 0, s * 0.45, 0, Math.PI * 2);
+          ctx.fillStyle = '#65a30d';
+          ctx.fill();
+          ctx.beginPath();
+          ctx.arc(0, 0, s * 0.2, 0, Math.PI * 2);
+          ctx.fillStyle = '#fef08a';
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+    }
+
+    class PlanetParticle {
+      x: number = 0; y: number = 0; radius: number = 0; vy: number = 0; vx: number = 0; rot: number = 0; vRot: number = 0; opacity: number = 1;
+      planetType: 'saturn' | 'jupiter' | 'earth' | 'mars' | 'neptune' = 'saturn';
+
+      constructor() { this.reset(true); }
+
+      reset(isInitial = false) {
+        this.x = Math.random() * width;
+        this.y = isInitial ? Math.random() * height : -40 - Math.random() * (height * 0.4);
+        this.radius = 12 + Math.random() * 16;
+        this.vy = 0.3 + Math.random() * 0.6;
+        this.vx = (Math.random() - 0.5) * 0.3;
+        this.rot = Math.random() * Math.PI * 2;
+        this.vRot = (Math.random() - 0.5) * 0.01;
+        this.opacity = 0.75 + Math.random() * 0.25;
+        const types: ('saturn' | 'jupiter' | 'earth' | 'mars' | 'neptune')[] = ['saturn', 'jupiter', 'earth', 'mars', 'neptune'];
+        this.planetType = types[Math.floor(Math.random() * types.length)];
+      }
+
+      update() {
+        this.y += this.vy;
+        this.x += this.vx;
+        this.rot += this.vRot;
+        if (this.y > height + 50) this.reset(false);
+      }
+
+      draw() {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.rotate(this.rot);
+        ctx.globalAlpha = this.opacity;
+        const r = this.radius;
+
+        if (this.planetType === 'saturn') {
+          ctx.beginPath();
+          ctx.ellipse(0, 0, r * 2.1, r * 0.5, Math.PI / 8, 0, Math.PI * 2);
+          ctx.strokeStyle = 'rgba(253, 224, 71, 0.7)';
+          ctx.lineWidth = 3;
+          ctx.stroke();
+
+          ctx.beginPath();
+          ctx.arc(0, 0, r, 0, Math.PI * 2);
+          const grad = ctx.createLinearGradient(-r, -r, r, r);
+          grad.addColorStop(0, '#fef08a');
+          grad.addColorStop(0.5, '#eab308');
+          grad.addColorStop(1, '#ca8a04');
+          ctx.fillStyle = grad;
+          ctx.fill();
+        } else if (this.planetType === 'jupiter') {
+          ctx.beginPath();
+          ctx.arc(0, 0, r, 0, Math.PI * 2);
+          const grad = ctx.createLinearGradient(0, -r, 0, r);
+          grad.addColorStop(0, '#fdba74');
+          grad.addColorStop(0.3, '#ea580c');
+          grad.addColorStop(0.6, '#f97316');
+          grad.addColorStop(1, '#9a3412');
+          ctx.fillStyle = grad;
+          ctx.fill();
+        } else if (this.planetType === 'earth') {
+          ctx.beginPath();
+          ctx.arc(0, 0, r, 0, Math.PI * 2);
+          ctx.fillStyle = '#3b82f6';
+          ctx.fill();
+          ctx.beginPath();
+          ctx.arc(-r * 0.3, -r * 0.2, r * 0.4, 0, Math.PI * 2);
+          ctx.arc(r * 0.3, r * 0.3, r * 0.35, 0, Math.PI * 2);
+          ctx.fillStyle = '#22c55e';
+          ctx.fill();
+        } else if (this.planetType === 'mars') {
+          ctx.beginPath();
+          ctx.arc(0, 0, r, 0, Math.PI * 2);
+          const grad = ctx.createRadialGradient(-r * 0.3, -r * 0.3, r * 0.1, 0, 0, r);
+          grad.addColorStop(0, '#f87171');
+          grad.addColorStop(1, '#991b1b');
+          ctx.fillStyle = grad;
+          ctx.fill();
+        } else {
+          ctx.beginPath();
+          ctx.arc(0, 0, r, 0, Math.PI * 2);
+          const grad = ctx.createRadialGradient(-r * 0.3, -r * 0.3, r * 0.1, 0, 0, r);
+          grad.addColorStop(0, '#38bdf8');
+          grad.addColorStop(1, '#1e3a8a');
+          ctx.fillStyle = grad;
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+    }
+
+    class OceanParticle {
+      x: number = 0; y: number = 0; size: number = 0; vy: number = 0; vx: number = 0; phase: number = 0; opacity: number = 1;
+      type: 'bubble' | 'jellyfish' | 'starfish' = 'bubble';
+
+      constructor() { this.reset(true); }
+
+      reset(isInitial = false) {
+        this.x = Math.random() * width;
+        this.y = isInitial ? Math.random() * height : height + 20 + Math.random() * (height * 0.3);
+        this.size = 6 + Math.random() * 16;
+        this.vy = -(0.6 + Math.random() * 1.2);
+        this.vx = (Math.random() - 0.5) * 0.4;
+        this.phase = Math.random() * Math.PI * 2;
+        this.opacity = 0.4 + Math.random() * 0.5;
+        const r = Math.random();
+        this.type = r < 0.65 ? 'bubble' : r < 0.85 ? 'jellyfish' : 'starfish';
+      }
+
+      update() {
+        this.y += this.vy;
+        this.phase += 0.03;
+        this.x += this.vx + Math.sin(this.phase) * 0.6;
+        if (this.y < -30) this.reset(false);
+      }
+
+      draw() {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.globalAlpha = this.opacity;
+        const s = this.size;
+
+        if (this.type === 'bubble') {
+          ctx.beginPath();
+          ctx.arc(0, 0, s, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(186, 230, 253, 0.2)';
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(224, 242, 254, 0.7)';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.arc(-s * 0.35, -s * 0.35, s * 0.25, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+          ctx.fill();
+        } else if (this.type === 'jellyfish') {
+          ctx.beginPath();
+          ctx.arc(0, 0, s, Math.PI, Math.PI * 2);
+          ctx.fillStyle = 'rgba(244, 114, 182, 0.4)';
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(244, 114, 182, 0.8)';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+          ctx.beginPath();
+          for (let i = -s * 0.6; i <= s * 0.6; i += s * 0.4) {
+            ctx.moveTo(i, 0);
+            ctx.lineTo(i + Math.sin(this.phase + i) * 3, s * 1.2);
+          }
+          ctx.strokeStyle = 'rgba(251, 113, 133, 0.6)';
+          ctx.lineWidth = 0.8;
+          ctx.stroke();
+        } else {
+          ctx.beginPath();
+          for (let i = 0; i < 5; i++) {
+            const a1 = (i * 2 * Math.PI) / 5 - Math.PI / 2;
+            const a2 = ((i + 0.5) * 2 * Math.PI) / 5 - Math.PI / 2;
+            const x1 = Math.cos(a1) * s;
+            const y1 = Math.sin(a1) * s;
+            const x2 = Math.cos(a2) * (s * 0.4);
+            const y2 = Math.sin(a2) * (s * 0.4);
+            if (i === 0) ctx.moveTo(x1, y1);
+            else ctx.lineTo(x1, y1);
+            ctx.lineTo(x2, y2);
+          }
+          ctx.closePath();
+          ctx.fillStyle = 'rgba(251, 146, 60, 0.6)';
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+    }
+
+    class ButterflyParticle {
+      x: number = 0; y: number = 0; scale: number = 0; vx: number = 0; vy: number = 0; wingAngle: number = 0; wingSpeed: number = 0; color1: string = ''; color2: string = ''; opacity: number = 1;
+
+      constructor() { this.reset(true); }
+
+      reset(isInitial = false) {
+        this.x = Math.random() * width;
+        this.y = isInitial ? Math.random() * height : height + 20 + Math.random() * (height * 0.3);
+        this.scale = 10 + Math.random() * 10;
+        this.vy = -(0.8 + Math.random() * 1.0);
+        this.vx = (Math.random() - 0.5) * 1.2;
+        this.wingAngle = Math.random() * Math.PI * 2;
+        this.wingSpeed = 0.12 + Math.random() * 0.08;
+        this.opacity = 0.8 + Math.random() * 0.2;
+        const colors = [
+          ['#f472b6', '#38bdf8'],
+          ['#fb7185', '#fef08a'],
+          ['#a855f7', '#ec4899'],
+          ['#38bdf8', '#34d399'],
+          ['#f97316', '#fef08a']
+        ];
+        const c = colors[Math.floor(Math.random() * colors.length)];
+        this.color1 = c[0];
+        this.color2 = c[1];
+      }
+
+      update() {
+        this.y += this.vy;
+        this.x += this.vx + Math.sin(this.wingAngle * 0.5) * 0.8;
+        this.wingAngle += this.wingSpeed;
+        if (this.y < -30) this.reset(false);
+      }
+
+      draw() {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.globalAlpha = this.opacity;
+
+        const wScale = Math.abs(Math.sin(this.wingAngle));
+        const s = this.scale;
+
+        ctx.save();
+        ctx.scale(wScale, 1);
+        ctx.beginPath();
+        ctx.ellipse(-s * 0.7, -s * 0.4, s * 0.8, s * 0.6, -Math.PI / 6, 0, Math.PI * 2);
+        ctx.fillStyle = this.color1;
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(-s * 0.5, s * 0.4, s * 0.5, s * 0.4, Math.PI / 6, 0, Math.PI * 2);
+        ctx.fillStyle = this.color2;
+        ctx.fill();
+        ctx.restore();
+
+        ctx.save();
+        ctx.scale(-wScale, 1);
+        ctx.beginPath();
+        ctx.ellipse(-s * 0.7, -s * 0.4, s * 0.8, s * 0.6, -Math.PI / 6, 0, Math.PI * 2);
+        ctx.fillStyle = this.color1;
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(-s * 0.5, s * 0.4, s * 0.5, s * 0.4, Math.PI / 6, 0, Math.PI * 2);
+        ctx.fillStyle = this.color2;
+        ctx.fill();
+        ctx.restore();
+
+        ctx.beginPath();
+        ctx.ellipse(0, 0, s * 0.12, s * 0.5, 0, 0, Math.PI * 2);
+        ctx.fillStyle = '#1e1b4b';
+        ctx.fill();
+
+        ctx.restore();
+      }
+    }
+
+    class CloudParticle {
+      x: number = 0; y: number = 0; scale: number = 0; vx: number = 0; opacity: number = 1;
+
+      constructor() { this.reset(true); }
+
+      reset(isInitial = false) {
+        this.x = isInitial ? Math.random() * width : -180 - Math.random() * 100;
+        this.y = Math.random() * (height * 0.7);
+        this.scale = 0.7 + Math.random() * 0.8;
+        this.vx = 0.4 + Math.random() * 0.6;
+        this.opacity = 0.35 + Math.random() * 0.35;
+      }
+
+      update() {
+        this.x += this.vx;
+        if (this.x > width + 200) this.reset(false);
+      }
+
+      draw() {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.scale(this.scale, this.scale);
+        ctx.globalAlpha = this.opacity;
+
+        ctx.beginPath();
+        ctx.arc(0, 0, 30, 0, Math.PI * 2);
+        ctx.arc(25, -15, 25, 0, Math.PI * 2);
+        ctx.arc(55, 0, 25, 0, Math.PI * 2);
+        ctx.arc(25, 10, 20, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+        ctx.fill();
+
+        ctx.restore();
+      }
+    }
+
+    class FeatherParticle {
+      x: number = 0; y: number = 0; length: number = 0; vy: number = 0; vx: number = 0; rot: number = 0; vRot: number = 0; opacity: number = 1; swayPhase: number = 0; color: string = '';
+
+      constructor() { this.reset(true); }
+
+      reset(isInitial = false) {
+        this.x = Math.random() * width;
+        this.y = isInitial ? Math.random() * height : -40 - Math.random() * (height * 0.4);
+        this.length = 30 + Math.random() * 20;
+        this.vy = 0.8 + Math.random() * 0.8;
+        this.vx = (Math.random() - 0.5) * 0.3;
+        this.rot = Math.random() * Math.PI * 2;
+        this.vRot = (Math.random() - 0.5) * 0.02;
+        this.swayPhase = Math.random() * Math.PI * 2;
+        this.opacity = 0.7 + Math.random() * 0.3;
+        const c = ['#ffffff', '#f1f5f9', '#fce7f3', '#e0f2fe'];
+        this.color = c[Math.floor(Math.random() * c.length)];
+      }
+
+      update() {
+        this.y += this.vy;
+        this.swayPhase += 0.02;
+        this.x += this.vx + Math.sin(this.swayPhase) * 0.8;
+        this.rot += this.vRot;
+        if (this.y > height + 50) this.reset(false);
+      }
+
+      draw() {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.rotate(this.rot);
+        ctx.globalAlpha = this.opacity;
+        const len = this.length;
+
+        ctx.beginPath();
+        ctx.moveTo(0, -len / 2);
+        ctx.quadraticCurveTo(len * 0.1, 0, 0, len / 2);
+        ctx.strokeStyle = this.color;
+        ctx.lineWidth = 1.2;
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.ellipse(0, -len * 0.1, len * 0.18, len * 0.38, 0.1, 0, Math.PI * 2);
+        ctx.fillStyle = this.color;
+        ctx.fill();
+
+        ctx.restore();
+      }
+    }
+
+    class LightningParticle {
+      timer: number = 0; nextStrike: number = 100; opacity: number = 0; bolts: { x: number; y: number }[][] = [];
+
+      constructor() { this.reset(); }
+
+      reset() {
+        this.timer = 0;
+        this.nextStrike = 120 + Math.floor(Math.random() * 200);
+        this.opacity = 0;
+        this.bolts = [];
+      }
+
+      generateBolts() {
+        this.bolts = [];
+        const startX = Math.random() * width;
+        let currX = startX;
+        let currY = 0;
+        const mainBolt: { x: number; y: number }[] = [{ x: currX, y: currY }];
+
+        while (currY < height * 0.75) {
+          currY += 20 + Math.random() * 30;
+          currX += (Math.random() - 0.5) * 60;
+          mainBolt.push({ x: currX, y: currY });
+        }
+        this.bolts.push(mainBolt);
+      }
+
+      update() {
+        this.timer++;
+        if (this.timer === this.nextStrike) {
+          this.generateBolts();
+          this.opacity = 1;
+        } else if (this.timer > this.nextStrike) {
+          this.opacity *= 0.82;
+          if (this.opacity < 0.02) {
+            this.reset();
+          }
+        }
+      }
+
+      draw() {
+        if (this.opacity <= 0.02) return;
+        ctx.save();
+        ctx.globalAlpha = this.opacity;
+
+        ctx.fillStyle = 'rgba(224, 231, 255, 0.15)';
+        ctx.fillRect(0, 0, width, height);
+
+        this.bolts.forEach((bolt) => {
+          ctx.beginPath();
+          bolt.forEach((p, i) => {
+            if (i === 0) ctx.moveTo(p.x, p.y);
+            else ctx.lineTo(p.x, p.y);
+          });
+          ctx.strokeStyle = '#c7d2fe';
+          ctx.lineWidth = 3;
+          ctx.shadowColor = '#818cf8';
+          ctx.shadowBlur = 15;
+          ctx.stroke();
+
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+        });
+
+        ctx.restore();
+      }
+    }
+
+    class StormParticle {
+      x: number = 0; y: number = 0; vy: number = 0; len: number = 0; opacity: number = 1;
+
+      constructor() { this.reset(true); }
+
+      reset(isInitial = false) {
+        this.x = Math.random() * (width + 300) - 150;
+        this.y = isInitial ? Math.random() * height : -30 - Math.random() * (height * 0.3);
+        this.vy = 14 + Math.random() * 10;
+        this.len = 25 + Math.random() * 25;
+        this.opacity = 0.3 + Math.random() * 0.4;
+      }
+
+      update() {
+        this.y += this.vy;
+        this.x -= 3;
+        if (this.y > height + 40) this.reset(false);
+      }
+
+      draw() {
+        ctx.save();
+        ctx.globalAlpha = this.opacity;
+        ctx.beginPath();
+        ctx.moveTo(this.x, this.y);
+        ctx.lineTo(this.x - 6, this.y + this.len);
+        ctx.strokeStyle = '#93c5fd';
+        ctx.lineWidth = 1.2;
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    class FogParticle {
+      x: number = 0; y: number = 0; radius: number = 0; vx: number = 0; opacity: number = 1;
+
+      constructor() { this.reset(true); }
+
+      reset(isInitial = false) {
+        this.x = isInitial ? Math.random() * width : -200 - Math.random() * 100;
+        this.y = Math.random() * height;
+        this.radius = 120 + Math.random() * 100;
+        this.vx = 0.3 + Math.random() * 0.4;
+        this.opacity = 0.12 + Math.random() * 0.15;
+      }
+
+      update() {
+        this.x += this.vx;
+        if (this.x > width + 250) this.reset(false);
+      }
+
+      draw() {
+        ctx.save();
+        ctx.globalAlpha = this.opacity;
+        const grad = ctx.createRadialGradient(this.x, this.y, 10, this.x, this.y, this.radius);
+        grad.addColorStop(0, 'rgba(226, 232, 240, 0.8)');
+        grad.addColorStop(0.5, 'rgba(203, 213, 225, 0.4)');
+        grad.addColorStop(1, 'rgba(203, 213, 225, 0)');
+
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.fillStyle = grad;
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    class PaperPageParticle {
+      x: number = 0; y: number = 0; w: number = 0; h: number = 0; vy: number = 0; vx: number = 0; rotX: number = 0; rotY: number = 0; rotZ: number = 0; vRotX: number = 0; vRotY: number = 0; vRotZ: number = 0; opacity: number = 1;
+
+      constructor() { this.reset(true); }
+
+      reset(isInitial = false) {
+        this.x = Math.random() * width;
+        this.y = isInitial ? Math.random() * height : -40 - Math.random() * (height * 0.4);
+        this.w = 22 + Math.random() * 10;
+        this.h = this.w * 1.35;
+        this.vy = 1.0 + Math.random() * 1.2;
+        this.vx = (Math.random() - 0.5) * 0.5;
+        this.rotX = Math.random() * Math.PI * 2;
+        this.rotY = Math.random() * Math.PI * 2;
+        this.rotZ = Math.random() * Math.PI * 2;
+        this.vRotX = (Math.random() - 0.5) * 0.03;
+        this.vRotY = (Math.random() - 0.5) * 0.035;
+        this.vRotZ = (Math.random() - 0.5) * 0.02;
+        this.opacity = 0.8 + Math.random() * 0.2;
+      }
+
+      update() {
+        this.y += this.vy;
+        this.x += this.vx;
+        this.rotX += this.vRotX;
+        this.rotY += this.vRotY;
+        this.rotZ += this.vRotZ;
+        if (this.y > height + 50) this.reset(false);
+      }
+
+      draw() {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        const scaleX = Math.cos(this.rotY);
+        const scaleY = Math.cos(this.rotX);
+        ctx.rotate(this.rotZ);
+        ctx.scale(scaleX, scaleY);
+        ctx.globalAlpha = this.opacity;
+
+        ctx.beginPath();
+        ctx.rect(-this.w / 2, -this.h / 2, this.w, this.h);
+        ctx.fillStyle = '#fef3c7';
+        ctx.fill();
+        ctx.strokeStyle = '#d97706';
+        ctx.lineWidth = 0.6;
+        ctx.stroke();
+
+        ctx.strokeStyle = 'rgba(180, 83, 9, 0.4)';
+        ctx.lineWidth = 0.8;
+        for (let i = -this.h * 0.3; i <= this.h * 0.3; i += 4) {
+          ctx.beginPath();
+          ctx.moveTo(-this.w * 0.35, i);
+          ctx.lineTo(this.w * 0.35, i);
+          ctx.stroke();
+        }
+
+        ctx.restore();
+      }
+    }
+
     class FireSparkParticle {
       x: number = 0;
       y: number = 0;
@@ -573,56 +1353,66 @@ export const ReadingEffects: React.FC<ReadingEffectsProps> = ({ effect = 'none',
       coreColor: string = '';
       glowColor: string = '';
       edgeColor: string = '';
+      emberColor: string = '';
       flickerOffset: number = 0;
 
       constructor() {
         this.reset(true);
       }
 
-      reset(isInitial = false) {
+      reset(isInitial = false, spawnPos: 'bottom' | 'top' | 'random' = 'bottom') {
         this.x = Math.random() * width;
-        this.y = isInitial ? Math.random() * height : height + 10 + Math.random() * 80;
+        if (isInitial || spawnPos === 'random') {
+          this.y = Math.random() * height;
+        } else if (spawnPos === 'top') {
+          this.y = -10 - Math.random() * 40;
+        } else {
+          this.y = height + 10 + Math.random() * 60;
+        }
 
         const randType = Math.random();
-        if (randType < 0.60) {
+        if (randType < 0.65) {
           this.sparkType = 'crescent';
-          this.size = 8 + Math.random() * 16; // Length of ember blade (8px - 24px)
-          this.aspectRatio = 0.16 + Math.random() * 0.14; // Thickness ratio
-          this.curvature = (Math.random() < 0.5 ? 1 : -1) * (0.35 + Math.random() * 0.55);
-        } else if (randType < 0.82) {
+          this.size = 5 + Math.random() * 8; // Chiều dài mảnh tàn thanh thoát
+          this.aspectRatio = 0.08 + Math.random() * 0.05; // Mảnh mai tự nhiên
+          this.curvature = (Math.random() < 0.5 ? 1 : -1) * (0.28 + Math.random() * 0.4);
+        } else if (randType < 0.85) {
           this.sparkType = 'streak';
-          this.size = 6 + Math.random() * 14;
-          this.aspectRatio = 0.12 + Math.random() * 0.1;
-          this.curvature = 0.15 + Math.random() * 0.25;
+          this.size = 3.5 + Math.random() * 6;
+          this.aspectRatio = 0.06 + Math.random() * 0.04;
+          this.curvature = 0.12 + Math.random() * 0.2;
         } else {
           this.sparkType = 'dot';
-          this.size = 1.2 + Math.random() * 2.8;
+          this.size = 0.35 + Math.random() * 0.45; // Hạt than li ti siêu nhỏ (chỉ 0.35 - 0.8px)
           this.aspectRatio = 1;
           this.curvature = 0;
         }
 
-        this.vx = (Math.random() - 0.5) * 0.6;
-        this.vy = -(0.7 + Math.random() * 1.5); // Floating upwards
-        this.baseAlpha = 0.45 + Math.random() * 0.5;
+        // Tốc độ bay cực kỳ chậm rãi, thư thái bốc lên nhịp nhàng
+        this.vx = (Math.random() - 0.5) * 0.35;
+        this.vy = -(0.18 + Math.random() * 0.42); // Bay chậm lững lờ
+        this.baseAlpha = 0.5 + Math.random() * 0.5;
         this.alpha = this.baseAlpha;
         this.wobble = Math.random() * Math.PI * 2;
-        this.wobbleSpeed = 0.015 + Math.random() * 0.035;
-        this.wobbleAmp = 0.35 + Math.random() * 0.65;
+        this.wobbleSpeed = 0.008 + Math.random() * 0.016;
+        this.wobbleAmp = 0.2 + Math.random() * 0.35;
         this.angle = (Math.random() - 0.5) * Math.PI * 0.8;
-        this.rotationSpeed = (Math.random() - 0.5) * 0.025;
+        this.rotationSpeed = (Math.random() - 0.5) * 0.012; // Xoay chầm chậm
         this.flickerOffset = Math.random() * Math.PI * 2;
 
-        // Vivid fiery palettes matching the reference image (yellow glowing core, golden mid, crimson orange edges)
+        // Bảng màu tàn lửa than hồng thực tế (Lõi trắng vàng nhiệt độ cao -> Cam rực -> Đỏ than -> Tro ấm)
         const palettes = [
-          { core: '#fff8cc', glow: '#ffaa00', edge: '#ff3300' }, // Classic burning amber
-          { core: '#ffffff', glow: '#ffc107', edge: '#ff5722' }, // White-hot ember
-          { core: '#ffe57f', glow: '#ff9100', edge: '#dd2c00' }, // Crimson fire spark
-          { core: '#fffde7', glow: '#ffd54f', edge: '#ff6d00' }, // Golden fire spark
+          { core: '#fffbe6', glow: '#ffb703', edge: '#fb8500', ember: '#d00000' }, // Than hồng rực lửa
+          { core: '#fff3b0', glow: '#ffaa00', edge: '#e85d04', ember: '#9d0208' }, // Tro than ấm
+          { core: '#ffffff', glow: '#ffd166', edge: '#f77f00', ember: '#dc2f02' }, // Lửa sáng phát quang
+          { core: '#fffae0', glow: '#ff9e00', edge: '#d62828', ember: '#6a040f' }, // Than củi đỏ rực
+          { core: '#fff8cc', glow: '#f77f00', edge: '#d62828', ember: '#780000' }, // Tàn lửa cháy âm ỉ
         ];
         const p = palettes[Math.floor(Math.random() * palettes.length)];
         this.coreColor = p.core;
         this.glowColor = p.glow;
         this.edgeColor = p.edge;
+        this.emberColor = p.ember;
       }
 
       update() {
@@ -631,13 +1421,13 @@ export const ReadingEffects: React.FC<ReadingEffectsProps> = ({ effect = 'none',
         this.x += this.vx + Math.sin(this.wobble) * this.wobbleAmp;
         this.angle += this.rotationSpeed;
 
-        const flicker = Math.sin(this.wobble * 3 + this.flickerOffset) * 0.18;
-        const topFade = Math.min(1, Math.max(0, (this.y - 15) / (height * 0.18)));
+        const flicker = Math.sin(this.wobble * 2.5 + this.flickerOffset) * 0.15;
+        const topFade = Math.min(1, Math.max(0, (this.y + 25) / 50));
         const bottomFade = Math.min(1, Math.max(0, (height + 25 - this.y) / 45));
 
         this.alpha = Math.max(0, Math.min(1, (this.baseAlpha + flicker) * topFade * bottomFade));
 
-        if (this.y < -30 || this.alpha <= 0.01) {
+        if (this.y < -35) {
           this.reset(false);
         }
       }
@@ -653,47 +1443,53 @@ export const ReadingEffects: React.FC<ReadingEffectsProps> = ({ effect = 'none',
 
         if (this.sparkType === 'crescent' || this.sparkType === 'streak') {
           const len = this.size;
-          const thick = len * this.aspectRatio;
-          const curve = len * 0.35 * this.curvature;
+          const thick = Math.max(0.7, len * this.aspectRatio);
+          const curve = len * 0.32 * this.curvature;
 
-          // Drawing slender crescent curved ember tapering at both ends (exact match to image)
+          // Vẽ mảnh tàn lửa cong thanh thoát
           ctx.beginPath();
           ctx.moveTo(0, -len / 2);
-          ctx.quadraticCurveTo(curve + thick * 2, 0, 0, len / 2);
-          ctx.quadraticCurveTo(curve, 0, 0, -len / 2);
+          ctx.quadraticCurveTo(curve + thick * 1.6, 0, 0, len / 2);
+          ctx.quadraticCurveTo(curve - thick * 0.25, 0, 0, -len / 2);
           ctx.closePath();
 
-          const grad = ctx.createLinearGradient(-thick, 0, thick + Math.abs(curve), 0);
-          grad.addColorStop(0, this.edgeColor);
-          grad.addColorStop(0.35, this.glowColor);
-          grad.addColorStop(0.7, this.coreColor);
+          const grad = ctx.createLinearGradient(-thick, -len / 2, thick + Math.abs(curve), len / 2);
+          grad.addColorStop(0, this.emberColor);
+          grad.addColorStop(0.25, this.edgeColor);
+          grad.addColorStop(0.55, this.glowColor);
+          grad.addColorStop(0.8, this.coreColor);
           grad.addColorStop(1, this.edgeColor);
 
           ctx.fillStyle = grad;
+          ctx.shadowColor = this.glowColor;
+          ctx.shadowBlur = isDarkTheme ? 4 : 2;
           ctx.fill();
 
-          if (len > 9) {
-            ctx.shadowColor = this.glowColor;
-            ctx.shadowBlur = isDarkTheme ? 8 : 4;
-            ctx.fillStyle = this.coreColor;
-            ctx.fill();
+          if (len > 8) {
+            ctx.strokeStyle = this.coreColor;
+            ctx.lineWidth = 0.35;
+            ctx.stroke();
           }
         } else {
-          // Tiny glowing ember dot
+          // Hạt than hồng li ti tinh tế
           const r = this.size;
-          const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, r * 2.5);
+          const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, r * 1.6);
           grad.addColorStop(0, this.coreColor);
-          grad.addColorStop(0.4, this.glowColor);
-          grad.addColorStop(1, 'rgba(255, 60, 0, 0)');
+          grad.addColorStop(0.5, this.glowColor);
+          grad.addColorStop(0.85, this.edgeColor);
+          grad.addColorStop(1, 'rgba(157, 2, 8, 0)');
+
+          ctx.shadowColor = this.glowColor;
+          ctx.shadowBlur = isDarkTheme ? 3 : 1.5;
 
           ctx.beginPath();
           ctx.fillStyle = grad;
-          ctx.arc(0, 0, r * 2.5, 0, Math.PI * 2);
+          ctx.arc(0, 0, r * 1.6, 0, Math.PI * 2);
           ctx.fill();
 
           ctx.beginPath();
           ctx.fillStyle = '#ffffff';
-          ctx.arc(0, 0, r * 0.6, 0, Math.PI * 2);
+          ctx.arc(0, 0, r * 0.4, 0, Math.PI * 2);
           ctx.fill();
         }
 
@@ -701,7 +1497,33 @@ export const ReadingEffects: React.FC<ReadingEffectsProps> = ({ effect = 'none',
       }
     }
 
-    // Golden Radial Starburst Firework Classes (Matching golden radial fireworks image)
+    // Helper palette generator cho hiệu ứng Fireworks với màu sắc tùy chỉnh
+    const getFireworkPalette = (hex?: string) => {
+      const rgb = hexToRgb(hex || '#ffd700');
+      const r = rgb.r, g = rgb.g, b = rgb.b;
+      const cWhite = `rgba(255, 255, 255`;
+      const cLight = `rgba(${Math.min(255, Math.round(r * 0.4 + 255 * 0.6))}, ${Math.min(255, Math.round(g * 0.4 + 255 * 0.6))}, ${Math.min(255, Math.round(b * 0.4 + 255 * 0.6))}`;
+      const cVivid = `rgba(${r}, ${g}, ${b}`;
+      const cDark = `rgba(${Math.round(r * 0.75)}, ${Math.round(g * 0.75)}, ${Math.round(b * 0.75)}`;
+      return {
+        r, g, b,
+        cWhite,
+        cLight,
+        cVivid,
+        cDark,
+        glow: `rgba(${r}, ${g}, ${b}, 0.9)`,
+        trailColors: [
+          cWhite,
+          cLight,
+          cVivid,
+          cDark,
+        ],
+      };
+    };
+
+    const currentFwPalette = getFireworkPalette(effectColor);
+
+    // Radial Starburst Firework Classes hỗ trợ tùy chỉnh màu sắc effectColor
     class GoldenFireworkRay {
       x: number;
       y: number;
@@ -727,12 +1549,7 @@ export const ReadingEffects: React.FC<ReadingEffectsProps> = ({ effect = 'none',
         this.sparkleSize = 1.0 + Math.random() * 2.2;
         this.twinklePhase = Math.random() * Math.PI * 2;
 
-        const colors = [
-          'rgba(255, 255, 235', // White-hot gold center
-          'rgba(255, 225, 135', // Bright golden champagne
-          'rgba(255, 195, 80',  // Warm gold
-          'rgba(255, 165, 40',  // Amber gold
-        ];
+        const colors = currentFwPalette.trailColors;
         this.color = colors[Math.floor(Math.random() * colors.length)];
       }
 
@@ -756,7 +1573,7 @@ export const ReadingEffects: React.FC<ReadingEffectsProps> = ({ effect = 'none',
         ctx.save();
 
         // Glow
-        ctx.shadowColor = 'rgba(255, 205, 100, 0.9)';
+        ctx.shadowColor = currentFwPalette.glow;
         ctx.shadowBlur = 6;
 
         // Draw radial trail line
@@ -771,9 +1588,9 @@ export const ReadingEffects: React.FC<ReadingEffectsProps> = ({ effect = 'none',
         ctx.lineWidth = Math.max(0.6, 1.4 * this.alpha);
         ctx.stroke();
 
-        // Draw glowing golden tip/sparkle
+        // Draw glowing tip/sparkle
         const twinkleAlpha = Math.max(0, this.alpha * (0.6 + Math.sin(this.twinklePhase) * 0.4));
-        ctx.fillStyle = `rgba(255, 255, 240, ${twinkleAlpha})`;
+        ctx.fillStyle = `${currentFwPalette.cWhite}, ${twinkleAlpha})`;
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.sparkleSize * (0.5 + this.alpha * 0.5), 0, Math.PI * 2);
         ctx.fill();
@@ -816,8 +1633,8 @@ export const ReadingEffects: React.FC<ReadingEffectsProps> = ({ effect = 'none',
         if (this.alpha <= 0) return;
         ctx.save();
         const curAlpha = Math.max(0, this.alpha * (0.4 + Math.sin(this.twinkleVal) * 0.6));
-        ctx.fillStyle = `rgba(255, 235, 170, ${curAlpha})`;
-        ctx.shadowColor = 'rgba(255, 215, 110, 0.9)';
+        ctx.fillStyle = `${currentFwPalette.cLight}, ${curAlpha})`;
+        ctx.shadowColor = currentFwPalette.glow;
         ctx.shadowBlur = 5;
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
@@ -854,10 +1671,10 @@ export const ReadingEffects: React.FC<ReadingEffectsProps> = ({ effect = 'none',
           this.x, this.y, 0,
           this.x, this.y, Math.max(1, this.radius)
         );
-        grad.addColorStop(0, `rgba(255, 255, 255, ${this.alpha * 0.95})`);
-        grad.addColorStop(0.25, `rgba(255, 235, 170, ${this.alpha * 0.8})`);
-        grad.addColorStop(0.55, `rgba(255, 195, 90, ${this.alpha * 0.4})`);
-        grad.addColorStop(1, 'rgba(255, 160, 40, 0)');
+        grad.addColorStop(0, `${currentFwPalette.cWhite}, ${this.alpha * 0.95})`);
+        grad.addColorStop(0.25, `${currentFwPalette.cLight}, ${this.alpha * 0.8})`);
+        grad.addColorStop(0.55, `${currentFwPalette.cVivid}, ${this.alpha * 0.4})`);
+        grad.addColorStop(1, `${currentFwPalette.cDark}, 0)`);
 
         ctx.fillStyle = grad;
         ctx.beginPath();
@@ -865,7 +1682,7 @@ export const ReadingEffects: React.FC<ReadingEffectsProps> = ({ effect = 'none',
         ctx.fill();
 
         ctx.fillStyle = `rgba(255, 255, 255, ${this.alpha})`;
-        ctx.shadowColor = 'rgba(255, 230, 150, 1)';
+        ctx.shadowColor = currentFwPalette.glow;
         ctx.shadowBlur = 16;
         ctx.beginPath();
         ctx.arc(this.x, this.y, 3.5 + this.alpha * 4, 0, Math.PI * 2);
@@ -906,16 +1723,16 @@ export const ReadingEffects: React.FC<ReadingEffectsProps> = ({ effect = 'none',
       draw() {
         if (this.exploded) return;
         ctx.save();
-        ctx.shadowColor = 'rgba(255, 220, 130, 1)';
+        ctx.shadowColor = currentFwPalette.glow;
         ctx.shadowBlur = 8;
-        ctx.fillStyle = 'rgba(255, 255, 240, 1)';
+        ctx.fillStyle = `${currentFwPalette.cWhite}, 1)`;
         ctx.beginPath();
         ctx.arc(this.x, this.y, 2.2, 0, Math.PI * 2);
         ctx.fill();
 
         this.sparkTrail.forEach((t) => {
           if (t.alpha > 0) {
-            ctx.fillStyle = `rgba(255, 200, 100, ${t.alpha * 0.7})`;
+            ctx.fillStyle = `${currentFwPalette.cLight}, ${t.alpha * 0.7})`;
             ctx.beginPath();
             ctx.arc(t.x + (Math.random() - 0.5) * 2, t.y, 1.2, 0, Math.PI * 2);
             ctx.fill();
@@ -1413,6 +2230,28 @@ export const ReadingEffects: React.FC<ReadingEffectsProps> = ({ effect = 'none',
         particles.push(new FireflyParticle());
       } else if (effect === 'soap_bubble') {
         particles.push(new SoapBubbleParticle());
+      } else if (effect === 'money_100k') {
+        particles.push(new Money100kParticle());
+      } else if (effect === 'fruits') {
+        particles.push(new FruitParticle());
+      } else if (effect === 'planets') {
+        particles.push(new PlanetParticle());
+      } else if (effect === 'ocean') {
+        particles.push(new OceanParticle());
+      } else if (effect === 'butterflies') {
+        particles.push(new ButterflyParticle());
+      } else if (effect === 'clouds') {
+        particles.push(new CloudParticle());
+      } else if (effect === 'feathers') {
+        particles.push(new FeatherParticle());
+      } else if (effect === 'lightning') {
+        particles.push(new LightningParticle());
+      } else if (effect === 'storm') {
+        particles.push(new StormParticle());
+      } else if (effect === 'fog') {
+        particles.push(new FogParticle());
+      } else if (effect === 'paper_pages') {
+        particles.push(new PaperPageParticle());
       } else if (effect === 'fire_sparks') {
         particles.push(new FireSparkParticle());
       } else if (effect === 'sci_fi_hud') {
@@ -1440,7 +2279,7 @@ export const ReadingEffects: React.FC<ReadingEffectsProps> = ({ effect = 'none',
     const render = () => {
       ctx.clearRect(0, 0, width, height);
 
-      // Track scroll delta so particles & fireworks scroll naturally with document content
+      // Cho phép các hiệu ứng trôi theo trang khi người dùng cuộn (không bị cố định đơ cứng)
       const currentScrollY = window.scrollY;
       const scrollDelta = currentScrollY - prevScrollY;
       prevScrollY = currentScrollY;
@@ -1470,14 +2309,34 @@ export const ReadingEffects: React.FC<ReadingEffectsProps> = ({ effect = 'none',
           }
         } else if (particles && particles.length > 0) {
           particles.forEach((p) => {
-            if (p.y !== undefined) p.y -= scrollDelta;
+            if (p.y !== undefined) {
+              p.y -= scrollDelta;
 
-            // When scrolling sci-fi HUD off screen, re-position ahead of scroll direction
-            if (effect === 'sci_fi_hud') {
-              if (p.y < -160) {
-                p.reset(false, 'bottom', particles);
-              } else if (p.y > height + 160) {
-                p.reset(false, 'top', particles);
+              // Khi cuộn làm hạt rơi ra ngoài phạm vi màn hình, tái sinh ngẫu nhiên trải đều không gian để không bao giờ bị dồn cục
+              if (effect === 'fire_sparks' || effect === 'money_100k') {
+                if (p.y < -40) {
+                  // Văng lên trên -> tái sinh ở dưới đáy với độ cao ngẫu nhiên sâu phía dưới
+                  p.y = height + 10 + Math.random() * (height * 0.7);
+                  p.x = Math.random() * width;
+                } else if (p.y > height + 40) {
+                  // Văng xuống dưới -> tái sinh ở mép trên với độ cao ngẫu nhiên
+                  p.y = -10 - Math.random() * (height * 0.5);
+                  p.x = Math.random() * width;
+                }
+              } else if (effect === 'sci_fi_hud') {
+                if (p.y < -160) {
+                  p.reset(false, 'bottom', particles);
+                } else if (p.y > height + 160) {
+                  p.reset(false, 'top', particles);
+                }
+              } else {
+                if (p.y < -50) {
+                  p.y = height + 10 + Math.random() * 40;
+                  if (p.x !== undefined) p.x = Math.random() * width;
+                } else if (p.y > height + 50) {
+                  p.y = -20 - Math.random() * 40;
+                  if (p.x !== undefined) p.x = Math.random() * width;
+                }
               }
             }
           });
@@ -1629,7 +2488,7 @@ export const ReadingEffects: React.FC<ReadingEffectsProps> = ({ effect = 'none',
       cancelAnimationFrame(animationFrameId);
       window.removeEventListener('resize', handleResize);
     };
-  }, [effect, isDarkTheme]);
+  }, [effect, effectColor, isDarkTheme]);
 
   if (effect === 'none' || !effect) return null;
 

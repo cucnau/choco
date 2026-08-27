@@ -643,11 +643,15 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
       customBtnBgColor: storyData.customBtnBgColor,
       customBtnSecondaryBgColor: storyData.customBtnSecondaryBgColor,
       readingEffect: storyData.readingEffect,
+      readingEffectColor: storyData.readingEffectColor,
       borderStyle: storyData.borderStyle,
       borderWidth: storyData.borderWidth,
       borderRadius: storyData.borderRadius,
       borderCornerAccent: storyData.borderCornerAccent,
       borderGlow: storyData.borderGlow,
+      customBorderGradientColor2: storyData.customBorderGradientColor2,
+      customBorderGlowColor1: storyData.customBorderGlowColor1,
+      customBorderGlowColor2: storyData.customBorderGlowColor2,
 
       // Widget thông tin nhân vật
       showCharacterWidget: storyData.showCharacterWidget,
@@ -700,7 +704,11 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
       chapterBorderRadius: storyData.chapterBorderRadius,
       chapterBorderCornerAccent: storyData.chapterBorderCornerAccent,
       chapterBorderGlow: storyData.chapterBorderGlow,
+      chapterCustomBorderGradientColor2: storyData.chapterCustomBorderGradientColor2,
+      chapterCustomBorderGlowColor1: storyData.chapterCustomBorderGlowColor1,
+      chapterCustomBorderGlowColor2: storyData.chapterCustomBorderGlowColor2,
       chapterReadingEffect: storyData.chapterReadingEffect,
+      chapterReadingEffectColor: storyData.chapterReadingEffectColor,
     };
 
     onSaveStory(newStory);
@@ -2026,6 +2034,17 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
                       <option value="cherry_blossom">Cánh hoa đào rơi</option>
                       <option value="firefly">Đom đóm</option>
                       <option value="soap_bubble">Bong bóng xà phòng</option>
+                      <option value="money_100k">Tiền 100k rơi</option>
+                      <option value="fruits">Trái cây rơi</option>
+                      <option value="planets">Các hành tinh</option>
+                      <option value="ocean">Đại dương & Bọt biển</option>
+                      <option value="butterflies">Bướm bay</option>
+                      <option value="clouds">Mây trôi</option>
+                      <option value="feathers">Lông vũ rơi</option>
+                      <option value="lightning">Sấm sét</option>
+                      <option value="storm">Giông bão</option>
+                      <option value="fog">Sương mù</option>
+                      <option value="paper_pages">Trang giấy bay</option>
                     </select>
                   </div>
                 </div>

@@ -536,6 +536,137 @@ const LocalColorField: React.FC<LocalColorFieldProps> = ({
   );
 };
 
+const EFFECT_COLOR_PALETTES = [
+  {
+    category: 'Cyber & Neon',
+    colors: [
+      { name: 'Xanh ngọc Sci-Fi', val: '#00f0ff' },
+      { name: 'Xanh lục Neon', val: '#00ff88' },
+      { name: 'Tím Electric', val: '#a855f7' },
+      { name: 'Hồng Cyber', val: '#ff2a85' },
+      { name: 'Vàng Lôi điện', val: '#ffe600' },
+      { name: 'Xanh Băng giá', val: '#38bdf8' },
+    ],
+  },
+  {
+    category: 'Lửa & Pháo hoa rực rỡ',
+    colors: [
+      { name: 'Hoàng Kim Champagne', val: '#ffd700' },
+      { name: 'Hổ phách rực rỡ', val: '#ff9900' },
+      { name: 'Đỏ Ruby lửa', val: '#ff2a5f' },
+      { name: 'Cam Hoàng hôn', val: '#ff6b35' },
+      { name: 'Hồng sen Pháo hoa', val: '#f43f5e' },
+      { name: 'Đỏ San hô', val: '#ff4500' },
+    ],
+  },
+  {
+    category: 'Huyền bí & Sang trọng',
+    colors: [
+      { name: 'Tím Thạch anh', val: '#8b5cf6' },
+      { name: 'Lam Sapphire', val: '#3b82f6' },
+      { name: 'Ngọc Lục bảo', val: '#10b981' },
+      { name: 'Bạc Ánh trăng', val: '#cbd5e1' },
+      { name: 'Trắng Tinh khôi', val: '#ffffff' },
+      { name: 'Hổ phách Cổ điển', val: '#d97706' },
+    ],
+  },
+];
+
+interface EffectColorPalettePickerProps {
+  title: string;
+  color: string;
+  onChange: (hex: string) => void;
+  accentColor?: string;
+  currentCardBg: string;
+  currentBorder: string;
+  currentText: string;
+  currentTextMuted: string;
+}
+
+const EffectColorPalettePicker: React.FC<EffectColorPalettePickerProps> = ({
+  title,
+  color,
+  onChange,
+  accentColor = '#00f0ff',
+  currentCardBg,
+  currentBorder,
+  currentText,
+  currentTextMuted,
+}) => {
+  return (
+    <div className="mt-2.5 p-3 rounded-lg border space-y-2.5 bg-black/25 backdrop-blur-sm" style={{ borderColor: currentBorder }}>
+      {/* Header & Xem trước màu */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div
+            className="w-4 h-4 rounded-full border border-white/40 shadow-sm transition-transform"
+            style={{
+              backgroundColor: color,
+              boxShadow: `0 0 10px ${color}80`,
+            }}
+          />
+          <span className="text-[11px] font-bold" style={{ color: accentColor }}>
+            {title}
+          </span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <input
+            type="color"
+            value={color.startsWith('#') ? color : '#00f0ff'}
+            onChange={(e) => onChange(e.target.value)}
+            className="w-6 h-6 rounded cursor-pointer border border-white/30 p-0 bg-transparent"
+            title="Mở bộ chọn màu tùy ý"
+          />
+          <input
+            type="text"
+            value={color}
+            onChange={(e) => onChange(e.target.value)}
+            className="w-20 px-1.5 py-0.5 rounded border text-[10px] font-mono uppercase text-center focus:outline-none"
+            style={{ background: currentCardBg, borderColor: currentBorder, color: currentText }}
+          />
+        </div>
+      </div>
+
+      {/* Danh sách bảng màu phân nhóm */}
+      <div className="space-y-2 pt-1 border-t border-white/5">
+        {EFFECT_COLOR_PALETTES.map((group) => (
+          <div key={group.category} className="space-y-1">
+            <div className="text-[9px] uppercase tracking-wider font-mono font-semibold" style={{ color: currentTextMuted }}>
+              {group.category}
+            </div>
+            <div className="grid grid-cols-6 gap-1.5">
+              {group.colors.map((c) => {
+                const isSelected = color.toLowerCase() === c.val.toLowerCase();
+                return (
+                  <button
+                    key={c.val}
+                    type="button"
+                    onClick={() => onChange(c.val)}
+                    title={`${c.name} (${c.val})`}
+                    className={`h-6 rounded flex items-center justify-center border transition-all cursor-pointer relative ${
+                      isSelected
+                        ? 'ring-2 ring-white scale-105 z-10'
+                        : 'border-white/20 hover:scale-105 hover:border-white/60 opacity-85 hover:opacity-100'
+                    }`}
+                    style={{
+                      backgroundColor: c.val,
+                      boxShadow: isSelected ? `0 0 8px ${c.val}` : undefined,
+                    }}
+                  >
+                    {isSelected && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-black/80 ring-1 ring-white/60" />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
   initialStory,
   currentUser,
@@ -602,7 +733,7 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
   const [customBorderGlowColor2, setCustomBorderGlowColor2] = useState<string>(initialStory?.customBorderGlowColor2 || '#38bdf8');
 
   // Reading Effect
-  const [readingEffect, setReadingEffect] = useState<'none' | 'rain' | 'snow' | 'glitch' | 'star' | 'leaf' | 'cherry_blossom' | 'firefly' | 'soap_bubble' | 'ginkgo' | 'fireworks' | 'fire_sparks' | 'sci_fi_hud'>(
+  const [readingEffect, setReadingEffect] = useState<NonNullable<Story['readingEffect']>>(
     (initialStory?.readingEffect as any) || 'none'
   );
   const [readingEffectColor, setReadingEffectColor] = useState<string>(initialStory?.readingEffectColor || '#00f0ff');
@@ -649,7 +780,7 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
   const [chapterCustomBorderGradientColor2, setChapterCustomBorderGradientColor2] = useState<string>(initialStory?.chapterCustomBorderGradientColor2 || '#ff6b9d');
   const [chapterCustomBorderGlowColor1, setChapterCustomBorderGlowColor1] = useState<string>(initialStory?.chapterCustomBorderGlowColor1 || '#ff6b9d');
   const [chapterCustomBorderGlowColor2, setChapterCustomBorderGlowColor2] = useState<string>(initialStory?.chapterCustomBorderGlowColor2 || '#38bdf8');
-  const [chapterReadingEffect, setChapterReadingEffect] = useState<'none' | 'rain' | 'snow' | 'glitch' | 'star' | 'leaf' | 'cherry_blossom' | 'firefly' | 'soap_bubble' | 'ginkgo' | 'fireworks' | 'fire_sparks' | 'sci_fi_hud'>(
+  const [chapterReadingEffect, setChapterReadingEffect] = useState<NonNullable<Story['chapterReadingEffect']>>(
     (initialStory?.chapterReadingEffect as any) || 'none'
   );
   const [chapterReadingEffectColor, setChapterReadingEffectColor] = useState<string>(initialStory?.chapterReadingEffectColor || '#00f0ff');
@@ -2743,47 +2874,34 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                       <option value="cherry_blossom" style={{ background: currentCardBg, color: currentText }}>Cánh hoa đào rơi</option>
                       <option value="firefly" style={{ background: currentCardBg, color: currentText }}>Đom đóm</option>
                       <option value="soap_bubble" style={{ background: currentCardBg, color: currentText }}>Bong bóng xà phòng</option>
+                      <option value="money_100k" style={{ background: currentCardBg, color: currentText }}>Tiền 100k rơi</option>
+                      <option value="fruits" style={{ background: currentCardBg, color: currentText }}>Trái cây rơi</option>
+                      <option value="planets" style={{ background: currentCardBg, color: currentText }}>Các hành tinh</option>
+                      <option value="ocean" style={{ background: currentCardBg, color: currentText }}>Đại dương & Bọt biển</option>
+                      <option value="butterflies" style={{ background: currentCardBg, color: currentText }}>Bướm bay</option>
+                      <option value="clouds" style={{ background: currentCardBg, color: currentText }}>Mây trôi</option>
+                      <option value="feathers" style={{ background: currentCardBg, color: currentText }}>Lông vũ rơi</option>
+                      <option value="lightning" style={{ background: currentCardBg, color: currentText }}>Sấm sét</option>
+                      <option value="storm" style={{ background: currentCardBg, color: currentText }}>Giông bão</option>
+                      <option value="fog" style={{ background: currentCardBg, color: currentText }}>Sương mù</option>
+                      <option value="paper_pages" style={{ background: currentCardBg, color: currentText }}>Trang giấy bay</option>
                       <option value="fireworks" style={{ background: currentCardBg, color: currentText }}>Pháo hoa rực rỡ</option>
                       <option value="fire_sparks" style={{ background: currentCardBg, color: currentText }}>Tàn lửa bay</option>
                       <option value="glitch" style={{ background: currentCardBg, color: currentText }}>Nhiễu sóng</option>
                     </select>
 
-                    {/* Bộ chọn màu cho Sci-Fi HUD Trang truyện */}
-                    {readingEffect === 'sci_fi_hud' && (
-                      <div className="mt-2 p-2 rounded border space-y-1.5 bg-black/20" style={{ borderColor: currentBorder }}>
-                        <div className="flex items-center justify-between text-[10px]">
-                          <span className="font-bold text-amber-500">Màu sắc Sci-Fi HUD:</span>
-                          <span className="font-mono uppercase" style={{ color: currentTextMuted }}>{readingEffectColor}</span>
-                        </div>
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          {[
-                            { name: 'Xanh ngọc Sci-Fi', val: '#00f0ff' },
-                            { name: 'Xanh Lục Neon', val: '#00ff88' },
-                            { name: 'Tím Electric', val: '#a855f7' },
-                            { name: 'Vàng Hổ phách', val: '#ffaa00' },
-                            { name: 'Đỏ Crimson', val: '#ff2a5f' },
-                            { name: 'Trắng Tinh', val: '#ffffff' },
-                          ].map((c) => (
-                            <button
-                              key={c.val}
-                              type="button"
-                              onClick={() => setReadingEffectColor(c.val)}
-                              title={c.name}
-                              className={`w-5 h-5 rounded-full border transition-transform ${
-                                readingEffectColor.toLowerCase() === c.val.toLowerCase() ? 'ring-2 ring-amber-400 scale-110 shadow' : 'border-white/30 opacity-80'
-                              }`}
-                              style={{ backgroundColor: c.val }}
-                            />
-                          ))}
-                          <input
-                            type="color"
-                            value={readingEffectColor}
-                            onChange={(e) => setReadingEffectColor(e.target.value)}
-                            className="w-5 h-5 rounded cursor-pointer border border-white/30 p-0 bg-transparent ml-1"
-                            title="Chọn màu tùy chỉnh"
-                          />
-                        </div>
-                      </div>
+                    {/* Bảng màu cho Sci-Fi HUD hoặc Pháo hoa Trang truyện */}
+                    {(readingEffect === 'sci_fi_hud' || readingEffect === 'fireworks') && (
+                      <EffectColorPalettePicker
+                        title={readingEffect === 'sci_fi_hud' ? 'Bảng màu Sci-Fi HUD' : 'Bảng màu Pháo hoa'}
+                        color={readingEffectColor}
+                        onChange={(val) => setReadingEffectColor(val)}
+                        accentColor="#f59e0b"
+                        currentCardBg={currentCardBg}
+                        currentBorder={currentBorder}
+                        currentText={currentText}
+                        currentTextMuted={currentTextMuted}
+                      />
                     )}
                   </div>
 
@@ -2812,47 +2930,34 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                       <option value="cherry_blossom" style={{ background: currentCardBg, color: currentText }}>Cánh hoa đào rơi</option>
                       <option value="firefly" style={{ background: currentCardBg, color: currentText }}>Đom đóm</option>
                       <option value="soap_bubble" style={{ background: currentCardBg, color: currentText }}>Bong bóng xà phòng</option>
+                      <option value="money_100k" style={{ background: currentCardBg, color: currentText }}>Tiền 100k rơi</option>
+                      <option value="fruits" style={{ background: currentCardBg, color: currentText }}>Trái cây rơi</option>
+                      <option value="planets" style={{ background: currentCardBg, color: currentText }}>Các hành tinh</option>
+                      <option value="ocean" style={{ background: currentCardBg, color: currentText }}>Đại dương & Bọt biển</option>
+                      <option value="butterflies" style={{ background: currentCardBg, color: currentText }}>Bướm bay</option>
+                      <option value="clouds" style={{ background: currentCardBg, color: currentText }}>Mây trôi</option>
+                      <option value="feathers" style={{ background: currentCardBg, color: currentText }}>Lông vũ rơi</option>
+                      <option value="lightning" style={{ background: currentCardBg, color: currentText }}>Sấm sét</option>
+                      <option value="storm" style={{ background: currentCardBg, color: currentText }}>Giông bão</option>
+                      <option value="fog" style={{ background: currentCardBg, color: currentText }}>Sương mù</option>
+                      <option value="paper_pages" style={{ background: currentCardBg, color: currentText }}>Trang giấy bay</option>
                       <option value="fireworks" style={{ background: currentCardBg, color: currentText }}>Pháo hoa</option>
                       <option value="fire_sparks" style={{ background: currentCardBg, color: currentText }}>Tàn lửa bay</option>
                       <option value="glitch" style={{ background: currentCardBg, color: currentText }}>Nhiễu sóng</option>
                     </select>
 
-                    {/* Bộ chọn màu cho Sci-Fi HUD Trang đọc chương */}
-                    {chapterReadingEffect === 'sci_fi_hud' && (
-                      <div className="mt-2 p-2 rounded border space-y-1.5 bg-black/20" style={{ borderColor: currentBorder }}>
-                        <div className="flex items-center justify-between text-[10px]">
-                          <span className="font-bold text-emerald-500">Màu sắc Sci-fi Chương:</span>
-                          <span className="font-mono uppercase" style={{ color: currentTextMuted }}>{chapterReadingEffectColor}</span>
-                        </div>
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          {[
-                            { name: 'Xanh ngọc Sci-Fi', val: '#00f0ff' },
-                            { name: 'Xanh Lục Neon', val: '#00ff88' },
-                            { name: 'Tím Electric', val: '#a855f7' },
-                            { name: 'Vàng Hổ phách', val: '#ffaa00' },
-                            { name: 'Đỏ Crimson', val: '#ff2a5f' },
-                            { name: 'Trắng Tinh', val: '#ffffff' },
-                          ].map((c) => (
-                            <button
-                              key={c.val}
-                              type="button"
-                              onClick={() => setChapterReadingEffectColor(c.val)}
-                              title={c.name}
-                              className={`w-5 h-5 rounded-full border transition-transform ${
-                                chapterReadingEffectColor.toLowerCase() === c.val.toLowerCase() ? 'ring-2 ring-emerald-400 scale-110 shadow' : 'border-white/30 opacity-80'
-                              }`}
-                              style={{ backgroundColor: c.val }}
-                            />
-                          ))}
-                          <input
-                            type="color"
-                            value={chapterReadingEffectColor}
-                            onChange={(e) => setChapterReadingEffectColor(e.target.value)}
-                            className="w-5 h-5 rounded cursor-pointer border border-white/30 p-0 bg-transparent ml-1"
-                            title="Chọn màu tùy chỉnh"
-                          />
-                        </div>
-                      </div>
+                    {/* Bảng màu cho Sci-Fi HUD hoặc Pháo hoa Trang đọc chương */}
+                    {(chapterReadingEffect === 'sci_fi_hud' || chapterReadingEffect === 'fireworks') && (
+                      <EffectColorPalettePicker
+                        title={chapterReadingEffect === 'sci_fi_hud' ? 'Bảng màu Sci-fi Chương' : 'Bảng màu Pháo hoa Chương'}
+                        color={chapterReadingEffectColor}
+                        onChange={(val) => setChapterReadingEffectColor(val)}
+                        accentColor="#10b981"
+                        currentCardBg={currentCardBg}
+                        currentBorder={currentBorder}
+                        currentText={currentText}
+                        currentTextMuted={currentTextMuted}
+                      />
                     )}
                   </div>
                 </div>
@@ -2882,53 +2987,37 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                     <option value="cherry_blossom" style={{ background: currentCardBg, color: currentText }}>Cánh hoa đào rơi</option>
                     <option value="firefly" style={{ background: currentCardBg, color: currentText }}>Đom đóm</option>
                     <option value="soap_bubble" style={{ background: currentCardBg, color: currentText }}>Bong bóng xà phòng</option>
+                    <option value="money_100k" style={{ background: currentCardBg, color: currentText }}>Tiền 100k rơi</option>
+                    <option value="fruits" style={{ background: currentCardBg, color: currentText }}>Trái cây rơi</option>
+                    <option value="planets" style={{ background: currentCardBg, color: currentText }}>Các hành tinh</option>
+                    <option value="ocean" style={{ background: currentCardBg, color: currentText }}>Đại dương & Bọt biển</option>
+                    <option value="butterflies" style={{ background: currentCardBg, color: currentText }}>Bướm bay</option>
+                    <option value="clouds" style={{ background: currentCardBg, color: currentText }}>Mây trôi</option>
+                    <option value="feathers" style={{ background: currentCardBg, color: currentText }}>Lông vũ rơi</option>
+                    <option value="lightning" style={{ background: currentCardBg, color: currentText }}>Sấm sét</option>
+                    <option value="storm" style={{ background: currentCardBg, color: currentText }}>Giông bão</option>
+                    <option value="fog" style={{ background: currentCardBg, color: currentText }}>Sương mù</option>
+                    <option value="paper_pages" style={{ background: currentCardBg, color: currentText }}>Trang giấy bay</option>
                     <option value="fireworks" style={{ background: currentCardBg, color: currentText }}>Pháo hoa</option>
                     <option value="fire_sparks" style={{ background: currentCardBg, color: currentText }}>Tàn lửa bay</option>
                     <option value="glitch" style={{ background: currentCardBg, color: currentText }}>Nhiễu sóng</option>
                   </select>
 
-                  {/* Bộ chọn màu dùng chung khi chọn Sci-Fi HUD */}
-                  {readingEffect === 'sci_fi_hud' && (
-                    <div className="mt-2 p-2 rounded border space-y-1.5 bg-black/20" style={{ borderColor: currentBorder }}>
-                      <div className="flex items-center justify-between text-[10px]">
-                        <span className="font-bold" style={{ color: currentText }}>Màu sắc Sci-fi:</span>
-                        <span className="font-mono uppercase" style={{ color: currentTextMuted }}>{readingEffectColor}</span>
-                      </div>
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        {[
-                          { name: 'Xanh ngọc Sci-Fi', val: '#00f0ff' },
-                          { name: 'Xanh Lục Neon', val: '#00ff88' },
-                          { name: 'Tím Electric', val: '#a855f7' },
-                          { name: 'Vàng Hổ phách', val: '#ffaa00' },
-                          { name: 'Đỏ Crimson', val: '#ff2a5f' },
-                          { name: 'Trắng Tinh', val: '#ffffff' },
-                        ].map((c) => (
-                          <button
-                            key={c.val}
-                            type="button"
-                            onClick={() => {
-                              setReadingEffectColor(c.val);
-                              setChapterReadingEffectColor(c.val);
-                            }}
-                            title={c.name}
-                            className={`w-5 h-5 rounded-full border transition-transform ${
-                              readingEffectColor.toLowerCase() === c.val.toLowerCase() ? 'ring-2 ring-cyan-400 scale-110 shadow' : 'border-white/30 opacity-80'
-                            }`}
-                            style={{ backgroundColor: c.val }}
-                          />
-                        ))}
-                        <input
-                          type="color"
-                          value={readingEffectColor}
-                          onChange={(e) => {
-                            setReadingEffectColor(e.target.value);
-                            setChapterReadingEffectColor(e.target.value);
-                          }}
-                          className="w-5 h-5 rounded cursor-pointer border border-white/30 p-0 bg-transparent ml-1"
-                          title="Chọn màu tùy chỉnh"
-                        />
-                      </div>
-                    </div>
+                  {/* Bảng màu dùng chung khi chọn Sci-Fi HUD hoặc Pháo hoa */}
+                  {(readingEffect === 'sci_fi_hud' || readingEffect === 'fireworks') && (
+                    <EffectColorPalettePicker
+                      title={readingEffect === 'sci_fi_hud' ? 'Bảng màu Sci-fi Chung' : 'Bảng màu Pháo hoa Chung'}
+                      color={readingEffectColor}
+                      onChange={(val) => {
+                        setReadingEffectColor(val);
+                        setChapterReadingEffectColor(val);
+                      }}
+                      accentColor="#06b6d4"
+                      currentCardBg={currentCardBg}
+                      currentBorder={currentBorder}
+                      currentText={currentText}
+                      currentTextMuted={currentTextMuted}
+                    />
                   )}
                 </div>
               )}
