@@ -682,19 +682,18 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
   // Story fields
   const [title, setTitle] = useState(initialStory?.title || '');
   const [author, setAuthor] = useState(initialStory?.author || 'Tử Thời Hoan');
-  const [editorName, setEditorName] = useState(
-    initialStory?.editorName ||
-      userProfile?.displayName ||
-      currentUser?.displayName ||
-      currentUser?.email?.split('@')[0] ||
-      'Cục Nâu'
-  );
-  const [editorPhoto, setEditorPhoto] = useState(
-    initialStory?.editorPhoto ||
-      userProfile?.photoURL ||
-      currentUser?.photoURL ||
-      ''
-  );
+  const [editorName, setEditorName] = useState(() => {
+    if (initialStory && 'editorName' in initialStory) {
+      return initialStory.editorName || '';
+    }
+    return userProfile?.displayName || currentUser?.displayName || currentUser?.email?.split('@')[0] || 'Cục Nâu';
+  });
+  const [editorPhoto, setEditorPhoto] = useState(() => {
+    if (initialStory && 'editorPhoto' in initialStory) {
+      return initialStory.editorPhoto || '';
+    }
+    return userProfile?.photoURL || currentUser?.photoURL || '';
+  });
   const [coverUrl, setCoverUrl] = useState(initialStory?.coverUrl || '');
   const [synopsis, setSynopsis] = useState(initialStory?.synopsis || '');
   const [tags, setTags] = useState<string[]>(initialStory?.tags || []);
@@ -756,7 +755,35 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
   const [chapterPasswordInput, setChapterPasswordInput] = useState<string>('');
   const [chapterPasswordHintInput, setChapterPasswordHintInput] = useState<string>('');
 
-  const storyChapters = (chapters || []).filter((c) => c && c.storyId === workingStoryId);
+  const storyChapters = (chapters || [])
+    .filter((c) => c && c.storyId === workingStoryId)
+    .sort((a, b) => a.chapterNumber - b.chapterNumber);
+
+  const handleMoveChapter = async (chapId: string, direction: 'up' | 'down') => {
+    const idx = storyChapters.findIndex((c) => c.id === chapId);
+    if (idx < 0) return;
+    if (direction === 'up' && idx === 0) return;
+    if (direction === 'down' && idx === storyChapters.length - 1) return;
+
+    const targetIdx = direction === 'up' ? idx - 1 : idx + 1;
+    const newOrder = [...storyChapters];
+    const [moved] = newOrder.splice(idx, 1);
+    newOrder.splice(targetIdx, 0, moved);
+
+    const updatedBatch = newOrder.map((c, i) => ({
+      ...c,
+      chapterNumber: i + 1,
+      updatedAt: new Date().toISOString().split('T')[0],
+    }));
+
+    if (onSaveBatchChapters) {
+      await onSaveBatchChapters(updatedBatch);
+    } else if (onSaveChapter) {
+      for (const ch of updatedBatch) {
+        await onSaveChapter(ch);
+      }
+    }
+  };
 
   // Trạng thái Tách theme và hiệu ứng chương và truyện riêng biệt
   const [useSeparateChapterTheme, setUseSeparateChapterTheme] = useState<boolean>(initialStory?.useSeparateChapterTheme || false);
@@ -2874,35 +2901,16 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                       <option value="cherry_blossom" style={{ background: currentCardBg, color: currentText }}>Cánh hoa đào rơi</option>
                       <option value="firefly" style={{ background: currentCardBg, color: currentText }}>Đom đóm</option>
                       <option value="soap_bubble" style={{ background: currentCardBg, color: currentText }}>Bong bóng xà phòng</option>
-                      <option value="money_100k" style={{ background: currentCardBg, color: currentText }}>Tiền 100k rơi</option>
                       <option value="fruits" style={{ background: currentCardBg, color: currentText }}>Trái cây rơi</option>
-                      <option value="planets" style={{ background: currentCardBg, color: currentText }}>Các hành tinh</option>
-                      <option value="ocean" style={{ background: currentCardBg, color: currentText }}>Đại dương & Bọt biển</option>
+                      <option value="ocean" style={{ background: currentCardBg, color: currentText }}>Đại dương</option>
                       <option value="butterflies" style={{ background: currentCardBg, color: currentText }}>Bướm bay</option>
-                      <option value="clouds" style={{ background: currentCardBg, color: currentText }}>Mây trôi</option>
                       <option value="feathers" style={{ background: currentCardBg, color: currentText }}>Lông vũ rơi</option>
                       <option value="lightning" style={{ background: currentCardBg, color: currentText }}>Sấm sét</option>
-                      <option value="storm" style={{ background: currentCardBg, color: currentText }}>Giông bão</option>
                       <option value="fog" style={{ background: currentCardBg, color: currentText }}>Sương mù</option>
-                      <option value="paper_pages" style={{ background: currentCardBg, color: currentText }}>Trang giấy bay</option>
                       <option value="fireworks" style={{ background: currentCardBg, color: currentText }}>Pháo hoa rực rỡ</option>
                       <option value="fire_sparks" style={{ background: currentCardBg, color: currentText }}>Tàn lửa bay</option>
                       <option value="glitch" style={{ background: currentCardBg, color: currentText }}>Nhiễu sóng</option>
                     </select>
-
-                    {/* Bảng màu cho Sci-Fi HUD hoặc Pháo hoa Trang truyện */}
-                    {(readingEffect === 'sci_fi_hud' || readingEffect === 'fireworks') && (
-                      <EffectColorPalettePicker
-                        title={readingEffect === 'sci_fi_hud' ? 'Bảng màu Sci-Fi HUD' : 'Bảng màu Pháo hoa'}
-                        color={readingEffectColor}
-                        onChange={(val) => setReadingEffectColor(val)}
-                        accentColor="#f59e0b"
-                        currentCardBg={currentCardBg}
-                        currentBorder={currentBorder}
-                        currentText={currentText}
-                        currentTextMuted={currentTextMuted}
-                      />
-                    )}
                   </div>
 
                   {/* 2. Hiệu ứng Trang đọc chương */}
@@ -2930,35 +2938,16 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                       <option value="cherry_blossom" style={{ background: currentCardBg, color: currentText }}>Cánh hoa đào rơi</option>
                       <option value="firefly" style={{ background: currentCardBg, color: currentText }}>Đom đóm</option>
                       <option value="soap_bubble" style={{ background: currentCardBg, color: currentText }}>Bong bóng xà phòng</option>
-                      <option value="money_100k" style={{ background: currentCardBg, color: currentText }}>Tiền 100k rơi</option>
                       <option value="fruits" style={{ background: currentCardBg, color: currentText }}>Trái cây rơi</option>
-                      <option value="planets" style={{ background: currentCardBg, color: currentText }}>Các hành tinh</option>
-                      <option value="ocean" style={{ background: currentCardBg, color: currentText }}>Đại dương & Bọt biển</option>
+                      <option value="ocean" style={{ background: currentCardBg, color: currentText }}>Đại dương</option>
                       <option value="butterflies" style={{ background: currentCardBg, color: currentText }}>Bướm bay</option>
-                      <option value="clouds" style={{ background: currentCardBg, color: currentText }}>Mây trôi</option>
                       <option value="feathers" style={{ background: currentCardBg, color: currentText }}>Lông vũ rơi</option>
                       <option value="lightning" style={{ background: currentCardBg, color: currentText }}>Sấm sét</option>
-                      <option value="storm" style={{ background: currentCardBg, color: currentText }}>Giông bão</option>
                       <option value="fog" style={{ background: currentCardBg, color: currentText }}>Sương mù</option>
-                      <option value="paper_pages" style={{ background: currentCardBg, color: currentText }}>Trang giấy bay</option>
                       <option value="fireworks" style={{ background: currentCardBg, color: currentText }}>Pháo hoa</option>
                       <option value="fire_sparks" style={{ background: currentCardBg, color: currentText }}>Tàn lửa bay</option>
                       <option value="glitch" style={{ background: currentCardBg, color: currentText }}>Nhiễu sóng</option>
                     </select>
-
-                    {/* Bảng màu cho Sci-Fi HUD hoặc Pháo hoa Trang đọc chương */}
-                    {(chapterReadingEffect === 'sci_fi_hud' || chapterReadingEffect === 'fireworks') && (
-                      <EffectColorPalettePicker
-                        title={chapterReadingEffect === 'sci_fi_hud' ? 'Bảng màu Sci-fi Chương' : 'Bảng màu Pháo hoa Chương'}
-                        color={chapterReadingEffectColor}
-                        onChange={(val) => setChapterReadingEffectColor(val)}
-                        accentColor="#10b981"
-                        currentCardBg={currentCardBg}
-                        currentBorder={currentBorder}
-                        currentText={currentText}
-                        currentTextMuted={currentTextMuted}
-                      />
-                    )}
                   </div>
                 </div>
               ) : (
@@ -2987,38 +2976,16 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                     <option value="cherry_blossom" style={{ background: currentCardBg, color: currentText }}>Cánh hoa đào rơi</option>
                     <option value="firefly" style={{ background: currentCardBg, color: currentText }}>Đom đóm</option>
                     <option value="soap_bubble" style={{ background: currentCardBg, color: currentText }}>Bong bóng xà phòng</option>
-                    <option value="money_100k" style={{ background: currentCardBg, color: currentText }}>Tiền 100k rơi</option>
                     <option value="fruits" style={{ background: currentCardBg, color: currentText }}>Trái cây rơi</option>
-                    <option value="planets" style={{ background: currentCardBg, color: currentText }}>Các hành tinh</option>
-                    <option value="ocean" style={{ background: currentCardBg, color: currentText }}>Đại dương & Bọt biển</option>
+                    <option value="ocean" style={{ background: currentCardBg, color: currentText }}>Đại dương</option>
                     <option value="butterflies" style={{ background: currentCardBg, color: currentText }}>Bướm bay</option>
-                    <option value="clouds" style={{ background: currentCardBg, color: currentText }}>Mây trôi</option>
                     <option value="feathers" style={{ background: currentCardBg, color: currentText }}>Lông vũ rơi</option>
                     <option value="lightning" style={{ background: currentCardBg, color: currentText }}>Sấm sét</option>
-                    <option value="storm" style={{ background: currentCardBg, color: currentText }}>Giông bão</option>
                     <option value="fog" style={{ background: currentCardBg, color: currentText }}>Sương mù</option>
-                    <option value="paper_pages" style={{ background: currentCardBg, color: currentText }}>Trang giấy bay</option>
                     <option value="fireworks" style={{ background: currentCardBg, color: currentText }}>Pháo hoa</option>
                     <option value="fire_sparks" style={{ background: currentCardBg, color: currentText }}>Tàn lửa bay</option>
                     <option value="glitch" style={{ background: currentCardBg, color: currentText }}>Nhiễu sóng</option>
                   </select>
-
-                  {/* Bảng màu dùng chung khi chọn Sci-Fi HUD hoặc Pháo hoa */}
-                  {(readingEffect === 'sci_fi_hud' || readingEffect === 'fireworks') && (
-                    <EffectColorPalettePicker
-                      title={readingEffect === 'sci_fi_hud' ? 'Bảng màu Sci-fi Chung' : 'Bảng màu Pháo hoa Chung'}
-                      color={readingEffectColor}
-                      onChange={(val) => {
-                        setReadingEffectColor(val);
-                        setChapterReadingEffectColor(val);
-                      }}
-                      accentColor="#06b6d4"
-                      currentCardBg={currentCardBg}
-                      currentBorder={currentBorder}
-                      currentText={currentText}
-                      currentTextMuted={currentTextMuted}
-                    />
-                  )}
                 </div>
               )}
 
@@ -4610,6 +4577,7 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
             setIsBulkUploading={setIsBulkUploading}
             handleOpenEditChapterItem={handleOpenEditChapterItem}
             setChapterToDeleteItem={setChapterToDeleteItem}
+            handleMoveChapter={handleMoveChapter}
             getStoryBorderStyle={getStoryBorderStyle}
           />
       )}
@@ -4690,7 +4658,10 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                 type="button"
                 onClick={() => {
                   if (onDeleteChapter && chapterToDeleteItem) {
-                    onDeleteChapter(chapterToDeleteItem.id);
+                    onDeleteChapter(
+                      chapterToDeleteItem.id,
+                      chapterToDeleteItem.storyId || workingStoryId || initialStory?.id || ''
+                    );
                   }
                   if (editingChapterItem?.id === chapterToDeleteItem.id) {
                     setEditingChapterItem(null);

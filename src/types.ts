@@ -128,7 +128,7 @@ export interface Story {
   storyLayoutBottom?: StoryLayoutBlockId[]; // Dữ liệu cũ để tương thích ngược
   storyLayoutOrder?: StoryLayoutBlockId[]; // Dữ liệu cũ để tương thích ngược
 
-  readingEffect?: 'none' | 'rain' | 'snow' | 'glitch' | 'star' | 'leaf' | 'cherry_blossom' | 'firefly' | 'soap_bubble' | 'ginkgo' | 'fireworks' | 'fire_sparks' | 'sci_fi_hud' | 'money_100k' | 'fruits' | 'planets' | 'ocean' | 'butterflies' | 'clouds' | 'feathers' | 'lightning' | 'storm' | 'fog' | 'paper_pages'; // Hiệu ứng đọc truyện
+  readingEffect?: 'none' | 'rain' | 'snow' | 'glitch' | 'star' | 'leaf' | 'cherry_blossom' | 'firefly' | 'soap_bubble' | 'ginkgo' | 'fireworks' | 'fire_sparks' | 'sci_fi_hud' | 'fruits' | 'ocean' | 'butterflies' | 'feathers' | 'lightning' | 'fog'; // Hiệu ứng đọc truyện
   readingEffectColor?: string; // Tùy chỉnh màu sắc cho hiệu ứng (đặc biệt là Sci-Fi HUD)
   borderStyle?: 'solid' | 'double' | 'dashed' | 'dotted' | 'dash-dot' | 'sketch' | 'stitched' | 'gradient' | 'stamp' | 'film' | 'groove' | 'ridge' | 'offset' | 'none'; // Kiểu nét đường viền
   borderWidth?: 'thin' | 'medium' | 'thick' | 'heavy' | 'bold' | 'frame'; // Độ dày đường viền
@@ -140,6 +140,7 @@ export interface Story {
   customBorderGlowColor2?: string; // Màu thứ 2 cho Hào quang Gradient
   
   // Tách biệt theme chương và truyện riêng biệt
+  chapterCount?: number;
   useSeparateChapterTheme?: boolean;
   useSeparateChapterEffect?: boolean; // Tách biệt hiệu ứng hạt rơi giữa trang truyện và đọc chương
   chapterThemeTone?: string;
@@ -158,7 +159,7 @@ export interface Story {
   chapterCustomBorderGradientColor2?: string;
   chapterCustomBorderGlowColor1?: string;
   chapterCustomBorderGlowColor2?: string;
-  chapterReadingEffect?: 'none' | 'rain' | 'snow' | 'glitch' | 'star' | 'leaf' | 'cherry_blossom' | 'firefly' | 'soap_bubble' | 'ginkgo' | 'fireworks' | 'fire_sparks' | 'sci_fi_hud' | 'money_100k' | 'fruits' | 'planets' | 'ocean' | 'butterflies' | 'clouds' | 'feathers' | 'lightning' | 'storm' | 'fog' | 'paper_pages';
+  chapterReadingEffect?: 'none' | 'rain' | 'snow' | 'glitch' | 'star' | 'leaf' | 'cherry_blossom' | 'firefly' | 'soap_bubble' | 'ginkgo' | 'fireworks' | 'fire_sparks' | 'sci_fi_hud' | 'fruits' | 'ocean' | 'butterflies' | 'feathers' | 'lightning' | 'fog';
   chapterReadingEffectColor?: string;
 }
 

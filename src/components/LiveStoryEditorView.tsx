@@ -24,6 +24,8 @@ import {
   LayoutList,
   Hash,
   MessageSquare,
+  ArrowUp,
+  ArrowDown,
 } from 'lucide-react';
 import { StoryLayoutBlockId, StoryLayoutSection, Chapter, CharacterInfo, StoryGalleryImage } from '../types';
 import { StoryCornerAccents } from '../lib/borderStyles';
@@ -121,6 +123,7 @@ interface LiveStoryEditorViewProps {
   setIsBulkUploading: (b: boolean) => void;
   handleOpenEditChapterItem: (chap: Chapter) => void;
   setChapterToDeleteItem: (chap: Chapter) => void;
+  handleMoveChapter?: (chapId: string, direction: 'up' | 'down') => void;
   getStoryBorderStyle: (borderConfig: any, fallbackColor: string) => React.CSSProperties;
 }
 
@@ -218,6 +221,7 @@ export const LiveStoryEditorView: React.FC<LiveStoryEditorViewProps> = (props) =
     setIsBulkUploading,
     handleOpenEditChapterItem,
     setChapterToDeleteItem,
+    handleMoveChapter,
     getStoryBorderStyle,
   } = props;
 
@@ -378,7 +382,7 @@ export const LiveStoryEditorView: React.FC<LiveStoryEditorViewProps> = (props) =
                     style={{ color: currentTextMuted }}
                   >
                     <Upload className="w-2.5 h-2.5" />
-                    <span>{editorAvatarUrl ? 'Đổi avatar' : 'Tải avatar'}</span>
+                    <span>{editorAvatarUrl ? 'Đổi tệp' : 'Tải tệp'}</span>
                   </button>
                   {editorAvatarUrl && (
                     <button
@@ -1143,7 +1147,7 @@ export const LiveStoryEditorView: React.FC<LiveStoryEditorViewProps> = (props) =
 
               return (
                 <div className="space-y-2">
-                  {storyChapters.map((chap) => (
+                  {storyChapters.map((chap, idx) => (
                     <div
                       key={chap.id}
                       className="p-2.5 rounded border text-xs flex items-center justify-between gap-3 hover:opacity-95 transition cursor-pointer"
@@ -1173,7 +1177,31 @@ export const LiveStoryEditorView: React.FC<LiveStoryEditorViewProps> = (props) =
                         </div>
                       </div>
 
-                      <div className="flex items-center shrink-0">
+                      <div className="flex items-center gap-1 shrink-0">
+                        {handleMoveChapter && (
+                          <div className="flex items-center gap-0.5 border-r pr-1 opacity-80" style={{ borderColor: currentBorder }}>
+                            <button
+                              type="button"
+                              disabled={idx === 0}
+                              onClick={(e) => { e.stopPropagation(); handleMoveChapter(chap.id, 'up'); }}
+                              className="p-1 text-xs opacity-70 hover:opacity-100 disabled:opacity-20 transition cursor-pointer disabled:cursor-not-allowed"
+                              style={{ color: currentText }}
+                              title="Di chuyển lên trên"
+                            >
+                              <ArrowUp className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              disabled={idx === storyChapters.length - 1}
+                              onClick={(e) => { e.stopPropagation(); handleMoveChapter(chap.id, 'down'); }}
+                              className="p-1 text-xs opacity-70 hover:opacity-100 disabled:opacity-20 transition cursor-pointer disabled:cursor-not-allowed"
+                              style={{ color: currentText }}
+                              title="Di chuyển xuống dưới"
+                            >
+                              <ArrowDown className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        )}
                         <button
                           type="button"
                           onClick={(e) => { e.stopPropagation(); setChapterToDeleteItem(chap); }}

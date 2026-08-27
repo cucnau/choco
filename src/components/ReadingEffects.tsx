@@ -1,7 +1,7 @@
 import React from 'react';
 
 interface ReadingEffectsProps {
-  effect?: 'none' | 'rain' | 'snow' | 'glitch' | 'star' | 'leaf' | 'ginkgo' | 'cherry_blossom' | 'firefly' | 'soap_bubble' | 'fireworks' | 'fire_sparks' | 'sci_fi_hud' | 'money_100k' | 'fruits' | 'planets' | 'ocean' | 'butterflies' | 'clouds' | 'feathers' | 'lightning' | 'storm' | 'fog' | 'paper_pages';
+  effect?: 'none' | 'rain' | 'snow' | 'glitch' | 'star' | 'leaf' | 'ginkgo' | 'cherry_blossom' | 'firefly' | 'soap_bubble' | 'fireworks' | 'fire_sparks' | 'sci_fi_hud' | 'fruits' | 'ocean' | 'butterflies' | 'feathers' | 'lightning' | 'fog';
   effectColor?: string;
   isDarkTheme: boolean;
 }
@@ -53,23 +53,18 @@ export const ReadingEffects: React.FC<ReadingEffectsProps> = ({ effect = 'none',
       effect === 'star' ? 45 : 
       effect === 'leaf' ? 18 : 
       effect === 'ginkgo' ? 18 :
-      effect === 'cherry_blossom' ? 20 : 
+      effect === 'cherry_blossom' ? 8 : 
       effect === 'firefly' ? 28 : 
       effect === 'soap_bubble' ? 18 :
       effect === 'fire_sparks' ? 20 :
-      effect === 'money_100k' ? 22 :
-      effect === 'fruits' ? 18 :
-      effect === 'planets' ? 12 :
-      effect === 'ocean' ? 25 :
-      effect === 'butterflies' ? 15 :
-      effect === 'clouds' ? 8 :
-      effect === 'feathers' ? 18 :
+      effect === 'fruits' ? 6 :
+      effect === 'ocean' ? 0 :
+      effect === 'butterflies' ? 4 :
+      effect === 'feathers' ? 4 :
       effect === 'lightning' ? 1 :
-      effect === 'storm' ? 80 :
       effect === 'fog' ? 10 :
-      effect === 'paper_pages' ? 16 :
       effect === 'sci_fi_hud' ? 6 :
-      effect === 'fireworks' ? 0 : // fireworks managed dynamically
+      effect === 'fireworks' ? 0 :
       0;
 
     class RainParticle {
@@ -360,24 +355,50 @@ export const ReadingEffects: React.FC<ReadingEffectsProps> = ({ effect = 'none',
     }
 
     class CherryBlossomParticle {
-      x: number = Math.random() * width;
-      y: number = Math.random() * height - 20;
-      r: number = 5 + Math.random() * 5;
-      angle: number = Math.random() * Math.PI * 2;
-      rotationSpeed: number = (Math.random() - 0.5) * 0.03;
-      vy: number = 0.5 + Math.random() * 0.7;
-      vx: number = -0.3 + Math.random() * 0.3;
-      opacity: number = 0.35 + Math.random() * 0.35;
-      swingRange: number = 20 + Math.random() * 20;
+      x: number = 0;
+      y: number = 0;
+      r: number = 0;
+      angle: number = 0;
+      rotationSpeed: number = 0;
+      vy: number = 0;
+      vx: number = 0;
+      opacity: number = 0;
+      swayPhase: number = 0;
+      swaySpeed: number = 0;
+      swayAmp: number = 0;
+      flipAngle: number = 0;
+      flipSpeed: number = 0;
+
+      constructor() {
+        this.reset(true);
+      }
+
+      reset(isInitial = false) {
+        this.x = Math.random() * width;
+        // Rải rác độ cao ban đầu; khi reset thì xuất phát rải rác rất sâu phía trên màn hình để tuyệt đối không bị dồn hàng
+        this.y = isInitial ? Math.random() * height : -30 - Math.random() * (height * 0.7);
+        this.r = 4.5 + Math.random() * 3.5;
+        this.angle = Math.random() * Math.PI * 2;
+        this.rotationSpeed = (Math.random() - 0.5) * 0.015;
+        this.vy = 0.18 + Math.random() * 0.22; // Rơi rất chậm và thong thả (0.18 - 0.40 px/frame)
+        this.vx = (Math.random() - 0.5) * 0.2; // Trôi dạt tự nhiên
+        this.swayPhase = Math.random() * Math.PI * 2; // Nhịp lắc riêng rẽ cho từng cánh
+        this.swaySpeed = 0.006 + Math.random() * 0.012;
+        this.swayAmp = 0.3 + Math.random() * 0.5;
+        this.flipAngle = Math.random() * Math.PI * 2;
+        this.flipSpeed = 0.008 + Math.random() * 0.014;
+        this.opacity = 0.45 + Math.random() * 0.4;
+      }
 
       update() {
         this.y += this.vy;
-        this.x += this.vx + Math.sin(this.y / this.swingRange) * 0.5;
+        this.swayPhase += this.swaySpeed;
+        this.flipAngle += this.flipSpeed;
+        this.x += this.vx + Math.sin(this.swayPhase) * this.swayAmp;
         this.angle += this.rotationSpeed;
-        if (this.y > height + 10) {
-          this.y = -10;
-          this.x = Math.random() * width;
-          this.vy = 0.5 + Math.random() * 0.7;
+
+        if (this.y > height + 30) {
+          this.reset(false);
         }
       }
 
@@ -385,6 +406,10 @@ export const ReadingEffects: React.FC<ReadingEffectsProps> = ({ effect = 'none',
         ctx.save();
         ctx.translate(this.x, this.y);
         ctx.rotate(this.angle);
+
+        // Hiệu ứng lật cánh 3D nhẹ nhàng chao lượn
+        const flip = Math.cos(this.flipAngle);
+        ctx.scale(flip, 1);
 
         ctx.beginPath();
         ctx.moveTo(0, -this.r);
@@ -395,10 +420,10 @@ export const ReadingEffects: React.FC<ReadingEffectsProps> = ({ effect = 'none',
           ctx.fillStyle = `rgba(244, 143, 177, ${this.opacity})`;
           ctx.fill();
         } else {
-          ctx.fillStyle = `rgba(219, 39, 119, ${this.opacity + 0.3})`; // Rich vivid sakura on light
+          ctx.fillStyle = `rgba(236, 72, 153, ${this.opacity + 0.15})`;
           ctx.fill();
-          ctx.strokeStyle = `rgba(131, 24, 67, 0.4)`;
-          ctx.lineWidth = 0.6;
+          ctx.strokeStyle = `rgba(190, 24, 93, 0.35)`;
+          ctx.lineWidth = 0.5;
           ctx.stroke();
         }
 
@@ -565,161 +590,29 @@ export const ReadingEffects: React.FC<ReadingEffectsProps> = ({ effect = 'none',
       }
     }
 
-    class Money100kParticle {
-      x: number = 0;
-      y: number = 0;
-      width: number = 0;
-      height: number = 0;
-      vy: number = 0;
-      vx: number = 0;
-      rotX: number = 0;
-      rotY: number = 0;
-      rotZ: number = 0;
-      vRotX: number = 0;
-      vRotY: number = 0;
-      vRotZ: number = 0;
-      swayPhase: number = 0;
-      swaySpeed: number = 0;
-      swayAmp: number = 0;
-      opacity: number = 1;
-
-      constructor() {
-        this.reset(true);
-      }
-
-      reset(isInitial = false) {
-        this.x = Math.random() * width;
-        this.y = isInitial ? Math.random() * height : -35 - Math.random() * (height * 0.5);
-
-        this.width = 40 + Math.random() * 18;
-        this.height = this.width * 0.52;
-
-        this.vy = 1.1 + Math.random() * 1.5;
-        this.vx = (Math.random() - 0.5) * 0.4;
-
-        this.rotX = Math.random() * Math.PI * 2;
-        this.rotY = Math.random() * Math.PI * 2;
-        this.rotZ = (Math.random() - 0.5) * 0.8;
-
-        this.vRotX = (Math.random() - 0.5) * 0.035;
-        this.vRotY = (Math.random() - 0.5) * 0.04;
-        this.vRotZ = (Math.random() - 0.5) * 0.015;
-
-        this.swayPhase = Math.random() * Math.PI * 2;
-        this.swaySpeed = 0.02 + Math.random() * 0.025;
-        this.swayAmp = 0.7 + Math.random() * 0.9;
-
-        this.opacity = 0.88 + Math.random() * 0.12;
-      }
-
-      update() {
-        this.y += this.vy;
-        this.swayPhase += this.swaySpeed;
-        this.x += this.vx + Math.sin(this.swayPhase) * this.swayAmp;
-
-        this.rotX += this.vRotX;
-        this.rotY += this.vRotY;
-        this.rotZ += this.vRotZ;
-
-        if (this.y > height + 60) {
-          this.reset(false);
-        }
-      }
-
-      draw() {
-        ctx.save();
-        ctx.translate(this.x, this.y);
-
-        const scaleX = Math.cos(this.rotY);
-        const scaleY = Math.cos(this.rotX);
-
-        ctx.rotate(this.rotZ);
-        ctx.scale(scaleX, scaleY);
-        ctx.globalAlpha = this.opacity;
-
-        const w = this.width;
-        const h = this.height;
-        const isFront = scaleX * scaleY > 0;
-
-        const baseGrad = ctx.createLinearGradient(-w / 2, -h / 2, w / 2, h / 2);
-        if (isFront) {
-          baseGrad.addColorStop(0, '#047857');
-          baseGrad.addColorStop(0.3, '#10b981');
-          baseGrad.addColorStop(0.7, '#059669');
-          baseGrad.addColorStop(1, '#065f46');
-        } else {
-          baseGrad.addColorStop(0, '#065f46');
-          baseGrad.addColorStop(0.4, '#047857');
-          baseGrad.addColorStop(0.8, '#059669');
-          baseGrad.addColorStop(1, '#022c22');
-        }
-
-        ctx.beginPath();
-        ctx.roundRect(-w / 2, -h / 2, w, h, Math.min(3, w * 0.06));
-        ctx.fillStyle = baseGrad;
-        ctx.fill();
-
-        ctx.strokeStyle = isFront ? '#a7f3d0' : '#047857';
-        ctx.lineWidth = 0.8;
-        ctx.stroke();
-
-        ctx.beginPath();
-        ctx.roundRect(-w / 2 + 2, -h / 2 + 1.5, w - 4, h - 3, 1.5);
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
-        ctx.lineWidth = 0.5;
-        ctx.stroke();
-
-        ctx.beginPath();
-        ctx.ellipse(-w / 3, 0, w * 0.12, h * 0.3, 0, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(254, 240, 138, 0.45)';
-        ctx.fill();
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
-        ctx.lineWidth = 0.4;
-        ctx.stroke();
-
-        ctx.fillStyle = '#ffffff';
-        ctx.font = `bold ${Math.max(6, Math.floor(h * 0.38))}px sans-serif`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
-        ctx.shadowBlur = 2;
-        ctx.fillText('100K', w * 0.15, 0);
-
-        const sheenGrad = ctx.createLinearGradient(-w / 2, -h / 2, w / 2, h / 2);
-        sheenGrad.addColorStop(0, 'rgba(255,255,255,0)');
-        sheenGrad.addColorStop(0.45, 'rgba(255,255,255,0.05)');
-        sheenGrad.addColorStop(0.5, 'rgba(255,255,255,0.25)');
-        sheenGrad.addColorStop(0.55, 'rgba(255,255,255,0.05)');
-        sheenGrad.addColorStop(1, 'rgba(255,255,255,0)');
-
-        ctx.fillStyle = sheenGrad;
-        ctx.fill();
-
-        ctx.restore();
-      }
-    }
-
     class FruitParticle {
       x: number = 0; y: number = 0; size: number = 0; vy: number = 0; vx: number = 0; rot: number = 0; vRot: number = 0;
-      fruitType: 'apple' | 'strawberry' | 'orange' | 'watermelon' | 'banana' | 'grapes' | 'kiwi' = 'apple';
+      type: 'kiwi' | 'grapes' | 'banana' | 'blueberry' | 'green_apple' | 'watermelon' | 'orange' | 'strawberry' | 'peach' | 'lemon' | 'cherry' = 'kiwi';
       opacity: number = 1; swayPhase: number = 0; swaySpeed: number = 0; swayAmp: number = 0;
 
       constructor() { this.reset(true); }
 
       reset(isInitial = false) {
         this.x = Math.random() * width;
-        this.y = isInitial ? Math.random() * height : -30 - Math.random() * (height * 0.4);
-        this.size = 18 + Math.random() * 12;
-        this.vy = 1.0 + Math.random() * 1.5;
-        this.vx = (Math.random() - 0.5) * 0.5;
+        this.y = isInitial ? Math.random() * height : -50 - Math.random() * (height * 0.6);
+        this.size = 20 + Math.random() * 10;
+        this.vy = 0.2 + Math.random() * 0.25;
+        this.vx = (Math.random() - 0.5) * 0.2;
         this.rot = Math.random() * Math.PI * 2;
-        this.vRot = (Math.random() - 0.5) * 0.04;
+        this.vRot = (Math.random() - 0.5) * 0.01;
         this.swayPhase = Math.random() * Math.PI * 2;
-        this.swaySpeed = 0.02 + Math.random() * 0.02;
-        this.swayAmp = 0.5 + Math.random() * 0.8;
-        this.opacity = 0.85 + Math.random() * 0.15;
-        const types: ('apple' | 'strawberry' | 'orange' | 'watermelon' | 'banana' | 'grapes' | 'kiwi')[] = ['apple', 'strawberry', 'orange', 'watermelon', 'banana', 'grapes', 'kiwi'];
-        this.fruitType = types[Math.floor(Math.random() * types.length)];
+        this.swaySpeed = 0.008 + Math.random() * 0.012;
+        this.swayAmp = 0.3 + Math.random() * 0.4;
+        this.opacity = 0.88 + Math.random() * 0.12;
+        const types: ('kiwi' | 'grapes' | 'banana' | 'blueberry' | 'green_apple' | 'watermelon' | 'orange' | 'strawberry' | 'peach' | 'lemon' | 'cherry')[] = [
+          'kiwi', 'grapes', 'banana', 'blueberry', 'green_apple', 'watermelon', 'orange', 'strawberry', 'peach', 'lemon', 'cherry'
+        ];
+        this.type = types[Math.floor(Math.random() * types.length)];
       }
 
       update() {
@@ -727,7 +620,7 @@ export const ReadingEffects: React.FC<ReadingEffectsProps> = ({ effect = 'none',
         this.swayPhase += this.swaySpeed;
         this.x += this.vx + Math.sin(this.swayPhase) * this.swayAmp;
         this.rot += this.vRot;
-        if (this.y > height + 40) this.reset(false);
+        if (this.y > height + 45) this.reset(false);
       }
 
       draw() {
@@ -737,163 +630,352 @@ export const ReadingEffects: React.FC<ReadingEffectsProps> = ({ effect = 'none',
         ctx.globalAlpha = this.opacity;
         const s = this.size;
 
-        if (this.fruitType === 'apple') {
+        if (this.type === 'kiwi') {
+          // Lát Kiwi
           ctx.beginPath();
-          ctx.arc(-s * 0.2, 0, s * 0.45, 0, Math.PI * 2);
-          ctx.arc(s * 0.2, 0, s * 0.45, 0, Math.PI * 2);
-          ctx.fillStyle = '#ef4444';
+          ctx.arc(0, 0, s * 0.48, 0, Math.PI * 2);
+          ctx.fillStyle = '#78350f';
           ctx.fill();
           ctx.beginPath();
-          ctx.moveTo(0, -s * 0.4);
-          ctx.lineTo(0, -s * 0.65);
-          ctx.strokeStyle = '#78350f';
-          ctx.lineWidth = 1.5;
-          ctx.stroke();
-          ctx.beginPath();
-          ctx.ellipse(s * 0.2, -s * 0.6, s * 0.2, s * 0.1, Math.PI / 4, 0, Math.PI * 2);
+          ctx.arc(0, 0, s * 0.42, 0, Math.PI * 2);
           ctx.fillStyle = '#22c55e';
           ctx.fill();
-        } else if (this.fruitType === 'strawberry') {
           ctx.beginPath();
-          ctx.moveTo(0, s * 0.5);
-          ctx.bezierCurveTo(-s * 0.6, -s * 0.1, -s * 0.5, -s * 0.4, 0, -s * 0.35);
-          ctx.bezierCurveTo(s * 0.5, -s * 0.4, s * 0.6, -s * 0.1, 0, s * 0.5);
-          ctx.fillStyle = '#f43f5e';
+          ctx.arc(0, 0, s * 0.15, 0, Math.PI * 2);
+          ctx.fillStyle = '#fef9c3';
+          ctx.fill();
+          ctx.fillStyle = '#18181b';
+          for (let a = 0; a < Math.PI * 2; a += Math.PI / 4) {
+            ctx.beginPath();
+            ctx.arc(Math.cos(a) * s * 0.26, Math.sin(a) * s * 0.26, s * 0.035, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        } else if (this.type === 'grapes') {
+          // Chùm Nho
+          ctx.beginPath();
+          ctx.moveTo(0, -s * 0.2);
+          ctx.lineTo(0, -s * 0.5);
+          ctx.strokeStyle = '#15803d';
+          ctx.lineWidth = s * 0.08;
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.ellipse(s * 0.12, -s * 0.4, s * 0.14, s * 0.08, -Math.PI / 4, 0, Math.PI * 2);
+          ctx.fillStyle = '#22c55e';
+          ctx.fill();
+
+          const grapeCoords = [
+            [-s * 0.18, -s * 0.18], [0, -s * 0.22], [s * 0.18, -s * 0.18],
+            [-s * 0.25, 0], [0, -s * 0.02], [s * 0.25, 0],
+            [-s * 0.14, s * 0.18], [s * 0.14, s * 0.18],
+            [0, s * 0.35]
+          ];
+          grapeCoords.forEach(([gx, gy]) => {
+            ctx.beginPath();
+            ctx.arc(gx, gy, s * 0.14, 0, Math.PI * 2);
+            ctx.fillStyle = '#8b5cf6';
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(gx - s * 0.04, gy - s * 0.04, s * 0.04, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+            ctx.fill();
+          });
+        } else if (this.type === 'banana') {
+          // Trái Chuối (Banana) - Thân uốn cong mềm mại, có sống, cuống xanh & rốn nâu
+          ctx.save();
+          ctx.rotate(-Math.PI / 8);
+
+          ctx.beginPath();
+          ctx.moveTo(-s * 0.42, -s * 0.15);
+          ctx.bezierCurveTo(-s * 0.1, s * 0.42, s * 0.32, s * 0.28, s * 0.44, -s * 0.12);
+          ctx.bezierCurveTo(s * 0.22, s * 0.14, -s * 0.05, 0.2, -s * 0.36, -s * 0.1);
+          ctx.closePath();
+          ctx.fillStyle = '#fde047';
+          ctx.fill();
+
+          // Sống lưng bóng sáng
+          ctx.beginPath();
+          ctx.moveTo(-s * 0.36, -s * 0.1);
+          ctx.bezierCurveTo(-s * 0.08, s * 0.25, s * 0.25, s * 0.15, s * 0.42, -s * 0.1);
+          ctx.strokeStyle = '#fef08a';
+          ctx.lineWidth = s * 0.06;
+          ctx.stroke();
+
+          // Đường sống tối tạo khối 3D
+          ctx.beginPath();
+          ctx.moveTo(-s * 0.38, -s * 0.12);
+          ctx.bezierCurveTo(-s * 0.08, s * 0.35, s * 0.28, s * 0.22, s * 0.43, -s * 0.11);
+          ctx.strokeStyle = '#ca8a04';
+          ctx.lineWidth = s * 0.035;
+          ctx.stroke();
+
+          // Cuống chuối xanh
+          ctx.beginPath();
+          ctx.moveTo(-s * 0.36, -s * 0.1);
+          ctx.lineTo(-s * 0.45, -s * 0.22);
+          ctx.strokeStyle = '#65a30d';
+          ctx.lineWidth = s * 0.08;
+          ctx.lineCap = 'round';
+          ctx.stroke();
+
+          // Rốn chuối nâu đen
+          ctx.beginPath();
+          ctx.arc(s * 0.44, -s * 0.12, s * 0.04, 0, Math.PI * 2);
+          ctx.fillStyle = '#451a03';
+          ctx.fill();
+
+          ctx.restore();
+        } else if (this.type === 'blueberry') {
+          // Trái Việt Quất
+          ctx.beginPath();
+          ctx.arc(0, 0, s * 0.44, 0, Math.PI * 2);
+          ctx.fillStyle = '#1d4ed8';
+          ctx.fill();
+
+          const grad = ctx.createRadialGradient(-s * 0.1, -s * 0.1, s * 0.05, 0, 0, s * 0.44);
+          grad.addColorStop(0, 'rgba(147, 197, 253, 0.6)');
+          grad.addColorStop(1, 'rgba(29, 78, 216, 0)');
+          ctx.fillStyle = grad;
+          ctx.fill();
+
+          ctx.fillStyle = '#1e3a8a';
+          for (let i = 0; i < 5; i++) {
+            const angle = (i * Math.PI * 2) / 5 - Math.PI / 2;
+            ctx.beginPath();
+            ctx.arc(Math.cos(angle) * s * 0.1, -s * 0.2 + Math.sin(angle) * s * 0.1, s * 0.05, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        } else if (this.type === 'green_apple') {
+          // Trái Táo Xanh (Green Apple) - Thân quả tròn mọng đầy đặn, bóng sáng 3D, cuống nâu & lá xanh
+          // 1. Quả táo tròn đầy mọng nước
+          ctx.beginPath();
+          ctx.arc(-s * 0.09, 0, s * 0.34, 0, Math.PI * 2);
+          ctx.arc(s * 0.09, 0, s * 0.34, 0, Math.PI * 2);
+          ctx.fillStyle = '#4ade80';
+          ctx.fill();
+
+          ctx.beginPath();
+          ctx.arc(0, s * 0.06, s * 0.36, 0, Math.PI * 2);
+          ctx.fillStyle = '#22c55e';
+          ctx.fill();
+
+          ctx.beginPath();
+          ctx.arc(0, -s * 0.04, s * 0.34, 0, Math.PI * 2);
+          ctx.fillStyle = '#4ade80';
+          ctx.fill();
+
+          // 2. Độ bóng sáng mọng 3D
+          ctx.beginPath();
+          ctx.ellipse(-s * 0.12, -s * 0.12, s * 0.12, s * 0.06, -Math.PI / 4, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
+          ctx.fill();
+
+          // 3. Cuống táo uốn cong màu nâu
+          ctx.beginPath();
+          ctx.moveTo(0, -s * 0.25);
+          ctx.quadraticCurveTo(-s * 0.08, -s * 0.38, -s * 0.04, -s * 0.48);
+          ctx.strokeStyle = '#78350f';
+          ctx.lineWidth = s * 0.06;
+          ctx.lineCap = 'round';
+          ctx.stroke();
+
+          // 4. Lá táo xanh đậm
+          ctx.beginPath();
+          ctx.ellipse(-s * 0.12, -s * 0.42, s * 0.14, s * 0.07, -Math.PI / 4, 0, Math.PI * 2);
+          ctx.fillStyle = '#15803d';
+          ctx.fill();
+        } else if (this.type === 'watermelon') {
+          // Miếng Dưa Hấu
+          ctx.beginPath();
+          ctx.moveTo(-s * 0.48, -s * 0.2);
+          ctx.quadraticCurveTo(0, s * 0.52, s * 0.48, -s * 0.2);
+          ctx.lineTo(s * 0.42, -s * 0.2);
+          ctx.quadraticCurveTo(0, s * 0.44, -s * 0.42, -s * 0.2);
+          ctx.closePath();
+          ctx.fillStyle = '#15803d';
+          ctx.fill();
+
+          ctx.beginPath();
+          ctx.moveTo(-s * 0.42, -s * 0.2);
+          ctx.quadraticCurveTo(0, s * 0.44, s * 0.42, -s * 0.2);
+          ctx.lineTo(s * 0.38, -s * 0.2);
+          ctx.quadraticCurveTo(0, s * 0.38, -s * 0.38, -s * 0.2);
+          ctx.closePath();
+          ctx.fillStyle = '#dcfce7';
+          ctx.fill();
+
+          ctx.beginPath();
+          ctx.moveTo(0, -s * 0.42);
+          ctx.lineTo(s * 0.38, -s * 0.2);
+          ctx.quadraticCurveTo(0, s * 0.38, -s * 0.38, -s * 0.2);
+          ctx.closePath();
+          ctx.fillStyle = '#ef4444';
+          ctx.fill();
+
+          ctx.fillStyle = '#18181b';
+          [[-s * 0.12, -s * 0.05], [0, -s * 0.18], [s * 0.12, -s * 0.05], [0, s * 0.1]].forEach(([wx, wy]) => {
+            ctx.beginPath();
+            ctx.ellipse(wx, wy, s * 0.025, s * 0.04, 0, 0, Math.PI * 2);
+            ctx.fill();
+          });
+        } else if (this.type === 'peach') {
+          // Trái Đào
+          ctx.beginPath();
+          ctx.arc(-s * 0.1, 0, s * 0.38, 0, Math.PI * 2);
+          ctx.arc(s * 0.1, 0, s * 0.38, 0, Math.PI * 2);
+          ctx.fillStyle = '#fb7185';
+          ctx.fill();
+
+          ctx.beginPath();
+          ctx.arc(0, s * 0.05, s * 0.34, 0, Math.PI * 2);
+          ctx.fillStyle = '#fde047';
+          ctx.globalAlpha = this.opacity * 0.4;
+          ctx.fill();
+          ctx.globalAlpha = this.opacity;
+
+          ctx.beginPath();
+          ctx.moveTo(0, -s * 0.38);
+          ctx.quadraticCurveTo(-s * 0.08, 0, 0, s * 0.38);
+          ctx.strokeStyle = '#e11d48';
+          ctx.lineWidth = s * 0.04;
+          ctx.stroke();
+
+          ctx.beginPath();
+          ctx.ellipse(s * 0.1, -s * 0.38, s * 0.14, s * 0.06, -Math.PI / 6, 0, Math.PI * 2);
+          ctx.fillStyle = '#22c55e';
+          ctx.fill();
+        } else if (this.type === 'lemon') {
+          // Trái Chanh Vàng (Lemon) - Thân bầu thoi, núm chanh 2 đầu rõ ràng & lá tươi
+          ctx.save();
+          ctx.rotate(-Math.PI / 8);
+
+          // Thân chanh hình thoi bầu tròn 2 đầu núm
+          ctx.beginPath();
+          ctx.moveTo(-s * 0.48, 0);
+          ctx.quadraticCurveTo(-s * 0.54, -s * 0.08, -s * 0.42, -s * 0.18);
+          ctx.bezierCurveTo(-s * 0.22, -s * 0.44, s * 0.22, -s * 0.44, s * 0.42, -s * 0.18);
+          ctx.quadraticCurveTo(s * 0.54, -s * 0.08, s * 0.48, 0);
+          ctx.quadraticCurveTo(s * 0.54, s * 0.08, s * 0.42, s * 0.18);
+          ctx.bezierCurveTo(s * 0.22, s * 0.44, -s * 0.22, s * 0.44, -s * 0.42, s * 0.18);
+          ctx.quadraticCurveTo(-s * 0.54, s * 0.08, -s * 0.48, 0);
+          ctx.closePath();
+          ctx.fillStyle = '#fde047';
+          ctx.fill();
+
+          // Hai núm chanh 2 đầu
+          ctx.beginPath();
+          ctx.arc(-s * 0.46, 0, s * 0.05, 0, Math.PI * 2);
+          ctx.arc(s * 0.46, 0, s * 0.05, 0, Math.PI * 2);
+          ctx.fillStyle = '#eab308';
+          ctx.fill();
+
+          // Bóng mọng 3D tỏa phản quang
+          const lemonShine = ctx.createRadialGradient(-s * 0.1, -s * 0.12, s * 0.04, 0, 0, s * 0.42);
+          lemonShine.addColorStop(0, 'rgba(255, 255, 255, 0.6)');
+          lemonShine.addColorStop(0.7, 'rgba(253, 224, 71, 0)');
+          ctx.fillStyle = lemonShine;
+          ctx.fill();
+
+          // Lá xanh nhỏ xinh ở núm chanh
+          ctx.beginPath();
+          ctx.ellipse(-s * 0.42, -s * 0.12, s * 0.13, s * 0.06, -Math.PI / 3, 0, Math.PI * 2);
+          ctx.fillStyle = '#65a30d';
+          ctx.fill();
+
+          ctx.restore();
+        } else if (this.type === 'cherry') {
+          // Cặp Cherry
+          ctx.beginPath();
+          ctx.arc(-s * 0.22, s * 0.12, s * 0.22, 0, Math.PI * 2);
+          ctx.fillStyle = '#dc2626';
           ctx.fill();
           ctx.beginPath();
-          ctx.arc(0, -s * 0.35, s * 0.2, 0, Math.PI * 2);
-          ctx.fillStyle = '#10b981';
+          ctx.arc(-s * 0.26, s * 0.06, s * 0.06, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
           ctx.fill();
-        } else if (this.fruitType === 'orange') {
+
+          ctx.beginPath();
+          ctx.arc(s * 0.2, s * 0.18, s * 0.2, 0, Math.PI * 2);
+          ctx.fillStyle = '#b91c1c';
+          ctx.fill();
+          ctx.beginPath();
+          ctx.arc(s * 0.16, s * 0.12, s * 0.05, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+          ctx.fill();
+
+          ctx.beginPath();
+          ctx.moveTo(-s * 0.22, -s * 0.08);
+          ctx.quadraticCurveTo(0, -s * 0.32, 0, -s * 0.48);
+          ctx.moveTo(s * 0.2, -s * 0.02);
+          ctx.quadraticCurveTo(0, -s * 0.32, 0, -s * 0.48);
+          ctx.strokeStyle = '#65a30d';
+          ctx.lineWidth = s * 0.05;
+          ctx.stroke();
+
+          ctx.beginPath();
+          ctx.ellipse(s * 0.08, -s * 0.44, s * 0.12, s * 0.06, -Math.PI / 4, 0, Math.PI * 2);
+          ctx.fillStyle = '#84cc16';
+          ctx.fill();
+        } else if (this.type === 'orange') {
+          // Lát Cam Tươi
           ctx.beginPath();
           ctx.arc(0, 0, s * 0.45, 0, Math.PI * 2);
           ctx.fillStyle = '#f97316';
           ctx.fill();
+
           ctx.beginPath();
-          ctx.arc(-s * 0.12, -s * 0.12, s * 0.12, 0, Math.PI * 2);
-          ctx.fillStyle = 'rgba(255,255,255,0.3)';
+          ctx.arc(0, 0, s * 0.4, 0, Math.PI * 2);
+          ctx.fillStyle = '#ffedd5';
           ctx.fill();
-        } else if (this.fruitType === 'watermelon') {
-          ctx.beginPath();
-          ctx.arc(0, 0, s * 0.5, 0, Math.PI);
-          ctx.fillStyle = '#15803d';
-          ctx.fill();
-          ctx.beginPath();
-          ctx.arc(0, 0, s * 0.42, 0, Math.PI);
-          ctx.fillStyle = '#dc2626';
-          ctx.fill();
-        } else if (this.fruitType === 'banana') {
-          ctx.beginPath();
-          ctx.arc(0, 0, s * 0.5, 0.2, Math.PI - 0.2);
-          ctx.strokeStyle = '#eab308';
-          ctx.lineWidth = s * 0.25;
-          ctx.lineCap = 'round';
-          ctx.stroke();
-        } else if (this.fruitType === 'grapes') {
-          ctx.fillStyle = '#a855f7';
-          [[-s * 0.15, -s * 0.2], [s * 0.15, -s * 0.2], [0, 0], [0, s * 0.25]].forEach(([gx, gy]) => {
+
+          const segments = 8;
+          for (let i = 0; i < segments; i++) {
+            const startAngle = (i * Math.PI * 2) / segments + 0.08;
+            const endAngle = ((i + 1) * Math.PI * 2) / segments - 0.08;
             ctx.beginPath();
-            ctx.arc(gx, gy, s * 0.2, 0, Math.PI * 2);
+            ctx.moveTo(0, 0);
+            ctx.arc(0, 0, s * 0.36, startAngle, endAngle);
+            ctx.closePath();
+            ctx.fillStyle = '#fb923c';
+            ctx.fill();
+          }
+
+          ctx.beginPath();
+          ctx.arc(0, 0, s * 0.06, 0, Math.PI * 2);
+          ctx.fillStyle = '#ffedd5';
+          ctx.fill();
+        } else {
+          // Trái Dâu Tây
+          ctx.beginPath();
+          ctx.moveTo(0, s * 0.48);
+          ctx.bezierCurveTo(-s * 0.52, s * 0.1, -s * 0.42, -s * 0.3, 0, -s * 0.28);
+          ctx.bezierCurveTo(s * 0.42, -s * 0.3, s * 0.52, s * 0.1, 0, s * 0.48);
+          ctx.closePath();
+          ctx.fillStyle = '#ef4444';
+          ctx.fill();
+
+          ctx.beginPath();
+          ctx.arc(-s * 0.16, 0, s * 0.08, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+          ctx.fill();
+
+          ctx.fillStyle = '#fef08a';
+          [
+            [-s * 0.15, -s * 0.1], [0, -s * 0.15], [s * 0.15, -s * 0.1],
+            [-s * 0.2, 0.08], [0, 0.05], [s * 0.2, 0.08],
+            [-s * 0.1, 0.25], [s * 0.1, 0.25]
+          ].forEach(([sx, sy]) => {
+            ctx.beginPath();
+            ctx.ellipse(sx, sy, s * 0.02, s * 0.03, 0, 0, Math.PI * 2);
             ctx.fill();
           });
-        } else {
-          ctx.beginPath();
-          ctx.arc(0, 0, s * 0.45, 0, Math.PI * 2);
-          ctx.fillStyle = '#65a30d';
-          ctx.fill();
-          ctx.beginPath();
-          ctx.arc(0, 0, s * 0.2, 0, Math.PI * 2);
-          ctx.fillStyle = '#fef08a';
-          ctx.fill();
-        }
-        ctx.restore();
-      }
-    }
 
-    class PlanetParticle {
-      x: number = 0; y: number = 0; radius: number = 0; vy: number = 0; vx: number = 0; rot: number = 0; vRot: number = 0; opacity: number = 1;
-      planetType: 'saturn' | 'jupiter' | 'earth' | 'mars' | 'neptune' = 'saturn';
-
-      constructor() { this.reset(true); }
-
-      reset(isInitial = false) {
-        this.x = Math.random() * width;
-        this.y = isInitial ? Math.random() * height : -40 - Math.random() * (height * 0.4);
-        this.radius = 12 + Math.random() * 16;
-        this.vy = 0.3 + Math.random() * 0.6;
-        this.vx = (Math.random() - 0.5) * 0.3;
-        this.rot = Math.random() * Math.PI * 2;
-        this.vRot = (Math.random() - 0.5) * 0.01;
-        this.opacity = 0.75 + Math.random() * 0.25;
-        const types: ('saturn' | 'jupiter' | 'earth' | 'mars' | 'neptune')[] = ['saturn', 'jupiter', 'earth', 'mars', 'neptune'];
-        this.planetType = types[Math.floor(Math.random() * types.length)];
-      }
-
-      update() {
-        this.y += this.vy;
-        this.x += this.vx;
-        this.rot += this.vRot;
-        if (this.y > height + 50) this.reset(false);
-      }
-
-      draw() {
-        ctx.save();
-        ctx.translate(this.x, this.y);
-        ctx.rotate(this.rot);
-        ctx.globalAlpha = this.opacity;
-        const r = this.radius;
-
-        if (this.planetType === 'saturn') {
-          ctx.beginPath();
-          ctx.ellipse(0, 0, r * 2.1, r * 0.5, Math.PI / 8, 0, Math.PI * 2);
-          ctx.strokeStyle = 'rgba(253, 224, 71, 0.7)';
-          ctx.lineWidth = 3;
-          ctx.stroke();
-
-          ctx.beginPath();
-          ctx.arc(0, 0, r, 0, Math.PI * 2);
-          const grad = ctx.createLinearGradient(-r, -r, r, r);
-          grad.addColorStop(0, '#fef08a');
-          grad.addColorStop(0.5, '#eab308');
-          grad.addColorStop(1, '#ca8a04');
-          ctx.fillStyle = grad;
-          ctx.fill();
-        } else if (this.planetType === 'jupiter') {
-          ctx.beginPath();
-          ctx.arc(0, 0, r, 0, Math.PI * 2);
-          const grad = ctx.createLinearGradient(0, -r, 0, r);
-          grad.addColorStop(0, '#fdba74');
-          grad.addColorStop(0.3, '#ea580c');
-          grad.addColorStop(0.6, '#f97316');
-          grad.addColorStop(1, '#9a3412');
-          ctx.fillStyle = grad;
-          ctx.fill();
-        } else if (this.planetType === 'earth') {
-          ctx.beginPath();
-          ctx.arc(0, 0, r, 0, Math.PI * 2);
-          ctx.fillStyle = '#3b82f6';
-          ctx.fill();
-          ctx.beginPath();
-          ctx.arc(-r * 0.3, -r * 0.2, r * 0.4, 0, Math.PI * 2);
-          ctx.arc(r * 0.3, r * 0.3, r * 0.35, 0, Math.PI * 2);
-          ctx.fillStyle = '#22c55e';
-          ctx.fill();
-        } else if (this.planetType === 'mars') {
-          ctx.beginPath();
-          ctx.arc(0, 0, r, 0, Math.PI * 2);
-          const grad = ctx.createRadialGradient(-r * 0.3, -r * 0.3, r * 0.1, 0, 0, r);
-          grad.addColorStop(0, '#f87171');
-          grad.addColorStop(1, '#991b1b');
-          ctx.fillStyle = grad;
-          ctx.fill();
-        } else {
-          ctx.beginPath();
-          ctx.arc(0, 0, r, 0, Math.PI * 2);
-          const grad = ctx.createRadialGradient(-r * 0.3, -r * 0.3, r * 0.1, 0, 0, r);
-          grad.addColorStop(0, '#38bdf8');
-          grad.addColorStop(1, '#1e3a8a');
-          ctx.fillStyle = grad;
-          ctx.fill();
+          ctx.fillStyle = '#16a34a';
+          for (let i = 0; i < 5; i++) {
+            const angle = (i * Math.PI * 2) / 5 - Math.PI / 2;
+            ctx.beginPath();
+            ctx.ellipse(Math.cos(angle) * s * 0.15, -s * 0.28 + Math.sin(angle) * s * 0.08, s * 0.14, s * 0.06, angle, 0, Math.PI * 2);
+            ctx.fill();
+          }
         }
         ctx.restore();
       }
@@ -901,27 +983,26 @@ export const ReadingEffects: React.FC<ReadingEffectsProps> = ({ effect = 'none',
 
     class OceanParticle {
       x: number = 0; y: number = 0; size: number = 0; vy: number = 0; vx: number = 0; phase: number = 0; opacity: number = 1;
-      type: 'bubble' | 'jellyfish' | 'starfish' = 'bubble';
+      type: 'caustic' | 'bubble' = 'caustic';
 
       constructor() { this.reset(true); }
 
       reset(isInitial = false) {
         this.x = Math.random() * width;
-        this.y = isInitial ? Math.random() * height : height + 20 + Math.random() * (height * 0.3);
-        this.size = 6 + Math.random() * 16;
-        this.vy = -(0.6 + Math.random() * 1.2);
-        this.vx = (Math.random() - 0.5) * 0.4;
+        this.y = isInitial ? Math.random() * height : height + 30 + Math.random() * (height * 0.3);
+        this.type = Math.random() < 0.4 ? 'caustic' : 'bubble';
+        this.size = this.type === 'caustic' ? 35 + Math.random() * 45 : 6 + Math.random() * 16;
+        this.vy = -(0.25 + Math.random() * 0.35);
+        this.vx = (Math.random() - 0.5) * 0.25;
         this.phase = Math.random() * Math.PI * 2;
-        this.opacity = 0.4 + Math.random() * 0.5;
-        const r = Math.random();
-        this.type = r < 0.65 ? 'bubble' : r < 0.85 ? 'jellyfish' : 'starfish';
+        this.opacity = this.type === 'caustic' ? 0.25 + Math.random() * 0.25 : 0.4 + Math.random() * 0.4;
       }
 
       update() {
         this.y += this.vy;
-        this.phase += 0.03;
-        this.x += this.vx + Math.sin(this.phase) * 0.6;
-        if (this.y < -30) this.reset(false);
+        this.phase += 0.02;
+        this.x += this.vx + Math.sin(this.phase) * 0.5;
+        if (this.y < -60) this.reset(false);
       }
 
       draw() {
@@ -930,406 +1011,463 @@ export const ReadingEffects: React.FC<ReadingEffectsProps> = ({ effect = 'none',
         ctx.globalAlpha = this.opacity;
         const s = this.size;
 
-        if (this.type === 'bubble') {
+        if (this.type === 'caustic') {
+          const grad = ctx.createRadialGradient(0, 0, s * 0.1, 0, 0, s);
+          grad.addColorStop(0, 'rgba(224, 242, 254, 0.7)');
+          grad.addColorStop(0.35, 'rgba(125, 211, 252, 0.35)');
+          grad.addColorStop(0.7, 'rgba(56, 189, 248, 0.15)');
+          grad.addColorStop(1, 'rgba(14, 165, 233, 0)');
+
+          ctx.beginPath();
+          ctx.ellipse(0, 0, s * (1 + Math.sin(this.phase) * 0.15), s * 0.7, this.phase * 0.2, 0, Math.PI * 2);
+          ctx.fillStyle = grad;
+          ctx.fill();
+        } else {
+          const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, s);
+          grad.addColorStop(0, 'rgba(224, 242, 254, 0.6)');
+          grad.addColorStop(0.7, 'rgba(186, 230, 253, 0.25)');
+          grad.addColorStop(1, 'rgba(56, 189, 248, 0)');
+
           ctx.beginPath();
           ctx.arc(0, 0, s, 0, Math.PI * 2);
-          ctx.fillStyle = 'rgba(186, 230, 253, 0.2)';
+          ctx.fillStyle = grad;
           ctx.fill();
-          ctx.strokeStyle = 'rgba(224, 242, 254, 0.7)';
-          ctx.lineWidth = 1;
-          ctx.stroke();
+
           ctx.beginPath();
-          ctx.arc(-s * 0.35, -s * 0.35, s * 0.25, 0, Math.PI * 2);
-          ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
-          ctx.fill();
-        } else if (this.type === 'jellyfish') {
-          ctx.beginPath();
-          ctx.arc(0, 0, s, Math.PI, Math.PI * 2);
-          ctx.fillStyle = 'rgba(244, 114, 182, 0.4)';
-          ctx.fill();
-          ctx.strokeStyle = 'rgba(244, 114, 182, 0.8)';
-          ctx.lineWidth = 1;
-          ctx.stroke();
-          ctx.beginPath();
-          for (let i = -s * 0.6; i <= s * 0.6; i += s * 0.4) {
-            ctx.moveTo(i, 0);
-            ctx.lineTo(i + Math.sin(this.phase + i) * 3, s * 1.2);
-          }
-          ctx.strokeStyle = 'rgba(251, 113, 133, 0.6)';
+          ctx.arc(0, 0, s, 0, Math.PI * 2);
+          ctx.strokeStyle = 'rgba(186, 230, 253, 0.6)';
           ctx.lineWidth = 0.8;
           ctx.stroke();
-        } else {
+
           ctx.beginPath();
-          for (let i = 0; i < 5; i++) {
-            const a1 = (i * 2 * Math.PI) / 5 - Math.PI / 2;
-            const a2 = ((i + 0.5) * 2 * Math.PI) / 5 - Math.PI / 2;
-            const x1 = Math.cos(a1) * s;
-            const y1 = Math.sin(a1) * s;
-            const x2 = Math.cos(a2) * (s * 0.4);
-            const y2 = Math.sin(a2) * (s * 0.4);
-            if (i === 0) ctx.moveTo(x1, y1);
-            else ctx.lineTo(x1, y1);
-            ctx.lineTo(x2, y2);
-          }
-          ctx.closePath();
-          ctx.fillStyle = 'rgba(251, 146, 60, 0.6)';
+          ctx.arc(-s * 0.35, -s * 0.35, s * 0.22, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
           ctx.fill();
         }
+
         ctx.restore();
       }
     }
 
     class ButterflyParticle {
-      x: number = 0; y: number = 0; scale: number = 0; vx: number = 0; vy: number = 0; wingAngle: number = 0; wingSpeed: number = 0; color1: string = ''; color2: string = ''; opacity: number = 1;
+      x: number = 0; y: number = 0; scale: number = 0; vx: number = 0; vy: number = 0; wingAngle: number = 0; wingSpeed: number = 0;
+      opacity: number = 1; swayPhase: number = 0; tiltAngle: number = 0;
 
       constructor() { this.reset(true); }
 
       reset(isInitial = false) {
         this.x = Math.random() * width;
-        this.y = isInitial ? Math.random() * height : height + 20 + Math.random() * (height * 0.3);
-        this.scale = 10 + Math.random() * 10;
-        this.vy = -(0.8 + Math.random() * 1.0);
-        this.vx = (Math.random() - 0.5) * 1.2;
+        this.y = isInitial ? Math.random() * height : height + 30 + Math.random() * (height * 0.3);
+        this.scale = 5.5 + Math.random() * 3;
+        this.vy = -(0.25 + Math.random() * 0.3);
+        this.vx = (Math.random() - 0.5) * 0.35;
         this.wingAngle = Math.random() * Math.PI * 2;
-        this.wingSpeed = 0.12 + Math.random() * 0.08;
-        this.opacity = 0.8 + Math.random() * 0.2;
-        const colors = [
-          ['#f472b6', '#38bdf8'],
-          ['#fb7185', '#fef08a'],
-          ['#a855f7', '#ec4899'],
-          ['#38bdf8', '#34d399'],
-          ['#f97316', '#fef08a']
-        ];
-        const c = colors[Math.floor(Math.random() * colors.length)];
-        this.color1 = c[0];
-        this.color2 = c[1];
+        this.wingSpeed = 0.045 + Math.random() * 0.025;
+        this.swayPhase = Math.random() * Math.PI * 2;
+        this.tiltAngle = (Math.random() - 0.5) * 0.4;
+        this.opacity = 0.85 + Math.random() * 0.15;
       }
 
       update() {
         this.y += this.vy;
-        this.x += this.vx + Math.sin(this.wingAngle * 0.5) * 0.8;
+        this.swayPhase += 0.025;
+        this.x += this.vx + Math.sin(this.swayPhase) * 0.7;
         this.wingAngle += this.wingSpeed;
-        if (this.y < -30) this.reset(false);
+        if (this.y < -50) this.reset(false);
+      }
+
+      drawWing(s: number) {
+        // 1. Quầng sáng thủy tinh phát sáng mềm xung quanh cánh
+        ctx.beginPath();
+        ctx.ellipse(-s * 0.75, -s * 0.2, s * 1.1, s * 0.9, -Math.PI / 6, 0, Math.PI * 2);
+        const glowGrad = ctx.createRadialGradient(-s * 0.75, -s * 0.2, s * 0.2, -s * 0.75, -s * 0.2, s * 1.3);
+        glowGrad.addColorStop(0, 'rgba(255, 255, 255, 0.22)');
+        glowGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+        ctx.fillStyle = glowGrad;
+        ctx.fill();
+
+        // 2. Cánh trên (Forewing) - Cánh thủy tinh xếp nếp tinh xảo có gợn sóng mượt
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.bezierCurveTo(-s * 0.45, -s * 0.85, -s * 1.25, -s * 1.45, -s * 1.55, -s * 0.85);
+        // Gợn sóng lượn viền cánh ngoài
+        ctx.bezierCurveTo(-s * 1.6, -s * 0.6, -s * 1.45, -s * 0.4, -s * 1.5, -s * 0.22);
+        ctx.bezierCurveTo(-s * 1.4, -s * 0.05, -s * 1.1, s * 0.2, -s * 0.2, s * 0.08);
+        ctx.closePath();
+
+        const gradFore = ctx.createRadialGradient(-s * 0.2, -s * 0.1, s * 0.05, -s * 0.8, -s * 0.6, s * 1.3);
+        gradFore.addColorStop(0, 'rgba(255, 255, 255, 0.98)');
+        gradFore.addColorStop(0.35, 'rgba(255, 255, 255, 0.75)');
+        gradFore.addColorStop(0.75, 'rgba(240, 249, 255, 0.42)');
+        gradFore.addColorStop(1, 'rgba(255, 255, 255, 0.18)');
+        ctx.fillStyle = gradFore;
+        ctx.fill();
+
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.95)';
+        ctx.lineWidth = 1.3;
+        ctx.stroke();
+
+        // Gân cánh trên tinh xảo (Delicate forewing veins)
+        ctx.save();
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.65)';
+        ctx.lineWidth = 0.8;
+
+        // Gân chính 1
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.quadraticCurveTo(-s * 0.6, -s * 0.7, -s * 1.35, -s * 1.1);
+        ctx.stroke();
+
+        // Gân chính 2 & nhánh phụ
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.quadraticCurveTo(-s * 0.7, -s * 0.4, -s * 1.42, -s * 0.55);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(-s * 0.45, -s * 0.3);
+        ctx.quadraticCurveTo(-s * 0.9, -s * 0.2, -s * 1.3, -s * 0.18);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(-s * 0.4, -s * 0.5);
+        ctx.quadraticCurveTo(-s * 0.8, -s * 0.85, -s * 1.2, -s * 0.82);
+        ctx.stroke();
+
+        // Lớp nếp nhung thủy tinh bên trong
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.bezierCurveTo(-s * 0.35, -s * 0.7, -s * 0.95, -s * 0.9, -s * 0.88, -s * 0.42);
+        ctx.bezierCurveTo(-s * 0.8, -s * 0.1, -s * 0.5, s * 0.08, -s * 0.1, 0.04);
+        ctx.closePath();
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.38)';
+        ctx.fill();
+        ctx.restore();
+
+        // 3. Cánh dưới (Hindwing) - Dáng bo tròn có viền nếp gợn sóng & đuôi đuôi cá mảnh
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.bezierCurveTo(-s * 0.85, s * 0.15, -s * 1.2, s * 0.85, -s * 0.8, s * 1.3);
+        // Đuôi cánh uốn điệu đà
+        ctx.quadraticCurveTo(-s * 0.65, s * 1.5, -s * 0.5, s * 1.25);
+        ctx.bezierCurveTo(-s * 0.25, s * 1.3, -s * 0.1, s * 0.6, -s * 0.05, s * 0.1);
+        ctx.closePath();
+
+        const gradHind = ctx.createRadialGradient(-s * 0.1, s * 0.2, s * 0.05, -s * 0.5, s * 0.7, s * 1.05);
+        gradHind.addColorStop(0, 'rgba(255, 255, 255, 0.92)');
+        gradHind.addColorStop(0.45, 'rgba(255, 255, 255, 0.55)');
+        gradHind.addColorStop(0.85, 'rgba(240, 249, 255, 0.25)');
+        gradHind.addColorStop(1, 'rgba(255, 255, 255, 0.12)');
+        ctx.fillStyle = gradHind;
+        ctx.fill();
+
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.92)';
+        ctx.lineWidth = 1.1;
+        ctx.stroke();
+
+        // Gân cánh dưới (Hindwing veins)
+        ctx.save();
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.55)';
+        ctx.lineWidth = 0.75;
+
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.quadraticCurveTo(-s * 0.4, s * 0.5, -s * 0.75, s * 1.15);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.quadraticCurveTo(-s * 0.55, s * 0.35, -s * 0.95, s * 0.75);
+        ctx.stroke();
+
+        ctx.restore();
       }
 
       draw() {
         ctx.save();
         ctx.translate(this.x, this.y);
+        ctx.rotate(this.tiltAngle + Math.sin(this.swayPhase) * 0.15);
         ctx.globalAlpha = this.opacity;
 
-        const wScale = Math.abs(Math.sin(this.wingAngle));
+        const wScale = Math.abs(Math.sin(this.wingAngle)) * 0.8 + 0.2;
         const s = this.scale;
 
+        // Cánh bên trái
         ctx.save();
         ctx.scale(wScale, 1);
-        ctx.beginPath();
-        ctx.ellipse(-s * 0.7, -s * 0.4, s * 0.8, s * 0.6, -Math.PI / 6, 0, Math.PI * 2);
-        ctx.fillStyle = this.color1;
-        ctx.fill();
-        ctx.beginPath();
-        ctx.ellipse(-s * 0.5, s * 0.4, s * 0.5, s * 0.4, Math.PI / 6, 0, Math.PI * 2);
-        ctx.fillStyle = this.color2;
-        ctx.fill();
+        this.drawWing(s);
         ctx.restore();
 
+        // Cánh bên phải
         ctx.save();
         ctx.scale(-wScale, 1);
-        ctx.beginPath();
-        ctx.ellipse(-s * 0.7, -s * 0.4, s * 0.8, s * 0.6, -Math.PI / 6, 0, Math.PI * 2);
-        ctx.fillStyle = this.color1;
-        ctx.fill();
-        ctx.beginPath();
-        ctx.ellipse(-s * 0.5, s * 0.4, s * 0.5, s * 0.4, Math.PI / 6, 0, Math.PI * 2);
-        ctx.fillStyle = this.color2;
-        ctx.fill();
+        this.drawWing(s);
         ctx.restore();
 
+        // Thân bướm trắng phát sáng kiêu sa
         ctx.beginPath();
-        ctx.ellipse(0, 0, s * 0.12, s * 0.5, 0, 0, Math.PI * 2);
-        ctx.fillStyle = '#1e1b4b';
+        ctx.ellipse(0, s * 0.05, s * 0.06, s * 0.42, 0, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
         ctx.fill();
 
-        ctx.restore();
-      }
-    }
-
-    class CloudParticle {
-      x: number = 0; y: number = 0; scale: number = 0; vx: number = 0; opacity: number = 1;
-
-      constructor() { this.reset(true); }
-
-      reset(isInitial = false) {
-        this.x = isInitial ? Math.random() * width : -180 - Math.random() * 100;
-        this.y = Math.random() * (height * 0.7);
-        this.scale = 0.7 + Math.random() * 0.8;
-        this.vx = 0.4 + Math.random() * 0.6;
-        this.opacity = 0.35 + Math.random() * 0.35;
-      }
-
-      update() {
-        this.x += this.vx;
-        if (this.x > width + 200) this.reset(false);
-      }
-
-      draw() {
-        ctx.save();
-        ctx.translate(this.x, this.y);
-        ctx.scale(this.scale, this.scale);
-        ctx.globalAlpha = this.opacity;
-
+        // Đầu bướm
         ctx.beginPath();
-        ctx.arc(0, 0, 30, 0, Math.PI * 2);
-        ctx.arc(25, -15, 25, 0, Math.PI * 2);
-        ctx.arc(55, 0, 25, 0, Math.PI * 2);
-        ctx.arc(25, 10, 20, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+        ctx.arc(0, -s * 0.42, s * 0.07, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255, 255, 255, 1)';
         ctx.fill();
+
+        // Râu bướm uốn cong mảnh mai
+        ctx.beginPath();
+        ctx.moveTo(0, -s * 0.45);
+        ctx.quadraticCurveTo(-s * 0.2, -s * 0.85, -s * 0.35, -s * 0.9);
+        ctx.moveTo(0, -s * 0.45);
+        ctx.quadraticCurveTo(s * 0.2, -s * 0.85, s * 0.35, -s * 0.9);
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.95)';
+        ctx.lineWidth = 1.0;
+        ctx.stroke();
+
+        // Chấm râu tròn nhỏ
+        ctx.beginPath();
+        ctx.arc(-s * 0.35, -s * 0.9, s * 0.035, 0, Math.PI * 2);
+        ctx.arc(s * 0.35, -s * 0.9, s * 0.035, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255, 255, 255, 1)';
+        ctx.fill();
+
+        // Bụi phấn sáng lấp lánh (Sparkle Fairy Dust)
+        const sparkles = 4;
+        for (let k = 0; k < sparkles; k++) {
+          const spAngle = this.swayPhase * 2 + k * (Math.PI * 2 / sparkles);
+          const spDist = s * (0.8 + Math.sin(spAngle) * 0.4);
+          const spX = Math.cos(spAngle) * spDist;
+          const spY = Math.sin(spAngle) * spDist + s * 0.2;
+          const spAlpha = 0.3 + Math.sin(spAngle * 2) * 0.3;
+
+          ctx.beginPath();
+          ctx.arc(spX, spY, s * 0.04, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(255, 255, 255, ${Math.max(0, spAlpha)})`;
+          ctx.fill();
+        }
 
         ctx.restore();
       }
     }
 
     class FeatherParticle {
-      x: number = 0; y: number = 0; length: number = 0; vy: number = 0; vx: number = 0; rot: number = 0; vRot: number = 0; opacity: number = 1; swayPhase: number = 0; color: string = '';
+      x: number = 0; y: number = 0; length: number = 0; vy: number = 0; vx: number = 0;
+      rot: number = 0; vRot: number = 0; swayPhase: number = 0; swaySpeed: number = 0; swayAmp: number = 0;
+      rockAngle: number = 0; rockSpeed: number = 0; opacity: number = 1; curve: number = 0; color: string = '#ffffff';
 
       constructor() { this.reset(true); }
 
       reset(isInitial = false) {
         this.x = Math.random() * width;
-        this.y = isInitial ? Math.random() * height : -40 - Math.random() * (height * 0.4);
-        this.length = 30 + Math.random() * 20;
-        this.vy = 0.8 + Math.random() * 0.8;
-        this.vx = (Math.random() - 0.5) * 0.3;
-        this.rot = Math.random() * Math.PI * 2;
-        this.vRot = (Math.random() - 0.5) * 0.02;
+        this.y = isInitial ? Math.random() * height - height * 0.2 : -50 - Math.random() * (height * 0.7);
+        this.length = 20 + Math.random() * 10; // Nhỏ nhắn, thanh thoát (20px - 30px)
+        this.vy = 0.15 + Math.random() * 0.28; // Tốc độ rơi tản rộng (0.15 - 0.43)
+        this.vx = (Math.random() - 0.5) * 0.18;
+        this.rot = (Math.random() - 0.5) * 0.8;
+        this.vRot = (Math.random() - 0.5) * 0.006;
         this.swayPhase = Math.random() * Math.PI * 2;
-        this.opacity = 0.7 + Math.random() * 0.3;
-        const c = ['#ffffff', '#f1f5f9', '#fce7f3', '#e0f2fe'];
-        this.color = c[Math.floor(Math.random() * c.length)];
+        this.swaySpeed = 0.008 + Math.random() * 0.014; // Nhịp lướt riêng cho từng chiếc
+        this.swayAmp = 0.4 + Math.random() * 0.6; // Biên độ lắc riêng
+        this.rockAngle = Math.random() * Math.PI * 2;
+        this.rockSpeed = 0.012 + Math.random() * 0.016;
+        this.opacity = 0.5 + Math.random() * 0.4;
+        this.curve = (Math.random() - 0.5) * 0.22;
+        const colors = ['#ffffff', '#fdf4ff', '#f0f9ff', '#fefce8'];
+        this.color = colors[Math.floor(Math.random() * colors.length)];
       }
 
       update() {
         this.y += this.vy;
-        this.swayPhase += 0.02;
-        this.x += this.vx + Math.sin(this.swayPhase) * 0.8;
-        this.rot += this.vRot;
-        if (this.y > height + 50) this.reset(false);
+        this.swayPhase += this.swaySpeed;
+        this.rockAngle += this.rockSpeed;
+        this.x += this.vx + Math.sin(this.swayPhase) * this.swayAmp;
+        this.rot += this.vRot + Math.sin(this.swayPhase) * 0.005;
+        if (this.y > height + 60) this.reset(false);
       }
 
       draw() {
         ctx.save();
         ctx.translate(this.x, this.y);
-        ctx.rotate(this.rot);
+        ctx.rotate(this.rot + Math.sin(this.swayPhase) * 0.15);
+        const flipScale = Math.cos(this.rockAngle);
+        ctx.scale(flipScale, 1);
         ctx.globalAlpha = this.opacity;
-        const len = this.length;
 
+        const len = this.length;
+        const halfLen = len / 2;
+        const bend = this.curve * len;
+
+        ctx.shadowColor = 'rgba(255, 255, 255, 0.6)';
+        ctx.shadowBlur = 4;
+
+        // 1. Thân lông vũ (Quill / Spine)
         ctx.beginPath();
-        ctx.moveTo(0, -len / 2);
-        ctx.quadraticCurveTo(len * 0.1, 0, 0, len / 2);
-        ctx.strokeStyle = this.color;
-        ctx.lineWidth = 1.2;
+        ctx.moveTo(0, halfLen + 3);
+        ctx.quadraticCurveTo(bend, 0, bend * 0.5, -halfLen);
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 0.9;
         ctx.stroke();
 
+        // 2. Phiến lông tơ mềm mại (Feather Plume)
+        const steps = 14;
         ctx.beginPath();
-        ctx.ellipse(0, -len * 0.1, len * 0.18, len * 0.38, 0.1, 0, Math.PI * 2);
-        ctx.fillStyle = this.color;
+        ctx.moveTo(bend * 0.5, -halfLen); // Đỉnh lông
+
+        // Cạnh trái
+        for (let i = steps; i >= 1; i--) {
+          const t = i / steps;
+          const py = (0.5 - t) * len;
+          const px = bend * Math.sin(t * Math.PI);
+          const w = Math.sin(Math.pow(t, 0.6) * Math.PI) * (len * 0.18);
+          ctx.lineTo(px - w, py);
+        }
+
+        // Gốc lông
+        ctx.lineTo(0, halfLen);
+
+        // Cạnh phải
+        for (let i = 1; i <= steps; i++) {
+          const t = i / steps;
+          const py = (0.5 - t) * len;
+          const px = bend * Math.sin(t * Math.PI);
+          const w = Math.sin(Math.pow(t, 0.6) * Math.PI) * (len * 0.16);
+          ctx.lineTo(px + w, py);
+        }
+
+        ctx.closePath();
+
+        const plumeGrad = ctx.createLinearGradient(0, -halfLen, 0, halfLen);
+        plumeGrad.addColorStop(0, 'rgba(255, 255, 255, 0.85)');
+        plumeGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.6)');
+        plumeGrad.addColorStop(1, 'rgba(255, 255, 255, 0.15)');
+        ctx.fillStyle = plumeGrad;
         ctx.fill();
+
+        // 3. Các sợi tơ mảnh (Fine Barb Details)
+        ctx.strokeStyle = this.color;
+        ctx.lineWidth = 0.55;
+        const barbCount = 12;
+        for (let i = 2; i < barbCount; i++) {
+          const t = i / barbCount;
+          const py = (0.5 - t) * len;
+          const px = bend * Math.sin(t * Math.PI);
+          const w = Math.sin(Math.pow(t, 0.6) * Math.PI) * (len * 0.17);
+
+          // Tơ bên trái
+          ctx.beginPath();
+          ctx.moveTo(px, py);
+          ctx.quadraticCurveTo(px - w * 0.5, py - 1.5, px - w, py - 3);
+          ctx.stroke();
+
+          // Tơ bên phải
+          ctx.beginPath();
+          ctx.moveTo(px, py);
+          ctx.quadraticCurveTo(px + w * 0.5, py - 1.5, px + w, py - 3);
+          ctx.stroke();
+        }
+
+        // 4. Lông tơ mềm mịn xoè nhẹ ở gốc (Fluffy Down Base)
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+        ctx.lineWidth = 0.5;
+        for (let d = 0; d < 5; d++) {
+          const dy = halfLen - d * 1.5;
+          ctx.beginPath();
+          ctx.moveTo(0, dy);
+          ctx.lineTo(-3 - d * 0.5, dy + 2);
+          ctx.moveTo(0, dy);
+          ctx.lineTo(3 + d * 0.5, dy + 2);
+          ctx.stroke();
+        }
 
         ctx.restore();
       }
     }
 
     class LightningParticle {
-      timer: number = 0; nextStrike: number = 100; opacity: number = 0; bolts: { x: number; y: number }[][] = [];
+      x: number = 0;
+      y: number = 0;
+      size: number = 0;
+      vx: number = 0;
+      vy: number = 0;
+      alpha: number = 1;
+      baseAlpha: number = 1;
 
-      constructor() { this.reset(); }
-
-      reset() {
-        this.timer = 0;
-        this.nextStrike = 120 + Math.floor(Math.random() * 200);
-        this.opacity = 0;
-        this.bolts = [];
+      constructor() {
+        this.reset(true);
       }
-
-      generateBolts() {
-        this.bolts = [];
-        const startX = Math.random() * width;
-        let currX = startX;
-        let currY = 0;
-        const mainBolt: { x: number; y: number }[] = [{ x: currX, y: currY }];
-
-        while (currY < height * 0.75) {
-          currY += 20 + Math.random() * 30;
-          currX += (Math.random() - 0.5) * 60;
-          mainBolt.push({ x: currX, y: currY });
-        }
-        this.bolts.push(mainBolt);
-      }
-
-      update() {
-        this.timer++;
-        if (this.timer === this.nextStrike) {
-          this.generateBolts();
-          this.opacity = 1;
-        } else if (this.timer > this.nextStrike) {
-          this.opacity *= 0.82;
-          if (this.opacity < 0.02) {
-            this.reset();
-          }
-        }
-      }
-
-      draw() {
-        if (this.opacity <= 0.02) return;
-        ctx.save();
-        ctx.globalAlpha = this.opacity;
-
-        ctx.fillStyle = 'rgba(224, 231, 255, 0.15)';
-        ctx.fillRect(0, 0, width, height);
-
-        this.bolts.forEach((bolt) => {
-          ctx.beginPath();
-          bolt.forEach((p, i) => {
-            if (i === 0) ctx.moveTo(p.x, p.y);
-            else ctx.lineTo(p.x, p.y);
-          });
-          ctx.strokeStyle = '#c7d2fe';
-          ctx.lineWidth = 3;
-          ctx.shadowColor = '#818cf8';
-          ctx.shadowBlur = 15;
-          ctx.stroke();
-
-          ctx.strokeStyle = '#ffffff';
-          ctx.lineWidth = 1.5;
-          ctx.stroke();
-        });
-
-        ctx.restore();
-      }
-    }
-
-    class StormParticle {
-      x: number = 0; y: number = 0; vy: number = 0; len: number = 0; opacity: number = 1;
-
-      constructor() { this.reset(true); }
 
       reset(isInitial = false) {
-        this.x = Math.random() * (width + 300) - 150;
-        this.y = isInitial ? Math.random() * height : -30 - Math.random() * (height * 0.3);
-        this.vy = 14 + Math.random() * 10;
-        this.len = 25 + Math.random() * 25;
-        this.opacity = 0.3 + Math.random() * 0.4;
+        this.x = Math.random() * width;
+        this.y = isInitial ? Math.random() * height : -20;
+        this.size = 1 + Math.random() * 2;
+        this.vx = (Math.random() - 0.5) * 1;
+        this.vy = 2 + Math.random() * 3;
+        this.baseAlpha = 0.5 + Math.random() * 0.5;
+        this.alpha = this.baseAlpha;
       }
 
       update() {
+        this.x += this.vx;
         this.y += this.vy;
-        this.x -= 3;
-        if (this.y > height + 40) this.reset(false);
+        if (this.y > height + 20) {
+          this.reset();
+        }
       }
 
-      draw() {
+      draw(ctx: CanvasRenderingContext2D) {
         ctx.save();
-        ctx.globalAlpha = this.opacity;
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = '#818cf8';
+        ctx.fillStyle = `rgba(165, 180, 252, ${this.alpha})`;
         ctx.beginPath();
-        ctx.moveTo(this.x, this.y);
-        ctx.lineTo(this.x - 6, this.y + this.len);
-        ctx.strokeStyle = '#93c5fd';
-        ctx.lineWidth = 1.2;
-        ctx.stroke();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
         ctx.restore();
       }
     }
 
     class FogParticle {
-      x: number = 0; y: number = 0; radius: number = 0; vx: number = 0; opacity: number = 1;
+      x: number = 0;
+      y: number = 0;
+      size: number = 0;
+      vx: number = 0;
+      vy: number = 0;
+      alpha: number = 1;
+      baseAlpha: number = 1;
 
-      constructor() { this.reset(true); }
-
-      reset(isInitial = false) {
-        this.x = isInitial ? Math.random() * width : -200 - Math.random() * 100;
-        this.y = Math.random() * height;
-        this.radius = 120 + Math.random() * 100;
-        this.vx = 0.3 + Math.random() * 0.4;
-        this.opacity = 0.12 + Math.random() * 0.15;
+      constructor() {
+        this.reset(true);
       }
-
-      update() {
-        this.x += this.vx;
-        if (this.x > width + 250) this.reset(false);
-      }
-
-      draw() {
-        ctx.save();
-        ctx.globalAlpha = this.opacity;
-        const grad = ctx.createRadialGradient(this.x, this.y, 10, this.x, this.y, this.radius);
-        grad.addColorStop(0, 'rgba(226, 232, 240, 0.8)');
-        grad.addColorStop(0.5, 'rgba(203, 213, 225, 0.4)');
-        grad.addColorStop(1, 'rgba(203, 213, 225, 0)');
-
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-        ctx.fillStyle = grad;
-        ctx.fill();
-        ctx.restore();
-      }
-    }
-
-    class PaperPageParticle {
-      x: number = 0; y: number = 0; w: number = 0; h: number = 0; vy: number = 0; vx: number = 0; rotX: number = 0; rotY: number = 0; rotZ: number = 0; vRotX: number = 0; vRotY: number = 0; vRotZ: number = 0; opacity: number = 1;
-
-      constructor() { this.reset(true); }
 
       reset(isInitial = false) {
         this.x = Math.random() * width;
-        this.y = isInitial ? Math.random() * height : -40 - Math.random() * (height * 0.4);
-        this.w = 22 + Math.random() * 10;
-        this.h = this.w * 1.35;
-        this.vy = 1.0 + Math.random() * 1.2;
-        this.vx = (Math.random() - 0.5) * 0.5;
-        this.rotX = Math.random() * Math.PI * 2;
-        this.rotY = Math.random() * Math.PI * 2;
-        this.rotZ = Math.random() * Math.PI * 2;
-        this.vRotX = (Math.random() - 0.5) * 0.03;
-        this.vRotY = (Math.random() - 0.5) * 0.035;
-        this.vRotZ = (Math.random() - 0.5) * 0.02;
-        this.opacity = 0.8 + Math.random() * 0.2;
+        this.y = isInitial ? Math.random() * height : height + 50;
+        this.size = 80 + Math.random() * 120;
+        this.vx = (Math.random() - 0.5) * 0.2;
+        this.vy = -(0.1 + Math.random() * 0.2);
+        this.baseAlpha = 0.05 + Math.random() * 0.1;
+        this.alpha = this.baseAlpha;
       }
 
       update() {
-        this.y += this.vy;
         this.x += this.vx;
-        this.rotX += this.vRotX;
-        this.rotY += this.vRotY;
-        this.rotZ += this.vRotZ;
-        if (this.y > height + 50) this.reset(false);
+        this.y += this.vy;
+        if (this.y < -150) {
+          this.reset();
+        }
       }
 
-      draw() {
+      draw(ctx: CanvasRenderingContext2D) {
         ctx.save();
-        ctx.translate(this.x, this.y);
-        const scaleX = Math.cos(this.rotY);
-        const scaleY = Math.cos(this.rotX);
-        ctx.rotate(this.rotZ);
-        ctx.scale(scaleX, scaleY);
-        ctx.globalAlpha = this.opacity;
-
+        const grad = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.size);
+        grad.addColorStop(0, `rgba(200, 200, 200, ${this.alpha})`);
+        grad.addColorStop(1, 'rgba(200, 200, 200, 0)');
+        ctx.fillStyle = grad;
         ctx.beginPath();
-        ctx.rect(-this.w / 2, -this.h / 2, this.w, this.h);
-        ctx.fillStyle = '#fef3c7';
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
         ctx.fill();
-        ctx.strokeStyle = '#d97706';
-        ctx.lineWidth = 0.6;
-        ctx.stroke();
-
-        ctx.strokeStyle = 'rgba(180, 83, 9, 0.4)';
-        ctx.lineWidth = 0.8;
-        for (let i = -this.h * 0.3; i <= this.h * 0.3; i += 4) {
-          ctx.beginPath();
-          ctx.moveTo(-this.w * 0.35, i);
-          ctx.lineTo(this.w * 0.35, i);
-          ctx.stroke();
-        }
-
         ctx.restore();
       }
     }
@@ -2230,28 +2368,18 @@ export const ReadingEffects: React.FC<ReadingEffectsProps> = ({ effect = 'none',
         particles.push(new FireflyParticle());
       } else if (effect === 'soap_bubble') {
         particles.push(new SoapBubbleParticle());
-      } else if (effect === 'money_100k') {
-        particles.push(new Money100kParticle());
       } else if (effect === 'fruits') {
         particles.push(new FruitParticle());
-      } else if (effect === 'planets') {
-        particles.push(new PlanetParticle());
       } else if (effect === 'ocean') {
         particles.push(new OceanParticle());
       } else if (effect === 'butterflies') {
         particles.push(new ButterflyParticle());
-      } else if (effect === 'clouds') {
-        particles.push(new CloudParticle());
       } else if (effect === 'feathers') {
         particles.push(new FeatherParticle());
       } else if (effect === 'lightning') {
         particles.push(new LightningParticle());
-      } else if (effect === 'storm') {
-        particles.push(new StormParticle());
       } else if (effect === 'fog') {
         particles.push(new FogParticle());
-      } else if (effect === 'paper_pages') {
-        particles.push(new PaperPageParticle());
       } else if (effect === 'fire_sparks') {
         particles.push(new FireSparkParticle());
       } else if (effect === 'sci_fi_hud') {
@@ -2443,6 +2571,54 @@ export const ReadingEffects: React.FC<ReadingEffectsProps> = ({ effect = 'none',
             p.draw(ctx, rgb);
           });
         } else {
+          if (effect === 'ocean') {
+            const oceanTime = glitchTimer * 0.01;
+
+            ctx.save();
+
+            // Hiệu ứng ẩn hiện nhịp nhàng (Breathing fade-in / fade-out effect)
+            const pulseAlpha = 0.2 + 0.8 * (Math.sin(oceanTime * 0.7) * 0.5 + 0.5);
+            ctx.globalAlpha = pulseAlpha;
+
+            // 1. Phủ màu nền ánh sáng đại dương dịu mờ
+            const oceanBgGrad = ctx.createLinearGradient(0, 0, 0, height);
+            if (isDarkTheme) {
+              oceanBgGrad.addColorStop(0, 'rgba(14, 116, 144, 0.16)');
+              oceanBgGrad.addColorStop(0.5, 'rgba(8, 145, 178, 0.10)');
+              oceanBgGrad.addColorStop(1, 'rgba(3, 105, 161, 0.12)');
+            } else {
+              oceanBgGrad.addColorStop(0, 'rgba(34, 211, 238, 0.14)');
+              oceanBgGrad.addColorStop(0.5, 'rgba(56, 189, 248, 0.09)');
+              oceanBgGrad.addColorStop(1, 'rgba(14, 165, 233, 0.11)');
+            }
+            ctx.fillStyle = oceanBgGrad;
+            ctx.fillRect(0, 0, width, height);
+
+            ctx.globalCompositeOperation = 'screen';
+
+            // 2. Đốm quầng sáng nước trôi bồng bềnh mờ ảo (Soft Caustics Blobs)
+            const numBlobs = 6;
+            for (let i = 0; i < numBlobs; i++) {
+              const bx = (width * ((i + 0.5) / numBlobs)) + Math.sin(oceanTime + i * 1.3) * (width * 0.08);
+              const by = (height * (((i % 3) + 1) / 4)) + Math.cos(oceanTime * 0.8 + i) * (height * 0.08);
+              const radius = Math.min(width, height) * (0.22 + Math.sin(oceanTime * 0.5 + i) * 0.06);
+
+              const blobGrad = ctx.createRadialGradient(bx, by, 0, bx, by, radius);
+              const alpha = 0.04 + Math.sin(oceanTime * 0.7 + i * 2) * 0.02;
+
+              blobGrad.addColorStop(0, `rgba(224, 242, 254, ${alpha * 1.4})`);
+              blobGrad.addColorStop(0.5, `rgba(125, 211, 252, ${alpha * 0.8})`);
+              blobGrad.addColorStop(1, 'rgba(56, 189, 248, 0)');
+
+              ctx.fillStyle = blobGrad;
+              ctx.beginPath();
+              ctx.arc(bx, by, radius, 0, Math.PI * 2);
+              ctx.fill();
+            }
+
+            ctx.restore();
+            glitchTimer++;
+          }
           // Render general particles
           particles.forEach((p) => {
             p.update();

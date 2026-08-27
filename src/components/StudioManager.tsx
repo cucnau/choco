@@ -26,7 +26,9 @@ import {
   RefreshCw,
   Settings,
   Check,
-  Palette
+  Palette,
+  ArrowUp,
+  ArrowDown
 } from 'lucide-react';
 import { BulkChapterModal } from './BulkChapterModal';
 import { LiveStoryEditor } from './LiveStoryEditor';
@@ -599,19 +601,14 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
   // Save from Live Story Editor
   const handleLiveStorySave = (storyData: Partial<Story>) => {
     const resolvedEditorName = 
-      storyData.editorName?.trim() ||
-      userProfile?.displayName ||
-      currentUser?.displayName ||
-      currentUser?.email?.split('@')[0] ||
-      editingStory?.editorName ||
-      'Cục Nâu';
+      storyData.editorName !== undefined
+        ? storyData.editorName.trim()
+        : (editingStory?.editorName || userProfile?.displayName || currentUser?.displayName || currentUser?.email?.split('@')[0] || 'Cục Nâu');
 
     const resolvedEditorPhoto =
-      storyData.editorPhoto?.trim() ||
-      userProfile?.photoURL ||
-      currentUser?.photoURL ||
-      editingStory?.editorPhoto ||
-      '';
+      storyData.editorPhoto !== undefined
+        ? storyData.editorPhoto.trim()
+        : (editingStory?.editorPhoto !== undefined ? editingStory.editorPhoto : (userProfile?.photoURL || currentUser?.photoURL || ''));
 
     const newStory: Story = {
       id: storyData.id || (editingStory ? editingStory.id : 'story-' + Date.now()),
@@ -761,17 +758,19 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
     setStoryTitle(story.title);
     setStoryAuthor(story.author || 'Tử Thời Hoan');
     setStoryEditorName(
-      story.editorName ||
-      userProfile?.displayName ||
-      currentUser?.displayName ||
-      currentUser?.email?.split('@')[0] ||
-      'Cục Nâu'
+      story.editorName !== undefined ? story.editorName : (
+        userProfile?.displayName ||
+        currentUser?.displayName ||
+        currentUser?.email?.split('@')[0] ||
+        'Cục Nâu'
+      )
     );
     setStoryEditorPhoto(
-      story.editorPhoto ||
-      userProfile?.photoURL ||
-      currentUser?.photoURL ||
-      ''
+      story.editorPhoto !== undefined ? story.editorPhoto : (
+        userProfile?.photoURL ||
+        currentUser?.photoURL ||
+        ''
+      )
     );
     setStoryCoverUrl(story?.coverUrl || '');
     setStorySynopsis(story?.synopsis || '');
@@ -831,19 +830,14 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
     if (!storyTitle.trim()) return;
 
     const resolvedEditorName = 
-      storyEditorName.trim() ||
-      userProfile?.displayName ||
-      currentUser?.displayName ||
-      currentUser?.email?.split('@')[0] ||
-      editingStory?.editorName ||
-      'Cục Nâu';
+      storyEditorName.trim() !== ''
+        ? storyEditorName.trim()
+        : (editingStory?.editorName || userProfile?.displayName || currentUser?.displayName || currentUser?.email?.split('@')[0] || 'Cục Nâu');
 
     const resolvedEditorPhoto =
-      storyEditorPhoto.trim() ||
-      userProfile?.photoURL ||
-      currentUser?.photoURL ||
-      editingStory?.editorPhoto ||
-      '';
+      storyEditorPhoto !== undefined
+        ? storyEditorPhoto.trim()
+        : (editingStory?.editorPhoto !== undefined ? editingStory.editorPhoto : (userProfile?.photoURL || currentUser?.photoURL || ''));
 
     const parsedTags = storyTagsInput
       .split(',')
@@ -1015,6 +1009,37 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
       console.error('Error applying batch volume:', err);
     } finally {
       setIsUpdatingBatchVolume(false);
+    }
+  };
+
+  const handleMoveChapter = async (chapId: string, direction: 'up' | 'down') => {
+    if (!selectedStoryForChapters) return;
+    const storyChaps = (chapters || [])
+      .filter((c) => c && c.storyId === selectedStoryForChapters.id)
+      .sort((a, b) => a.chapterNumber - b.chapterNumber);
+
+    const idx = storyChaps.findIndex((c) => c.id === chapId);
+    if (idx < 0) return;
+    if (direction === 'up' && idx === 0) return;
+    if (direction === 'down' && idx === storyChaps.length - 1) return;
+
+    const targetIdx = direction === 'up' ? idx - 1 : idx + 1;
+    const newOrder = [...storyChaps];
+    const [moved] = newOrder.splice(idx, 1);
+    newOrder.splice(targetIdx, 0, moved);
+
+    const updatedBatch = newOrder.map((c, i) => ({
+      ...c,
+      chapterNumber: i + 1,
+      updatedAt: new Date().toISOString().split('T')[0],
+    }));
+
+    if (onSaveBatchChapters) {
+      await onSaveBatchChapters(updatedBatch);
+    } else {
+      for (const ch of updatedBatch) {
+        onSaveChapter(ch);
+      }
     }
   };
 
@@ -1371,6 +1396,26 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
                           </div>
 
                           <div className="flex items-center gap-1 shrink-0 ml-2">
+                            <div className="flex items-center gap-0.5 border-r border-[#2d1822] pr-1.5 mr-0.5">
+                              <button
+                                type="button"
+                                disabled={idx === 0}
+                                onClick={() => handleMoveChapter(chap.id, 'up')}
+                                className="p-1 text-[#8a717a] hover:text-[#ffd6e2] disabled:opacity-20 transition cursor-pointer disabled:cursor-not-allowed"
+                                title="Di chuyển chương lên trên"
+                              >
+                                <ArrowUp className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                disabled={idx === storyChaps.length - 1}
+                                onClick={() => handleMoveChapter(chap.id, 'down')}
+                                className="p-1 text-[#8a717a] hover:text-[#ffd6e2] disabled:opacity-20 transition cursor-pointer disabled:cursor-not-allowed"
+                                title="Di chuyển chương xuống dưới"
+                              >
+                                <ArrowDown className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
                             <button
                               onClick={() => handleOpenEditChapter(chap)}
                               className="p-1.5 text-[#8a717a] hover:text-[#ffd6e2] transition"
@@ -2034,17 +2079,12 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
                       <option value="cherry_blossom">Cánh hoa đào rơi</option>
                       <option value="firefly">Đom đóm</option>
                       <option value="soap_bubble">Bong bóng xà phòng</option>
-                      <option value="money_100k">Tiền 100k rơi</option>
                       <option value="fruits">Trái cây rơi</option>
-                      <option value="planets">Các hành tinh</option>
-                      <option value="ocean">Đại dương & Bọt biển</option>
+                      <option value="ocean">Đại dương</option>
                       <option value="butterflies">Bướm bay</option>
-                      <option value="clouds">Mây trôi</option>
                       <option value="feathers">Lông vũ rơi</option>
                       <option value="lightning">Sấm sét</option>
-                      <option value="storm">Giông bão</option>
                       <option value="fog">Sương mù</option>
-                      <option value="paper_pages">Trang giấy bay</option>
                     </select>
                   </div>
                 </div>

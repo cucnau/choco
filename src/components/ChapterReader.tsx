@@ -775,7 +775,7 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
             )
           ) : (
             /* Text Content with Paragraph-level commenting */
-            <div className={`space-y-5 text-sm leading-relaxed ${storyBodyFont}`} style={{ color: currentText }}>
+            <div className={`space-y-5 leading-relaxed ${storyBodyFont}`} style={{ color: currentText, fontSize: 'inherit' }}>
               {paragraphs.length > 0 ? (
                 paragraphs.map((para, idx) => {
                   const paraComments = safeComments.filter((c) => c && c.paragraphIndex === idx);

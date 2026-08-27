@@ -480,14 +480,29 @@ export async function saveMultipleChapters(newChapters: Chapter[]): Promise<Chap
   return updated;
 }
 
-export async function deleteChapter(chapterId: string, storyId: string): Promise<Chapter[]> {
+export async function deleteChapter(chapterId: string, storyId?: string): Promise<Chapter[]> {
   const allChapters = getChaptersLocal();
+  const targetChapter = allChapters.find((c) => c.id === chapterId);
+  const effectiveStoryId = storyId || targetChapter?.storyId || '';
+
   const updated = allChapters.filter((c) => c.id !== chapterId);
   safeLocalStorageSet(STORAGE_KEYS.CHAPTERS, JSON.stringify(updated));
 
   // Xóa bình luận của chương này
   const remainingComments = getCommentsLocal().filter((c) => c.chapterId !== chapterId);
   safeLocalStorageSet(STORAGE_KEYS.COMMENTS, JSON.stringify(remainingComments));
+
+  // Cập nhật lại chapterCount của truyện
+  if (effectiveStoryId) {
+    const stories = getStoriesLocal();
+    const targetStory = stories.find((s) => s.id === effectiveStoryId);
+    if (targetStory) {
+      const remainingCount = updated.filter((c) => c.storyId === effectiveStoryId).length;
+      targetStory.chapterCount = remainingCount;
+      safeLocalStorageSet(STORAGE_KEYS.STORIES, JSON.stringify(stories));
+      setDoc(doc(db, 'stories', effectiveStoryId), { chapterCount: remainingCount }, { merge: true }).catch(() => {});
+    }
+  }
 
   try {
     await deleteDoc(doc(db, 'chapters', chapterId));

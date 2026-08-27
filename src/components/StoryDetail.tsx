@@ -473,13 +473,20 @@ export const StoryDetail: React.FC<StoryDetailProps> = ({
     (userProfile?.displayName ? userProfile.displayName : undefined) ||
     (story.authorEmail ? story.authorEmail.split('@')[0] : 'Cục Nâu');
 
+  const isCustomEditor = !!(
+    story.editorName && 
+    story.editorName !== (liveEditorProfile?.displayName || userProfile?.displayName || currentUser?.displayName)
+  );
+
   const editorAvatarUrl =
     story.editorPhoto ||
-    liveEditorProfile?.photoURL ||
-    (userProfile && story.authorUid && userProfile.uid === story.authorUid ? userProfile.photoURL : undefined) ||
-    (currentUser && story.authorUid && currentUser.uid === story.authorUid ? currentUser.photoURL : undefined) ||
-    (userProfile?.photoURL ? userProfile.photoURL : undefined) ||
-    '';
+    (isCustomEditor ? '' : (
+      liveEditorProfile?.photoURL ||
+      (userProfile && story.authorUid && userProfile.uid === story.authorUid ? userProfile.photoURL : undefined) ||
+      (currentUser && story.authorUid && currentUser.uid === story.authorUid ? currentUser.photoURL : undefined) ||
+      (userProfile?.photoURL ? userProfile.photoURL : undefined) ||
+      ''
+    ));
 
   const firstChapter = chapters.length > 0 ? (chapters.find(c => c.chapterNumber === 1) || chapters[0]) : null;
 
