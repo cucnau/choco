@@ -546,7 +546,18 @@ export const StoryDetail: React.FC<StoryDetailProps> = ({
 
         {/* Story Decorative Elements */}
         {story.storyElements && story.storyElements.length > 0 && (
-          <StoryElementsLayer elements={story.storyElements} isEditable={false} />
+          <StoryElementsLayer
+            elements={story.storyElements}
+            isEditable={false}
+            themeColors={{
+              bg: isCustomTheme ? story.customBgColor : undefined,
+              cardBg: isCustomTheme ? story.customCardBgColor : undefined,
+              border: activeBorderColor,
+              accentColor: activeBorderColor,
+              text: isCustomTheme ? story.customTextColor : undefined,
+              textMuted: isCustomTheme ? story.customMutedColor : undefined,
+            }}
+          />
         )}
 
         <StoryLayoutContainer

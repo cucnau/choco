@@ -28,10 +28,18 @@ import {
   Check,
   Palette,
   ArrowUp,
-  ArrowDown
+  ArrowDown,
+  BellRing,
+  MessageSquare,
+  Smartphone,
+  Mail,
+  Shield,
+  StickyNote,
+  Sparkles
 } from 'lucide-react';
 import { BulkChapterModal } from './BulkChapterModal';
 import { LiveStoryEditor } from './LiveStoryEditor';
+import { SpecialFrameInsertModal } from './SpecialFrameInsertModal';
 import { claimStoryOwnership } from '../lib/storage';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
@@ -578,6 +586,14 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
   const [isChapterPasswordProtected, setIsChapterPasswordProtected] = useState(false);
   const [chapterPassword, setChapterPassword] = useState('');
   const [chapterPasswordHint, setChapterPasswordHint] = useState('');
+  const [showSpecialFrameModal, setShowSpecialFrameModal] = useState(false);
+
+  const handleInsertStudioFrameSnippet = (snippet: string) => {
+    setChapterContent((prev) => {
+      const trimmed = prev ? prev.trim() : '';
+      return trimmed ? `${trimmed}\n\n${snippet.trim()}\n\n` : `${snippet.trim()}\n\n`;
+    });
+  };
 
   // Batch Volume assignment in chapter list
   const [selectedChapterIds, setSelectedChapterIds] = useState<string[]>([]);
@@ -1568,12 +1584,74 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
                 )}
               </div>
 
-              <div className="space-y-1">
-                <label className="text-xs text-[#8a717a] block font-mono-code">Nội dung chữ:</label>
+              <div className="space-y-2">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <label className="text-xs text-[#8a717a] block font-mono-code">Nội dung chữ:</label>
+                  
+                  {/* Nút mở Modal Trình Tạo Khung Trực Quan */}
+                  <button
+                    type="button"
+                    onClick={() => setShowSpecialFrameModal(true)}
+                    className="px-2 py-1 rounded bg-[#2b1620] hover:bg-[#3d1e2c] border border-[#5e2f46] text-[11px] text-[#ffd6e2] font-mono-code font-bold flex items-center gap-1.5 transition cursor-pointer"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-pink-400" />
+                    <span>Trình tạo khung đặc biệt</span>
+                  </button>
+                </div>
+
+                {/* Quick Frame Tags Toolbar */}
+                <div className="p-2 rounded bg-[#0d0608] border border-[#2d1822] flex flex-wrap items-center gap-1.5 text-[11px] font-mono-code">
+                  <span className="text-[#8a717a] text-[10px] mr-1 flex items-center gap-1">
+                    <Sparkles className="w-3 h-3 text-pink-400" /> Chèn nhanh:
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleInsertStudioFrameSnippet('[system: THÔNG BÁO HỆ THỐNG]\nNội dung thông báo hệ thống ở đây...\n[/system]')}
+                    className="px-2 py-0.5 rounded bg-[#160a0f] hover:bg-[#241119] border border-[#331c27] text-[#38bdf8] flex items-center gap-1 cursor-pointer"
+                  >
+                    <BellRing className="w-2.5 h-2.5" /> Hệ thống
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleInsertStudioFrameSnippet('[forum: Diễn Đàn Mạng Xã Hội]\n[netizen: Lầu 1 - Ăn dưa | 1 phút trước | +99]: Bình luận của cư dân mạng...\n[netizen: Qua Đường Giáp | Vừa xong | +45]: Bình luận tiếp theo...\n[/forum]')}
+                    className="px-2 py-0.5 rounded bg-[#160a0f] hover:bg-[#241119] border border-[#331c27] text-[#f472b6] flex items-center gap-1 cursor-pointer"
+                  >
+                    <MessageSquare className="w-2.5 h-2.5" /> Cư dân mạng
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleInsertStudioFrameSnippet('[chat: Hộp Thoại Trò Chuyện]\n[left: Đối phương]: Cậu đang ở đâu thế?\n[right: Tôi]: Tớ vừa tới nơi nè!\n[/chat]')}
+                    className="px-2 py-0.5 rounded bg-[#160a0f] hover:bg-[#241119] border border-[#331c27] text-[#4ade80] flex items-center gap-1 cursor-pointer"
+                  >
+                    <Smartphone className="w-2.5 h-2.5" /> Chat
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleInsertStudioFrameSnippet('[letter: Mật Hàm Cổ Điển | Gửi người thừa kế]\nNội dung bức thư hoặc nhật ký ở đây...\n[/letter]')}
+                    className="px-2 py-0.5 rounded bg-[#160a0f] hover:bg-[#241119] border border-[#331c27] text-[#fbbf24] flex items-center gap-1 cursor-pointer"
+                  >
+                    <Mail className="w-2.5 h-2.5" /> Thư tay
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleInsertStudioFrameSnippet('[status: BẢNG TRẠNG THÁI]\nCảnh giới: Luyện Khí Kỳ\nHP: 100/100\nKỹ năng: Hỏa Cầu Thuật\n[/status]')}
+                    className="px-2 py-0.5 rounded bg-[#160a0f] hover:bg-[#241119] border border-[#331c27] text-[#c084fc] flex items-center gap-1 cursor-pointer"
+                  >
+                    <Shield className="w-2.5 h-2.5" /> Bảng RPG
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleInsertStudioFrameSnippet('[note: Lời tác giả]\nLời nhắn nhủ hoặc chú thích thuật ngữ của tác giả...\n[/note]')}
+                    className="px-2 py-0.5 rounded bg-[#160a0f] hover:bg-[#241119] border border-[#331c27] text-[#94a3b8] flex items-center gap-1 cursor-pointer"
+                  >
+                    <StickyNote className="w-2.5 h-2.5" /> Lời tác giả
+                  </button>
+                </div>
+
                 <textarea
                   value={chapterContent}
                   onChange={(e) => setChapterContent(e.target.value)}
-                  placeholder="Nhập nội dung chương truyện ở đây..."
+                  placeholder="Nhập nội dung chương truyện ở đây... Bạn có thể dùng các khung đặc biệt ở thanh công cụ phía trên."
                   rows={12}
                   className="w-full bg-[#12090c] border border-[#2d1822] p-3 text-xs text-[#e0c0cc] focus:outline-none focus:border-[#522d3d] leading-relaxed resize-y font-mono-code"
                   required
@@ -2752,6 +2830,27 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
                 onSaveChapter(ch);
               }
             }
+          }}
+        />
+      )}
+
+      {/* Special Frame Insert Modal */}
+      {showSpecialFrameModal && (
+        <SpecialFrameInsertModal
+          isOpen={showSpecialFrameModal}
+          onClose={() => setShowSpecialFrameModal(false)}
+          onInsertCode={handleInsertStudioFrameSnippet}
+          themeColors={{
+            bg: '#0d0608',
+            cardBg: '#150a0f',
+            border: '#331c27',
+            btnBg: '#e879f9',
+            btnText: '#000000',
+            btnSecondaryBg: '#241119',
+            btnBorder: '#5e2f46',
+            text: '#ffd6e2',
+            textMuted: '#a88d98',
+            accentColor: '#e879f9',
           }}
         />
       )}

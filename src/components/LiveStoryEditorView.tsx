@@ -1671,6 +1671,18 @@ export const LiveStoryEditorView: React.FC<LiveStoryEditorViewProps> = (props) =
           selectedElementId={selectedStoryElementId}
           onSelectElement={setSelectedStoryElementId}
           containerRef={articleRef}
+          themeColors={{
+            bg: currentCardBg,
+            cardBg: currentCardBg,
+            border: currentBorder,
+            btnBg: currentBtnBg,
+            btnText: currentBtnText,
+            btnSecondaryBg: currentBtnSecondaryBg,
+            btnBorder: currentBtnBorder,
+            text: currentText,
+            textMuted: currentTextMuted,
+            accentColor: currentBorder,
+          }}
         />
       )}
 

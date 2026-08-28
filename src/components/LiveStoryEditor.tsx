@@ -71,6 +71,13 @@ import {
   Copy,
   FlipHorizontal,
   RotateCw,
+  BellRing,
+  Smartphone,
+  Mail,
+  Shield,
+  StickyNote,
+  AlertTriangle,
+  Eye,
 } from 'lucide-react';
 import { ReadingEffects } from './ReadingEffects';
 import {
@@ -85,6 +92,8 @@ import {
 } from '../lib/borderStyles';
 import { LiveStoryEditorView } from './LiveStoryEditorView';
 import { StoryElementsLayer } from './StoryElementsLayer';
+import { SpecialFrameInsertModal } from './SpecialFrameInsertModal';
+import { parseChapterContentBlocks, SpecialBlockRenderer } from './ChapterSpecialBlocks';
 
 const ALL_STORY_BLOCK_IDS: StoryLayoutBlockId[] = [
   'cover',
@@ -760,6 +769,15 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
   const [isChapterPasswordProtectedInput, setIsChapterPasswordProtectedInput] = useState<boolean>(false);
   const [chapterPasswordInput, setChapterPasswordInput] = useState<string>('');
   const [chapterPasswordHintInput, setChapterPasswordHintInput] = useState<string>('');
+  const [showSpecialFrameModal, setShowSpecialFrameModal] = useState<boolean>(false);
+  const [chapterViewMode, setChapterViewMode] = useState<'edit' | 'preview'>('edit');
+
+  const handleInsertFrameSnippet = (snippet: string) => {
+    setChapterContentInput((prev) => {
+      const trimmed = prev ? prev.trim() : '';
+      return trimmed ? `${trimmed}\n\n${snippet.trim()}\n\n` : `${snippet.trim()}\n\n`;
+    });
+  };
 
   const storyChapters = (chapters || [])
     .filter((c) => c && c.storyId === workingStoryId)
@@ -4745,17 +4763,164 @@ const [galleryAutoScrollSpeed, setGalleryAutoScrollSpeed] = useState<'slow' | 'n
                 </div>
               </div>
 
-              {/* Chapter Content Live Reading -> DIRECT INLINE TEXTAREA */}
-              <div className={`space-y-4 text-base leading-relaxed ${customBodyFont}`} style={{ color: currentText }}>
-                <textarea
-                  rows={15}
-                  value={chapterContentInput}
-                  onChange={(e) => setChapterContentInput(e.target.value)}
-                  placeholder="Dán hoặc gõ nội dung chương vào đây..."
-                  className="w-full min-h-[450px] bg-transparent focus:outline-none resize-y leading-relaxed text-base border-none p-2"
-                  style={{ color: currentText }}
-                />
+              {/* SPECIAL FRAMES TOOLBAR FOR CHAPTER */}
+              <div
+                className="p-2 sm:p-2.5 rounded-lg border flex flex-wrap items-center justify-between gap-2 text-xs font-mono select-none"
+                style={{ background: currentBtnSecondaryBg, borderColor: currentBorder }}
+              >
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="text-[11px] font-bold opacity-80 flex items-center gap-1 mr-1" style={{ color: currentBtnBg }}>
+                    <Sparkles className="w-3.5 h-3.5" /> Khung đặc biệt:
+                  </span>
+
+                  <button
+                    type="button"
+                    onClick={() => handleInsertFrameSnippet('[system: THÔNG BÁO HỆ THỐNG]\nNội dung thông báo hệ thống ở đây...\n[/system]')}
+                    className="px-2 py-1 rounded border text-[11px] font-semibold flex items-center gap-1 hover:opacity-85 transition cursor-pointer"
+                    style={{ background: currentCardBg, borderColor: currentBorder, color: currentText }}
+                    title="Chèn khung Thông Báo Hệ Thống"
+                  >
+                    <BellRing className="w-3 h-3 text-sky-400" /> Hệ thống
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleInsertFrameSnippet('[forum: Diễn Đàn Mạng Xã Hội]\n[netizen: Lầu 1 - Ăn dưa | 1 phút trước | +99]: Bình luận của cư dân mạng...\n[netizen: Qua Đường Giáp | Vừa xong | +45]: Bình luận tiếp theo...\n[/forum]')}
+                    className="px-2 py-1 rounded border text-[11px] font-semibold flex items-center gap-1 hover:opacity-85 transition cursor-pointer"
+                    style={{ background: currentCardBg, borderColor: currentBorder, color: currentText }}
+                    title="Chèn khung Bình Luận Cư Dân Mạng"
+                  >
+                    <MessageSquare className="w-3 h-3 text-pink-400" /> Cư dân mạng
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleInsertFrameSnippet('[chat: Hộp Thoại Trò Chuyện]\n[left: Đối phương]: Cậu đang ở đâu thế?\n[right: Tôi]: Tớ vừa tới nơi nè!\n[/chat]')}
+                    className="px-2 py-1 rounded border text-[11px] font-semibold flex items-center gap-1 hover:opacity-85 transition cursor-pointer"
+                    style={{ background: currentCardBg, borderColor: currentBorder, color: currentText }}
+                    title="Chèn khung Tin Nhắn Chat / SMS"
+                  >
+                    <Smartphone className="w-3 h-3 text-emerald-400" /> Chat / SMS
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleInsertFrameSnippet('[letter: Mật Hàm Cổ Điển | Gửi người thừa kế]\nNội dung bức thư hoặc nhật ký ở đây...\n[/letter]')}
+                    className="px-2 py-1 rounded border text-[11px] font-semibold flex items-center gap-1 hover:opacity-85 transition cursor-pointer"
+                    style={{ background: currentCardBg, borderColor: currentBorder, color: currentText }}
+                    title="Chèn khung Bức Thư / Mật Thư"
+                  >
+                    <Mail className="w-3 h-3 text-amber-400" /> Thư / Nhật ký
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleInsertFrameSnippet('[status: BẢNG TRẠNG THÁI]\nCảnh giới: Luyện Khí Kỳ\nHP: 100/100\nKỹ năng: Hỏa Cầu Thuật\n[/status]')}
+                    className="px-2 py-1 rounded border text-[11px] font-semibold flex items-center gap-1 hover:opacity-85 transition cursor-pointer"
+                    style={{ background: currentCardBg, borderColor: currentBorder, color: currentText }}
+                    title="Chèn khung Bảng Chỉ Số RPG"
+                  >
+                    <Shield className="w-3 h-3 text-purple-400" /> Bảng RPG
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleInsertFrameSnippet('[note: Lời tác giả]\nLời nhắn nhủ hoặc chú thích thuật ngữ của tác giả...\n[/note]')}
+                    className="px-2 py-1 rounded border text-[11px] font-semibold flex items-center gap-1 hover:opacity-85 transition cursor-pointer"
+                    style={{ background: currentCardBg, borderColor: currentBorder, color: currentText }}
+                    title="Chèn khung Lời Tác Giả / Chú Thích"
+                  >
+                    <StickyNote className="w-3 h-3 text-slate-400" /> Lời tác giả
+                  </button>
+                </div>
+
+                {/* Nút mở Modal Trình Tạo Khung Trực Quan & Nút Xem Trước */}
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center rounded border p-0.5" style={{ borderColor: currentBorder, background: currentCardBg }}>
+                    <button
+                      type="button"
+                      onClick={() => setChapterViewMode('edit')}
+                      className={`px-2 py-0.5 rounded text-[11px] font-bold transition cursor-pointer ${chapterViewMode === 'edit' ? 'shadow-xs' : 'opacity-60 hover:opacity-100'}`}
+                      style={{
+                        background: chapterViewMode === 'edit' ? currentBtnSecondaryBg : 'transparent',
+                        color: currentText,
+                      }}
+                    >
+                      Soạn thảo
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setChapterViewMode('preview')}
+                      className={`px-2 py-0.5 rounded text-[11px] font-bold transition cursor-pointer flex items-center gap-1 ${chapterViewMode === 'preview' ? 'shadow-xs' : 'opacity-60 hover:opacity-100'}`}
+                      style={{
+                        background: chapterViewMode === 'preview' ? currentBtnSecondaryBg : 'transparent',
+                        color: currentText,
+                      }}
+                    >
+                      <Eye className="w-3 h-3 text-pink-400" />
+                      <span>Xem trước</span>
+                    </button>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowSpecialFrameModal(true)}
+                    className="px-2.5 py-1 rounded border text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-xs hover:scale-105 active:scale-95 transition cursor-pointer"
+                    style={{ background: currentBtnBg, borderColor: currentBtnBorder, color: currentBtnText }}
+                  >
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>Trình tạo khung</span>
+                  </button>
+                </div>
               </div>
+
+              {/* Chapter Content -> DIRECT INLINE TEXTAREA OR LIVE RENDERED PREVIEW */}
+              {chapterViewMode === 'edit' ? (
+                <div className={`space-y-4 text-base leading-relaxed ${customBodyFont}`} style={{ color: currentText }}>
+                  <textarea
+                    rows={15}
+                    value={chapterContentInput}
+                    onChange={(e) => setChapterContentInput(e.target.value)}
+                    placeholder="Dán hoặc gõ nội dung chương vào đây... Bạn có thể dùng các khung đặc biệt ở thanh công cụ phía trên."
+                    className="w-full min-h-[450px] bg-transparent focus:outline-none resize-y leading-relaxed text-base border-none p-2"
+                    style={{ color: currentText }}
+                  />
+                </div>
+              ) : (
+                /* LIVE PREVIEW OF CHAPTER WITH ALL SPECIAL FRAMES RENDERED */
+                <div className={`space-y-5 leading-relaxed min-h-[450px] p-2 ${customBodyFont}`} style={{ color: currentText }}>
+                  {parseChapterContentBlocks(chapterContentInput).length > 0 ? (
+                    parseChapterContentBlocks(chapterContentInput).map((block, bIdx) => (
+                      <div key={bIdx}>
+                        {block.type === 'paragraph' ? (
+                          <p className="leading-relaxed">{block.rawText}</p>
+                        ) : (
+                          <SpecialBlockRenderer
+                            block={block}
+                            themeColors={{
+                              bg: currentBg,
+                              cardBg: currentCardBg,
+                              border: currentBorder,
+                              btnBg: currentBtnBg,
+                              btnText: currentBtnText,
+                              btnSecondaryBg: currentBtnSecondaryBg,
+                              btnBorder: currentBtnBorder,
+                              text: currentText,
+                              textMuted: currentTextMuted,
+                              accentColor: currentBtnBg,
+                            }}
+                            fontFamily={customBodyFont}
+                          />
+                        )}
+                      </div>
+                    ))
+                  ) : (
+                    <div className="py-16 text-center text-xs opacity-50 font-mono">
+                      (Chưa có nội dung chữ trong chương này để xem trước)
+                    </div>
+                  )}
+                </div>
+              )}
             </article>
 
             {/* CONFIGURATION & SETTINGS PANEL */}
@@ -5077,6 +5242,27 @@ const [galleryAutoScrollSpeed, setGalleryAutoScrollSpeed] = useState<'slow' | 'n
             </div>
           </div>
         </div>
+      )}
+
+      {/* SPECIAL FRAME INSERT MODAL */}
+      {showSpecialFrameModal && (
+        <SpecialFrameInsertModal
+          isOpen={showSpecialFrameModal}
+          onClose={() => setShowSpecialFrameModal(false)}
+          onInsertCode={handleInsertFrameSnippet}
+          themeColors={{
+            bg: currentBg,
+            cardBg: currentCardBg,
+            border: currentBorder,
+            btnBg: currentBtnBg,
+            btnText: currentBtnText,
+            btnSecondaryBg: currentBtnSecondaryBg,
+            btnBorder: currentBtnBorder,
+            text: currentText,
+            textMuted: currentTextMuted,
+            accentColor: currentBtnBg,
+          }}
+        />
       )}
     </div>
   );

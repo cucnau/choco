@@ -21,6 +21,18 @@ interface StoryElementsLayerProps {
   selectedElementId?: string | null;
   onSelectElement?: (id: string | null) => void;
   containerRef?: React.RefObject<HTMLDivElement | HTMLElement | null>;
+  themeColors?: {
+    bg?: string;
+    cardBg?: string;
+    border?: string;
+    btnBg?: string;
+    btnText?: string;
+    btnSecondaryBg?: string;
+    btnBorder?: string;
+    text?: string;
+    textMuted?: string;
+    accentColor?: string;
+  };
 }
 
 export const StoryElementsLayer: React.FC<StoryElementsLayerProps> = ({
@@ -30,11 +42,23 @@ export const StoryElementsLayer: React.FC<StoryElementsLayerProps> = ({
   selectedElementId,
   onSelectElement,
   containerRef,
+  themeColors,
 }) => {
   const [activeElId, setActiveElId] = useState<string | null>(selectedElementId || null);
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
   const [showToolbar, setShowToolbar] = useState(true);
+
+  // Theme color fallbacks
+  const tBg = themeColors?.bg || '#1a0b12';
+  const tCardBg = themeColors?.cardBg || '#22111a';
+  const tBorder = themeColors?.border || '#30222a';
+  const tBtnBg = themeColors?.btnBg || '#e879f9';
+  const tBtnText = themeColors?.btnText || '#000000';
+  const tBtnSecBg = themeColors?.btnSecondaryBg || '#30222a';
+  const tText = themeColors?.text || '#fbcfe8';
+  const tTextMuted = themeColors?.textMuted || '#fbcfe8aa';
+  const tAccent = themeColors?.accentColor || themeColors?.border || themeColors?.btnBg || '#e879f9';
 
   useEffect(() => {
     if (selectedElementId !== undefined) {
@@ -241,6 +265,7 @@ export const StoryElementsLayer: React.FC<StoryElementsLayerProps> = ({
               left: `${el.x}%`,
               top: `${el.y}%`,
               width: `${el.width}px`,
+              maxWidth: '90%',
               transform: `translate(-50%, -50%) rotate(${el.rotation || 0}deg) ${
                 el.flipHorizontal ? 'scaleX(-1)' : ''
               }`,
@@ -252,13 +277,17 @@ export const StoryElementsLayer: React.FC<StoryElementsLayerProps> = ({
             {/* Vùng bao quanh và nút thao tác khi đang chọn trong Editor */}
             <div
               onPointerDown={(e) => handlePointerDownDrag(e, el)}
-              className={`relative group/ele w-full h-full flex items-center justify-center rounded ${
+              className={`relative group/ele w-full h-full flex items-center justify-center rounded transition-all ${
                 isSelected
-                  ? 'ring-2 ring-[#e879f9] ring-offset-2 ring-offset-black/50 shadow-xl bg-pink-500/5'
+                  ? 'ring-2 ring-offset-2 ring-offset-black/50 shadow-xl'
                   : isEditable
-                  ? 'hover:ring-1 hover:ring-[#e879f9]/50'
+                  ? 'hover:ring-1'
                   : ''
               }`}
+              style={{
+                borderColor: isSelected ? tAccent : undefined,
+                boxShadow: isSelected ? `0 0 0 2px ${tAccent}` : undefined,
+              }}
             >
               {/* Ảnh hoặc GIF của Element */}
               <img
@@ -272,7 +301,11 @@ export const StoryElementsLayer: React.FC<StoryElementsLayerProps> = ({
               {isSelected && isEditable && (
                 <div
                   onPointerDown={(e) => handlePointerDownResize(e, el)}
-                  className="absolute -bottom-2.5 -right-2.5 w-6 h-6 rounded-full bg-[#e879f9] text-black shadow-lg flex items-center justify-center cursor-nwse-resize z-50 hover:scale-110 active:scale-95 transition-transform"
+                  className="absolute -bottom-2.5 -right-2.5 w-6 h-6 rounded-full shadow-lg flex items-center justify-center cursor-nwse-resize z-50 hover:scale-110 active:scale-95 transition-transform"
+                  style={{
+                    background: tBtnBg,
+                    color: tBtnText,
+                  }}
                   title="Kéo để phóng to / thu nhỏ kích thước"
                 >
                   <Move className="w-3 h-3 rotate-45" />
@@ -281,7 +314,14 @@ export const StoryElementsLayer: React.FC<StoryElementsLayerProps> = ({
 
               {/* Huy hiệu hiển thị kích thước nhanh */}
               {isSelected && isEditable && (
-                <div className="absolute -top-6 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded bg-black/80 text-[#fbcfe8] text-[9px] font-mono font-bold whitespace-nowrap shadow border border-[#e879f9]/40 z-50">
+                <div
+                  className="absolute -top-6 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded text-[9px] font-mono font-bold whitespace-nowrap shadow border z-50"
+                  style={{
+                    background: tBg,
+                    borderColor: tBorder,
+                    color: tText,
+                  }}
+                >
                   {el.width}px {el.rotation ? `• ${el.rotation}°` : ''}
                 </div>
               )}
@@ -293,14 +333,19 @@ export const StoryElementsLayer: React.FC<StoryElementsLayerProps> = ({
       {/* FLOATING ACTION TOOLBAR CHO ELEMENT ĐANG ĐƯỢC CHỌN (KHI Ở CHẾ ĐỘ EDITOR) */}
       {isEditable && activeElement && showToolbar && (
         <div
-          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 max-w-lg w-[92vw] p-3 rounded-xl shadow-2xl border backdrop-blur-xl bg-[#1a0b12]/95 border-[#e879f9]/40 text-[#fbcfe8] font-mono pointer-events-auto space-y-2.5"
-          style={{ boxShadow: '0 20px 40px rgba(0,0,0,0.6)' }}
+          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 max-w-lg w-[92vw] p-3 rounded-xl shadow-2xl border backdrop-blur-xl font-mono pointer-events-auto space-y-2.5"
+          style={{
+            background: tCardBg,
+            borderColor: tBorder,
+            color: tText,
+            boxShadow: '0 20px 40px rgba(0,0,0,0.6)',
+          }}
         >
           {/* Header toolbar */}
-          <div className="flex items-center justify-between border-b border-[#30222a] pb-1.5">
+          <div className="flex items-center justify-between border-b pb-1.5" style={{ borderColor: tBorder }}>
             <div className="flex items-center gap-2">
-              <Sparkles className="w-3.5 h-3.5 text-[#e879f9]" />
-              <span className="text-xs font-bold text-[#e879f9]">
+              <Sparkles className="w-3.5 h-3.5" style={{ color: tAccent }} />
+              <span className="text-xs font-bold" style={{ color: tAccent }}>
                 Chỉnh sửa Element ({activeElement.width}px)
               </span>
             </div>
@@ -308,7 +353,8 @@ export const StoryElementsLayer: React.FC<StoryElementsLayerProps> = ({
               <button
                 type="button"
                 onClick={() => handleDuplicateElement(activeElement)}
-                className="p-1 text-xs rounded hover:bg-[#30222a] text-[#fbcfe8]/80 hover:text-white transition cursor-pointer"
+                className="p-1 text-xs rounded hover:opacity-80 transition cursor-pointer"
+                style={{ background: tBtnSecBg, color: tText }}
                 title="Nhân bản element"
               >
                 <Copy className="w-3.5 h-3.5" />
@@ -327,7 +373,8 @@ export const StoryElementsLayer: React.FC<StoryElementsLayerProps> = ({
                   setActiveElId(null);
                   if (onSelectElement) onSelectElement(null);
                 }}
-                className="p-1 text-xs rounded hover:bg-[#30222a] text-[#fbcfe8]/80 hover:text-white transition cursor-pointer"
+                className="p-1 text-xs rounded hover:opacity-80 transition cursor-pointer"
+                style={{ background: tBtnSecBg, color: tText }}
                 title="Đóng bảng chỉnh sửa"
               >
                 <X className="w-3.5 h-3.5" />
@@ -338,18 +385,19 @@ export const StoryElementsLayer: React.FC<StoryElementsLayerProps> = ({
           {/* Controls: Kích thước & Góc xoay & Độ mờ */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
             {/* Slider Kích thước */}
-            <div className="space-y-1 bg-[#12060c] p-2 rounded border border-[#30222a]">
+            <div className="space-y-1 p-2 rounded border" style={{ background: tBg, borderColor: tBorder }}>
               <div className="flex justify-between items-center text-[10px]">
                 <span className="font-bold flex items-center gap-1">
-                  <Sliders className="w-3 h-3 text-[#e879f9]" /> Cỡ (Width):
+                  <Sliders className="w-3 h-3" style={{ color: tAccent }} /> Cỡ (Width):
                 </span>
-                <span className="font-bold text-[#e879f9]">{activeElement.width}px</span>
+                <span className="font-bold" style={{ color: tAccent }}>{activeElement.width}px</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <button
                   type="button"
                   onClick={() => updateSelectedElement({ width: Math.max(20, activeElement.width - 10) })}
-                  className="p-1 rounded bg-[#30222a] hover:bg-[#3d2c36] text-xs cursor-pointer"
+                  className="p-1 rounded text-xs cursor-pointer hover:opacity-80 transition"
+                  style={{ background: tBtnSecBg, color: tText }}
                 >
                   <ZoomOut className="w-3 h-3" />
                 </button>
@@ -360,12 +408,14 @@ export const StoryElementsLayer: React.FC<StoryElementsLayerProps> = ({
                   step="5"
                   value={activeElement.width}
                   onChange={(e) => updateSelectedElement({ width: Number(e.target.value) })}
-                  className="flex-1 h-1.5 rounded-lg appearance-none cursor-pointer accent-[#e879f9] bg-[#30222a]"
+                  className="flex-1 h-1.5 rounded-lg appearance-none cursor-pointer"
+                  style={{ accentColor: tBtnBg, background: tBtnSecBg }}
                 />
                 <button
                   type="button"
                   onClick={() => updateSelectedElement({ width: Math.min(400, activeElement.width + 10) })}
-                  className="p-1 rounded bg-[#30222a] hover:bg-[#3d2c36] text-xs cursor-pointer"
+                  className="p-1 rounded text-xs cursor-pointer hover:opacity-80 transition"
+                  style={{ background: tBtnSecBg, color: tText }}
                 >
                   <ZoomIn className="w-3 h-3" />
                 </button>
@@ -373,12 +423,12 @@ export const StoryElementsLayer: React.FC<StoryElementsLayerProps> = ({
             </div>
 
             {/* Slider Góc xoay */}
-            <div className="space-y-1 bg-[#12060c] p-2 rounded border border-[#30222a]">
+            <div className="space-y-1 p-2 rounded border" style={{ background: tBg, borderColor: tBorder }}>
               <div className="flex justify-between items-center text-[10px]">
                 <span className="font-bold flex items-center gap-1">
-                  <RotateCw className="w-3 h-3 text-[#e879f9]" /> Góc xoay:
+                  <RotateCw className="w-3 h-3" style={{ color: tAccent }} /> Góc xoay:
                 </span>
-                <span className="font-bold text-[#e879f9]">{activeElement.rotation || 0}°</span>
+                <span className="font-bold" style={{ color: tAccent }}>{activeElement.rotation || 0}°</span>
               </div>
               <input
                 type="range"
@@ -387,20 +437,22 @@ export const StoryElementsLayer: React.FC<StoryElementsLayerProps> = ({
                 step="5"
                 value={activeElement.rotation || 0}
                 onChange={(e) => updateSelectedElement({ rotation: Number(e.target.value) })}
-                className="w-full h-1.5 rounded-lg appearance-none cursor-pointer accent-[#e879f9] bg-[#30222a]"
+                className="w-full h-1.5 rounded-lg appearance-none cursor-pointer"
+                style={{ accentColor: tBtnBg, background: tBtnSecBg }}
               />
             </div>
           </div>
 
           {/* Hàng nút chức năng phụ: Hiệu ứng động, Lật, Lớp z-index */}
-          <div className="flex items-center justify-between flex-wrap gap-2 pt-1 border-t border-[#30222a] text-[10px]">
+          <div className="flex items-center justify-between flex-wrap gap-2 pt-1 border-t text-[10px]" style={{ borderColor: tBorder }}>
             {/* Chọn Animation */}
             <div className="flex items-center gap-1">
-              <span className="opacity-70">Chuyển động:</span>
+              <span className="opacity-70" style={{ color: tTextMuted }}>Chuyển động:</span>
               <select
                 value={activeElement.animation || 'none'}
                 onChange={(e) => updateSelectedElement({ animation: e.target.value as any })}
-                className="bg-[#12060c] text-[#fbcfe8] border border-[#30222a] px-2 py-1 rounded font-bold focus:outline-none cursor-pointer"
+                className="px-2 py-1 rounded font-bold focus:outline-none cursor-pointer border"
+                style={{ background: tBg, borderColor: tBorder, color: tText }}
               >
                 <option value="none">Tĩnh (None)</option>
                 <option value="float">Bay lượn (Float)</option>
@@ -415,11 +467,12 @@ export const StoryElementsLayer: React.FC<StoryElementsLayerProps> = ({
             <button
               type="button"
               onClick={() => updateSelectedElement({ flipHorizontal: !activeElement.flipHorizontal })}
-              className={`px-2 py-1 rounded border text-[10px] font-bold flex items-center gap-1 transition cursor-pointer ${
-                activeElement.flipHorizontal
-                  ? 'bg-[#e879f9] text-black border-[#e879f9]'
-                  : 'bg-[#30222a] text-[#fbcfe8] border-transparent hover:border-[#e879f9]'
-              }`}
+              className="px-2 py-1 rounded border text-[10px] font-bold flex items-center gap-1 transition cursor-pointer hover:opacity-90"
+              style={{
+                background: activeElement.flipHorizontal ? tBtnBg : tBtnSecBg,
+                color: activeElement.flipHorizontal ? tBtnText : tText,
+                borderColor: tBorder,
+              }}
             >
               <FlipHorizontal className="w-3 h-3" />
               <span>Lật ngang</span>
@@ -427,20 +480,22 @@ export const StoryElementsLayer: React.FC<StoryElementsLayerProps> = ({
 
             {/* Nâng / Hạ lớp z-index */}
             <div className="flex items-center gap-1">
-              <span className="opacity-70">Lớp:</span>
+              <span className="opacity-70" style={{ color: tTextMuted }}>Lớp:</span>
               <button
                 type="button"
                 onClick={() => updateSelectedElement({ zIndex: Math.max(1, (activeElement.zIndex || 10) - 2) })}
-                className="px-1.5 py-0.5 rounded bg-[#30222a] hover:bg-[#3d2c36] font-bold cursor-pointer"
+                className="px-1.5 py-0.5 rounded font-bold cursor-pointer hover:opacity-80 transition"
+                style={{ background: tBtnSecBg, color: tText }}
                 title="Hạ lớp (xuống dưới)"
               >
                 -
               </button>
-              <span className="font-bold text-[#e879f9] min-w-4 text-center">{activeElement.zIndex || 10}</span>
+              <span className="font-bold min-w-4 text-center" style={{ color: tAccent }}>{activeElement.zIndex || 10}</span>
               <button
                 type="button"
                 onClick={() => updateSelectedElement({ zIndex: Math.min(50, (activeElement.zIndex || 10) + 2) })}
-                className="px-1.5 py-0.5 rounded bg-[#30222a] hover:bg-[#3d2c36] font-bold cursor-pointer"
+                className="px-1.5 py-0.5 rounded font-bold cursor-pointer hover:opacity-80 transition"
+                style={{ background: tBtnSecBg, color: tText }}
                 title="Nâng lớp (lên trên)"
               >
                 +

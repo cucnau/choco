@@ -22,6 +22,7 @@ import { getUserUnlockedPasswordChaptersLocal, unlockChapterWithPassword } from 
 import { ReadingEffects } from './ReadingEffects';
 import { getStoryBorderStyle, StoryCornerAccents } from '../lib/borderStyles';
 import { PRESET_THEME_COLORS } from '../lib/themeConstants';
+import { parseChapterContentBlocks, SpecialBlockRenderer } from './ChapterSpecialBlocks';
 
 const PRESET_PROGRESS_BAR_COLORS: Record<string, string> = {
   'dark-rose': '#ff99bb',
@@ -353,9 +354,11 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
 
   const isDarkTheme = !currentBg.toLowerCase().includes('#fff') && !currentBg.toLowerCase().includes('255, 255, 255');
 
-  const paragraphs = chapter.content
-    ? chapter.content.split('\n').map((line) => line.trim()).filter(Boolean)
-    : [];
+  const contentBlocks = React.useMemo(() => {
+    return parseChapterContentBlocks(chapter.content || '');
+  }, [chapter.content]);
+
+  const paragraphs = contentBlocks.map(b => b.rawText);
 
   const calculatedWordCount = chapter.wordCount || (chapter.content ? chapter.content.split(/\s+/).filter(Boolean).length : 0);
 
@@ -776,8 +779,8 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
           ) : (
             /* Text Content with Paragraph-level commenting */
             <div className={`space-y-5 leading-relaxed ${storyBodyFont}`} style={{ color: currentText, fontSize: 'inherit' }}>
-              {paragraphs.length > 0 ? (
-                paragraphs.map((para, idx) => {
+              {contentBlocks.length > 0 ? (
+                contentBlocks.map((block, idx) => {
                   const paraComments = safeComments.filter((c) => c && c.paragraphIndex === idx);
                   const isActive = activeParagraphIndex === idx;
 
@@ -788,9 +791,30 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
                       className="group/para relative transition-all duration-200"
                     >
                       <div className="relative flex items-start gap-2">
-                        <p className={`leading-relaxed flex-1 transition-opacity ${isActive ? 'opacity-100 font-medium' : ''}`}>
-                          {para}
-                        </p>
+                        <div className="flex-1 min-w-0">
+                          {block.type === 'paragraph' ? (
+                            <p className={`leading-relaxed transition-opacity ${isActive ? 'opacity-100 font-medium' : ''}`}>
+                              {block.rawText}
+                            </p>
+                          ) : (
+                            <SpecialBlockRenderer
+                              block={block}
+                              themeColors={{
+                                bg: isCustomTheme ? story.customBgColor : currentBg,
+                                cardBg: isCustomTheme ? story.customCardBgColor : currentCardBg,
+                                border: currentBorder,
+                                btnBg: currentBtnBg,
+                                btnText: currentBtnText,
+                                btnSecondaryBg: currentBtnSecondaryBg,
+                                btnBorder: currentBtnBorder,
+                                text: isCustomTheme ? story.customTextColor : currentText,
+                                textMuted: isCustomTheme ? story.customMutedColor : currentTextMuted,
+                                accentColor: currentBtnBg,
+                              }}
+                              fontFamily={storyBodyFont}
+                            />
+                          )}
+                        </div>
 
                         {/* Subtle Paragraph Comment Button */}
                         <div className="shrink-0 pt-0.5">
@@ -877,7 +901,7 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
                           </div>
 
                           {/* Comment Input Box for this paragraph */}
-                          <form onSubmit={(e) => handleParagraphCommentSubmit(e, idx, para)} className="flex gap-2 pt-1">
+                          <form onSubmit={(e) => handleParagraphCommentSubmit(e, idx, block.rawText)} className="flex gap-2 pt-1">
                             <input
                               type="text"
                               value={paraCommentText}
