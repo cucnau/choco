@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, orderBy, onSnapshot, addDoc, deleteDoc, doc } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, addDoc, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { NewsPost, UserProfile } from '../types';
 import { User as FirebaseUser } from 'firebase/auth';
-import { FileText, Send, Trash2, Users } from 'lucide-react';
+import { FileText, Send, Trash2, Users, Pencil, Check, X } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
 
@@ -63,6 +63,43 @@ export const NewsHub: React.FC<NewsHubProps> = ({ currentUser, userProfile, isEd
     }
   };
 
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editContent, setEditContent] = useState('');
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  const handleStartEdit = (post: NewsPost) => {
+    setEditingId(post.id);
+    setEditTitle(post.title);
+    setEditContent(post.content);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setEditTitle('');
+    setEditContent('');
+  };
+
+  const handleUpdateNews = async (id: string) => {
+    if (!editTitle.trim() || !editContent.trim()) return;
+
+    setIsUpdating(true);
+    try {
+      await updateDoc(doc(db, 'news', id), {
+        title: editTitle.trim(),
+        content: editContent.trim(),
+        updatedAt: new Date().toISOString()
+      });
+      setEditingId(null);
+      setEditTitle('');
+      setEditContent('');
+    } catch (error) {
+      console.error('Error updating news:', error);
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   return (
     <div className="max-w-4xl mx-auto p-4 py-8 font-mono-code space-y-8">
       <div className="flex items-center gap-3 border-b border-[#30222a] pb-4">
@@ -115,33 +152,92 @@ export const NewsHub: React.FC<NewsHubProps> = ({ currentUser, userProfile, isEd
             Chưa có bài viết nào được đăng.
           </div>
         ) : (
-          posts.map((post) => (
-            <div key={post.id} className="bg-[#1f1017] p-5 rounded-xl border border-[#30222a] shadow-lg relative group">
-              {isEditor && (
-                <button
-                  onClick={() => handleDeleteNews(post.id)}
-                  className="absolute top-4 right-4 p-2 bg-[#30222a] hover:bg-rose-900/50 text-[#fbcfe8]/60 hover:text-rose-400 rounded-full opacity-0 group-hover:opacity-100 transition-all cursor-pointer"
-                  title="Xóa bài viết"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              )}
-              <h3 className="text-lg font-bold text-[#fbcfe8] mb-2 pr-10">{post.title}</h3>
-              <div className="flex items-center gap-2 text-[11px] text-[#fbcfe8]/60 mb-4 font-mono">
-                <span className="font-bold text-[#e879f9]">{post.authorName}</span>
-                <span>•</span>
-                <span>
-                  {post.createdAt 
-                    ? formatDistanceToNow(new Date(post.createdAt), { addSuffix: true, locale: vi })
-                    : 'Vừa xong'
-                  }
-                </span>
+          posts.map((post) => {
+            const canManage = isEditor || (currentUser && post.authorId === currentUser.uid);
+            const isEditingThis = editingId === post.id;
+
+            return (
+              <div key={post.id} className="bg-[#1f1017] p-5 rounded-xl border border-[#30222a] shadow-lg relative group">
+                {isEditingThis ? (
+                  <div className="space-y-4">
+                    <h4 className="text-sm font-bold text-[#e879f9] flex items-center gap-1.5 uppercase tracking-wider">
+                      <Pencil className="w-3.5 h-3.5" /> Chỉnh sửa bài viết
+                    </h4>
+                    <div>
+                      <input
+                        type="text"
+                        value={editTitle}
+                        onChange={(e) => setEditTitle(e.target.value)}
+                        placeholder="Tiêu đề bài viết..."
+                        className="w-full bg-[#30222a] text-[#fbcfe8] px-3 py-2 text-sm rounded border border-transparent focus:border-[#e879f9] outline-none transition"
+                      />
+                    </div>
+                    <div>
+                      <textarea
+                        value={editContent}
+                        onChange={(e) => setEditContent(e.target.value)}
+                        placeholder="Nội dung bài viết..."
+                        rows={5}
+                        className="w-full bg-[#30222a] text-[#fbcfe8] px-3 py-2 text-sm rounded border border-transparent focus:border-[#e879f9] outline-none transition resize-y"
+                      />
+                    </div>
+                    <div className="flex justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={handleCancelEdit}
+                        className="flex items-center gap-1 px-3 py-1.5 bg-[#30222a] text-[#fbcfe8]/80 text-xs font-bold rounded hover:bg-[#3d2c36] transition cursor-pointer"
+                      >
+                        <X className="w-3.5 h-3.5" /> Hủy
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleUpdateNews(post.id)}
+                        disabled={isUpdating || !editTitle.trim() || !editContent.trim()}
+                        className="flex items-center gap-1 px-3 py-1.5 bg-[#e879f9] text-[#1a0b12] text-xs font-bold rounded hover:opacity-90 disabled:opacity-50 transition cursor-pointer"
+                      >
+                        {isUpdating ? 'Đang lưu...' : 'Lưu'} <Check className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    {canManage && (
+                      <div className="absolute top-4 right-4 flex items-center gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all z-10">
+                        <button
+                          onClick={() => handleStartEdit(post)}
+                          className="p-1.5 bg-[#30222a] hover:bg-[#3d2c36] text-[#fbcfe8]/60 hover:text-[#e879f9] rounded-full transition cursor-pointer"
+                          title="Sửa bài viết"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteNews(post.id)}
+                          className="p-1.5 bg-[#30222a] hover:bg-rose-900/50 text-[#fbcfe8]/60 hover:text-rose-400 rounded-full transition cursor-pointer"
+                          title="Xóa bài viết"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    )}
+                    <h3 className="text-lg font-bold text-[#fbcfe8] mb-2 pr-20">{post.title}</h3>
+                    <div className="flex items-center gap-2 text-[11px] text-[#fbcfe8]/60 mb-4 font-mono">
+                      <span className="font-bold text-[#e879f9]">{post.authorName}</span>
+                      <span>•</span>
+                      <span>
+                        {post.createdAt 
+                          ? formatDistanceToNow(new Date(post.createdAt), { addSuffix: true, locale: vi })
+                          : 'Vừa xong'
+                        }
+                      </span>
+                    </div>
+                    <div className="text-sm text-[#fbcfe8]/90 leading-relaxed whitespace-pre-wrap font-sans">
+                      {post.content}
+                    </div>
+                  </>
+                )}
               </div>
-              <div className="text-sm text-[#fbcfe8]/90 leading-relaxed whitespace-pre-wrap font-sans">
-                {post.content}
-              </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
     </div>

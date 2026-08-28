@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'motion/react';
 import { Story, Chapter, Comment, StoryLayoutBlockId, StoryLayoutSection, StoryLayoutSectionType, StoryLayoutColumnRatio } from '../types';
 import {
   Bookmark,
@@ -15,6 +16,8 @@ import {
   TrendingUp,
   ChevronDown,
   ChevronUp,
+  ChevronLeft,
+  ChevronRight,
   LayoutGrid,
   List,
   Folder,
@@ -149,68 +152,185 @@ const AutoScrollAlbum = ({
   setLightboxImages,
   setLightboxCurrentIndex,
 }: any) => {
-  const scrollRef = React.useRef<HTMLDivElement>(null);
-  
+  const [currentIndex, setCurrentIndex] = React.useState(0);
+  const [isHovered, setIsHovered] = React.useState(false);
+  const length = albumImages.length;
+
   React.useEffect(() => {
-    let interval: any;
-    if (scrollRef.current && albumImages.length > 1) {
-      interval = setInterval(() => {
-        if (!scrollRef.current) return;
-        const container = scrollRef.current;
-        const scrollAmount = container.clientWidth * 0.8; // Cuộn 80% chiều rộng container
-        
-        // Nếu đã cuộn đến cuối, quay lại đầu
-        if (container.scrollLeft + container.clientWidth >= container.scrollWidth - 10) {
-          container.scrollTo({ left: 0, behavior: 'smooth' });
-        } else {
-          container.scrollBy({ left: scrollAmount, behavior: 'smooth' });
-        }
-      }, 3000); // 3 giây trượt 1 lần
+    if (length > 0 && currentIndex >= length) {
+      setCurrentIndex(0);
     }
+  }, [length, currentIndex]);
+
+  React.useEffect(() => {
+    if (length <= 1 || isHovered) return;
+
+    let delay = 3000;
+    if (story.galleryAutoScrollSpeed === 'slow') delay = 5000;
+    if (story.galleryAutoScrollSpeed === 'fast') delay = 1500;
+
+    const interval = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % length);
+    }, delay);
+
     return () => clearInterval(interval);
-  }, [albumImages.length]);
+  }, [length, isHovered, story.galleryAutoScrollSpeed]);
+
+  const handlePrev = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCurrentIndex((prev) => (prev - 1 + length) % length);
+  };
+
+  const handleNext = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCurrentIndex((prev) => (prev + 1) % length);
+  };
+
+  const currentHeight = story.galleryImageSize ? (story.galleryImageSize * 1.9) : 192;
+
+  if (length === 0) return null;
 
   return (
-    <div className="w-full flex flex-col my-3 space-y-2">
+    <div 
+      className="w-full flex flex-col my-3 space-y-2 select-none overflow-hidden"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
       {story.galleryWidgetTitle && story.galleryWidgetTitle !== 'Album' && story.galleryWidgetTitle !== 'Hình ảnh & Album' && (
-        <div className="flex items-center gap-1.5 opacity-90 mb-1">
-          <Images className="w-3.5 h-3.5 shrink-0" style={customStyles.text} />
-          <span className={`text-xs font-bold uppercase tracking-wider ${storyBodyFont}`} style={customStyles.text}>
-            {story.galleryWidgetTitle}
-          </span>
+        <div className="flex items-center justify-between opacity-90 mb-1">
+          <div className="flex items-center gap-1.5">
+            <Images className="w-3.5 h-3.5 shrink-0" style={customStyles.text} />
+            <span className={`text-xs font-bold uppercase tracking-wider ${storyBodyFont}`} style={customStyles.text}>
+              {story.galleryWidgetTitle}
+            </span>
+          </div>
+          {length > 1 && (
+            <span className="text-[10px] opacity-75 font-mono" style={customStyles.text}>
+              {currentIndex + 1} / {length}
+            </span>
+          )}
         </div>
       )}
 
-      <div className="relative w-full">
-        <div
-          ref={scrollRef}
-          className="flex w-full overflow-x-auto snap-x snap-mandatory hide-scrollbar gap-4 pb-2 items-center"
-        >
-          {albumImages.map((img: any, idx: number) => (
-            <div
-              key={`${img.id}-${idx}`}
-              className="group relative shrink-0 cursor-pointer transition-all duration-300 hover:opacity-90 snap-center flex items-center justify-center"
-              style={{ height: `${story.galleryImageSize ? (story.galleryImageSize * 1.9) : 192}px` }}
-              onClick={() => {
-                setLightboxImages(albumImages);
-                setLightboxCurrentIndex(idx);
-              }}
-            >
-              <img
-                src={img.url}
-                alt={img.caption || `Ảnh ${idx + 1}`}
-                className="w-auto max-w-full h-full object-contain drop-shadow-sm"
-                loading="lazy"
-              />
-              {img.caption && (
-                <div className="absolute bottom-2 bg-black/60 text-white text-[10px] px-2 py-1 rounded backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity text-center max-w-[90%] truncate pointer-events-none">
-                  {img.caption}
+      <div className="relative w-full flex items-center justify-center overflow-visible" style={{ height: `${currentHeight + 20}px` }}>
+        <div className="relative w-full h-full flex items-center justify-center overflow-visible">
+          {albumImages.map((img: any, i: number) => {
+            // Tính toán khoảng cách tương đối (diff) cho vòng lặp vòng tròn
+            let diff = (i - currentIndex + length) % length;
+            if (diff > length / 2) {
+              diff -= length;
+            }
+
+            // Chỉ hiển thị các ảnh nằm trong phạm vi [-2, 2] để tạo hiệu ứng 3D chiều sâu
+            const isVisible = Math.abs(diff) <= 2;
+            if (!isVisible) return null;
+
+            let xTranslation = 0;
+            let scaleValue = 0.5;
+            let opacityValue = 0;
+            let zIndexValue = 0;
+
+            if (diff === 0) {
+              xTranslation = 0;
+              scaleValue = 1.0;
+              opacityValue = 1;
+              zIndexValue = 20;
+            } else if (diff === -1) {
+              xTranslation = -130;
+              scaleValue = 0.75;
+              opacityValue = 0.6;
+              zIndexValue = 10;
+            } else if (diff === 1) {
+              xTranslation = 130;
+              scaleValue = 0.75;
+              opacityValue = 0.6;
+              zIndexValue = 10;
+            } else if (diff === -2) {
+              xTranslation = -220;
+              scaleValue = 0.55;
+              opacityValue = 0.2;
+              zIndexValue = 5;
+            } else if (diff === 2) {
+              xTranslation = 220;
+              scaleValue = 0.55;
+              opacityValue = 0.2;
+              zIndexValue = 5;
+            }
+
+            // Điều chỉnh khoảng dịch chuyển trên màn hình nhỏ/điện thoại
+            if (typeof window !== 'undefined' && window.innerWidth < 640) {
+              if (diff === -1) xTranslation = -70;
+              if (diff === 1) xTranslation = 70;
+              if (diff === -2) xTranslation = -120;
+              if (diff === 2) xTranslation = 120;
+            }
+
+            return (
+              <motion.div
+                key={`${img.id}-${i}`}
+                className={`absolute cursor-pointer origin-center transition-colors duration-300 flex flex-col items-center justify-center ${
+                  diff === 0 ? 'drop-shadow-lg' : 'hover:opacity-90'
+                }`}
+                style={{
+                  zIndex: zIndexValue,
+                  width: '65%',
+                  maxWidth: '300px',
+                  height: `${currentHeight}px`,
+                }}
+                animate={{
+                  x: xTranslation,
+                  scale: scaleValue,
+                  opacity: opacityValue,
+                }}
+                transition={{
+                  type: 'spring',
+                  stiffness: 280,
+                  damping: 26,
+                }}
+                onClick={() => {
+                  if (diff === 0) {
+                    setLightboxImages(albumImages);
+                    setLightboxCurrentIndex(i);
+                  } else {
+                    setCurrentIndex(i);
+                  }
+                }}
+              >
+                <div className="relative w-full h-full flex items-center justify-center group">
+                  <img
+                    src={img.url}
+                    alt={img.caption || `Ảnh ${i + 1}`}
+                    className="w-full h-full object-contain"
+                    loading="lazy"
+                  />
+
                 </div>
-              )}
-            </div>
-          ))}
+              </motion.div>
+            );
+          })}
         </div>
       </div>
+
+      {/* Bullet Indicators */}
+      {length > 1 && (
+        <div className="flex justify-center items-center gap-1.5 pt-1">
+          {albumImages.map((_: any, idx: number) => (
+            <button
+              key={idx}
+              onClick={() => setCurrentIndex(idx)}
+              className={`h-1.5 transition-all rounded-full cursor-pointer ${
+                idx === currentIndex ? 'w-4' : 'w-1.5 opacity-40 hover:opacity-70'
+              }`}
+              style={{
+                backgroundColor: idx === currentIndex 
+                  ? (isCustomTheme && story.customBtnBgColor ? story.customBtnBgColor : '#c89666')
+                  : (isCustomTheme && story.customTextColor ? story.customTextColor : '#a1887f')
+              }}
+              title={`Ảnh ${idx + 1}`}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 };
