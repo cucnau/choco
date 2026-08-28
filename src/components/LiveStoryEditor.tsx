@@ -855,7 +855,7 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
     initialStory?.showGalleryWidget ?? false
   );
   const [galleryWidgetTitle, setGalleryWidgetTitle] = useState<string>(
-    initialStory?.galleryWidgetTitle || 'Hình ảnh & Album'
+    initialStory?.galleryWidgetTitle || 'Album'
   );
   const [galleryMode, setGalleryMode] = useState<'single' | 'album'>(
     initialStory?.galleryMode || 'single'
@@ -1613,6 +1613,14 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
     setIsCompressingGalleryImg(true);
     const reader = new FileReader();
     reader.onload = (e) => {
+      const result = e.target?.result as string;
+      // Giữ nguyên file GIF để không mất hoạt ảnh
+      if (file.type === 'image/gif') {
+        setGallerySingleImageUrl(result);
+        setIsCompressingGalleryImg(false);
+        return;
+      }
+      
       const img = new Image();
       img.onload = () => {
         const canvas = document.createElement('canvas');
@@ -1633,12 +1641,14 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
         const ctx = canvas.getContext('2d');
         if (ctx) {
           ctx.drawImage(img, 0, 0, width, height);
-          const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+          // Dùng webp hoặc png để giữ nền trong suốt nếu là PNG/WebP
+          const outputType = (file.type === 'image/png' || file.type === 'image/webp') ? file.type : 'image/jpeg';
+          const dataUrl = canvas.toDataURL(outputType, 0.85);
           setGallerySingleImageUrl(dataUrl);
           setIsCompressingGalleryImg(false);
         }
       };
-      img.src = e.target?.result as string;
+      img.src = result;
     };
     reader.readAsDataURL(file);
   };
@@ -1649,6 +1659,21 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
     Array.from(files).forEach((file) => {
       const reader = new FileReader();
       reader.onload = (e) => {
+        const result = e.target?.result as string;
+        // Giữ nguyên GIF để giữ hoạt ảnh
+        if (file.type === 'image/gif') {
+          setGalleryImages((prev) => [
+            ...prev,
+            {
+              id: `img_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+              url: result,
+              caption: file.name.replace(/\.[^/.]+$/, ''),
+            },
+          ]);
+          setIsCompressingGalleryImg(false);
+          return;
+        }
+
         const img = new Image();
         img.onload = () => {
           const canvas = document.createElement('canvas');
@@ -1669,7 +1694,8 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
           const ctx = canvas.getContext('2d');
           if (ctx) {
             ctx.drawImage(img, 0, 0, width, height);
-            const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+            const outputType = (file.type === 'image/png' || file.type === 'image/webp') ? file.type : 'image/jpeg';
+            const dataUrl = canvas.toDataURL(outputType, 0.82);
             setGalleryImages((prev) => [
               ...prev,
               {
@@ -1681,7 +1707,7 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
             setIsCompressingGalleryImg(false);
           }
         };
-        img.src = e.target?.result as string;
+        img.src = result;
       };
       reader.readAsDataURL(file);
     });
@@ -1903,7 +1929,7 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
 
       // Widget ảnh lẻ / album di chuyển
       showGalleryWidget,
-      galleryWidgetTitle: galleryWidgetTitle.trim() || 'Hình ảnh & Album',
+      galleryWidgetTitle: galleryWidgetTitle.trim() || 'Album',
       galleryMode,
       gallerySingleImageUrl: gallerySingleImageUrl.trim(),
       gallerySingleImageCaption: gallerySingleImageCaption.trim(),
@@ -3271,7 +3297,7 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                   <div className="pr-2">
                     <span className="font-bold block text-xs" style={{ color: currentText }}>Bật Widget Ảnh lẻ / Album</span>
                     <span className="text-[10px] block opacity-70" style={{ color: currentTextMuted }}>
-                      {galleryMode === 'single' ? 'Hiển thị một ảnh nghệ thuật' : 'Hiển thị dải album tự động di chuyển'}
+                      {galleryMode === 'single' ? 'Hiển thị một ảnh nghệ thuật' : 'Hiển thị album'}
                     </span>
                   </div>
                   <button
@@ -3301,7 +3327,7 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                         type="text"
                         value={galleryWidgetTitle}
                         onChange={(e) => setGalleryWidgetTitle(e.target.value)}
-                        placeholder="Ví dụ: Hình ảnh & Album, Fanart, Minh họa..."
+                        placeholder="Ví dụ: Album, Fanart, Minh họa..."
                         className="w-full p-2 rounded border text-xs focus:outline-none"
                         style={{ background: currentCardBg, borderColor: currentBorder, color: currentText }}
                       />

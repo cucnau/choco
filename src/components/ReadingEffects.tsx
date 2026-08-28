@@ -62,7 +62,7 @@ export const ReadingEffects: React.FC<ReadingEffectsProps> = ({ effect = 'none',
       effect === 'butterflies' ? 4 :
       effect === 'feathers' ? 4 :
       effect === 'lightning' ? 1 :
-      effect === 'fog' ? 10 :
+      effect === 'fog' ? 20 :
       effect === 'sci_fi_hud' ? 6 :
       effect === 'fireworks' ? 0 :
       0;
@@ -1386,45 +1386,159 @@ export const ReadingEffects: React.FC<ReadingEffectsProps> = ({ effect = 'none',
     }
 
     class LightningParticle {
-      x: number = 0;
-      y: number = 0;
-      size: number = 0;
-      vx: number = 0;
-      vy: number = 0;
-      alpha: number = 1;
-      baseAlpha: number = 1;
+      strikeTimer: number = 20; // Khởi đầu bằng một phát sét đánh nhanh
+      flashAlpha: number = 0;
+      boltSegments: { x1: number; y1: number; x2: number; y2: number }[] = [];
+      branches: { x1: number; y1: number; x2: number; y2: number }[] = [];
+      flickerActive: boolean = false;
+      flickerTimer: number = 0;
 
       constructor() {
-        this.reset(true);
+        this.reset();
+        // Sét đánh cực nhanh ngay khi vừa kích hoạt hiệu ứng
+        this.strikeTimer = 10 + Math.random() * 20;
       }
 
-      reset(isInitial = false) {
-        this.x = Math.random() * width;
-        this.y = isInitial ? Math.random() * height : -20;
-        this.size = 1 + Math.random() * 2;
-        this.vx = (Math.random() - 0.5) * 1;
-        this.vy = 2 + Math.random() * 3;
-        this.baseAlpha = 0.5 + Math.random() * 0.5;
-        this.alpha = this.baseAlpha;
+      reset() {
+        // Tần suất sét đánh ngẫu nhiên thưa hơn, tự nhiên hơn (từ 3 đến 6 giây)
+        this.strikeTimer = 180 + Math.random() * 200;
+        this.flashAlpha = 0;
+        this.boltSegments = [];
+        this.branches = [];
+        this.flickerActive = false;
       }
 
       update() {
-        this.x += this.vx;
-        this.y += this.vy;
-        if (this.y > height + 20) {
-          this.reset();
+        if (this.strikeTimer > 0) {
+          this.strikeTimer--;
+          if (this.strikeTimer <= 0) {
+            this.triggerStrike();
+          }
+        }
+
+        // Giảm dần độ sáng của luồng chớp nền nhanh hơn
+        if (this.flashAlpha > 0) {
+          this.flashAlpha -= 0.08;
+          if (this.flashAlpha < 0) this.flashAlpha = 0;
+        }
+
+        // Quản lý thời gian nhấp nháy (flicker) của tia sét
+        if (this.flickerActive) {
+          this.flickerTimer--;
+          if (this.flickerTimer <= 0) {
+            this.flickerActive = false;
+            this.boltSegments = [];
+            this.branches = [];
+            
+            // 30% cơ hội đánh bồi thêm phát sét thứ hai liên tiếp (double flash) rất nhanh
+            if (Math.random() < 0.3) {
+              this.strikeTimer = 4 + Math.random() * 8;
+            } else {
+              this.reset();
+            }
+          }
+        }
+      }
+
+      triggerStrike() {
+        // Độ chói chớp sáng nền ngẫu nhiên
+        this.flashAlpha = 0.2 + Math.random() * 0.3;
+        this.flickerActive = true;
+        this.flickerTimer = 3 + Math.floor(Math.random() * 4); // Chớp rất nhanh
+
+        this.boltSegments = [];
+        this.branches = [];
+
+        // Điểm bắt đầu của sét ở cạnh trên màn hình
+        let startX = Math.random() * width;
+        let startY = 0;
+        let currentX = startX;
+        let currentY = startY;
+
+        // Tăng số lượng phân đoạn để tia sét có đường nét sắc và thật hơn
+        const segmentCount = 25 + Math.floor(Math.random() * 15);
+        const segmentHeight = height / segmentCount;
+
+        for (let i = 0; i < segmentCount; i++) {
+          // Độ lệch ngẫu nhiên trục X hẹp lại để tia sét đi thẳng đứng và thực tế hơn
+          let nextX = currentX + (Math.random() - 0.5) * (width * 0.05);
+          // Giới hạn trong màn hình
+          nextX = Math.max(0, Math.min(width, nextX));
+          let nextY = currentY + segmentHeight;
+
+          this.boltSegments.push({ x1: currentX, y1: currentY, x2: nextX, y2: nextY });
+
+          // Ít nhánh phụ hơn, mỏng và thực tế hơn
+          if (Math.random() < 0.15) {
+            let bX = currentX;
+            let bY = currentY;
+            const branchLength = 3 + Math.floor(Math.random() * 5);
+            for (let j = 0; j < branchLength; j++) {
+              let nbX = bX + (Math.random() - 0.5) * (width * 0.04);
+              let nbY = bY + segmentHeight * 0.8;
+              this.branches.push({ x1: bX, y1: bY, x2: nbX, y2: nbY });
+              bX = nbX;
+              bY = nbY;
+            }
+          }
+
+          currentX = nextX;
+          currentY = nextY;
         }
       }
 
       draw() {
-        ctx.save();
-        ctx.shadowBlur = 10;
-        ctx.shadowColor = '#818cf8';
-        ctx.fillStyle = `rgba(165, 180, 252, ${this.alpha})`;
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
+        // 1. Chớp sáng nền toàn cảnh
+        if (this.flashAlpha > 0) {
+          ctx.save();
+          // Chớp nền màu xanh tím dịu mờ mờ ảo
+          ctx.fillStyle = `rgba(224, 231, 255, ${this.flashAlpha})`;
+          ctx.fillRect(0, 0, width, height);
+          ctx.restore();
+        }
+
+        // 2. Vẽ tia sét với hiệu ứng hào quang phát sáng (glow)
+        if (this.flickerActive && this.boltSegments.length > 0 && Math.random() > 0.1) {
+          ctx.save();
+
+          // Hào quang xanh/tím phát ra từ sét
+          ctx.shadowBlur = 15;
+          ctx.shadowColor = 'rgba(129, 140, 248, 0.7)';
+          ctx.strokeStyle = '#e0e7ff';
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
+
+          // Vẽ luồng sáng lớn phát sáng bên ngoài
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          this.boltSegments.forEach((seg, idx) => {
+            if (idx === 0) ctx.moveTo(seg.x1, seg.y1);
+            ctx.lineTo(seg.x2, seg.y2);
+          });
+          ctx.stroke();
+
+          // Vẽ các nhánh phụ phát sáng
+          ctx.lineWidth = 0.8;
+          this.branches.forEach((seg) => {
+            ctx.beginPath();
+            ctx.moveTo(seg.x1, seg.y1);
+            ctx.lineTo(seg.x2, seg.y2);
+            ctx.stroke();
+          });
+
+          // Vẽ lõi sét trắng tinh cực sáng ở giữa đè lên
+          ctx.shadowBlur = 0;
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 0.8;
+          ctx.beginPath();
+          this.boltSegments.forEach((seg, idx) => {
+            if (idx === 0) ctx.moveTo(seg.x1, seg.y1);
+            ctx.lineTo(seg.x2, seg.y2);
+          });
+          ctx.stroke();
+
+          ctx.restore();
+        }
       }
     }
 
@@ -1444,17 +1558,17 @@ export const ReadingEffects: React.FC<ReadingEffectsProps> = ({ effect = 'none',
       reset(isInitial = false) {
         this.x = Math.random() * width;
         this.y = isInitial ? Math.random() * height : height + 50;
-        this.size = 80 + Math.random() * 120;
-        this.vx = (Math.random() - 0.5) * 0.2;
-        this.vy = -(0.1 + Math.random() * 0.2);
-        this.baseAlpha = 0.05 + Math.random() * 0.1;
+        this.size = 120 + Math.random() * 250;
+        this.vx = (Math.random() - 0.5) * 0.3;
+        this.vy = -(0.1 + Math.random() * 0.3);
+        this.baseAlpha = 0.02 + Math.random() * 0.04;
         this.alpha = this.baseAlpha;
       }
 
       update() {
         this.x += this.vx;
         this.y += this.vy;
-        if (this.y < -150) {
+        if (this.y < -250) {
           this.reset();
         }
       }
@@ -1462,8 +1576,9 @@ export const ReadingEffects: React.FC<ReadingEffectsProps> = ({ effect = 'none',
       draw() {
         ctx.save();
         const grad = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.size);
-        grad.addColorStop(0, `rgba(200, 200, 200, ${this.alpha})`);
-        grad.addColorStop(1, 'rgba(200, 200, 200, 0)');
+        const colorVal = isDarkTheme ? '220, 225, 235' : '130, 140, 150';
+        grad.addColorStop(0, `rgba(${colorVal}, ${this.alpha})`);
+        grad.addColorStop(1, `rgba(${colorVal}, 0)`);
         ctx.fillStyle = grad;
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);

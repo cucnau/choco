@@ -138,6 +138,82 @@ export interface StoryBlockRendererProps {
   editorDisplayName: string;
 }
 
+const AutoScrollAlbum = ({
+  albumImages,
+  story,
+  isCustomTheme,
+  tone,
+  activeBorderColor,
+  storyBodyFont,
+  customStyles,
+  setLightboxImages,
+  setLightboxCurrentIndex,
+}: any) => {
+  const scrollRef = React.useRef<HTMLDivElement>(null);
+  
+  React.useEffect(() => {
+    let interval: any;
+    if (scrollRef.current && albumImages.length > 1) {
+      interval = setInterval(() => {
+        if (!scrollRef.current) return;
+        const container = scrollRef.current;
+        const scrollAmount = container.clientWidth * 0.8; // Cuộn 80% chiều rộng container
+        
+        // Nếu đã cuộn đến cuối, quay lại đầu
+        if (container.scrollLeft + container.clientWidth >= container.scrollWidth - 10) {
+          container.scrollTo({ left: 0, behavior: 'smooth' });
+        } else {
+          container.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+        }
+      }, 3000); // 3 giây trượt 1 lần
+    }
+    return () => clearInterval(interval);
+  }, [albumImages.length]);
+
+  return (
+    <div className="w-full flex flex-col my-3 space-y-2">
+      {story.galleryWidgetTitle && story.galleryWidgetTitle !== 'Album' && story.galleryWidgetTitle !== 'Hình ảnh & Album' && (
+        <div className="flex items-center gap-1.5 opacity-90 mb-1">
+          <Images className="w-3.5 h-3.5 shrink-0" style={customStyles.text} />
+          <span className={`text-xs font-bold uppercase tracking-wider ${storyBodyFont}`} style={customStyles.text}>
+            {story.galleryWidgetTitle}
+          </span>
+        </div>
+      )}
+
+      <div className="relative w-full">
+        <div
+          ref={scrollRef}
+          className="flex w-full overflow-x-auto snap-x snap-mandatory hide-scrollbar gap-4 pb-2 items-center"
+        >
+          {albumImages.map((img: any, idx: number) => (
+            <div
+              key={`${img.id}-${idx}`}
+              className="group relative h-48 sm:h-56 shrink-0 cursor-pointer transition-all duration-300 hover:opacity-90 snap-center flex items-center justify-center"
+              onClick={() => {
+                setLightboxImages(albumImages);
+                setLightboxCurrentIndex(idx);
+              }}
+            >
+              <img
+                src={img.url}
+                alt={img.caption || `Ảnh ${idx + 1}`}
+                className="w-auto max-w-full h-full object-contain drop-shadow-sm"
+                loading="lazy"
+              />
+              {img.caption && (
+                <div className="absolute bottom-2 bg-black/60 text-white text-[10px] px-2 py-1 rounded backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity text-center max-w-[90%] truncate pointer-events-none">
+                  {img.caption}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export const StoryBlockRenderer: React.FC<StoryBlockRendererProps> = (props) => {
   const {
     blockId,
@@ -683,132 +759,45 @@ export const StoryBlockRenderer: React.FC<StoryBlockRendererProps> = (props) => 
     if (isSingle && !singleUrl) return null;
     if (!isSingle && albumImages.length === 0) return null;
 
-    const speedClass = story.galleryAutoScrollSpeed === 'slow'
-      ? 'gallery-strip-track-slow'
-      : story.galleryAutoScrollSpeed === 'fast'
-      ? 'gallery-strip-track-fast'
-      : 'gallery-strip-track-normal';
-
-    return (
-      <div
-        key="gallery_widget"
-        className={`p-3 space-y-2.5 rounded transition border overflow-hidden ${isCustomTheme ? '' : `${tone.inputBg}`}`}
-        style={{
-          ...(isCustomTheme
-            ? { background: story.customBtnSecondaryBgColor || story.customCardBgColor || story.customBgColor }
-            : {}),
-          ...getStoryBorderStyle(
-            {
-              borderStyle: story.borderStyle || 'solid',
-              borderWidth: story.borderWidth || 'thin',
-              borderRadius: story.borderRadius || 'xs',
-              borderCornerAccent: story.borderCornerAccent || 'none',
-              borderGlow: story.borderGlow || 'none',
-            },
-            activeBorderColor
-          ),
-        }}
-      >
-        <div className="flex items-center justify-between border-b pb-1.5 opacity-90" style={{ borderColor: isCustomTheme ? story.customBorderColor : tone.border }}>
-          <div className="flex items-center gap-1.5">
-            {isSingle ? (
-              <ImageIcon className="w-3.5 h-3.5 shrink-0" style={customStyles.text} />
-            ) : (
-              <Images className="w-3.5 h-3.5 shrink-0" style={customStyles.text} />
-            )}
-            <span className={`text-xs font-bold uppercase tracking-wider ${storyBodyFont}`} style={customStyles.text}>
-              {story.galleryWidgetTitle || (isSingle ? 'Hình ảnh' : 'Album ảnh')}
-            </span>
+    if (isSingle) {
+      return (
+        <div key="gallery_widget" className="w-full flex flex-col items-center justify-center my-3">
+          <div
+            className="group relative cursor-pointer flex items-center justify-center w-full"
+            onClick={() => {
+              setLightboxImages([{ url: singleUrl, caption: story.gallerySingleImageCaption }]);
+              setLightboxCurrentIndex(0);
+            }}
+          >
+            <img
+              src={singleUrl}
+              alt={story.gallerySingleImageCaption || 'Story image'}
+              className="max-w-full h-auto object-contain transition duration-300 group-hover:opacity-90"
+              loading="lazy"
+            />
           </div>
-          {!isSingle && albumImages.length > 1 && (
-            <div className="flex items-center gap-1.5">
-              <button
-                type="button"
-                onClick={() => setIsStripPaused(!isStripPaused)}
-                title={isStripPaused ? 'Chạy tiếp' : 'Tạm dừng'}
-                className="text-[10px] px-2 py-0.5 rounded border flex items-center gap-1 opacity-85 hover:opacity-100 transition cursor-pointer"
-                style={{
-                  borderColor: isCustomTheme ? story.customBorderColor : tone.border,
-                  color: isCustomTheme ? story.customTextColor : tone.text,
-                }}
-              >
-                {isStripPaused ? <Play className="w-2.5 h-2.5" /> : <Pause className="w-2.5 h-2.5" />}
-                <span className="font-mono">{isStripPaused ? 'Chạy' : 'Dừng'}</span>
-              </button>
-            </div>
+          {story.gallerySingleImageCaption && (
+            <p className={`mt-2 text-[11px] italic text-center opacity-85 ${storyMutedFont}`} style={customStyles.textMuted}>
+              {story.gallerySingleImageCaption}
+            </p>
           )}
         </div>
+      );
+    }
 
-        {isSingle && singleUrl && (
-          <div className="space-y-1.5">
-            <div
-              className="group relative rounded overflow-hidden border cursor-pointer max-h-80 flex items-center justify-center bg-black/20"
-              style={{ borderColor: isCustomTheme ? story.customBorderColor : tone.border }}
-              onClick={() => {
-                setLightboxImages([{ url: singleUrl, caption: story.gallerySingleImageCaption }]);
-                setLightboxCurrentIndex(0);
-              }}
-            >
-              <img
-                src={singleUrl}
-                alt={story.gallerySingleImageCaption || 'Story image'}
-                className="w-full h-auto max-h-80 object-contain group-hover:scale-101 transition duration-300"
-                loading="lazy"
-              />
-              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-1 text-white text-xs font-medium backdrop-blur-xs">
-                <ZoomIn className="w-4 h-4" />
-                <span>Phóng to xem chi tiết</span>
-              </div>
-            </div>
-            {story.gallerySingleImageCaption && (
-              <p className={`text-[11px] italic text-center opacity-85 ${storyMutedFont}`} style={customStyles.textMuted}>
-                {story.gallerySingleImageCaption}
-              </p>
-            )}
-          </div>
-        )}
-
-        {!isSingle && albumImages.length > 0 && (
-          <div className="relative overflow-hidden py-1">
-            <div
-              className={`gallery-strip-track gallery-strip-track-moving ${speedClass} ${isStripPaused ? 'gallery-strip-paused' : ''} gap-2.5`}
-            >
-              {[...albumImages, ...albumImages].map((img, idx) => {
-                const originalIdx = idx % albumImages.length;
-                return (
-                  <div
-                    key={`${img.id}-${idx}`}
-                    className="group relative w-36 sm:w-44 h-28 sm:h-32 shrink-0 rounded overflow-hidden border cursor-pointer bg-black/25 transition-all duration-200 hover:scale-105 hover:z-10 shadow-xs"
-                    style={{ borderColor: isCustomTheme ? story.customBorderColor : tone.border }}
-                    onClick={() => {
-                      setLightboxImages(albumImages);
-                      setLightboxCurrentIndex(originalIdx);
-                    }}
-                  >
-                    <img
-                      src={img.url}
-                      alt={img.caption || `Ảnh ${originalIdx + 1}`}
-                      className="w-full h-full object-cover"
-                      loading="lazy"
-                    />
-                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition flex flex-col items-center justify-center p-1.5 text-center text-white backdrop-blur-xs">
-                      <ZoomIn className="w-4 h-4 mb-0.5" />
-                      <span className="text-[10px] font-semibold line-clamp-2">
-                        {img.caption || `Ảnh ${originalIdx + 1}`}
-                      </span>
-                    </div>
-                    {img.caption && (
-                      <div className="absolute bottom-0 inset-x-0 bg-black/75 text-white text-[9px] px-1.5 py-0.5 truncate group-hover:hidden text-center">
-                        {img.caption}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-      </div>
+    return (
+      <AutoScrollAlbum
+        key="gallery_widget"
+        albumImages={albumImages}
+        story={story}
+        isCustomTheme={isCustomTheme}
+        tone={tone}
+        activeBorderColor={activeBorderColor}
+        storyBodyFont={storyBodyFont}
+        customStyles={customStyles}
+        setLightboxImages={setLightboxImages}
+        setLightboxCurrentIndex={setLightboxCurrentIndex}
+      />
     );
   }
 
