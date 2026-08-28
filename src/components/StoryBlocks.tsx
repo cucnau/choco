@@ -189,7 +189,8 @@ const AutoScrollAlbum = ({
           {albumImages.map((img: any, idx: number) => (
             <div
               key={`${img.id}-${idx}`}
-              className="group relative h-48 sm:h-56 shrink-0 cursor-pointer transition-all duration-300 hover:opacity-90 snap-center flex items-center justify-center"
+              className="group relative shrink-0 cursor-pointer transition-all duration-300 hover:opacity-90 snap-center flex items-center justify-center"
+              style={{ height: `${story.galleryImageSize ? (story.galleryImageSize * 1.9) : 192}px` }}
               onClick={() => {
                 setLightboxImages(albumImages);
                 setLightboxCurrentIndex(idx);
@@ -772,7 +773,8 @@ export const StoryBlockRenderer: React.FC<StoryBlockRendererProps> = (props) => 
             <img
               src={singleUrl}
               alt={story.gallerySingleImageCaption || 'Story image'}
-              className="max-w-full h-auto object-contain transition duration-300 group-hover:opacity-90"
+              className="h-auto object-contain transition duration-300 group-hover:opacity-90"
+              style={{ width: `${story.galleryImageSize || 100}%`, maxWidth: '100%' }}
               loading="lazy"
             />
           </div>

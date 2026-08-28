@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, BookOpen, Bookmark, PlusCircle, User, LogOut, LogIn, Settings, Flame, Calendar, Check, Loader2, Home, Gamepad2, Bell, MessageSquare } from 'lucide-react';
+import { Search, Users, BookOpen, Bookmark, PlusCircle, User, LogOut, LogIn, Settings, Flame, Calendar, Check, Loader2, Home, Gamepad2, Bell, MessageSquare } from 'lucide-react';
 import { User as FirebaseUser } from 'firebase/auth';
 import { Story, UserProfile, Notification } from '../types';
 import { checkInDaily, getLocalDateString } from '../lib/storage';
@@ -242,8 +242,8 @@ const HEADER_THEME_TONES: Record<string, {
 };
 
 interface HeaderProps {
-  activeTab: 'browse' | 'library' | 'studio' | 'games';
-  setActiveTab: (tab: 'browse' | 'library' | 'studio' | 'games') => void;
+  activeTab: 'browse' | 'news' | 'library' | 'studio' | 'games';
+  setActiveTab: (tab: 'browse' | 'news' | 'library' | 'studio' | 'games') => void;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
   bookmarkCount: number;
@@ -415,6 +415,30 @@ export const Header: React.FC<HeaderProps> = ({
               }
             >
               <Home className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={() => setActiveTab('news')}
+              className={`p-1.5 text-xs font-mono-code font-bold transition rounded-xs border flex items-center justify-center ${
+                activeTab === 'news'
+                  ? (isCustomTheme 
+                      ? 'shadow-sm' 
+                      : `${tone.buttonBg} ${tone.buttonBorder} ${tone.text} shadow-sm`)
+                  : (isCustomTheme 
+                      ? 'border-transparent hover:opacity-80' 
+                      : `border-transparent ${tone.textMuted} hover:${tone.text}`)
+              }`}
+              title="Diễn đàn"
+              style={
+                isCustomTheme && activeTab === 'news'
+                  ? {
+                      backgroundColor: currentStory.customBtnBgColor || currentStory.customCardBgColor,
+                      borderColor: currentStory.customBorderColor,
+                      color: currentStory.customTextColor,
+                    }
+                  : (isCustomTheme ? { color: currentStory.customTextMutedColor } : {})
+              }
+            >
+              <Users className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={() => setActiveTab('games')}

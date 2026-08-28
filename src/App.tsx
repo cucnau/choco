@@ -39,6 +39,7 @@ import {
 } from './lib/storage';
 
 import { Header } from './components/Header';
+import { NewsHub } from './components/NewsHub';
 import { migrateLocalStorageFonts, getIdbFonts, saveIdbFonts, StoredUserFont } from './lib/idbStorage';
 import { StoryCard } from './components/StoryCard';
 import { StoryDetail } from './components/StoryDetail';
@@ -53,7 +54,7 @@ import { GamesHub } from './components/GamesHub';
 
 export default function App() {
   // Navigation & View States
-  const [activeTab, setActiveTab] = useState<'browse' | 'library' | 'studio' | 'games'>('browse');
+  const [activeTab, setActiveTab] = useState<'browse' | 'news' | 'library' | 'studio' | 'games'>('browse');
   const [selectedStory, setSelectedStory] = useState<Story | null>(null);
   const [selectedChapter, setSelectedChapter] = useState<Chapter | null>(null);
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
@@ -353,7 +354,7 @@ export default function App() {
     if (typeof window === 'undefined') return '';
     if (window.location.hostname.includes('github.io')) {
       const parts = window.location.pathname.split('/').filter(Boolean);
-      const appRoutes = ['home', 'browse', 'library', 'studio', 'games', 'truyen', 'story', 'tu-sach', 'xuong-viet', 'tro-choi'];
+      const appRoutes = ['home', 'browse', 'library', 'studio', 'games', 'truyen', 'story', 'tu-sach', 'xuong-viet', 'tro-choi', 'news', 'thong-bao'];
       if (parts.length > 0 && !appRoutes.includes(parts[0])) {
         return '/' + parts[0];
       }
@@ -448,6 +449,14 @@ export default function App() {
 
       if (cleanRoute === 'studio' || cleanRoute === 'xuong-viet' || cleanRoute === 'sang-tac') {
         setActiveTab('studio');
+        setSelectedStory(null);
+        setSelectedChapter(null);
+        setSelectedGameId(null);
+        return;
+      }
+
+      if (cleanRoute === 'news' || cleanRoute === 'thong-bao') {
+        setActiveTab('news');
         setSelectedStory(null);
         setSelectedChapter(null);
         setSelectedGameId(null);
@@ -879,6 +888,7 @@ export default function App() {
             setSelectedGameId(null);
             if (tab === 'browse') navigateTo('/home');
             else if (tab === 'library') navigateTo('/library');
+            else if (tab === 'news') navigateTo('/news');
             else if (tab === 'studio') navigateTo('/studio');
             else if (tab === 'games') navigateTo('/games');
           }}
@@ -1007,6 +1017,7 @@ export default function App() {
                 setSelectedChapter(null);
                 if (activeTab === 'library') navigateTo('/library');
                 else if (activeTab === 'studio') navigateTo('/studio');
+                else if (activeTab === 'news') navigateTo('/news');
                 else if (activeTab === 'games') navigateTo('/games');
                 else navigateTo('/home');
               }}
@@ -1272,6 +1283,8 @@ export default function App() {
               </div>
             </div>
           )
+        ) : activeTab === 'news' ? (
+          <NewsHub currentUser={currentUser} userProfile={userProfile} isEditor={canPost} />
         ) : activeTab === 'games' ? (
           <GamesHub
             currentUser={currentUser}

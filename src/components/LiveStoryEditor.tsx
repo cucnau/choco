@@ -869,8 +869,11 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
   const [galleryImages, setGalleryImages] = useState<StoryGalleryImage[]>(
     initialStory?.galleryImages || []
   );
-  const [galleryAutoScrollSpeed, setGalleryAutoScrollSpeed] = useState<'slow' | 'normal' | 'fast'>(
+const [galleryAutoScrollSpeed, setGalleryAutoScrollSpeed] = useState<'slow' | 'normal' | 'fast'>(
     initialStory?.galleryAutoScrollSpeed || 'normal'
+  );
+  const [galleryImageSize, setGalleryImageSize] = useState<number>(
+    initialStory?.galleryImageSize || 100
   );
 
   // Input & nén ảnh cho Gallery
@@ -1610,6 +1613,10 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
 
   // Nén ảnh đơn cho Gallery Widget
   const handleCompressGallerySingle = (file: File) => {
+    if (file.type === 'image/gif' && file.size > 500 * 1024) {
+      alert(`Kích thước ảnh GIF quá lớn (${(file.size / 1024).toFixed(1)} KB). Vui lòng chọn ảnh GIF dưới 500 KB để tránh lỗi lưu trữ.`);
+      return;
+    }
     setIsCompressingGalleryImg(true);
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -1642,7 +1649,7 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
         if (ctx) {
           ctx.drawImage(img, 0, 0, width, height);
           // Dùng webp hoặc png để giữ nền trong suốt nếu là PNG/WebP
-          const outputType = (file.type === 'image/png' || file.type === 'image/webp') ? file.type : 'image/jpeg';
+          const outputType = (file.type === 'image/png' || file.type === 'image/webp') ? 'image/webp' : 'image/jpeg';
           const dataUrl = canvas.toDataURL(outputType, 0.85);
           setGallerySingleImageUrl(dataUrl);
           setIsCompressingGalleryImg(false);
@@ -1655,8 +1662,18 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
 
   // Nén và thêm nhiều ảnh album cho Gallery Widget
   const handleCompressGalleryAlbum = (files: FileList | File[]) => {
+    const validFiles = Array.from(files).filter(file => {
+      if (file.type === 'image/gif' && file.size > 500 * 1024) {
+        alert(`Ảnh "${file.name}" là GIF quá lớn (${(file.size / 1024).toFixed(1)} KB). Vui lòng chọn GIF dưới 500 KB.`);
+        return false;
+      }
+      return true;
+    });
+
+    if (validFiles.length === 0) return;
+
     setIsCompressingGalleryImg(true);
-    Array.from(files).forEach((file) => {
+    validFiles.forEach((file) => {
       const reader = new FileReader();
       reader.onload = (e) => {
         const result = e.target?.result as string;
@@ -1694,7 +1711,7 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
           const ctx = canvas.getContext('2d');
           if (ctx) {
             ctx.drawImage(img, 0, 0, width, height);
-            const outputType = (file.type === 'image/png' || file.type === 'image/webp') ? file.type : 'image/jpeg';
+            const outputType = (file.type === 'image/png' || file.type === 'image/webp') ? 'image/webp' : 'image/jpeg';
             const dataUrl = canvas.toDataURL(outputType, 0.82);
             setGalleryImages((prev) => [
               ...prev,
@@ -1935,6 +1952,7 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
       gallerySingleImageCaption: gallerySingleImageCaption.trim(),
       galleryImages: galleryImages.length > 0 ? galleryImages : undefined,
       galleryAutoScrollSpeed,
+      galleryImageSize,
 
       // Kiểu trình bày danh sách chương
       chapterListStyle,
@@ -3440,6 +3458,23 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                     {/* Cấu hình Chế độ 2: Album Di Chuyển */}
                     {galleryMode === 'album' && (
                       <div className="space-y-3 pt-2 border-t border-dashed" style={{ borderColor: currentBorder }}>
+                        {/* Kích thước widget */}
+                        <div className="space-y-1 mb-2">
+                          <label className="text-[11px] font-semibold flex justify-between items-center" style={{ color: currentText }}>
+                            <span>Kích thước Widget ảnh:</span>
+                            <span>{galleryImageSize}%</span>
+                          </label>
+                          <input
+                            type="range"
+                            min="30"
+                            max="100"
+                            step="1"
+                            value={galleryImageSize}
+                            onChange={(e) => setGalleryImageSize(Number(e.target.value))}
+                            className="w-full h-1.5 rounded-lg appearance-none cursor-pointer"
+                            style={{ background: currentBtnBg }}
+                          />
+                        </div>
                         {/* Tốc độ tự động di chuyển */}
                         <div className="space-y-1">
                           <label className="text-[11px] font-semibold block" style={{ color: currentText }}>

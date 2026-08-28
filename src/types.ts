@@ -115,7 +115,8 @@ export interface Story {
   gallerySingleImageUrl?: string; // Đường dẫn ảnh lẻ
   gallerySingleImageCaption?: string; // Chú thích cho ảnh lẻ
   galleryImages?: StoryGalleryImage[]; // Danh sách các ảnh trong album
-  galleryAutoScrollSpeed?: 'slow' | 'normal' | 'fast'; // Tốc độ di chuyển dải album (chậm/vừa/nhanh)
+  galleryAutoScrollSpeed?: 'slow' | 'normal' | 'fast';
+  galleryImageSize?: number; // Kích thước hiển thị widget ảnh (%) 
 
   // Kiểu trình bày danh sách chương (Chapter List Display Style)
   chapterListStyle?: 'standard' | 'grid' | 'accordion' | 'timeline' | 'minimal_table' | 'book_catalog' | 'scroll_strip' | 'cards_bento' | 'modern_compact' | 'numbers_only';
@@ -263,3 +264,12 @@ export interface StoryLayoutSection {
 export type StoryLayoutMode = 'two_columns' | 'single_column' | 'inverted_two_columns';
 
 
+
+export interface NewsPost {
+  id: string;
+  title: string;
+  content: string;
+  authorId: string;
+  authorName: string;
+  createdAt: string;
+}
