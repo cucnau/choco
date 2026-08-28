@@ -1416,7 +1416,7 @@ export const ReadingEffects: React.FC<ReadingEffectsProps> = ({ effect = 'none',
         }
       }
 
-      draw(ctx: CanvasRenderingContext2D) {
+      draw() {
         ctx.save();
         ctx.shadowBlur = 10;
         ctx.shadowColor = '#818cf8';
@@ -1459,7 +1459,7 @@ export const ReadingEffects: React.FC<ReadingEffectsProps> = ({ effect = 'none',
         }
       }
 
-      draw(ctx: CanvasRenderingContext2D) {
+      draw() {
         ctx.save();
         const grad = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.size);
         grad.addColorStop(0, `rgba(200, 200, 200, ${this.alpha})`);
