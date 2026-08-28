@@ -61,13 +61,18 @@ export function parseChapterContentBlocks(content: string): ParsedBlock[] {
   let currentBlockLines: string[] = [];
 
   const flushNormalParagraphs = (rawLines: string[]) => {
-    rawLines.forEach((line) => {
-      const cleanP = line.trim();
+    const text = rawLines.join('\n');
+    if (!text.trim()) return;
+
+    // Tách theo các đoạn được phân cách bởi 1 hoặc nhiều dòng trống (\n\n)
+    const splitParas = text.split(/\n\s*\n+/);
+    splitParas.forEach((p) => {
+      const cleanP = p.trim();
       if (cleanP) {
         blocks.push({
           type: 'paragraph',
           rawText: cleanP,
-          lines: [cleanP],
+          lines: cleanP.split('\n').map((l) => l.trim()).filter(Boolean),
         });
       }
     });

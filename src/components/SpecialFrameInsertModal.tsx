@@ -120,7 +120,7 @@ export const SpecialFrameInsertModal: React.FC<SpecialFrameInsertModalProps> = (
   const [statusRows, setStatusRows] = useState<Array<{ key: string; val: string }>>(() => {
     if (initialContent && initialContent.trim()) {
       const lines = initialContent.trim().split('\n').filter(Boolean);
-      const parsed = lines.map(line => {
+      const parsed = lines.map((line) => {
         if (line.includes(':')) {
           const [k, ...v] = line.split(':');
           return { key: k.trim(), val: v.join(':').trim() };
@@ -140,35 +140,79 @@ export const SpecialFrameInsertModal: React.FC<SpecialFrameInsertModalProps> = (
 
   const handleSelectType = (type: SpecialBlockType) => {
     setSelectedType(type);
+
+    // Cập nhật tiêu đề & meta mặc định tương ứng với loại khung
     if (type === 'system') {
       setTitleInput('THÔNG BÁO HỆ THỐNG');
       setMetaInput('Nhiệm vụ mới');
-      setSingleContent('Chúc mừng ký chủ đã hoàn thành nhiệm vụ ẩn!\nPhần thưởng: 1000 Điểm kinh nghiệm và 1 Thần khí cấp S.');
     } else if (type === 'forum' || type === 'netizen') {
       setTitleInput('Diễn đàn Mạng Xã Hội');
       setMetaInput('Chủ đề nóng hổi');
     } else if (type === 'chat') {
-      setTitleInput('Hội thoại WeChat');
+      setTitleInput('Hội thoại Trò Chuyện');
       setMetaInput('Đang hoạt động');
     } else if (type === 'letter') {
-      setTitleInput('Mật Thư Cổ Điển');
+      setTitleInput('Thư Từ / Mật Hàm');
       setMetaInput('Gửi người thừa kế');
-      setSingleContent('Gửi con,\nNếu con đọc được bức thư này, nghĩa là phong ấn của gia tộc đã đến lúc được mở ra. Hãy tìm đến chiếc rương dưới chân cổ thụ...');
     } else if (type === 'thought') {
-      setTitleInput('Cố Dạ Bạch');
+      setTitleInput('Độc thoại nội tâm');
       setMetaInput('');
-      setSingleContent('Không ngờ hắn lại ẩn giấu tu vi sâu đến như vậy... Nếu đánh trực diện, mình chỉ có ba phần thắng.');
     } else if (type === 'status') {
       setTitleInput('BẢNG TRẠNG THÁI NHÂN VẬT');
       setMetaInput('Cập nhật');
     } else if (type === 'note') {
       setTitleInput('Lời tác giả / Chú thích');
       setMetaInput('');
-      setSingleContent('(*) Chú thích: Thuật ngữ "Dị Hỏa" ở đây tương đương với ngọn lửa thần thoại thời thượng cổ sinh ra từ lõi núi lửa.');
     } else if (type === 'warning') {
       setTitleInput('CẢNH BÁO NGUY HIỂM');
       setMetaInput('Cấp độ SSS');
-      setSingleContent('Phát hiện dị thú thượng cổ đang tiếp cận trong bán kính 500m!\nĐề nghị ký chủ lập tức rút lui hoặc tìm nơi ẩn nấp!');
+    }
+
+    // Nếu người dùng đã có nội dung (ví dụ từ việc bôi đen văn bản ban đầu hoặc đã gõ):
+    // TUYỆT ĐỐI KHÔNG RESET nội dung về dữ liệu mẫu (sample), mà đồng bộ nội dung của người dùng sang cấu trúc loại mới
+    const currentBaseText = singleContent && singleContent.trim()
+      ? singleContent.trim()
+      : (initialContent && initialContent.trim() ? initialContent.trim() : '');
+
+    if (currentBaseText) {
+      // Nếu chuyển sang Chat và chưa có chatRows được tạo từ nội dung này
+      const lines = currentBaseText.split('\n').filter(Boolean);
+      setChatRows(lines.map((line, idx) => ({
+        sender: idx % 2 === 0 ? 'Đối phương' : 'Tôi',
+        side: idx % 2 === 0 ? ('left' as const) : ('right' as const),
+        text: line.trim(),
+      })));
+
+      // Nếu chuyển sang Forum / Cư dân mạng
+      setForumRows(lines.map((line, idx) => ({
+        sender: `Cư dân mạng #${idx + 1}`,
+        time: 'Vừa xong',
+        likes: `${10 * (idx + 1)}`,
+        text: line.trim(),
+      })));
+
+      // Nếu chuyển sang Status RPG
+      const parsedStatus = lines.map((line) => {
+        if (line.includes(':')) {
+          const [k, ...v] = line.split(':');
+          return { key: k.trim(), val: v.join(':').trim() };
+        }
+        return { key: `Mục ${lines.length > 1 ? lines.indexOf(line) + 1 : ''}`.trim(), val: line.trim() };
+      });
+      setStatusRows(parsedStatus);
+    } else {
+      // Chỉ khi hoàn toàn không có nội dung nào thì mới đặt văn bản mẫu cho các khung đơn
+      if (type === 'system') {
+        setSingleContent('Chúc mừng ký chủ đã hoàn thành nhiệm vụ ẩn!\nPhần thưởng: 1000 Điểm kinh nghiệm và 1 Thần khí cấp S.');
+      } else if (type === 'letter') {
+        setSingleContent('Gửi người nhận,\nNếu bạn đọc được bức thư này, hãy đến gặp tôi tại điểm hẹn cũ...');
+      } else if (type === 'thought') {
+        setSingleContent('Không ngờ chuyện này lại diễn ra nhanh đến như vậy...');
+      } else if (type === 'note') {
+        setSingleContent('(*) Lời tác giả: Cảm ơn các bạn độc giả đã đồng hành cùng chương truyện này.');
+      } else if (type === 'warning') {
+        setSingleContent('Cảnh báo: Khu vực phía trước cực kỳ nguy hiểm, hãy cẩn thận!');
+      }
     }
   };
 

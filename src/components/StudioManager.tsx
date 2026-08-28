@@ -1736,6 +1736,12 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
                 </div>
 
                 <div className="relative">
+                  <style>{`
+                    .studio-chapter-textarea::selection {
+                      background-color: rgba(232, 121, 249, 0.4) !important;
+                      color: inherit !important;
+                    }
+                  `}</style>
                   <textarea
                     ref={studioTextareaRef}
                     value={chapterContent}
@@ -1749,8 +1755,7 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
                     onTouchEnd={handleStudioTextSelect}
                     placeholder="Nhập nội dung chương truyện ở đây... Bạn có thể bôi đen bất kỳ đoạn văn bản nào để tạo khung đặc biệt trực tiếp."
                     rows={14}
-                    className="w-full bg-[#12090c] border border-[#2d1822] p-3 text-sm text-[#e0c0cc] focus:outline-none focus:border-[#522d3d] leading-[2] resize-y font-mono-code selection:bg-pink-500/40"
-                    style={{ lineHeight: '2.0' }}
+                    className="studio-chapter-textarea w-full bg-[#12090c] border border-[#2d1822] p-3 text-sm text-[#e0c0cc] focus:outline-none focus:border-[#522d3d] leading-relaxed resize-y font-mono-code"
                     required
                   />
 

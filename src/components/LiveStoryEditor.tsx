@@ -4967,6 +4967,13 @@ const [galleryAutoScrollSpeed, setGalleryAutoScrollSpeed] = useState<'slow' | 'n
               {/* Chapter Content -> DIRECT INLINE TEXTAREA OR LIVE RENDERED PREVIEW */}
               {chapterViewMode === 'edit' ? (
                 <div className={`space-y-4 text-base relative ${customBodyFont}`} style={{ color: currentText }}>
+                  {/* Dynamic selection style based on active theme */}
+                  <style>{`
+                    .chapter-live-textarea::selection {
+                      background-color: ${currentBtnBg}66 !important;
+                      color: inherit !important;
+                    }
+                  `}</style>
                   <textarea
                     ref={chapterTextareaRef}
                     rows={16}
@@ -4980,11 +4987,8 @@ const [galleryAutoScrollSpeed, setGalleryAutoScrollSpeed] = useState<'slow' | 'n
                     onMouseUp={handleChapterTextSelect}
                     onTouchEnd={handleChapterTextSelect}
                     placeholder="Dán hoặc gõ nội dung chương vào đây... Bạn có thể bôi đen bất kỳ đoạn văn bản nào để tạo khung đặc biệt trực tiếp."
-                    className="w-full min-h-[500px] bg-transparent focus:outline-none resize-y text-base sm:text-[17px] leading-[2.2] tracking-wide border-none p-2 sm:p-4 selection:bg-pink-500/40"
-                    style={{
-                      color: currentText,
-                      lineHeight: '2.2',
-                    }}
+                    className="chapter-live-textarea w-full min-h-[500px] bg-transparent focus:outline-none resize-y text-base sm:text-[17px] leading-relaxed border-none p-2 sm:p-4 font-inherit"
+                    style={{ color: currentText }}
                   />
 
                   {/* Floating Selection Toolbar for Highlighted text */}
@@ -5010,12 +5014,12 @@ const [galleryAutoScrollSpeed, setGalleryAutoScrollSpeed] = useState<'slow' | 'n
                 </div>
               ) : (
                 /* LIVE PREVIEW OF CHAPTER WITH ALL SPECIAL FRAMES RENDERED */
-                <div className={`space-y-6 sm:space-y-7 leading-loose sm:leading-[2.2] text-base sm:text-[17px] tracking-wide min-h-[500px] p-2 sm:p-4 ${customBodyFont}`} style={{ color: currentText }}>
+                <div className={`space-y-5 leading-relaxed text-base sm:text-[17px] min-h-[500px] p-2 sm:p-4 ${customBodyFont}`} style={{ color: currentText }}>
                   {parseChapterContentBlocks(chapterContentInput).length > 0 ? (
                     parseChapterContentBlocks(chapterContentInput).map((block, bIdx) => (
                       <div key={bIdx} className="transition-all">
                         {block.type === 'paragraph' ? (
-                          <p className="leading-loose sm:leading-[2.2]">{block.rawText}</p>
+                          <p className="leading-relaxed whitespace-pre-line">{block.rawText}</p>
                         ) : (
                           <SpecialBlockRenderer
                             block={block}
