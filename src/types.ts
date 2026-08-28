@@ -62,6 +62,21 @@ export interface StoryGalleryImage {
   caption?: string; // Chú thích cho từng ảnh
 }
 
+export interface StoryElement {
+  id: string;
+  imageUrl: string;
+  name?: string;
+  x: number; // Tọa độ ngang (% từ 0 đến 100 theo chiều rộng khung truyện)
+  y: number; // Tọa độ dọc (% từ 0 đến 100 theo chiều cao khung truyện)
+  width: number; // Chiều rộng (pixel, từ 20 đến 500)
+  height?: number; // Chiều cao (pixel hoặc tự động)
+  rotation?: number; // Góc xoay (độ, từ -180 đến 180)
+  opacity?: number; // Độ mờ đục (từ 0.1 đến 1)
+  zIndex?: number; // Thứ tự lớp hiển thị (từ 1 đến 50)
+  flipHorizontal?: boolean; // Lật ảnh theo chiều ngang
+  animation?: 'none' | 'float' | 'spin' | 'pulse' | 'bounce' | 'wiggle'; // Hiệu ứng chuyển động của element
+}
+
 export interface Story {
   id: string;
   title: string;
@@ -117,6 +132,9 @@ export interface Story {
   galleryImages?: StoryGalleryImage[]; // Danh sách các ảnh trong album
   galleryAutoScrollSpeed?: 'slow' | 'normal' | 'fast';
   galleryImageSize?: number; // Kích thước hiển thị widget ảnh (%) 
+
+  // Các Element / Sticker / Họa tiết trang trí tự do trên trang truyện
+  storyElements?: StoryElement[];
 
   // Kiểu trình bày danh sách chương (Chapter List Display Style)
   chapterListStyle?: 'standard' | 'grid' | 'accordion' | 'timeline' | 'minimal_table' | 'book_catalog' | 'scroll_strip' | 'cards_bento' | 'modern_compact' | 'numbers_only';

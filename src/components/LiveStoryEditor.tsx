@@ -4,7 +4,7 @@ import { User as FirebaseUser } from 'firebase/auth';
 import { auth } from '../lib/firebase';
 import { saveUserFontToCloud, deleteUserFontFromCloud, getUserFontsFromCloud } from '../lib/storage';
 import { getIdbFonts, saveIdbFonts, deleteIdbFont, migrateLocalStorageFonts, StoredUserFont } from '../lib/idbStorage';
-import { Story, UserProfile, CharacterInfo, Chapter, StoryGalleryImage, StoryLayoutBlockId, StoryLayoutSection, StoryLayoutSectionType, StoryLayoutColumnRatio } from '../types';
+import { Story, UserProfile, CharacterInfo, Chapter, StoryGalleryImage, StoryLayoutBlockId, StoryLayoutSection, StoryLayoutSectionType, StoryLayoutColumnRatio, StoryElement } from '../types';
 import { BulkChapterModal } from './BulkChapterModal';
 import {
   normalizeStorySections,
@@ -52,6 +52,7 @@ import {
   Image as ImageIcon,
   Images,
   ZoomIn,
+  ZoomOut,
   Play,
   Pause,
   Clock,
@@ -66,6 +67,10 @@ import {
   Move,
   PanelLeft,
   PanelRight,
+  Sticker,
+  Copy,
+  FlipHorizontal,
+  RotateCw,
 } from 'lucide-react';
 import { ReadingEffects } from './ReadingEffects';
 import {
@@ -79,6 +84,7 @@ import {
   StoryCornerAccents,
 } from '../lib/borderStyles';
 import { LiveStoryEditorView } from './LiveStoryEditorView';
+import { StoryElementsLayer } from './StoryElementsLayer';
 
 const ALL_STORY_BLOCK_IDS: StoryLayoutBlockId[] = [
   'cover',
@@ -900,8 +906,17 @@ const [galleryAutoScrollSpeed, setGalleryAutoScrollSpeed] = useState<'slow' | 'n
   const [isCompressingCharAvatar, setIsCompressingCharAvatar] = useState(false);
   const charAvatarFileInputRef = useRef<HTMLInputElement>(null);
 
+  // Element / Sticker / Họa tiết trang trí tự do trên trang truyện
+  const [storyElements, setStoryElements] = useState<StoryElement[]>(
+    initialStory?.storyElements || []
+  );
+  const [selectedStoryElementId, setSelectedStoryElementId] = useState<string | null>(null);
+  const [isCompressingElementImg, setIsCompressingElementImg] = useState(false);
+  const elementFileInputRef = useRef<HTMLInputElement>(null);
+  const [elementUrlInput, setElementUrlInput] = useState('');
+
   // Floating Design Drawer Tabs
-  const [activeDrawerTab, setActiveDrawerTab] = useState<'theme' | 'fonts' | 'borders' | 'effects' | 'widgets' | 'layout' | null>(null);
+  const [activeDrawerTab, setActiveDrawerTab] = useState<'theme' | 'fonts' | 'borders' | 'effects' | 'elements' | 'widgets' | 'layout' | null>(null);
 
   // Story Page Flexible Sections Layout State (từng đoạn 1 cột hoặc 2 cột linh hoạt)
   const [storyLayoutSections, setStoryLayoutSections] = useState<StoryLayoutSection[]>(() =>
@@ -1730,6 +1745,96 @@ const [galleryAutoScrollSpeed, setGalleryAutoScrollSpeed] = useState<'slow' | 'n
     });
   };
 
+  // Nén và thêm ảnh/GIF Element trang trí
+  const handleCompressElementImg = (file: File) => {
+    if (file.type === 'image/gif' && file.size > 800 * 1024) {
+      alert(`Kích thước GIF element (${(file.size / 1024).toFixed(1)} KB) hơi lớn. Nên chọn dưới 800 KB để trang tải nhanh nhất.`);
+    }
+    setIsCompressingElementImg(true);
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const result = e.target?.result as string;
+      if (file.type === 'image/gif') {
+        const newEl: StoryElement = {
+          id: `ele_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+          imageUrl: result,
+          name: file.name.replace(/\.[^/.]+$/, ''),
+          x: 50,
+          y: 40,
+          width: 90,
+          rotation: 0,
+          opacity: 1,
+          zIndex: 15,
+          animation: 'none',
+        };
+        setStoryElements((prev) => [...prev, newEl]);
+        setSelectedStoryElementId(newEl.id);
+        setIsCompressingElementImg(false);
+        return;
+      }
+
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+        const maxDim = 800;
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          const dataUrl = canvas.toDataURL('image/png'); // Dùng PNG để bảo toàn độ trong suốt
+          const newEl: StoryElement = {
+            id: `ele_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+            imageUrl: dataUrl,
+            name: file.name.replace(/\.[^/.]+$/, ''),
+            x: 50,
+            y: 40,
+            width: 85,
+            rotation: 0,
+            opacity: 1,
+            zIndex: 15,
+            animation: 'none',
+          };
+          setStoryElements((prev) => [...prev, newEl]);
+          setSelectedStoryElementId(newEl.id);
+          setIsCompressingElementImg(false);
+        }
+      };
+      img.src = result;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleAddElementFromUrl = (url: string, defaultWidth = 85, name?: string) => {
+    if (!url || !url.trim()) return;
+    const newEl: StoryElement = {
+      id: `ele_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      imageUrl: url.trim(),
+      name: name || 'Element URL',
+      x: 50,
+      y: 40,
+      width: defaultWidth,
+      rotation: 0,
+      opacity: 1,
+      zIndex: 15,
+      animation: 'none',
+    };
+    setStoryElements((prev) => [...prev, newEl]);
+    setSelectedStoryElementId(newEl.id);
+    setElementUrlInput('');
+  };
+
   const handleAddTag = () => {
     if (!newTagInput.trim()) return;
     const rawTags = newTagInput.split(/[,，\n]/);
@@ -1954,6 +2059,9 @@ const [galleryAutoScrollSpeed, setGalleryAutoScrollSpeed] = useState<'slow' | 'n
       galleryAutoScrollSpeed,
       galleryImageSize,
 
+      // Element / Sticker / Họa tiết trang trí tự do trên trang truyện
+      storyElements: storyElements.length > 0 ? storyElements : undefined,
+
       // Kiểu trình bày danh sách chương
       chapterListStyle,
 
@@ -2069,6 +2177,17 @@ const [galleryAutoScrollSpeed, setGalleryAutoScrollSpeed] = useState<'slow' | 'n
           }
         }}
       />
+      <input
+        type="file"
+        ref={elementFileInputRef}
+        className="hidden"
+        accept="image/*"
+        onChange={(e) => {
+          if (e.target.files && e.target.files[0]) {
+            handleCompressElementImg(e.target.files[0]);
+          }
+        }}
+      />
 
       {/* STICKY TOP TOOLBAR */}
       <header
@@ -2172,6 +2291,27 @@ const [galleryAutoScrollSpeed, setGalleryAutoScrollSpeed] = useState<'slow' | 'n
           </button>
 
           <button
+            onClick={() => setActiveDrawerTab(activeDrawerTab === 'elements' ? null : 'elements')}
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-mono rounded border transition ${
+              activeDrawerTab === 'elements' ? 'ring-2 ring-white/50' : 'hover:opacity-90'
+            }`}
+            style={{
+              background: currentBtnSecondaryBg,
+              borderColor: currentBtnBorder,
+              color: currentText,
+            }}
+            title="Họa tiết, Sticker & Element trang trí tự do trên trang truyện"
+          >
+            <Sticker className="w-3.5 h-3.5" />
+            <span className="hidden md:inline">Element</span>
+            {storyElements.length > 0 && (
+              <span className="px-1 py-0.2 rounded-full text-[9px] bg-pink-500 text-white font-bold leading-none">
+                {storyElements.length}
+              </span>
+            )}
+          </button>
+
+          <button
             onClick={() => setActiveDrawerTab(activeDrawerTab === 'layout' ? null : 'layout')}
             className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-mono rounded border transition ${
               activeDrawerTab === 'layout' ? 'ring-2 ring-white/50' : 'hover:opacity-90'
@@ -2220,6 +2360,7 @@ const [galleryAutoScrollSpeed, setGalleryAutoScrollSpeed] = useState<'slow' | 'n
               {activeDrawerTab === 'fonts' && <Type className="w-4 h-4" />}
               {activeDrawerTab === 'borders' && <Square className="w-4 h-4" />}
               {activeDrawerTab === 'effects' && <Sparkles className="w-4 h-4" />}
+              {activeDrawerTab === 'elements' && <Sticker className="w-4 h-4" />}
               {activeDrawerTab === 'widgets' && <Users className="w-4 h-4" />}
               {activeDrawerTab === 'layout' && <MoveVertical className="w-4 h-4" />}
               <span>
@@ -2227,6 +2368,7 @@ const [galleryAutoScrollSpeed, setGalleryAutoScrollSpeed] = useState<'slow' | 'n
                 {activeDrawerTab === 'fonts' && 'Cài đặt Font chữ'}
                 {activeDrawerTab === 'borders' && 'Cài đặt Viền & Khung trang trí'}
                 {activeDrawerTab === 'effects' && 'Cài đặt Hiệu ứng nền'}
+                {activeDrawerTab === 'elements' && 'Cài đặt Element & Họa tiết trang trí'}
                 {activeDrawerTab === 'widgets' && 'Cài đặt Widgets'}
                 {activeDrawerTab === 'layout' && 'Tùy chỉnh bố cục & Vị trí các phần'}
               </span>
@@ -3039,6 +3181,190 @@ const [galleryAutoScrollSpeed, setGalleryAutoScrollSpeed] = useState<'slow' | 'n
             </div>
           )}
 
+          {/* TAB: ELEMENT & HỌA TIẾT TRANG TRÍ TỰ DO TRÊN TRANG TRUYỆN */}
+          {activeDrawerTab === 'elements' && (
+            <div className="space-y-4 text-xs font-mono">
+              {/* Giới thiệu & Hướng dẫn */}
+              <div className="p-2.5 rounded border space-y-1.5" style={{ background: currentBg, borderColor: currentBorder }}>
+                <span className="text-[11px] font-bold uppercase tracking-wider block flex items-center gap-1.5" style={{ color: currentText }}>
+                  <Sticker className="w-3.5 h-3.5 text-pink-400" />
+                  Element & Họa tiết trang trí tự do
+                </span>
+                <p className="text-[10px] leading-relaxed opacity-85" style={{ color: currentTextMuted }}>
+                  Đính các sticker, hình ảnh PNG trong suốt, GIF hoạt ảnh hoặc họa tiết lên trang truyện. Bạn có thể <strong className="text-pink-400">kéo thả vị trí</strong>, <strong className="text-pink-400">co giãn to nhỏ</strong>, <strong className="text-pink-400">xoay góc</strong> và chọn hiệu ứng chuyển động lặp lại sống động.
+                </p>
+              </div>
+
+              {/* Action Buttons: Tải ảnh/GIF từ máy hoặc Nhập URL */}
+              <div className="space-y-2">
+                <button
+                  type="button"
+                  onClick={() => elementFileInputRef.current?.click()}
+                  disabled={isCompressingElementImg}
+                  className="w-full py-2 px-3 rounded border text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 hover:opacity-90 active:scale-98 transition shadow-sm"
+                  style={{
+                    background: currentBtnBg,
+                    borderColor: currentBtnBorder,
+                    color: currentBtnText,
+                  }}
+                >
+                  <Upload className="w-3.5 h-3.5" />
+                  <span>{isCompressingElementImg ? 'Đang xử lý ảnh...' : 'Tải Element từ máy (PNG, GIF, WebP)'}</span>
+                </button>
+
+                <div className="flex items-center gap-1.5">
+                  <input
+                    type="url"
+                    placeholder="Hoặc dán URL ảnh / GIF element..."
+                    value={elementUrlInput}
+                    onChange={(e) => setElementUrlInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddElementFromUrl(elementUrlInput);
+                      }
+                    }}
+                    className="flex-1 p-2 rounded border text-xs focus:outline-none"
+                    style={{ background: currentBg, borderColor: currentBorder, color: currentText }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleAddElementFromUrl(elementUrlInput)}
+                    disabled={!elementUrlInput.trim()}
+                    className="px-3 py-2 rounded border text-xs font-bold shrink-0 disabled:opacity-50 hover:opacity-80 transition"
+                    style={{
+                      background: currentBtnSecondaryBg,
+                      borderColor: currentBtnBorder,
+                      color: currentText,
+                    }}
+                  >
+                    Thêm
+                  </button>
+                </div>
+              </div>
+
+              {/* Danh sách Element đang có trên trang */}
+              <div className="space-y-2 pt-1 border-t" style={{ borderColor: currentBorder }}>
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold uppercase tracking-wider" style={{ color: currentText }}>
+                    Element trên trang ({storyElements.length})
+                  </span>
+                  {storyElements.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (window.confirm('Bạn có chắc chắn muốn xóa toàn bộ element trên trang?')) {
+                          setStoryElements([]);
+                          setSelectedStoryElementId(null);
+                        }
+                      }}
+                      className="text-[10px] text-red-400 hover:text-red-300 transition flex items-center gap-1 underline"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                      Xóa tất cả
+                    </button>
+                  )}
+                </div>
+
+                {storyElements.length === 0 ? (
+                  <div className="p-3 text-center border border-dashed rounded text-[11px]" style={{ borderColor: currentBorder, color: currentTextMuted }}>
+                    Chưa có element nào. Hãy tải lên hoặc chọn từ kho mẫu bên dưới để trang trí!
+                  </div>
+                ) : (
+                  <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                    {storyElements.map((el, idx) => {
+                      const isSelected = selectedStoryElementId === el.id;
+                      return (
+                        <div
+                          key={el.id}
+                          onClick={() => setSelectedStoryElementId(el.id)}
+                          className={`p-2 rounded border flex items-center justify-between gap-2 cursor-pointer transition ${
+                            isSelected ? 'ring-2 ring-pink-500' : 'hover:opacity-90'
+                          }`}
+                          style={{ background: isSelected ? currentBtnSecondaryBg : currentBg, borderColor: currentBorder }}
+                        >
+                          <div className="flex items-center gap-2 min-w-0">
+                            <div className="w-8 h-8 rounded border bg-black/20 shrink-0 overflow-hidden flex items-center justify-center p-0.5" style={{ borderColor: currentBorder }}>
+                              <img src={el.imageUrl} alt="" className="w-full h-full object-contain pointer-events-none" />
+                            </div>
+                            <div className="min-w-0">
+                              <span className="text-[11px] font-bold block truncate" style={{ color: currentText }}>
+                                {el.name || `Element #${idx + 1}`}
+                              </span>
+                              <span className="text-[9px] block opacity-75" style={{ color: currentTextMuted }}>
+                                Rộng {el.width}px • {el.rotation || 0}° • {el.animation !== 'none' ? el.animation : 'Tĩnh'}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+                            {/* Duplicate */}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const clone: StoryElement = {
+                                  ...el,
+                                  id: `ele_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+                                  x: Math.min(85, el.x + 4),
+                                  y: Math.min(85, el.y + 4),
+                                };
+                                setStoryElements((prev) => [...prev, clone]);
+                                setSelectedStoryElementId(clone.id);
+                              }}
+                              className="p-1 rounded hover:opacity-80 transition"
+                              style={{ color: currentText }}
+                              title="Nhân bản"
+                            >
+                              <Copy className="w-3.5 h-3.5" />
+                            </button>
+
+                            {/* Flip */}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setStoryElements((prev) =>
+                                  prev.map((item) => (item.id === el.id ? { ...item, flipHorizontal: !item.flipHorizontal } : item))
+                                );
+                              }}
+                              className="p-1 rounded hover:opacity-80 transition"
+                              style={{ color: currentText }}
+                              title="Lật ngang"
+                            >
+                              <FlipHorizontal className="w-3.5 h-3.5" />
+                            </button>
+
+                            {/* Delete */}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setStoryElements((prev) => prev.filter((item) => item.id !== el.id));
+                                if (selectedStoryElementId === el.id) {
+                                  setSelectedStoryElementId(null);
+                                }
+                              }}
+                              className="p-1 rounded text-red-400 hover:text-red-300 transition"
+                              title="Xóa"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Hướng dẫn thao tác trực tiếp */}
+              <div className="p-2.5 rounded border bg-black/10 text-[10px] leading-relaxed space-y-1" style={{ borderColor: currentBorder, color: currentTextMuted }}>
+                <p className="font-bold" style={{ color: currentText }}>💡 Mẹo tương tác trên trang truyện:</p>
+                <p>• <strong>Kéo chuột / chạm tay</strong> vào element để di chuyển đến bất kỳ vị trí nào.</p>
+                <p>• <strong>Kéo chấm tròn</strong> ở góc dưới bên phải element để co giãn to/nhỏ tùy ý.</p>
+                <p>• <strong>Thanh công cụ nổi</strong>: Click chọn element để chỉnh chuyển động (bay, lơ lửng, quay tròn, nảy tưng tưng, lắc lư), xoay góc, lật ngang hoặc nhân bản.</p>
+              </div>
+            </div>
+          )}
+
           {/* TAB 5: WIDGETS (WIDGET NHÂN VẬT) */}
           {activeDrawerTab === 'widgets' && (
             <div className="space-y-4 text-xs">
@@ -3390,19 +3716,44 @@ const [galleryAutoScrollSpeed, setGalleryAutoScrollSpeed] = useState<'slow' | 'n
                       </div>
                     </div>
 
+                    {/* Kích thước widget dùng chung cho cả Ảnh đơn & Album */}
+                    <div className="space-y-1 p-2 rounded border bg-black/10" style={{ borderColor: currentBorder }}>
+                      <label className="text-[11px] font-semibold flex justify-between items-center" style={{ color: currentText }}>
+                        <span className="flex items-center gap-1">
+                          <Sliders className="w-3 h-3 text-[#e879f9]" /> Kích thước ảnh / Album:
+                        </span>
+                        <span className="font-mono font-bold text-xs" style={{ color: currentBtnBg }}>{galleryImageSize}%</span>
+                      </label>
+                      <input
+                        type="range"
+                        min="20"
+                        max="100"
+                        step="1"
+                        value={galleryImageSize}
+                        onChange={(e) => setGalleryImageSize(Number(e.target.value))}
+                        className="w-full h-1.5 rounded-lg appearance-none cursor-pointer accent-[#e879f9]"
+                        style={{ background: currentBtnBg }}
+                      />
+                      <div className="flex justify-between text-[9px] opacity-60 font-mono" style={{ color: currentTextMuted }}>
+                        <span>20% (Nhỏ)</span>
+                        <span>50% (Vừa)</span>
+                        <span>100% (Gốc)</span>
+                      </div>
+                    </div>
+
                     {/* Cấu hình Chế độ 1: Ảnh Lẻ */}
                     {galleryMode === 'single' && (
                       <div className="space-y-2.5 pt-2 border-t border-dashed" style={{ borderColor: currentBorder }}>
                         <div className="space-y-1">
                           <label className="text-[11px] font-semibold block" style={{ color: currentText }}>
-                            Hình ảnh lẻ:
+                            Hình ảnh / GIF lẻ:
                           </label>
                           <div className="flex items-center gap-2">
                             <input
                               type="text"
                               value={gallerySingleImageUrl}
                               onChange={(e) => setGallerySingleImageUrl(e.target.value)}
-                              placeholder="Dán URL ảnh hoặc tải từ máy..."
+                              placeholder="Dán URL ảnh/GIF hoặc tải từ máy..."
                               className="flex-1 p-2 rounded border text-xs focus:outline-none"
                               style={{ background: currentCardBg, borderColor: currentBorder, color: currentText }}
                             />
@@ -3421,11 +3772,12 @@ const [galleryAutoScrollSpeed, setGalleryAutoScrollSpeed] = useState<'slow' | 'n
 
                         {/* Preview ảnh lẻ nếu có */}
                         {gallerySingleImageUrl && (
-                          <div className="relative rounded overflow-hidden border max-h-36 flex items-center justify-center bg-black/20" style={{ borderColor: currentBorder }}>
+                          <div className="relative rounded overflow-hidden border p-2 flex flex-col items-center justify-center bg-black/20" style={{ borderColor: currentBorder }}>
                             <img
                               src={gallerySingleImageUrl}
                               alt="Gallery Preview"
-                              className="max-h-36 w-full object-contain"
+                              className="h-auto max-h-48 object-contain rounded transition-all duration-200"
+                              style={{ width: `${galleryImageSize}%`, maxWidth: '100%' }}
                             />
                             <button
                               type="button"
@@ -3458,23 +3810,6 @@ const [galleryAutoScrollSpeed, setGalleryAutoScrollSpeed] = useState<'slow' | 'n
                     {/* Cấu hình Chế độ 2: Album Di Chuyển */}
                     {galleryMode === 'album' && (
                       <div className="space-y-3 pt-2 border-t border-dashed" style={{ borderColor: currentBorder }}>
-                        {/* Kích thước widget */}
-                        <div className="space-y-1 mb-2">
-                          <label className="text-[11px] font-semibold flex justify-between items-center" style={{ color: currentText }}>
-                            <span>Kích thước Widget ảnh:</span>
-                            <span>{galleryImageSize}%</span>
-                          </label>
-                          <input
-                            type="range"
-                            min="30"
-                            max="100"
-                            step="1"
-                            value={galleryImageSize}
-                            onChange={(e) => setGalleryImageSize(Number(e.target.value))}
-                            className="w-full h-1.5 rounded-lg appearance-none cursor-pointer"
-                            style={{ background: currentBtnBg }}
-                          />
-                        </div>
                         {/* Tốc độ tự động di chuyển */}
                         <div className="space-y-1">
                           <label className="text-[11px] font-semibold block" style={{ color: currentText }}>
@@ -4625,6 +4960,8 @@ const [galleryAutoScrollSpeed, setGalleryAutoScrollSpeed] = useState<'slow' | 'n
             setGallerySingleImageCaption={setGallerySingleImageCaption}
             galleryImages={galleryImages}
             setGalleryImages={setGalleryImages}
+            galleryImageSize={galleryImageSize}
+            setGalleryImageSize={setGalleryImageSize}
             galleryAutoScrollSpeed={galleryAutoScrollSpeed}
             setGalleryAutoScrollSpeed={setGalleryAutoScrollSpeed}
             gallerySingleFileInputRef={gallerySingleFileInputRef}
@@ -4634,6 +4971,10 @@ const [galleryAutoScrollSpeed, setGalleryAutoScrollSpeed] = useState<'slow' | 'n
             handleCompressGalleryAlbum={handleCompressGalleryAlbum}
             chapterListStyle={chapterListStyle}
             setChapterListStyle={setChapterListStyle}
+            storyElements={storyElements}
+            setStoryElements={setStoryElements}
+            selectedStoryElementId={selectedStoryElementId}
+            setSelectedStoryElementId={setSelectedStoryElementId}
             handleOpenCreateNewChapter={handleOpenCreateNewChapter}
             setIsBulkUploading={setIsBulkUploading}
             handleOpenEditChapterItem={handleOpenEditChapterItem}

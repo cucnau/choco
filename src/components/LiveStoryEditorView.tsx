@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   BookOpen,
   Bookmark,
@@ -26,9 +26,17 @@ import {
   MessageSquare,
   ArrowUp,
   ArrowDown,
+  Sliders,
+  ZoomIn,
+  ZoomOut,
+  Pencil,
+  ChevronLeft,
+  ChevronRight,
+  Sparkles,
 } from 'lucide-react';
-import { StoryLayoutBlockId, StoryLayoutSection, Chapter, CharacterInfo, StoryGalleryImage } from '../types';
+import { StoryLayoutBlockId, StoryLayoutSection, Chapter, CharacterInfo, StoryGalleryImage, StoryElement } from '../types';
 import { StoryCornerAccents } from '../lib/borderStyles';
+import { StoryElementsLayer } from './StoryElementsLayer';
 
 interface LiveStoryEditorViewProps {
   storyLayoutSections: StoryLayoutSection[];
@@ -110,6 +118,8 @@ interface LiveStoryEditorViewProps {
   setGallerySingleImageCaption?: (c: string) => void;
   galleryImages: StoryGalleryImage[];
   setGalleryImages?: React.Dispatch<React.SetStateAction<StoryGalleryImage[]>>;
+  galleryImageSize?: number;
+  setGalleryImageSize?: (size: number) => void;
   galleryAutoScrollSpeed?: 'slow' | 'normal' | 'fast';
   setGalleryAutoScrollSpeed?: (s: 'slow' | 'normal' | 'fast') => void;
   gallerySingleFileInputRef?: React.RefObject<HTMLInputElement>;
@@ -119,6 +129,10 @@ interface LiveStoryEditorViewProps {
   handleCompressGalleryAlbum?: (files: FileList) => void;
   chapterListStyle: any;
   setChapterListStyle: (style: any) => void;
+  storyElements?: StoryElement[];
+  setStoryElements?: React.Dispatch<React.SetStateAction<StoryElement[]>>;
+  selectedStoryElementId?: string | null;
+  setSelectedStoryElementId?: (id: string | null) => void;
   handleOpenCreateNewChapter: (volumeTitle?: string) => void;
   setIsBulkUploading: (b: boolean) => void;
   handleOpenEditChapterItem: (chap: Chapter) => void;
@@ -208,6 +222,8 @@ export const LiveStoryEditorView: React.FC<LiveStoryEditorViewProps> = (props) =
     setGallerySingleImageCaption,
     galleryImages,
     setGalleryImages,
+    galleryImageSize = 100,
+    setGalleryImageSize,
     galleryAutoScrollSpeed = 'normal',
     setGalleryAutoScrollSpeed,
     gallerySingleFileInputRef,
@@ -217,6 +233,10 @@ export const LiveStoryEditorView: React.FC<LiveStoryEditorViewProps> = (props) =
     handleCompressGalleryAlbum,
     chapterListStyle,
     setChapterListStyle,
+    storyElements,
+    setStoryElements,
+    selectedStoryElementId,
+    setSelectedStoryElementId,
     handleOpenCreateNewChapter,
     setIsBulkUploading,
     handleOpenEditChapterItem,
@@ -224,6 +244,27 @@ export const LiveStoryEditorView: React.FC<LiveStoryEditorViewProps> = (props) =
     handleMoveChapter,
     getStoryBorderStyle,
   } = props;
+
+  const articleRef = useRef<HTMLElement | null>(null);
+
+  const [isEditingSingleImg, setIsEditingSingleImg] = useState(false);
+  const [inlineSingleUrlInput, setInlineSingleUrlInput] = useState('');
+  const [inlineSingleCaptionInput, setInlineSingleCaptionInput] = useState('');
+  const [isAddingAlbumImg, setIsAddingAlbumImg] = useState(false);
+  const [inlineAlbumUrlInput, setInlineAlbumUrlInput] = useState('');
+  const [inlineAlbumCaptionInput, setInlineAlbumCaptionInput] = useState('');
+  const [editorAlbumIndex, setEditorAlbumIndex] = useState(0);
+
+  useEffect(() => {
+    if (galleryMode !== 'album' || galleryImages.length <= 1) return;
+    let delay = 3000;
+    if (galleryAutoScrollSpeed === 'slow') delay = 5000;
+    if (galleryAutoScrollSpeed === 'fast') delay = 1500;
+    const interval = setInterval(() => {
+      setEditorAlbumIndex((prev) => (prev + 1) % galleryImages.length);
+    }, delay);
+    return () => clearInterval(interval);
+  }, [galleryMode, galleryImages.length, galleryAutoScrollSpeed]);
 
   const renderLiveBlock = (blockId: StoryLayoutBlockId) => {
     switch (blockId) {
@@ -878,143 +919,514 @@ export const LiveStoryEditorView: React.FC<LiveStoryEditorViewProps> = (props) =
             {showGalleryWidget && (
               <div className="p-3.5 rounded border space-y-3 font-mono text-xs" style={{ borderColor: currentBorder, background: currentBtnSecondaryBg }}>
                 {/* Chọn Chế độ: Ảnh Đơn vs Album */}
-                <div className="flex items-center gap-2 pb-2 border-b" style={{ borderColor: currentBorder }}>
-                  <span className="text-[11px] font-bold" style={{ color: currentText }}>Kiểu hiển thị:</span>
-                  <div className="flex gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => setGalleryMode && setGalleryMode('single')}
-                      className={`px-2.5 py-1 rounded text-[10px] font-bold border transition ${
-                        galleryMode === 'single' ? 'ring-2 shadow-sm' : 'hover:opacity-80'
-                      }`}
-                      style={{
-                        background: galleryMode === 'single' ? currentBtnBg : currentCardBg,
-                        borderColor: galleryMode === 'single' ? (currentText || '#ff99bb') : currentBorder,
-                        color: galleryMode === 'single' ? currentBtnText : currentText,
-                      }}
-                    >
-                      Ảnh đơn (Khung lẻ)
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setGalleryMode && setGalleryMode('album')}
-                      className={`px-2.5 py-1 rounded text-[10px] font-bold border transition ${
-                        galleryMode === 'album' ? 'ring-2 shadow-sm' : 'hover:opacity-80'
-                      }`}
-                      style={{
-                        background: galleryMode === 'album' ? currentBtnBg : currentCardBg,
-                        borderColor: galleryMode === 'album' ? (currentText || '#ff99bb') : currentBorder,
-                        color: galleryMode === 'album' ? currentBtnText : currentText,
-                      }}
-                    >
-                      Album dải ảnh di chuyển
-                    </button>
+                <div className="flex items-center justify-between flex-wrap gap-2 pb-2 border-b" style={{ borderColor: currentBorder }}>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] font-bold" style={{ color: currentText }}>Kiểu hiển thị:</span>
+                    <div className="flex gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setGalleryMode && setGalleryMode('single')}
+                        className={`px-2.5 py-1 rounded text-[10px] font-bold border transition cursor-pointer ${
+                          galleryMode === 'single' ? 'ring-2 shadow-sm' : 'hover:opacity-80'
+                        }`}
+                        style={{
+                          background: galleryMode === 'single' ? currentBtnBg : currentCardBg,
+                          borderColor: galleryMode === 'single' ? (currentText || '#ff99bb') : currentBorder,
+                          color: galleryMode === 'single' ? currentBtnText : currentText,
+                        }}
+                      >
+                        Ảnh / GIF đơn
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setGalleryMode && setGalleryMode('album')}
+                        className={`px-2.5 py-1 rounded text-[10px] font-bold border transition cursor-pointer ${
+                          galleryMode === 'album' ? 'ring-2 shadow-sm' : 'hover:opacity-80'
+                        }`}
+                        style={{
+                          background: galleryMode === 'album' ? currentBtnBg : currentCardBg,
+                          borderColor: galleryMode === 'album' ? (currentText || '#ff99bb') : currentBorder,
+                          color: galleryMode === 'album' ? currentBtnText : currentText,
+                        }}
+                      >
+                        Album chuyển động vòng tròn
+                      </button>
+                    </div>
                   </div>
                 </div>
 
                 {/* NỘI DUNG THEO CHẾ ĐỘ */}
                 {galleryMode === 'single' ? (
-                  /* CHẾ ĐỘ ÁNH ĐƠN */
+                  /* ================= CHẾ ĐỘ ẢNH / GIF ĐƠN ================= */
                   <div className="space-y-3">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => gallerySingleFileInputRef?.current?.click()}
-                        className="px-3 py-1.5 rounded border font-bold text-xs flex items-center gap-1.5 hover:opacity-90 shadow-sm cursor-pointer"
-                        style={{ background: currentBtnBg, borderColor: currentBtnBorder, color: currentBtnText }}
-                      >
-                        <UploadCloud className="w-4 h-4" />
-                        <span>Tải ảnh từ máy lên</span>
-                      </button>
+                    {gallerySingleImageUrl ? (
+                      /* ĐÃ CÓ ẢNH: HIỂN THỊ ĐÚNG SIZE THẬT NHƯ NGOÀI TRANG TRUYỆN + THANH KÉO SIZE */
+                      <div className="space-y-3">
+                        {/* Khung ảnh sạch tinh tế đúng kích thước */}
+                        <div className="w-full flex flex-col items-center justify-center p-2 rounded border bg-black/5" style={{ borderColor: currentBorder }}>
+                          <div className="w-full flex flex-col items-center justify-center">
+                            <img
+                              src={gallerySingleImageUrl}
+                              alt={gallerySingleImageCaption || 'Ảnh minh họa'}
+                              className="h-auto object-contain transition-all duration-150 rounded shadow-md"
+                              style={{
+                                width: `${galleryImageSize || 100}%`,
+                                maxWidth: '100%'
+                              }}
+                            />
+                          </div>
+                          {gallerySingleImageCaption && (
+                            <p className="mt-2 text-xs italic text-center opacity-85" style={{ color: currentTextMuted }}>
+                              {gallerySingleImageCaption}
+                            </p>
+                          )}
+                        </div>
 
-                      {isCompressingGalleryImg && (
-                        <span className="text-[10px] animate-pulse text-amber-400 font-bold">Đang tải và xử lý ảnh...</span>
-                      )}
-                    </div>
+                        {/* THANH KÉO CHỈNH SIZE ẢNH / GIF */}
+                        <div className="p-3 rounded border space-y-2.5 bg-black/10" style={{ borderColor: currentBorder }}>
+                          <div className="flex items-center justify-between flex-wrap gap-2">
+                            <div className="flex items-center gap-1.5 text-xs font-bold" style={{ color: currentText }}>
+                              <Sliders className="w-3.5 h-3.5 text-pink-400" />
+                              <span>Kích thước hiển thị ảnh/GIF:</span>
+                            </div>
+                            <span className="px-2 py-0.5 rounded font-mono font-bold text-xs shadow-xs" style={{ background: currentBtnBg, color: currentBtnText }}>
+                              {galleryImageSize || 100}%
+                            </span>
+                          </div>
 
-                    <div className="space-y-2">
-                      <div>
-                        <label className="text-[10px] block opacity-75 font-semibold mb-0.5" style={{ color: currentTextMuted }}>Hoặc dán URL ảnh trực tiếp:</label>
-                        <input
-                          type="text"
-                          value={gallerySingleImageUrl}
-                          onChange={(e) => setGallerySingleImageUrl && setGallerySingleImageUrl(e.target.value)}
-                          placeholder="https://images.unsplash.com/..."
-                          className="w-full p-2 rounded border text-xs focus:outline-none"
-                          style={{ background: currentCardBg, borderColor: currentBorder, color: currentText }}
-                        />
+                          {/* Slider Range */}
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setGalleryImageSize && setGalleryImageSize(Math.max(20, (galleryImageSize || 100) - 5))}
+                              className="p-1.5 rounded border hover:opacity-80 active:scale-95 transition cursor-pointer"
+                              style={{ background: currentCardBg, borderColor: currentBorder, color: currentText }}
+                              title="Thu nhỏ 5%"
+                            >
+                              <ZoomOut className="w-3.5 h-3.5" />
+                            </button>
+                            <input
+                              type="range"
+                              min="20"
+                              max="100"
+                              step="1"
+                              value={galleryImageSize || 100}
+                              onChange={(e) => setGalleryImageSize && setGalleryImageSize(Number(e.target.value))}
+                              className="flex-1 h-2 rounded-lg appearance-none cursor-pointer accent-pink-500"
+                              style={{ background: currentBorder }}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setGalleryImageSize && setGalleryImageSize(Math.min(100, (galleryImageSize || 100) + 5))}
+                              className="p-1.5 rounded border hover:opacity-80 active:scale-95 transition cursor-pointer"
+                              style={{ background: currentCardBg, borderColor: currentBorder, color: currentText }}
+                              title="Phóng to 5%"
+                            >
+                              <ZoomIn className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+
+                          {/* Quick % buttons & Action tool buttons */}
+                          <div className="flex items-center justify-between flex-wrap gap-2 pt-1.5 border-t border-dashed" style={{ borderColor: currentBorder }}>
+                            <div className="flex items-center gap-1 text-[10px]">
+                              <span className="opacity-70" style={{ color: currentTextMuted }}>Mức nhanh:</span>
+                              {[25, 50, 75, 100].map((sz) => (
+                                <button
+                                  key={sz}
+                                  type="button"
+                                  onClick={() => setGalleryImageSize && setGalleryImageSize(sz)}
+                                  className={`px-2 py-0.5 rounded text-[10px] font-bold border transition cursor-pointer ${
+                                    (galleryImageSize || 100) === sz ? 'ring-2 font-black' : 'opacity-70 hover:opacity-100'
+                                  }`}
+                                  style={{
+                                    background: (galleryImageSize || 100) === sz ? currentBtnBg : currentCardBg,
+                                    borderColor: (galleryImageSize || 100) === sz ? currentBtnBorder : currentBorder,
+                                    color: (galleryImageSize || 100) === sz ? currentBtnText : currentText
+                                  }}
+                                >
+                                  {sz}%
+                                </button>
+                              ))}
+                            </div>
+
+                            <div className="flex items-center gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setIsEditingSingleImg(!isEditingSingleImg);
+                                  setInlineSingleUrlInput(gallerySingleImageUrl);
+                                  setInlineSingleCaptionInput(gallerySingleImageCaption);
+                                }}
+                                className="px-2.5 py-1 rounded border text-[11px] font-bold flex items-center gap-1 hover:opacity-90 transition cursor-pointer"
+                                style={{ background: currentCardBg, borderColor: currentBorder, color: currentText }}
+                              >
+                                <Pencil className="w-3 h-3 text-pink-400" />
+                                <span>{isEditingSingleImg ? 'Đóng sửa' : 'Thay ảnh / Sửa link'}</span>
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => setGallerySingleImageUrl && setGallerySingleImageUrl('')}
+                                className="px-2.5 py-1 rounded border text-[11px] font-bold flex items-center gap-1 text-rose-400 hover:bg-rose-500/10 transition cursor-pointer"
+                                style={{ borderColor: currentBorder }}
+                                title="Xóa ảnh này"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                                <span>Xóa</span>
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Popover form sửa link / chú thích */}
+                          {isEditingSingleImg && (
+                            <div className="mt-2 p-2.5 rounded border space-y-2 bg-black/20" style={{ borderColor: currentBorder }}>
+                              <div className="flex items-center gap-1.5">
+                                <input
+                                  type="text"
+                                  value={inlineSingleUrlInput}
+                                  onChange={(e) => setInlineSingleUrlInput(e.target.value)}
+                                  placeholder="Dán URL ảnh hoặc GIF mới..."
+                                  className="flex-1 p-1.5 rounded border text-xs focus:outline-none"
+                                  style={{ background: currentCardBg, borderColor: currentBorder, color: currentText }}
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => gallerySingleFileInputRef?.current?.click()}
+                                  className="px-2.5 py-1.5 rounded border text-[11px] font-bold flex items-center gap-1 hover:opacity-90 shrink-0 cursor-pointer"
+                                  style={{ background: currentBtnBg, borderColor: currentBtnBorder, color: currentBtnText }}
+                                >
+                                  <Upload className="w-3 h-3" />
+                                  <span>Tải file</span>
+                                </button>
+                              </div>
+
+                              <div className="flex items-center gap-1.5">
+                                <input
+                                  type="text"
+                                  value={inlineSingleCaptionInput}
+                                  onChange={(e) => setInlineSingleCaptionInput(e.target.value)}
+                                  placeholder="Chú thích ảnh (tùy chọn)..."
+                                  className="flex-1 p-1.5 rounded border text-xs focus:outline-none"
+                                  style={{ background: currentCardBg, borderColor: currentBorder, color: currentText }}
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (inlineSingleUrlInput.trim()) {
+                                      setGallerySingleImageUrl && setGallerySingleImageUrl(inlineSingleUrlInput.trim());
+                                    }
+                                    setGallerySingleImageCaption && setGallerySingleImageCaption(inlineSingleCaptionInput.trim());
+                                    setIsEditingSingleImg(false);
+                                  }}
+                                  className="px-3 py-1.5 rounded border text-[11px] font-bold flex items-center gap-1 hover:opacity-90 shrink-0 cursor-pointer"
+                                  style={{ background: currentBtnBg, borderColor: currentBtnBorder, color: currentBtnText }}
+                                >
+                                  <Check className="w-3 h-3" />
+                                  <span>Lưu</span>
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       </div>
+                    ) : (
+                      /* CHƯA CÓ ẢNH: FORM THÊM ẢNH GỌN GÀNG */
+                      <div className="space-y-3">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => gallerySingleFileInputRef?.current?.click()}
+                            className="px-3 py-1.5 rounded border font-bold text-xs flex items-center gap-1.5 hover:opacity-90 shadow-sm cursor-pointer"
+                            style={{ background: currentBtnBg, borderColor: currentBtnBorder, color: currentBtnText }}
+                          >
+                            <UploadCloud className="w-4 h-4" />
+                            <span>Tải ảnh / GIF từ máy lên</span>
+                          </button>
 
-                      <div>
-                        <label className="text-[10px] block opacity-75 font-semibold mb-0.5" style={{ color: currentTextMuted }}>Chú thích ảnh:</label>
-                        <input
-                          type="text"
-                          value={gallerySingleImageCaption}
-                          onChange={(e) => setGallerySingleImageCaption && setGallerySingleImageCaption(e.target.value)}
-                          placeholder="Nhập chú thích ngắn cho bức ảnh..."
-                          className="w-full p-2 rounded border text-xs focus:outline-none"
-                          style={{ background: currentCardBg, borderColor: currentBorder, color: currentText }}
-                        />
-                      </div>
-                    </div>
+                          {isCompressingGalleryImg && (
+                            <span className="text-[10px] animate-pulse text-amber-400 font-bold">Đang tải và xử lý...</span>
+                          )}
+                        </div>
 
-                    {gallerySingleImageUrl && (
-                      <div className="pt-2 text-center space-y-1">
-                        <span className="text-[10px] font-bold opacity-75 block">Xem trước ảnh:</span>
-                        <img src={gallerySingleImageUrl} alt="Ảnh lẻ xem trước" className="max-h-56 mx-auto rounded border object-contain shadow-md" style={{ borderColor: currentBorder }} />
-                        {gallerySingleImageCaption && <p className="text-[11px] italic opacity-85">{gallerySingleImageCaption}</p>}
+                        <div className="space-y-2">
+                          <div>
+                            <label className="text-[10px] block opacity-75 font-semibold mb-0.5" style={{ color: currentTextMuted }}>Hoặc dán URL ảnh / GIF trực tiếp (khuyên dùng để nét nhất):</label>
+                            <div className="flex gap-1.5">
+                              <input
+                                type="text"
+                                value={inlineSingleUrlInput}
+                                onChange={(e) => setInlineSingleUrlInput(e.target.value)}
+                                placeholder="https://i.imgur.com/example.gif hoặc link ảnh..."
+                                className="flex-1 p-2 rounded border text-xs focus:outline-none"
+                                style={{ background: currentCardBg, borderColor: currentBorder, color: currentText }}
+                              />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (inlineSingleUrlInput.trim()) {
+                                    setGallerySingleImageUrl && setGallerySingleImageUrl(inlineSingleUrlInput.trim());
+                                    setInlineSingleUrlInput('');
+                                  }
+                                }}
+                                className="px-3 py-1.5 rounded border text-xs font-bold hover:opacity-90 shrink-0 cursor-pointer"
+                                style={{ background: currentBtnBg, borderColor: currentBtnBorder, color: currentBtnText }}
+                              >
+                                Thêm ảnh
+                              </button>
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="text-[10px] block opacity-75 font-semibold mb-0.5" style={{ color: currentTextMuted }}>Chú thích ảnh (tùy chọn):</label>
+                            <input
+                              type="text"
+                              value={gallerySingleImageCaption}
+                              onChange={(e) => setGallerySingleImageCaption && setGallerySingleImageCaption(e.target.value)}
+                              placeholder="Nhập chú thích ngắn cho bức ảnh..."
+                              className="w-full p-2 rounded border text-xs focus:outline-none"
+                              style={{ background: currentCardBg, borderColor: currentBorder, color: currentText }}
+                            />
+                          </div>
+                        </div>
                       </div>
                     )}
                   </div>
                 ) : (
-                  /* CHẾ ĐỘ ALBUM DẢI ÁNH */
+                  /* ================= CHẾ ĐỘ ALBUM CHUYỂN ĐỘNG VÒNG TRÒN ================= */
                   <div className="space-y-3">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <button
-                        type="button"
-                        onClick={() => galleryAlbumFileInputRef?.current?.click()}
-                        className="px-3 py-1.5 rounded border font-bold text-xs flex items-center gap-1.5 hover:opacity-90 shadow-sm cursor-pointer"
-                        style={{ background: currentBtnBg, borderColor: currentBtnBorder, color: currentBtnText }}
-                      >
-                        <UploadCloud className="w-4 h-4" />
-                        <span>Tải nhiều ảnh từ máy vào Album</span>
-                      </button>
+                    {/* ALBUM PREVIEW HOẠT ĐỘNG THỰC TẾ */}
+                    {galleryImages.length > 0 && (
+                      <div className="space-y-3">
+                        <div
+                          className="relative w-full overflow-hidden flex items-center justify-center transition-all duration-300 py-3 rounded border bg-black/10"
+                          style={{
+                            minHeight: `${Math.max(160, Math.round((galleryImageSize || 100) * 2.2))}px`,
+                            borderColor: currentBorder
+                          }}
+                        >
+                          <div className="relative w-full max-w-[500px] h-full flex items-center justify-center" style={{ perspective: '800px' }}>
+                            {galleryImages.map((img, idx) => {
+                              const total = galleryImages.length;
+                              let offset = idx - editorAlbumIndex;
+                              if (offset > total / 2) offset -= total;
+                              if (offset < -total / 2) offset += total;
+                              const isCenter = offset === 0;
+                              const isVisible = Math.abs(offset) <= 2;
+                              if (!isVisible) return null;
 
-                      {setGalleryAutoScrollSpeed && (
-                        <div className="flex items-center gap-1 text-[10px]">
-                          <span style={{ color: currentTextMuted }}>Tốc độ cuộn:</span>
-                          <select
-                            value={galleryAutoScrollSpeed}
-                            onChange={(e) => setGalleryAutoScrollSpeed(e.target.value as any)}
-                            className="p-1 rounded border text-[10px] font-bold focus:outline-none"
-                            style={{ background: currentCardBg, borderColor: currentBorder, color: currentText }}
-                          >
-                            <option value="slow">Chậm</option>
-                            <option value="normal">Vừa</option>
-                            <option value="fast">Nhanh</option>
-                          </select>
+                              const baseCardWidth = Math.round(180 * ((galleryImageSize || 100) / 100));
+                              const translateX = offset * (baseCardWidth * 0.72);
+                              const translateZ = -Math.abs(offset) * 80;
+                              const rotateY = offset * -18;
+                              const scale = isCenter ? 1 : Math.max(0.7, 1 - Math.abs(offset) * 0.15);
+                              const opacity = isCenter ? 1 : Math.max(0.3, 0.7 - Math.abs(offset) * 0.2);
+                              const zIndex = 20 - Math.abs(offset);
+
+                              return (
+                                <div
+                                  key={img.id}
+                                  onClick={() => setEditorAlbumIndex(idx)}
+                                  className="absolute cursor-pointer transition-all duration-500 ease-out flex flex-col items-center justify-center select-none"
+                                  style={{
+                                    width: `${baseCardWidth}px`,
+                                    transform: `translateX(${translateX}px) translateZ(${translateZ}px) rotateY(${rotateY}deg) scale(${scale})`,
+                                    opacity,
+                                    zIndex,
+                                  }}
+                                >
+                                  <div className="w-full aspect-[4/3] rounded-lg overflow-hidden border shadow-lg relative group bg-black/40" style={{ borderColor: isCenter ? (currentText || '#ff99bb') : currentBorder }}>
+                                    <img src={img.url} alt={img.caption || `Ảnh ${idx + 1}`} className="w-full h-full object-cover" />
+                                    {isCenter && (
+                                      <div className="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded bg-black/70 text-white text-[9px] font-bold backdrop-blur-xs">
+                                        {idx + 1}/{total}
+                                      </div>
+                                    )}
+                                  </div>
+                                  {img.caption && isCenter && (
+                                    <p className="mt-1 text-[10px] text-center font-semibold truncate max-w-full px-1" style={{ color: currentText }}>
+                                      {img.caption}
+                                    </p>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        {/* THANH KÉO CHỈNH SIZE ALBUM */}
+                        <div className="p-3 rounded border space-y-2.5 bg-black/10" style={{ borderColor: currentBorder }}>
+                          <div className="flex items-center justify-between flex-wrap gap-2">
+                            <div className="flex items-center gap-1.5 text-xs font-bold" style={{ color: currentText }}>
+                              <Sliders className="w-3.5 h-3.5 text-pink-400" />
+                              <span>Kích thước Album ảnh:</span>
+                            </div>
+                            <span className="px-2 py-0.5 rounded font-mono font-bold text-xs shadow-xs" style={{ background: currentBtnBg, color: currentBtnText }}>
+                              {galleryImageSize || 100}%
+                            </span>
+                          </div>
+
+                          {/* Slider Range */}
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setGalleryImageSize && setGalleryImageSize(Math.max(30, (galleryImageSize || 100) - 5))}
+                              className="p-1.5 rounded border hover:opacity-80 active:scale-95 transition cursor-pointer"
+                              style={{ background: currentCardBg, borderColor: currentBorder, color: currentText }}
+                              title="Thu nhỏ 5%"
+                            >
+                              <ZoomOut className="w-3.5 h-3.5" />
+                            </button>
+                            <input
+                              type="range"
+                              min="30"
+                              max="100"
+                              step="1"
+                              value={galleryImageSize || 100}
+                              onChange={(e) => setGalleryImageSize && setGalleryImageSize(Number(e.target.value))}
+                              className="flex-1 h-2 rounded-lg appearance-none cursor-pointer accent-pink-500"
+                              style={{ background: currentBorder }}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setGalleryImageSize && setGalleryImageSize(Math.min(100, (galleryImageSize || 100) + 5))}
+                              className="p-1.5 rounded border hover:opacity-80 active:scale-95 transition cursor-pointer"
+                              style={{ background: currentCardBg, borderColor: currentBorder, color: currentText }}
+                              title="Phóng to 5%"
+                            >
+                              <ZoomIn className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+
+                          {/* Quick % buttons & Speed Controls */}
+                          <div className="flex items-center justify-between flex-wrap gap-2 pt-1.5 border-t border-dashed" style={{ borderColor: currentBorder }}>
+                            <div className="flex items-center gap-1 text-[10px]">
+                              <span className="opacity-70" style={{ color: currentTextMuted }}>Mức nhanh:</span>
+                              {[35, 50, 75, 100].map((sz) => (
+                                <button
+                                  key={sz}
+                                  type="button"
+                                  onClick={() => setGalleryImageSize && setGalleryImageSize(sz)}
+                                  className={`px-2 py-0.5 rounded text-[10px] font-bold border transition cursor-pointer ${
+                                    (galleryImageSize || 100) === sz ? 'ring-2 font-black' : 'opacity-70 hover:opacity-100'
+                                  }`}
+                                  style={{
+                                    background: (galleryImageSize || 100) === sz ? currentBtnBg : currentCardBg,
+                                    borderColor: (galleryImageSize || 100) === sz ? currentBtnBorder : currentBorder,
+                                    color: (galleryImageSize || 100) === sz ? currentBtnText : currentText
+                                  }}
+                                >
+                                  {sz}%
+                                </button>
+                              ))}
+                            </div>
+
+                            {setGalleryAutoScrollSpeed && (
+                              <div className="flex items-center gap-1 text-[10px]">
+                                <span style={{ color: currentTextMuted }}>Tốc độ xoay:</span>
+                                <select
+                                  value={galleryAutoScrollSpeed}
+                                  onChange={(e) => setGalleryAutoScrollSpeed(e.target.value as any)}
+                                  className="p-1 rounded border text-[10px] font-bold focus:outline-none cursor-pointer"
+                                  style={{ background: currentCardBg, borderColor: currentBorder, color: currentText }}
+                                >
+                                  <option value="slow">Chậm</option>
+                                  <option value="normal">Vừa</option>
+                                  <option value="fast">Nhanh</option>
+                                </select>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* HÀNH ĐỘNG THÊM ẢNH VÀO ALBUM */}
+                    <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <button
+                          type="button"
+                          onClick={() => galleryAlbumFileInputRef?.current?.click()}
+                          className="px-3 py-1.5 rounded border font-bold text-xs flex items-center gap-1.5 hover:opacity-90 shadow-sm cursor-pointer"
+                          style={{ background: currentBtnBg, borderColor: currentBtnBorder, color: currentBtnText }}
+                        >
+                          <UploadCloud className="w-4 h-4" />
+                          <span>Tải file ảnh vào Album</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setIsAddingAlbumImg(!isAddingAlbumImg)}
+                          className="px-3 py-1.5 rounded border font-bold text-xs flex items-center gap-1.5 hover:opacity-90 shadow-sm cursor-pointer"
+                          style={{ background: currentCardBg, borderColor: currentBorder, color: currentText }}
+                        >
+                          <Link className="w-3.5 h-3.5 text-pink-400" />
+                          <span>{isAddingAlbumImg ? 'Đóng' : '+ Dán URL ảnh / GIF'}</span>
+                        </button>
+                      </div>
+
+                      {isCompressingGalleryImg && (
+                        <div className="p-1 text-[10px] text-amber-400 font-bold animate-pulse">
+                          Đang xử lý ảnh...
                         </div>
                       )}
                     </div>
 
-                    {isCompressingGalleryImg && (
-                      <div className="p-2 text-[10px] text-amber-400 font-bold animate-pulse text-center">
-                        Đang nén và nạp danh sách ảnh vào album...
+                    {/* Popover form dán URL ảnh vào Album */}
+                    {isAddingAlbumImg && (
+                      <div className="p-2.5 rounded border space-y-2 bg-black/20" style={{ borderColor: currentBorder }}>
+                        <div className="flex items-center gap-1.5">
+                          <input
+                            type="text"
+                            value={inlineAlbumUrlInput}
+                            onChange={(e) => setInlineAlbumUrlInput(e.target.value)}
+                            placeholder="Dán link ảnh hoặc GIF vào album..."
+                            className="flex-1 p-1.5 rounded border text-xs focus:outline-none"
+                            style={{ background: currentCardBg, borderColor: currentBorder, color: currentText }}
+                          />
+                          <input
+                            type="text"
+                            value={inlineAlbumCaptionInput}
+                            onChange={(e) => setInlineAlbumCaptionInput(e.target.value)}
+                            placeholder="Chú thích..."
+                            className="w-32 p-1.5 rounded border text-xs focus:outline-none"
+                            style={{ background: currentCardBg, borderColor: currentBorder, color: currentText }}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (inlineAlbumUrlInput.trim()) {
+                                const newImg: StoryGalleryImage = {
+                                  id: `gal_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+                                  url: inlineAlbumUrlInput.trim(),
+                                  caption: inlineAlbumCaptionInput.trim() || undefined
+                                };
+                                setGalleryImages && setGalleryImages((prev) => [...prev, newImg]);
+                                setInlineAlbumUrlInput('');
+                                setInlineAlbumCaptionInput('');
+                                setIsAddingAlbumImg(false);
+                              }
+                            }}
+                            className="px-3 py-1.5 rounded border text-xs font-bold hover:opacity-90 shrink-0 cursor-pointer"
+                            style={{ background: currentBtnBg, borderColor: currentBtnBorder, color: currentBtnText }}
+                          >
+                            Thêm
+                          </button>
+                        </div>
                       </div>
                     )}
 
                     {/* Danh sách ảnh trong album */}
                     {galleryImages.length === 0 ? (
-                      <div className="p-3 rounded border border-dashed text-[11px] text-center opacity-70" style={{ borderColor: currentBorder }}>
-                        Chưa có ảnh trong album. Nhấp nút <strong>"Tải nhiều ảnh từ máy vào Album"</strong> để tải ảnh lên.
+                      <div className="p-4 rounded border border-dashed text-xs text-center opacity-75" style={{ borderColor: currentBorder }}>
+                        Chưa có ảnh trong album. Hãy bấm nút <strong>"Tải file ảnh vào Album"</strong> hoặc <strong>"+ Dán URL ảnh / GIF"</strong> để thêm ảnh!
                       </div>
                     ) : (
-                      <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+                      <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
                         <span className="text-[10px] font-bold block" style={{ color: currentTextMuted }}>Danh sách {galleryImages.length} ảnh trong album:</span>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                           {galleryImages.map((img, idx) => (
                             <div key={img.id} className="p-2 rounded border flex items-center gap-2 relative bg-black/10" style={{ borderColor: currentBorder }}>
-                              <img src={img.url} alt={img.caption || `Ảnh ${idx + 1}`} className="w-12 h-12 object-cover rounded border shrink-0" style={{ borderColor: currentBorder }} />
+                              <img src={img.url} alt={img.caption || `Ảnh ${idx + 1}`} className="w-10 h-10 object-cover rounded border shrink-0" style={{ borderColor: currentBorder }} />
                               <div className="min-w-0 flex-1">
                                 <input
                                   type="text"
@@ -1033,7 +1445,7 @@ export const LiveStoryEditorView: React.FC<LiveStoryEditorViewProps> = (props) =
                                 onClick={() => {
                                   setGalleryImages && setGalleryImages((prev) => prev.filter((item) => item.id !== img.id));
                                 }}
-                                className="p-1 text-red-400 hover:bg-red-500/10 rounded"
+                                className="p-1 text-red-400 hover:bg-red-500/10 rounded cursor-pointer"
                                 title="Xóa ảnh này"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
@@ -1239,8 +1651,9 @@ export const LiveStoryEditorView: React.FC<LiveStoryEditorViewProps> = (props) =
 
   return (
     <article
+      ref={articleRef as any}
       id="live-editor-story-article"
-      className="p-6 space-y-6 relative transition-all duration-200"
+      className="p-6 space-y-6 relative transition-all duration-200 overflow-visible"
       style={{
         background: currentCardBg,
         ...getStoryBorderStyle(currentBorderObj, currentBorder),
@@ -1248,6 +1661,18 @@ export const LiveStoryEditorView: React.FC<LiveStoryEditorViewProps> = (props) =
     >
       {/* Corner Accents */}
       <StoryCornerAccents accent={activeBCorner} borderStyle={currentBorderObj?.borderStyle} color={currentBorder} />
+
+      {/* Story Decorative Elements Layer (Interactive in Editor) */}
+      {storyElements && setStoryElements && (
+        <StoryElementsLayer
+          elements={storyElements}
+          isEditable={true}
+          onUpdateElements={setStoryElements}
+          selectedElementId={selectedStoryElementId}
+          onSelectElement={setSelectedStoryElementId}
+          containerRef={articleRef}
+        />
+      )}
 
       {/* Dynamic Layout Rendering with Story Sections */}
       <div className="space-y-6 w-full">

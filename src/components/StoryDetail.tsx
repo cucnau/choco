@@ -12,6 +12,7 @@ import {
   getStoryBorderStyle,
   StoryCornerAccents,
 } from '../lib/borderStyles';
+import { StoryElementsLayer } from './StoryElementsLayer';
 
 const THEME_TONES: Record<string, {
   containerBg: string;
@@ -530,7 +531,7 @@ export const StoryDetail: React.FC<StoryDetailProps> = ({
 
       {/* Main Post Header */}
       <article 
-        className={`${isCustomTheme ? '' : `${tone.cardBg}`} p-6 space-y-6 relative transition-all duration-200`}
+        className={`${isCustomTheme ? '' : `${tone.cardBg}`} p-6 space-y-6 relative overflow-visible transition-all duration-200`}
         style={{
           ...(isCustomTheme ? { background: story.customCardBgColor } : {}),
           ...getStoryBorderStyle(storyBorderObj, activeBorderColor),
@@ -542,6 +543,11 @@ export const StoryDetail: React.FC<StoryDetailProps> = ({
           borderStyle={storyBorderObj.borderStyle}
           color={activeBorderColor}
         />
+
+        {/* Story Decorative Elements */}
+        {story.storyElements && story.storyElements.length > 0 && (
+          <StoryElementsLayer elements={story.storyElements} isEditable={false} />
+        )}
 
         <StoryLayoutContainer
           story={story}
