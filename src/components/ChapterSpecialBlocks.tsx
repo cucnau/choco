@@ -4,7 +4,7 @@ import {
   MessageSquare,
   Smartphone,
   Mail,
-  Sparkles,
+  Cloud,
   Shield,
   StickyNote,
   AlertTriangle,
@@ -61,21 +61,16 @@ export function parseChapterContentBlocks(content: string): ParsedBlock[] {
   let currentBlockLines: string[] = [];
 
   const flushNormalParagraphs = (rawLines: string[]) => {
-    const text = rawLines.join('\n').trim();
-    if (text) {
-      // Tách theo các đoạn xuống dòng liên tiếp
-      const splitParas = text.split(/\n\s*\n+/);
-      splitParas.forEach((p) => {
-        const cleanP = p.trim();
-        if (cleanP) {
-          blocks.push({
-            type: 'paragraph',
-            rawText: cleanP,
-            lines: cleanP.split('\n').map((l) => l.trim()).filter(Boolean),
-          });
-        }
-      });
-    }
+    rawLines.forEach((line) => {
+      const cleanP = line.trim();
+      if (cleanP) {
+        blocks.push({
+          type: 'paragraph',
+          rawText: cleanP,
+          lines: [cleanP],
+        });
+      }
+    });
   };
 
   let normalBuffer: string[] = [];
@@ -588,7 +583,7 @@ export const SpecialBlockRenderer: React.FC<SpecialBlockRendererProps> = ({
         }}
       >
         <div className="flex items-center gap-1.5 text-[11px] font-semibold" style={{ color: tAccent }}>
-          <Sparkles className="w-3.5 h-3.5" />
+          <Cloud className="w-3.5 h-3.5" />
           <span>{block.title ? `Suy nghĩ của ${block.title}` : 'Độc thoại nội tâm'}</span>
         </div>
         <div className="space-y-1 text-xs sm:text-sm leading-relaxed italic opacity-95 pl-4 border-l-2" style={{ color: tText, borderColor: tAccent }}>

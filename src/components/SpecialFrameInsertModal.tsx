@@ -4,7 +4,8 @@ import {
   MessageSquare,
   Smartphone,
   Mail,
-  Sparkles,
+  Frame,
+  Cloud,
   Shield,
   StickyNote,
   AlertTriangle,
@@ -22,6 +23,8 @@ interface SpecialFrameInsertModalProps {
   isOpen: boolean;
   onClose: () => void;
   onInsertCode: (snippet: string) => void;
+  initialContent?: string;
+  initialType?: SpecialBlockType;
   themeColors?: {
     bg?: string;
     cardBg?: string;
@@ -40,6 +43,8 @@ export const SpecialFrameInsertModal: React.FC<SpecialFrameInsertModalProps> = (
   isOpen,
   onClose,
   onInsertCode,
+  initialContent,
+  initialType = 'system',
   themeColors,
 }) => {
   if (!isOpen) return null;
@@ -54,37 +59,84 @@ export const SpecialFrameInsertModal: React.FC<SpecialFrameInsertModalProps> = (
   const tTextMuted = themeColors?.textMuted || '#fbcfe8aa';
   const tAccent = themeColors?.accentColor || themeColors?.btnBg || '#e879f9';
 
-  const [selectedType, setSelectedType] = useState<SpecialBlockType>('system');
-  const [titleInput, setTitleInput] = useState('THÔNG BÁO HỆ THỐNG');
-  const [metaInput, setMetaInput] = useState('Đã kích hoạt');
-  const [singleContent, setSingleContent] = useState(
-    'Chúc mừng ký chủ đã hoàn thành nhiệm vụ ẩn!\nPhần thưởng: 1000 Điểm kinh nghiệm và 1 Thần khí cấp S.'
-  );
+  const [selectedType, setSelectedType] = useState<SpecialBlockType>(initialType);
+  const [titleInput, setTitleInput] = useState(() => {
+    if (initialType === 'system') return 'THÔNG BÁO HỆ THỐNG';
+    if (initialType === 'forum' || initialType === 'netizen') return 'Diễn đàn Mạng Xã Hội';
+    if (initialType === 'chat') return 'Hội thoại Trò Chuyện';
+    if (initialType === 'letter') return 'Thư Từ / Mật Hàm';
+    if (initialType === 'thought') return 'Độc thoại nội tâm';
+    if (initialType === 'status') return 'BẢNG TRẠNG THÁI NHÂN VẬT';
+    if (initialType === 'note') return 'Lời tác giả / Chú thích';
+    if (initialType === 'warning') return 'CẢNH BÁO NGUY HIỂM';
+    return 'THÔNG BÁO HỆ THỐNG';
+  });
+  const [metaInput, setMetaInput] = useState('');
+  const [singleContent, setSingleContent] = useState(() => {
+    if (initialContent && initialContent.trim()) {
+      return initialContent.trim();
+    }
+    return 'Chúc mừng ký chủ đã hoàn thành nhiệm vụ ẩn!\nPhần thưởng: 1000 Điểm kinh nghiệm và 1 Thần khí cấp S.';
+  });
 
   // Dành riêng cho Chat
   const [chatRows, setChatRows] = useState<
     Array<{ sender: string; side: 'left' | 'right'; text: string }>
-  >([
-    { sender: 'Lâm Tiêu', side: 'left', text: 'Cậu đang ở đâu thế? Mọi người đang đợi nè!' },
-    { sender: 'Tôi', side: 'right', text: 'Mình vừa ra khỏi phòng thi, tới ngay đây!' },
-  ]);
+  >(() => {
+    if (initialContent && initialContent.trim()) {
+      const lines = initialContent.trim().split('\n').filter(Boolean);
+      return lines.map((line, idx) => ({
+        sender: idx % 2 === 0 ? 'Đối phương' : 'Tôi',
+        side: idx % 2 === 0 ? ('left' as const) : ('right' as const),
+        text: line.trim(),
+      }));
+    }
+    return [
+      { sender: 'Lâm Tiêu', side: 'left', text: 'Cậu đang ở đâu thế? Mọi người đang đợi nè!' },
+      { sender: 'Tôi', side: 'right', text: 'Mình vừa ra khỏi phòng thi, tới ngay đây!' },
+    ];
+  });
 
   // Dành riêng cho Diễn đàn / Cư dân mạng
   const [forumRows, setForumRows] = useState<
     Array<{ sender: string; time: string; likes: string; text: string }>
-  >([
-    { sender: 'Lầu 1 - Ăn dưa hóng biến', time: '1 phút trước', likes: '99+', text: 'Trời ơi hóng tin này cả tuần nay rồi, cuối cùng cũng công bố!' },
-    { sender: 'ID_9832 Qua Đường', time: 'Vừa xong', likes: '45', text: 'Căng đét luôn, lót dép ngồi hóng tiếp chap sau!' },
-  ]);
+  >(() => {
+    if (initialContent && initialContent.trim()) {
+      const lines = initialContent.trim().split('\n').filter(Boolean);
+      return lines.map((line, idx) => ({
+        sender: `Cư dân mạng #${idx + 1}`,
+        time: 'Vừa xong',
+        likes: '10',
+        text: line.trim(),
+      }));
+    }
+    return [
+      { sender: 'Lầu 1 - Ăn dưa hóng biến', time: '1 phút trước', likes: '99+', text: 'Trời ơi hóng tin này cả tuần nay rồi, cuối cùng cũng công bố!' },
+      { sender: 'ID_9832 Qua Đường', time: 'Vừa xong', likes: '45', text: 'Căng đét luôn, lót dép ngồi hóng tiếp chap sau!' },
+    ];
+  });
 
   // Dành riêng cho Bảng trạng thái RPG
-  const [statusRows, setStatusRows] = useState<Array<{ key: string; val: string }>>([
-    { key: 'Họ tên', val: 'Cố Dạ Bạch' },
-    { key: 'Chủng tộc', val: 'Nhân tộc (Đột biến)' },
-    { key: 'Cảnh giới', val: 'Kim Đan Sơ Kỳ' },
-    { key: 'Chiến lực', val: '98,500' },
-    { key: 'Kỹ năng đặc biệt', val: 'Lôi Đình Kiếm Quyết (Cấp 5)' },
-  ]);
+  const [statusRows, setStatusRows] = useState<Array<{ key: string; val: string }>>(() => {
+    if (initialContent && initialContent.trim()) {
+      const lines = initialContent.trim().split('\n').filter(Boolean);
+      const parsed = lines.map(line => {
+        if (line.includes(':')) {
+          const [k, ...v] = line.split(':');
+          return { key: k.trim(), val: v.join(':').trim() };
+        }
+        return { key: 'Mô tả', val: line.trim() };
+      });
+      if (parsed.length > 0) return parsed;
+    }
+    return [
+      { key: 'Họ tên', val: 'Cố Dạ Bạch' },
+      { key: 'Chủng tộc', val: 'Nhân tộc (Đột biến)' },
+      { key: 'Cảnh giới', val: 'Kim Đan Sơ Kỳ' },
+      { key: 'Chiến lực', val: '98,500' },
+      { key: 'Kỹ năng đặc biệt', val: 'Lôi Đình Kiếm Quyết (Cấp 5)' },
+    ];
+  });
 
   const handleSelectType = (type: SpecialBlockType) => {
     setSelectedType(type);
@@ -179,7 +231,7 @@ export const SpecialFrameInsertModal: React.FC<SpecialFrameInsertModalProps> = (
           style={{ borderColor: tBorder }}
         >
           <div className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5" style={{ color: tAccent }} />
+            <Frame className="w-5 h-5" style={{ color: tAccent }} />
             <div>
               <h3 className="text-sm font-bold uppercase tracking-wider" style={{ color: tText }}>
                 Chèn Khung Đặc Biệt Vào Chương
@@ -214,7 +266,7 @@ export const SpecialFrameInsertModal: React.FC<SpecialFrameInsertModalProps> = (
                   { id: 'forum', name: 'Cư dân mạng', icon: MessageSquare, color: '#f472b6' },
                   { id: 'chat', name: 'Chat / SMS', icon: Smartphone, color: '#4ade80' },
                   { id: 'letter', name: 'Thư / Nhật ký', icon: Mail, color: '#fbbf24' },
-                  { id: 'thought', name: 'Độc thoại', icon: Sparkles, color: '#c084fc' },
+                  { id: 'thought', name: 'Độc thoại', icon: Cloud, color: '#c084fc' },
                   { id: 'status', name: 'Bảng RPG', icon: Shield, color: '#e879f9' },
                   { id: 'note', name: 'Lời tác giả', icon: StickyNote, color: '#94a3b8' },
                   { id: 'warning', name: 'Cảnh báo', icon: AlertTriangle, color: '#f87171' },

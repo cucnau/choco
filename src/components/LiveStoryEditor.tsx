@@ -78,6 +78,7 @@ import {
   StickyNote,
   AlertTriangle,
   Eye,
+  Frame,
 } from 'lucide-react';
 import { ReadingEffects } from './ReadingEffects';
 import {
@@ -93,7 +94,8 @@ import {
 import { LiveStoryEditorView } from './LiveStoryEditorView';
 import { StoryElementsLayer } from './StoryElementsLayer';
 import { SpecialFrameInsertModal } from './SpecialFrameInsertModal';
-import { parseChapterContentBlocks, SpecialBlockRenderer } from './ChapterSpecialBlocks';
+import { FloatingSelectionMenu } from './FloatingSelectionMenu';
+import { parseChapterContentBlocks, SpecialBlockRenderer, SpecialBlockType } from './ChapterSpecialBlocks';
 
 const ALL_STORY_BLOCK_IDS: StoryLayoutBlockId[] = [
   'cover',
@@ -770,13 +772,101 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
   const [chapterPasswordInput, setChapterPasswordInput] = useState<string>('');
   const [chapterPasswordHintInput, setChapterPasswordHintInput] = useState<string>('');
   const [showSpecialFrameModal, setShowSpecialFrameModal] = useState<boolean>(false);
+  const [modalInitialContent, setModalInitialContent] = useState<string>('');
+  const [modalInitialType, setModalInitialType] = useState<SpecialBlockType>('system');
   const [chapterViewMode, setChapterViewMode] = useState<'edit' | 'preview'>('edit');
+
+  // Text selection floating menu state for chapter textarea
+  const chapterTextareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const [floatingMenuVisible, setFloatingMenuVisible] = useState(false);
+  const [floatingMenuPos, setFloatingMenuPos] = useState({ top: 0, left: 0 });
+  const [selectedRange, setSelectedRange] = useState<{ start: number; end: number; text: string }>({
+    start: 0,
+    end: 0,
+    text: '',
+  });
+
+  const handleChapterTextSelect = () => {
+    const el = chapterTextareaRef.current;
+    if (!el) return;
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
+    if (start !== end && end > start) {
+      const selected = el.value.substring(start, end).trim();
+      if (selected) {
+        // Calculate coordinates for floating toolbar
+        const rect = el.getBoundingClientRect();
+        // Compute approximate position based on cursor in textarea
+        setFloatingMenuPos({
+          top: Math.max(30, rect.top + 10),
+          left: Math.min(window.innerWidth - 180, Math.max(180, rect.left + rect.width / 2)),
+        });
+        setSelectedRange({ start, end, text: selected });
+        setFloatingMenuVisible(true);
+        return;
+      }
+    }
+    setFloatingMenuVisible(false);
+  };
+
+  const handleApplyPresetToSelection = (type: SpecialBlockType) => {
+    if (!selectedRange.text) return;
+    const el = chapterTextareaRef.current;
+    let snippet = '';
+    const text = selectedRange.text.trim();
+
+    if (type === 'system') {
+      snippet = `[system: THÔNG BÁO HỆ THỐNG]\n${text}\n[/system]`;
+    } else if (type === 'forum' || type === 'netizen') {
+      const lines = text.split('\n').filter(Boolean);
+      const parsedLines = lines.map((l, i) => `[netizen: Cư dân mạng #${i + 1} | Vừa xong | +${10 * (i + 1)}]: ${l.trim()}`).join('\n');
+      snippet = `[forum: Diễn Đàn Mạng Xã Hội]\n${parsedLines || `[netizen: Ẩn danh | Vừa xong | +99]: ${text}`}\n[/forum]`;
+    } else if (type === 'chat') {
+      const lines = text.split('\n').filter(Boolean);
+      const parsedLines = lines.map((l, i) => `[${i % 2 === 0 ? 'left: Đối phương' : 'right: Tôi'}]: ${l.trim()}`).join('\n');
+      snippet = `[chat: Hội Thoại Trò Chuyện]\n${parsedLines || `[left: Đối phương]: ${text}`}\n[/chat]`;
+    } else if (type === 'letter') {
+      snippet = `[letter: Thư Từ / Mật Hàm | Gửi người nhận]\n${text}\n[/letter]`;
+    } else if (type === 'status') {
+      const lines = text.split('\n').filter(Boolean);
+      snippet = `[status: BẢNG TRẠNG THÁI]\n${lines.join('\n')}\n[/status]`;
+    } else if (type === 'note') {
+      snippet = `[note: Lời tác giả]\n${text}\n[/note]`;
+    } else if (type === 'warning') {
+      snippet = `[warning: CẢNH BÁO NGUY HIỂM]\n${text}\n[/warning]`;
+    } else if (type === 'thought') {
+      snippet = `[thought: Độc thoại nội tâm]\n${text}\n[/thought]`;
+    }
+
+    if (snippet) {
+      setChapterContentInput((prev) => {
+        const before = prev.substring(0, selectedRange.start);
+        const after = prev.substring(selectedRange.end);
+        return `${before}\n\n${snippet}\n\n${after}`.replace(/\n{3,}/g, '\n\n');
+      });
+      setFloatingMenuVisible(false);
+      setSelectedRange({ start: 0, end: 0, text: '' });
+    }
+  };
+
+  const handleOpenDesignerForSelection = () => {
+    setModalInitialContent(selectedRange.text);
+    setModalInitialType('system');
+    setShowSpecialFrameModal(true);
+    setFloatingMenuVisible(false);
+  };
 
   const handleInsertFrameSnippet = (snippet: string) => {
     setChapterContentInput((prev) => {
+      if (selectedRange.text && selectedRange.end > selectedRange.start) {
+        const before = prev.substring(0, selectedRange.start);
+        const after = prev.substring(selectedRange.end);
+        return `${before}\n\n${snippet.trim()}\n\n${after}`.replace(/\n{3,}/g, '\n\n');
+      }
       const trimmed = prev ? prev.trim() : '';
       return trimmed ? `${trimmed}\n\n${snippet.trim()}\n\n` : `${snippet.trim()}\n\n`;
     });
+    setSelectedRange({ start: 0, end: 0, text: '' });
   };
 
   const storyChapters = (chapters || [])
@@ -4770,7 +4860,7 @@ const [galleryAutoScrollSpeed, setGalleryAutoScrollSpeed] = useState<'slow' | 'n
               >
                 <div className="flex items-center gap-1.5 flex-wrap">
                   <span className="text-[11px] font-bold opacity-80 flex items-center gap-1 mr-1" style={{ color: currentBtnBg }}>
-                    <Sparkles className="w-3.5 h-3.5" /> Khung đặc biệt:
+                    <Frame className="w-3.5 h-3.5" /> Khung đặc biệt:
                   </span>
 
                   <button
@@ -4868,7 +4958,7 @@ const [galleryAutoScrollSpeed, setGalleryAutoScrollSpeed] = useState<'slow' | 'n
                     className="px-2.5 py-1 rounded border text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-xs hover:scale-105 active:scale-95 transition cursor-pointer"
                     style={{ background: currentBtnBg, borderColor: currentBtnBorder, color: currentBtnText }}
                   >
-                    <Sparkles className="w-3.5 h-3.5" />
+                    <Frame className="w-3.5 h-3.5" />
                     <span>Trình tạo khung</span>
                   </button>
                 </div>
@@ -4876,24 +4966,56 @@ const [galleryAutoScrollSpeed, setGalleryAutoScrollSpeed] = useState<'slow' | 'n
 
               {/* Chapter Content -> DIRECT INLINE TEXTAREA OR LIVE RENDERED PREVIEW */}
               {chapterViewMode === 'edit' ? (
-                <div className={`space-y-4 text-base leading-relaxed ${customBodyFont}`} style={{ color: currentText }}>
+                <div className={`space-y-4 text-base relative ${customBodyFont}`} style={{ color: currentText }}>
                   <textarea
-                    rows={15}
+                    ref={chapterTextareaRef}
+                    rows={16}
                     value={chapterContentInput}
-                    onChange={(e) => setChapterContentInput(e.target.value)}
-                    placeholder="Dán hoặc gõ nội dung chương vào đây... Bạn có thể dùng các khung đặc biệt ở thanh công cụ phía trên."
-                    className="w-full min-h-[450px] bg-transparent focus:outline-none resize-y leading-relaxed text-base border-none p-2"
-                    style={{ color: currentText }}
+                    onChange={(e) => {
+                      setChapterContentInput(e.target.value);
+                      handleChapterTextSelect();
+                    }}
+                    onSelect={handleChapterTextSelect}
+                    onKeyUp={handleChapterTextSelect}
+                    onMouseUp={handleChapterTextSelect}
+                    onTouchEnd={handleChapterTextSelect}
+                    placeholder="Dán hoặc gõ nội dung chương vào đây... Bạn có thể bôi đen bất kỳ đoạn văn bản nào để tạo khung đặc biệt trực tiếp."
+                    className="w-full min-h-[500px] bg-transparent focus:outline-none resize-y text-base sm:text-[17px] leading-[2.2] tracking-wide border-none p-2 sm:p-4 selection:bg-pink-500/40"
+                    style={{
+                      color: currentText,
+                      lineHeight: '2.2',
+                    }}
+                  />
+
+                  {/* Floating Selection Toolbar for Highlighted text */}
+                  <FloatingSelectionMenu
+                    visible={floatingMenuVisible}
+                    position={floatingMenuPos}
+                    selectedText={selectedRange.text}
+                    onApplyPreset={handleApplyPresetToSelection}
+                    onOpenDesigner={handleOpenDesignerForSelection}
+                    themeColors={{
+                      bg: currentBg,
+                      cardBg: currentCardBg,
+                      border: currentBorder,
+                      btnBg: currentBtnBg,
+                      btnText: currentBtnText,
+                      btnSecondaryBg: currentBtnSecondaryBg,
+                      btnBorder: currentBtnBorder,
+                      text: currentText,
+                      textMuted: currentTextMuted,
+                      accentColor: currentBtnBg,
+                    }}
                   />
                 </div>
               ) : (
                 /* LIVE PREVIEW OF CHAPTER WITH ALL SPECIAL FRAMES RENDERED */
-                <div className={`space-y-5 leading-relaxed min-h-[450px] p-2 ${customBodyFont}`} style={{ color: currentText }}>
+                <div className={`space-y-6 sm:space-y-7 leading-loose sm:leading-[2.2] text-base sm:text-[17px] tracking-wide min-h-[500px] p-2 sm:p-4 ${customBodyFont}`} style={{ color: currentText }}>
                   {parseChapterContentBlocks(chapterContentInput).length > 0 ? (
                     parseChapterContentBlocks(chapterContentInput).map((block, bIdx) => (
-                      <div key={bIdx}>
+                      <div key={bIdx} className="transition-all">
                         {block.type === 'paragraph' ? (
-                          <p className="leading-relaxed">{block.rawText}</p>
+                          <p className="leading-loose sm:leading-[2.2]">{block.rawText}</p>
                         ) : (
                           <SpecialBlockRenderer
                             block={block}
@@ -5250,6 +5372,8 @@ const [galleryAutoScrollSpeed, setGalleryAutoScrollSpeed] = useState<'slow' | 'n
           isOpen={showSpecialFrameModal}
           onClose={() => setShowSpecialFrameModal(false)}
           onInsertCode={handleInsertFrameSnippet}
+          initialContent={modalInitialContent}
+          initialType={modalInitialType}
           themeColors={{
             bg: currentBg,
             cardBg: currentCardBg,

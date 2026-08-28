@@ -35,11 +35,13 @@ import {
   Mail,
   Shield,
   StickyNote,
-  Sparkles
+  Frame
 } from 'lucide-react';
 import { BulkChapterModal } from './BulkChapterModal';
 import { LiveStoryEditor } from './LiveStoryEditor';
 import { SpecialFrameInsertModal } from './SpecialFrameInsertModal';
+import { FloatingSelectionMenu } from './FloatingSelectionMenu';
+import { SpecialBlockType } from './ChapterSpecialBlocks';
 import { claimStoryOwnership } from '../lib/storage';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
@@ -587,12 +589,97 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
   const [chapterPassword, setChapterPassword] = useState('');
   const [chapterPasswordHint, setChapterPasswordHint] = useState('');
   const [showSpecialFrameModal, setShowSpecialFrameModal] = useState(false);
+  const [modalInitialContent, setModalInitialContent] = useState('');
+  const [modalInitialType, setModalInitialType] = useState<SpecialBlockType>('system');
+
+  // Text selection floating menu state for studio chapter textarea
+  const studioTextareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const [floatingMenuVisible, setFloatingMenuVisible] = useState(false);
+  const [floatingMenuPos, setFloatingMenuPos] = useState({ top: 0, left: 0 });
+  const [selectedRange, setSelectedRange] = useState<{ start: number; end: number; text: string }>({
+    start: 0,
+    end: 0,
+    text: '',
+  });
+
+  const handleStudioTextSelect = () => {
+    const el = studioTextareaRef.current;
+    if (!el) return;
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
+    if (start !== end && end > start) {
+      const selected = el.value.substring(start, end).trim();
+      if (selected) {
+        const rect = el.getBoundingClientRect();
+        setFloatingMenuPos({
+          top: Math.max(30, rect.top + 10),
+          left: Math.min(window.innerWidth - 180, Math.max(180, rect.left + rect.width / 2)),
+        });
+        setSelectedRange({ start, end, text: selected });
+        setFloatingMenuVisible(true);
+        return;
+      }
+    }
+    setFloatingMenuVisible(false);
+  };
+
+  const handleApplyPresetToStudioSelection = (type: SpecialBlockType) => {
+    if (!selectedRange.text) return;
+    let snippet = '';
+    const text = selectedRange.text.trim();
+
+    if (type === 'system') {
+      snippet = `[system: THÔNG BÁO HỆ THỐNG]\n${text}\n[/system]`;
+    } else if (type === 'forum' || type === 'netizen') {
+      const lines = text.split('\n').filter(Boolean);
+      const parsedLines = lines.map((l, i) => `[netizen: Cư dân mạng #${i + 1} | Vừa xong | +${10 * (i + 1)}]: ${l.trim()}`).join('\n');
+      snippet = `[forum: Diễn Đàn Mạng Xã Hội]\n${parsedLines || `[netizen: Ẩn danh | Vừa xong | +99]: ${text}`}\n[/forum]`;
+    } else if (type === 'chat') {
+      const lines = text.split('\n').filter(Boolean);
+      const parsedLines = lines.map((l, i) => `[${i % 2 === 0 ? 'left: Đối phương' : 'right: Tôi'}]: ${l.trim()}`).join('\n');
+      snippet = `[chat: Hội Thoại Trò Chuyện]\n${parsedLines || `[left: Đối phương]: ${text}`}\n[/chat]`;
+    } else if (type === 'letter') {
+      snippet = `[letter: Thư Từ / Mật Hàm | Gửi người nhận]\n${text}\n[/letter]`;
+    } else if (type === 'status') {
+      const lines = text.split('\n').filter(Boolean);
+      snippet = `[status: BẢNG TRẠNG THÁI]\n${lines.join('\n')}\n[/status]`;
+    } else if (type === 'note') {
+      snippet = `[note: Lời tác giả]\n${text}\n[/note]`;
+    } else if (type === 'warning') {
+      snippet = `[warning: CẢNH BÁO NGUY HIỂM]\n${text}\n[/warning]`;
+    } else if (type === 'thought') {
+      snippet = `[thought: Độc thoại nội tâm]\n${text}\n[/thought]`;
+    }
+
+    if (snippet) {
+      setChapterContent((prev) => {
+        const before = prev.substring(0, selectedRange.start);
+        const after = prev.substring(selectedRange.end);
+        return `${before}\n\n${snippet}\n\n${after}`.replace(/\n{3,}/g, '\n\n');
+      });
+      setFloatingMenuVisible(false);
+      setSelectedRange({ start: 0, end: 0, text: '' });
+    }
+  };
+
+  const handleOpenStudioDesignerForSelection = () => {
+    setModalInitialContent(selectedRange.text);
+    setModalInitialType('system');
+    setShowSpecialFrameModal(true);
+    setFloatingMenuVisible(false);
+  };
 
   const handleInsertStudioFrameSnippet = (snippet: string) => {
     setChapterContent((prev) => {
+      if (selectedRange.text && selectedRange.end > selectedRange.start) {
+        const before = prev.substring(0, selectedRange.start);
+        const after = prev.substring(selectedRange.end);
+        return `${before}\n\n${snippet.trim()}\n\n${after}`.replace(/\n{3,}/g, '\n\n');
+      }
       const trimmed = prev ? prev.trim() : '';
       return trimmed ? `${trimmed}\n\n${snippet.trim()}\n\n` : `${snippet.trim()}\n\n`;
     });
+    setSelectedRange({ start: 0, end: 0, text: '' });
   };
 
   // Batch Volume assignment in chapter list
@@ -1594,7 +1681,7 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
                     onClick={() => setShowSpecialFrameModal(true)}
                     className="px-2 py-1 rounded bg-[#2b1620] hover:bg-[#3d1e2c] border border-[#5e2f46] text-[11px] text-[#ffd6e2] font-mono-code font-bold flex items-center gap-1.5 transition cursor-pointer"
                   >
-                    <Sparkles className="w-3.5 h-3.5 text-pink-400" />
+                    <Frame className="w-3.5 h-3.5 text-pink-400" />
                     <span>Trình tạo khung đặc biệt</span>
                   </button>
                 </div>
@@ -1602,7 +1689,7 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
                 {/* Quick Frame Tags Toolbar */}
                 <div className="p-2 rounded bg-[#0d0608] border border-[#2d1822] flex flex-wrap items-center gap-1.5 text-[11px] font-mono-code">
                   <span className="text-[#8a717a] text-[10px] mr-1 flex items-center gap-1">
-                    <Sparkles className="w-3 h-3 text-pink-400" /> Chèn nhanh:
+                    <Frame className="w-3 h-3 text-pink-400" /> Chèn nhanh:
                   </span>
                   <button
                     type="button"
@@ -1648,14 +1735,46 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
                   </button>
                 </div>
 
-                <textarea
-                  value={chapterContent}
-                  onChange={(e) => setChapterContent(e.target.value)}
-                  placeholder="Nhập nội dung chương truyện ở đây... Bạn có thể dùng các khung đặc biệt ở thanh công cụ phía trên."
-                  rows={12}
-                  className="w-full bg-[#12090c] border border-[#2d1822] p-3 text-xs text-[#e0c0cc] focus:outline-none focus:border-[#522d3d] leading-relaxed resize-y font-mono-code"
-                  required
-                />
+                <div className="relative">
+                  <textarea
+                    ref={studioTextareaRef}
+                    value={chapterContent}
+                    onChange={(e) => {
+                      setChapterContent(e.target.value);
+                      handleStudioTextSelect();
+                    }}
+                    onSelect={handleStudioTextSelect}
+                    onKeyUp={handleStudioTextSelect}
+                    onMouseUp={handleStudioTextSelect}
+                    onTouchEnd={handleStudioTextSelect}
+                    placeholder="Nhập nội dung chương truyện ở đây... Bạn có thể bôi đen bất kỳ đoạn văn bản nào để tạo khung đặc biệt trực tiếp."
+                    rows={14}
+                    className="w-full bg-[#12090c] border border-[#2d1822] p-3 text-sm text-[#e0c0cc] focus:outline-none focus:border-[#522d3d] leading-[2] resize-y font-mono-code selection:bg-pink-500/40"
+                    style={{ lineHeight: '2.0' }}
+                    required
+                  />
+
+                  {/* Floating Selection Toolbar for Highlighted text */}
+                  <FloatingSelectionMenu
+                    visible={floatingMenuVisible}
+                    position={floatingMenuPos}
+                    selectedText={selectedRange.text}
+                    onApplyPreset={handleApplyPresetToStudioSelection}
+                    onOpenDesigner={handleOpenStudioDesignerForSelection}
+                    themeColors={{
+                      bg: '#0d0608',
+                      cardBg: '#150a0f',
+                      border: '#331c27',
+                      btnBg: '#e879f9',
+                      btnText: '#000000',
+                      btnSecondaryBg: '#241119',
+                      btnBorder: '#5e2f46',
+                      text: '#ffd6e2',
+                      textMuted: '#a88d98',
+                      accentColor: '#e879f9',
+                    }}
+                  />
+                </div>
               </div>
 
               <div className="flex justify-end gap-2 pt-2">
@@ -2840,6 +2959,8 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
           isOpen={showSpecialFrameModal}
           onClose={() => setShowSpecialFrameModal(false)}
           onInsertCode={handleInsertStudioFrameSnippet}
+          initialContent={modalInitialContent}
+          initialType={modalInitialType}
           themeColors={{
             bg: '#0d0608',
             cardBg: '#150a0f',
