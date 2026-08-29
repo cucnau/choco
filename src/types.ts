@@ -92,7 +92,8 @@ export interface Story {
   updatedAt: string;
   themeTone?: string; // Tông màu truyện ('dark-rose' | 'sepia' | 'emerald' | 'slate' | 'classic-dark' | 'gradient-rose' | 'gradient-midnight' | 'gradient-ocean' | 'gradient-emerald' | 'gradient-sunset' | 'gradient-cyber' | 'custom')
   defaultFont?: string; // Font chữ mặc định của truyện
-  customTitleFont?: string; // Font chữ cho tiêu đề truyện / tiêu đề chương
+  customTitleFont?: string; // Font chữ cho tiêu đề truyện
+  customSubtitleFont?: string; // Font chữ cho tiêu đề phụ (tiêu đề chương, tiêu đề widget, tên quyển v.v.)
   customBodyFont?: string; // Font chữ cho nội dung / chữ thường
   customMutedFont?: string; // Font chữ phụ / chú thích / tác giả / ngày tháng
   customBtnFont?: string; // Font chữ cho các nút bấm / huy hiệu / nhãn trạng thái

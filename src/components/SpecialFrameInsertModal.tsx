@@ -276,7 +276,17 @@ export const SpecialFrameInsertModal: React.FC<SpecialFrameInsertModalProps> = (
   };
 
   return (
-    <div className="fixed inset-0 z-[150] flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-xs font-mono">
+    <div className="special-frame-modal-root fixed inset-0 z-[150] flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-xs font-mono">
+      <style>{`
+        .special-frame-modal-root ::selection,
+        .special-frame-modal-root *::selection,
+        .special-frame-modal-root input::selection,
+        .special-frame-modal-root textarea::selection,
+        .special-frame-modal-root select::selection {
+          background-color: ${tBtnBg} !important;
+          color: ${tBtnText || '#ffffff'} !important;
+        }
+      `}</style>
       <div
         className="w-full max-w-4xl max-h-[92vh] flex flex-col rounded-xl border shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200"
         style={{ background: tCardBg, borderColor: tBorder, color: tText }}

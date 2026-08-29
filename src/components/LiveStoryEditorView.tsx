@@ -54,6 +54,7 @@ interface LiveStoryEditorViewProps {
   borderRadius: string;
   activeBCorner: any;
   customTitleFont: string;
+  customSubtitleFont?: string;
   customBodyFont: string;
   customMutedFont: string;
   customBtnFont?: string;
@@ -159,6 +160,7 @@ export const LiveStoryEditorView: React.FC<LiveStoryEditorViewProps> = (props) =
     borderRadius,
     activeBCorner,
     customTitleFont,
+    customSubtitleFont,
     customBodyFont,
     customMutedFont,
     customBtnFont = 'font-mono',
@@ -250,6 +252,7 @@ export const LiveStoryEditorView: React.FC<LiveStoryEditorViewProps> = (props) =
   } = props;
 
   const articleRef = useRef<HTMLElement | null>(null);
+  const storySubtitleFont = customSubtitleFont || customTitleFont;
 
   const [isEditingSingleImg, setIsEditingSingleImg] = useState(false);
   const [inlineSingleUrlInput, setInlineSingleUrlInput] = useState('');
@@ -551,7 +554,7 @@ export const LiveStoryEditorView: React.FC<LiveStoryEditorViewProps> = (props) =
                   value={characterWidgetTitle}
                   onChange={(e) => setCharacterWidgetTitle && setCharacterWidgetTitle(e.target.value)}
                   placeholder="Tiêu đề widget nhân vật..."
-                  className={`bg-transparent font-bold text-xs border-b border-dashed hover:border-solid focus:border-solid focus:outline-none px-1 py-0.5 truncate ${customTitleFont}`}
+                  className={`bg-transparent font-bold text-xs border-b border-dashed hover:border-solid focus:border-solid focus:outline-none px-1 py-0.5 truncate ${storySubtitleFont}`}
                   style={{ borderColor: currentBorder, color: currentText }}
                 />
               </div>
@@ -780,7 +783,7 @@ export const LiveStoryEditorView: React.FC<LiveStoryEditorViewProps> = (props) =
                   value={progressTitle}
                   onChange={(e) => setProgressTitle && setProgressTitle(e.target.value)}
                   placeholder="Tiêu đề widget tiến độ..."
-                  className={`bg-transparent font-bold text-xs border-b border-dashed hover:border-solid focus:border-solid focus:outline-none px-1 py-0.5 truncate ${customTitleFont}`}
+                  className={`bg-transparent font-bold text-xs border-b border-dashed hover:border-solid focus:border-solid focus:outline-none px-1 py-0.5 truncate ${storySubtitleFont}`}
                   style={{ borderColor: currentBorder, color: currentText }}
                 />
               </div>
@@ -853,7 +856,7 @@ export const LiveStoryEditorView: React.FC<LiveStoryEditorViewProps> = (props) =
                   value={customWidgetTitle}
                   onChange={(e) => setCustomWidgetTitle && setCustomWidgetTitle(e.target.value)}
                   placeholder="Tiêu đề widget tùy chỉnh / thông báo..."
-                  className={`bg-transparent font-bold text-xs border-b border-dashed hover:border-solid focus:border-solid focus:outline-none px-1 py-0.5 truncate ${customTitleFont}`}
+                  className={`bg-transparent font-bold text-xs border-b border-dashed hover:border-solid focus:border-solid focus:outline-none px-1 py-0.5 truncate ${storySubtitleFont}`}
                   style={{ borderColor: currentBorder, color: currentText }}
                 />
               </div>
@@ -902,7 +905,7 @@ export const LiveStoryEditorView: React.FC<LiveStoryEditorViewProps> = (props) =
                   value={galleryWidgetTitle}
                   onChange={(e) => setGalleryWidgetTitle && setGalleryWidgetTitle(e.target.value)}
                   placeholder="Tiêu đề widget ảnh..."
-                  className={`bg-transparent font-bold text-xs border-b border-dashed hover:border-solid focus:border-solid focus:outline-none px-1 py-0.5 truncate ${customTitleFont}`}
+                  className={`bg-transparent font-bold text-xs border-b border-dashed hover:border-solid focus:border-solid focus:outline-none px-1 py-0.5 truncate ${storySubtitleFont}`}
                   style={{ borderColor: currentBorder, color: currentText }}
                 />
               </div>
@@ -1472,7 +1475,7 @@ export const LiveStoryEditorView: React.FC<LiveStoryEditorViewProps> = (props) =
           <div id="editor-block-chapters" className={`space-y-3 pt-4 border-t ${customBodyFont}`} style={{ borderColor: currentBorder }}>
             <div className="flex items-center justify-between flex-wrap gap-2">
               <div className={`flex items-center gap-2 flex-wrap ${customBtnFont}`}>
-                <h3 className={`text-xs font-bold uppercase tracking-wider flex items-center gap-2 ${customTitleFont}`} style={{ color: currentText }}>
+                <h3 className={`text-xs font-bold uppercase tracking-wider flex items-center gap-2 ${storySubtitleFont}`} style={{ color: currentText }}>
                   <BookOpen className="w-4 h-4 opacity-80" />
                   <span>Danh sách chương ({storyChapters.length})</span>
                 </h3>

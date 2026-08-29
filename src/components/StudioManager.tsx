@@ -537,6 +537,7 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
   const [themeTone, setThemeTone] = useState('dark-rose');
   const [defaultFont, setDefaultFont] = useState('font-mono');
   const [customTitleFont, setCustomTitleFont] = useState('font-mono');
+  const [customSubtitleFont, setCustomSubtitleFont] = useState('font-mono');
   const [customBodyFont, setCustomBodyFont] = useState('font-mono');
   const [customMutedFont, setCustomMutedFont] = useState('font-mono');
   const [customBtnFont, setCustomBtnFont] = useState('font-mono');
@@ -555,6 +556,7 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
   const [customBtnBgColor, setCustomBtnBgColor] = useState('#2b1620');
   const [customBtnSecondaryBgColor, setCustomBtnSecondaryBgColor] = useState('#1c0f16');
   const [readingEffect, setReadingEffect] = useState<NonNullable<Story['readingEffect']>>('none');
+  const [readingEffectColor, setReadingEffectColor] = useState<string>('#00f0ff');
   const [storyBorderStyle, setStoryBorderStyle] = useState<NonNullable<Story['borderStyle']>>('solid');
   const [storyBorderWidth, setStoryBorderWidth] = useState<NonNullable<Story['borderWidth']>>('thin');
   const [storyBorderRadius, setStoryBorderRadius] = useState<NonNullable<Story['borderRadius']>>('none');
@@ -730,6 +732,7 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
       themeTone: storyData.themeTone || 'dark-rose',
       defaultFont: storyData.customBodyFont || 'font-mono',
       customTitleFont: storyData.customTitleFont,
+      customSubtitleFont: storyData.customSubtitleFont,
       customBodyFont: storyData.customBodyFont,
       customMutedFont: storyData.customMutedFont,
       customBtnFont: storyData.customBtnFont,
@@ -881,6 +884,7 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
     setThemeTone(story.themeTone || 'dark-rose');
     setDefaultFont(story.defaultFont || 'font-mono');
     setCustomTitleFont(story.customTitleFont || story.defaultFont || 'font-mono');
+    setCustomSubtitleFont(story.customSubtitleFont || story.customTitleFont || story.defaultFont || 'font-mono');
     setCustomBodyFont(story.customBodyFont || story.defaultFont || 'font-mono');
     setCustomMutedFont(story.customMutedFont || story.defaultFont || 'font-mono');
     setCustomBtnFont(story.customBtnFont || story.defaultFont || 'font-mono');
@@ -916,6 +920,7 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
     setCustomBtnSecondaryBgColor(story.customBtnSecondaryBgColor || '#1c0f16');
     setGradientApplyTarget('all');
     setReadingEffect(story.readingEffect || 'none');
+    setReadingEffectColor(story.readingEffectColor || '#00f0ff');
     setStoryBorderStyle(story.borderStyle || 'solid');
     setStoryBorderWidth(story.borderWidth || 'thin');
     setStoryBorderRadius(story.borderRadius || 'none');
@@ -964,6 +969,7 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
       themeTone: themeTone,
       defaultFont: customBodyFont,
       customTitleFont: customTitleFont,
+      customSubtitleFont: customSubtitleFont,
       customBodyFont: customBodyFont,
       customMutedFont: customMutedFont,
       customBtnFont: customBtnFont,
@@ -977,6 +983,7 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
       customBtnBgColor: themeTone === 'custom' ? customBtnBgColor : undefined,
       customBtnSecondaryBgColor: themeTone === 'custom' ? customBtnSecondaryBgColor : undefined,
       readingEffect: readingEffect,
+      readingEffectColor: readingEffectColor,
       borderStyle: storyBorderStyle,
       borderWidth: storyBorderWidth,
       borderRadius: storyBorderRadius,
@@ -2265,13 +2272,14 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-xs text-[#8a717a] block font-mono-code">Hiệu ứng:</label>
+                    <label className="text-xs text-[#8a717a] block font-mono-code">Hiệu ứng nền:</label>
                     <select
                       value={readingEffect}
                       onChange={(e) => setReadingEffect(e.target.value as any)}
                       className="w-full bg-[#170d12] border border-[#2d1822] p-2 text-xs text-[#e0c0cc] focus:outline-none focus:border-[#522d3d] font-mono-code"
                     >
                       <option value="none">Không có hiệu ứng</option>
+                      <option value="sci_fi_hud">Sci-Fi</option>
                       <option value="rain">Mưa rơi</option>
                       <option value="snow">Tuyết rơi</option>
                       <option value="glitch">Nhiễu sóng</option>
@@ -2287,16 +2295,51 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
                       <option value="feathers">Lông vũ rơi</option>
                       <option value="lightning">Sấm sét</option>
                       <option value="fog">Sương mù</option>
+                      <option value="fireworks">Pháo hoa</option>
+                      <option value="fire_sparks">Tàn lửa bay</option>
                     </select>
                   </div>
+
+                  {readingEffect !== 'none' && (
+                    <div className="space-y-1 sm:col-span-2">
+                      <label className="text-xs text-[#8a717a] block font-mono-code">Màu hiệu ứng:</label>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <input
+                          type="color"
+                          value={readingEffectColor}
+                          onChange={(e) => setReadingEffectColor(e.target.value)}
+                          className="w-8 h-8 rounded border border-[#2d1822] cursor-pointer bg-transparent"
+                        />
+                        <input
+                          type="text"
+                          value={readingEffectColor}
+                          onChange={(e) => setReadingEffectColor(e.target.value)}
+                          className="w-24 bg-[#170d12] border border-[#2d1822] p-1.5 text-xs text-[#e0c0cc] focus:outline-none font-mono-code rounded"
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                   <div className="space-y-1">
-                    <label className="text-xs text-[#8a717a] block font-mono-code">Font chữ tiêu đề:</label>
+                    <label className="text-xs text-[#8a717a] block font-mono-code">Font tiêu đề truyện:</label>
                     <select
                       value={customTitleFont}
                       onChange={(e) => setCustomTitleFont(e.target.value)}
+                      className="w-full bg-[#170d12] border border-[#2d1822] p-2 text-xs text-[#e0c0cc] focus:outline-none focus:border-[#522d3d] font-mono-code"
+                    >
+                      {FONT_OPTIONS.map((f) => (
+                        <option key={f.value} value={f.value}>{f.label}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs text-[#8a717a] block font-mono-code">Font tiêu đề phụ (tiêu đề chương v.v.):</label>
+                    <select
+                      value={customSubtitleFont}
+                      onChange={(e) => setCustomSubtitleFont(e.target.value)}
                       className="w-full bg-[#170d12] border border-[#2d1822] p-2 text-xs text-[#e0c0cc] focus:outline-none focus:border-[#522d3d] font-mono-code"
                     >
                       {FONT_OPTIONS.map((f) => (

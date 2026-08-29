@@ -723,6 +723,7 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
       (initialStory?.customBtnBgColor || initialStory?.customBgColor ? 'custom' : 'dark-rose')
   );
   const [customTitleFont, setCustomTitleFont] = useState(initialStory?.customTitleFont || initialStory?.defaultFont || 'font-mono');
+  const [customSubtitleFont, setCustomSubtitleFont] = useState(initialStory?.customSubtitleFont || initialStory?.customTitleFont || initialStory?.defaultFont || 'font-mono');
   const [customBodyFont, setCustomBodyFont] = useState(initialStory?.customBodyFont || initialStory?.defaultFont || 'font-mono');
   const [customMutedFont, setCustomMutedFont] = useState(initialStory?.customMutedFont || initialStory?.defaultFont || 'font-mono');
   const [customBtnFont, setCustomBtnFont] = useState(initialStory?.customBtnFont || initialStory?.defaultFont || 'font-mono');
@@ -2179,6 +2180,7 @@ const [galleryAutoScrollSpeed, setGalleryAutoScrollSpeed] = useState<'slow' | 'n
       themeTone,
       defaultFont: customBodyFont,
       customTitleFont,
+      customSubtitleFont,
       customBodyFont,
       customMutedFont,
       customBtnFont,
@@ -2742,6 +2744,24 @@ const [galleryAutoScrollSpeed, setGalleryAutoScrollSpeed] = useState<'slow' | 'n
 
               <div>
                 <label className="block text-[11px] font-semibold mb-1" style={{ color: currentText }}>
+                  Font tiêu đề phụ (tiêu đề chương v.v.):
+                </label>
+                <select
+                  value={customSubtitleFont}
+                  onChange={(e) => setCustomSubtitleFont(e.target.value)}
+                  className="w-full p-2 rounded border text-xs focus:outline-none"
+                  style={{ background: currentBg, borderColor: currentBorder, color: currentText }}
+                >
+                  {ALL_FONTS.map((f) => (
+                    <option key={f.value} value={f.value} style={{ background: currentCardBg, color: currentText }}>
+                      {f.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-semibold mb-1" style={{ color: currentText }}>
                   Font thân bài & giới thiệu:
                 </label>
                 <select
@@ -3197,44 +3217,7 @@ const [galleryAutoScrollSpeed, setGalleryAutoScrollSpeed] = useState<'slow' | 'n
                       style={{ background: currentCardBg, borderColor: currentBorder, color: currentText }}
                     >
                       <option value="none" style={{ background: currentCardBg, color: currentText }}>Không hiệu ứng (Tắt)</option>
-                      <option value="sci_fi_hud" style={{ background: currentCardBg, color: currentText }}>⚡ Sci-Fi HUD & Mạch điện (Tùy chỉnh màu & Ẩn hiện)</option>
-                      <option value="rain" style={{ background: currentCardBg, color: currentText }}>Mưa rơi</option>
-                      <option value="snow" style={{ background: currentCardBg, color: currentText }}>Tuyết rơi</option>
-                      <option value="star" style={{ background: currentCardBg, color: currentText }}>Bụi sao</option>
-                      <option value="leaf" style={{ background: currentCardBg, color: currentText }}>Lá phong rơi</option>
-                      <option value="ginkgo" style={{ background: currentCardBg, color: currentText }}>Lá bạch quả rơi</option>
-                      <option value="cherry_blossom" style={{ background: currentCardBg, color: currentText }}>Cánh hoa đào rơi</option>
-                      <option value="firefly" style={{ background: currentCardBg, color: currentText }}>Đom đóm</option>
-                      <option value="soap_bubble" style={{ background: currentCardBg, color: currentText }}>Bong bóng xà phòng</option>
-                      <option value="fruits" style={{ background: currentCardBg, color: currentText }}>Trái cây rơi</option>
-                      <option value="ocean" style={{ background: currentCardBg, color: currentText }}>Đại dương</option>
-                      <option value="butterflies" style={{ background: currentCardBg, color: currentText }}>Bướm bay</option>
-                      <option value="feathers" style={{ background: currentCardBg, color: currentText }}>Lông vũ rơi</option>
-                      <option value="lightning" style={{ background: currentCardBg, color: currentText }}>Sấm sét</option>
-                      <option value="fog" style={{ background: currentCardBg, color: currentText }}>Sương mù</option>
-                      <option value="fireworks" style={{ background: currentCardBg, color: currentText }}>Pháo hoa rực rỡ</option>
-                      <option value="fire_sparks" style={{ background: currentCardBg, color: currentText }}>Tàn lửa bay</option>
-                      <option value="glitch" style={{ background: currentCardBg, color: currentText }}>Nhiễu sóng</option>
-                    </select>
-                  </div>
-
-                  {/* 2. Hiệu ứng Trang đọc chương */}
-                  <div className={`p-2.5 rounded border space-y-1.5 transition-all ${
-                    editingChapterItem !== null ? 'ring-1 ring-emerald-500/50' : 'opacity-80'
-                  }`} style={{ background: currentBg, borderColor: currentBorder }}>
-                    <div className="flex items-center justify-between">
-                      <label className="block text-[11px] font-bold text-emerald-500">
-                        Hiệu ứng Trang đọc chương:
-                      </label>
-                    </div>
-                    <select
-                      value={chapterReadingEffect}
-                      onChange={(e) => setChapterReadingEffect(e.target.value as any)}
-                      className="w-full p-2 rounded border text-xs focus:outline-none"
-                      style={{ background: currentCardBg, borderColor: currentBorder, color: currentText }}
-                    >
-                      <option value="none" style={{ background: currentCardBg, color: currentText }}>Không hiệu ứng (Tắt)</option>
-                      <option value="sci_fi_hud" style={{ background: currentCardBg, color: currentText }}>Sci-fi</option>
+                      <option value="sci_fi_hud" style={{ background: currentCardBg, color: currentText }}>Sci-Fi</option>
                       <option value="rain" style={{ background: currentCardBg, color: currentText }}>Mưa rơi</option>
                       <option value="snow" style={{ background: currentCardBg, color: currentText }}>Tuyết rơi</option>
                       <option value="star" style={{ background: currentCardBg, color: currentText }}>Bụi sao</option>
@@ -3253,6 +3236,93 @@ const [galleryAutoScrollSpeed, setGalleryAutoScrollSpeed] = useState<'slow' | 'n
                       <option value="fire_sparks" style={{ background: currentCardBg, color: currentText }}>Tàn lửa bay</option>
                       <option value="glitch" style={{ background: currentCardBg, color: currentText }}>Nhiễu sóng</option>
                     </select>
+
+                    {/* Color picker cho hiệu ứng trang truyện */}
+                    {readingEffect !== 'none' && (
+                      <div className="pt-2 border-t space-y-1.5" style={{ borderColor: currentBorder }}>
+                        <label className="block text-[10px] font-semibold" style={{ color: currentText }}>
+                          Màu hiệu ứng trang truyện:
+                        </label>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <input
+                            type="color"
+                            value={readingEffectColor}
+                            onChange={(e) => setReadingEffectColor(e.target.value)}
+                            className="w-7 h-7 rounded border cursor-pointer bg-transparent"
+                            style={{ borderColor: currentBorder }}
+                          />
+                          <input
+                            type="text"
+                            value={readingEffectColor}
+                            onChange={(e) => setReadingEffectColor(e.target.value)}
+                            className="w-20 p-1 rounded border text-[11px] font-mono focus:outline-none"
+                            style={{ background: currentCardBg, borderColor: currentBorder, color: currentText }}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 2. Hiệu ứng Trang đọc chương */}
+                  <div className={`p-2.5 rounded border space-y-1.5 transition-all ${
+                    editingChapterItem !== null ? 'ring-1 ring-emerald-500/50' : 'opacity-80'
+                  }`} style={{ background: currentBg, borderColor: currentBorder }}>
+                    <div className="flex items-center justify-between">
+                      <label className="block text-[11px] font-bold text-emerald-500">
+                        Hiệu ứng Trang đọc chương:
+                      </label>
+                    </div>
+                    <select
+                      value={chapterReadingEffect}
+                      onChange={(e) => setChapterReadingEffect(e.target.value as any)}
+                      className="w-full p-2 rounded border text-xs focus:outline-none"
+                      style={{ background: currentCardBg, borderColor: currentBorder, color: currentText }}
+                    >
+                      <option value="none" style={{ background: currentCardBg, color: currentText }}>Không hiệu ứng (Tắt)</option>
+                      <option value="sci_fi_hud" style={{ background: currentCardBg, color: currentText }}>Sci-Fi</option>
+                      <option value="rain" style={{ background: currentCardBg, color: currentText }}>Mưa rơi</option>
+                      <option value="snow" style={{ background: currentCardBg, color: currentText }}>Tuyết rơi</option>
+                      <option value="star" style={{ background: currentCardBg, color: currentText }}>Bụi sao</option>
+                      <option value="leaf" style={{ background: currentCardBg, color: currentText }}>Lá phong rơi</option>
+                      <option value="ginkgo" style={{ background: currentCardBg, color: currentText }}>Lá bạch quả rơi</option>
+                      <option value="cherry_blossom" style={{ background: currentCardBg, color: currentText }}>Cánh hoa đào rơi</option>
+                      <option value="firefly" style={{ background: currentCardBg, color: currentText }}>Đom đóm</option>
+                      <option value="soap_bubble" style={{ background: currentCardBg, color: currentText }}>Bong bóng xà phòng</option>
+                      <option value="fruits" style={{ background: currentCardBg, color: currentText }}>Trái cây rơi</option>
+                      <option value="ocean" style={{ background: currentCardBg, color: currentText }}>Đại dương</option>
+                      <option value="butterflies" style={{ background: currentCardBg, color: currentText }}>Bướm bay</option>
+                      <option value="feathers" style={{ background: currentCardBg, color: currentText }}>Lông vũ rơi</option>
+                      <option value="lightning" style={{ background: currentCardBg, color: currentText }}>Sấm sét</option>
+                      <option value="fog" style={{ background: currentCardBg, color: currentText }}>Sương mù</option>
+                      <option value="fireworks" style={{ background: currentCardBg, color: currentText }}>Pháo hoa</option>
+                      <option value="fire_sparks" style={{ background: currentCardBg, color: currentText }}>Tàn lửa bay</option>
+                      <option value="glitch" style={{ background: currentCardBg, color: currentText }}>Nhiễu sóng</option>
+                    </select>
+
+                    {/* Color picker cho hiệu ứng chương */}
+                    {chapterReadingEffect !== 'none' && (
+                      <div className="pt-2 border-t space-y-1.5" style={{ borderColor: currentBorder }}>
+                        <label className="block text-[10px] font-semibold" style={{ color: currentText }}>
+                          Màu hiệu ứng trang đọc chương:
+                        </label>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <input
+                            type="color"
+                            value={chapterReadingEffectColor}
+                            onChange={(e) => setChapterReadingEffectColor(e.target.value)}
+                            className="w-7 h-7 rounded border cursor-pointer bg-transparent"
+                            style={{ borderColor: currentBorder }}
+                          />
+                          <input
+                            type="text"
+                            value={chapterReadingEffectColor}
+                            onChange={(e) => setChapterReadingEffectColor(e.target.value)}
+                            className="w-20 p-1 rounded border text-[11px] font-mono focus:outline-none"
+                            style={{ background: currentCardBg, borderColor: currentBorder, color: currentText }}
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               ) : (
@@ -3272,7 +3342,7 @@ const [galleryAutoScrollSpeed, setGalleryAutoScrollSpeed] = useState<'slow' | 'n
                     style={{ background: currentBg, borderColor: currentBorder, color: currentText }}
                   >
                     <option value="none" style={{ background: currentCardBg, color: currentText }}>Không hiệu ứng (Tắt)</option>
-                    <option value="sci_fi_hud" style={{ background: currentCardBg, color: currentText }}>Sci-fi</option>
+                    <option value="sci_fi_hud" style={{ background: currentCardBg, color: currentText }}>Sci-Fi</option>
                     <option value="rain" style={{ background: currentCardBg, color: currentText }}>Mưa rơi</option>
                     <option value="snow" style={{ background: currentCardBg, color: currentText }}>Tuyết rơi</option>
                     <option value="star" style={{ background: currentCardBg, color: currentText }}>Bụi sao</option>
@@ -3291,6 +3361,37 @@ const [galleryAutoScrollSpeed, setGalleryAutoScrollSpeed] = useState<'slow' | 'n
                     <option value="fire_sparks" style={{ background: currentCardBg, color: currentText }}>Tàn lửa bay</option>
                     <option value="glitch" style={{ background: currentCardBg, color: currentText }}>Nhiễu sóng</option>
                   </select>
+
+                  {/* Color picker cho hiệu ứng dùng chung */}
+                  {readingEffect !== 'none' && (
+                    <div className="mt-2.5 p-2 rounded border space-y-1.5" style={{ background: currentCardBg, borderColor: currentBorder }}>
+                      <label className="block text-[10px] font-semibold" style={{ color: currentText }}>
+                        Màu hiệu ứng:
+                      </label>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <input
+                          type="color"
+                          value={readingEffectColor}
+                          onChange={(e) => {
+                            setReadingEffectColor(e.target.value);
+                            setChapterReadingEffectColor(e.target.value);
+                          }}
+                          className="w-7 h-7 rounded border cursor-pointer bg-transparent"
+                          style={{ borderColor: currentBorder }}
+                        />
+                        <input
+                          type="text"
+                          value={readingEffectColor}
+                          onChange={(e) => {
+                            setReadingEffectColor(e.target.value);
+                            setChapterReadingEffectColor(e.target.value);
+                          }}
+                          className="w-20 p-1 rounded border text-[11px] font-mono focus:outline-none"
+                          style={{ background: currentBg, borderColor: currentBorder, color: currentText }}
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -4830,7 +4931,7 @@ const [galleryAutoScrollSpeed, setGalleryAutoScrollSpeed] = useState<'slow' | 'n
                     value={chapterTitleInput}
                     onChange={(e) => setChapterTitleInput(e.target.value)}
                     placeholder={`Chương ${editingChapterItem.chapterNumber}: Tiêu đề`}
-                    className={`w-full text-center bg-transparent border-b border-dashed focus:border-solid focus:outline-none font-bold tracking-wide leading-snug ${customTitleFont} py-1 px-2`}
+                    className={`w-full text-center bg-transparent border-b border-dashed focus:border-solid focus:outline-none font-bold tracking-wide leading-snug ${customSubtitleFont} py-1 px-2`}
                     style={{ color: currentText, borderColor: currentBorder, fontSize: titleFontSize || '24px' }}
                   />
                 </div>
@@ -5191,6 +5292,7 @@ const [galleryAutoScrollSpeed, setGalleryAutoScrollSpeed] = useState<'slow' | 'n
             borderRadius={borderRadius}
             activeBCorner={activeBCorner}
             customTitleFont={customTitleFont}
+            customSubtitleFont={customSubtitleFont}
             customBodyFont={customBodyFont}
             customMutedFont={customMutedFont}
             customBtnFont={customBtnFont}
