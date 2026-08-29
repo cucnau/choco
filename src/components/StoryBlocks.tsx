@@ -1204,10 +1204,10 @@ export const StoryBlockRenderer: React.FC<StoryBlockRendererProps> = (props) => 
     return (
       <div
         key="character_widget"
-        className={`p-3 space-y-2.5 rounded transition ${isCustomTheme ? '' : `${tone.inputBg}`}`}
+        className={`p-3 space-y-2.5 rounded transition ${isCustomTheme ? '' : `${tone.buttonBgPrimary}`}`}
         style={{
           ...(isCustomTheme
-            ? { background: story.customBtnSecondaryBgColor || story.customCardBgColor || story.customBgColor }
+            ? { background: story.customBtnBgColor || story.customCardBgColor || story.customBgColor }
             : {}),
           ...getStoryBorderStyle(
             {
@@ -1257,9 +1257,9 @@ export const StoryBlockRenderer: React.FC<StoryBlockRendererProps> = (props) => 
                     </span>
                     {char.role && (
                       <span
-                        className={`text-[9px] px-1.5 py-0.2 rounded font-mono ${storyBtnFont} ${isCustomTheme ? '' : `${tone.buttonBgPrimary} ${tone.text}`}`}
+                        className={`text-[9px] px-1.5 py-0.2 rounded font-mono ${storyBtnFont} ${isCustomTheme ? '' : `${tone.buttonBgSecondary} ${tone.text}`}`}
                         style={{
-                          background: isCustomTheme ? (story.customBtnBgColor || story.customBorderColor) : undefined,
+                          background: isCustomTheme ? (story.customBtnSecondaryBgColor || story.customBorderColor || 'rgba(0,0,0,0.2)') : undefined,
                           color: isCustomTheme ? story.customTextColor : undefined,
                         }}
                       >
@@ -1375,10 +1375,10 @@ export const StoryBlockRenderer: React.FC<StoryBlockRendererProps> = (props) => 
     return (
       <div
         key="progress_widget"
-        className={`p-3 space-y-2 rounded transition border ${isCustomTheme ? '' : `${tone.inputBg}`}`}
+        className={`p-3 space-y-2 rounded transition border ${isCustomTheme ? '' : `${tone.buttonBgPrimary}`}`}
         style={{
           ...(isCustomTheme
-            ? { background: story.customBtnSecondaryBgColor || story.customCardBgColor || story.customBgColor }
+            ? { background: story.customBtnBgColor || story.customCardBgColor || story.customBgColor }
             : {}),
           ...getStoryBorderStyle(
             {
@@ -1411,12 +1411,12 @@ export const StoryBlockRenderer: React.FC<StoryBlockRendererProps> = (props) => 
           style={{ borderColor: isCustomTheme ? story.customBorderColor : tone.border }}
         >
           <div
-            className={`h-full transition-all duration-500 rounded-full ${isCustomTheme ? '' : tone.buttonBgPrimary}`}
+            className={`h-full transition-all duration-500 rounded-full ${isCustomTheme ? '' : tone.buttonBgSecondary}`}
             style={{
               width: `${story.totalPlannedChapters && story.totalPlannedChapters > 0
                 ? Math.min(100, Math.round((chapters.length / story.totalPlannedChapters) * 100))
                 : 0}%`,
-              background: isCustomTheme ? (story.customBtnBgColor || story.customBorderColor) : undefined,
+              background: isCustomTheme ? (story.customBtnSecondaryBgColor || story.customBorderColor) : undefined,
             }}
           />
         </div>
@@ -1437,10 +1437,10 @@ export const StoryBlockRenderer: React.FC<StoryBlockRendererProps> = (props) => 
     return (
       <div
         key="custom_widget"
-        className={`p-3 space-y-2 rounded transition border ${isCustomTheme ? '' : `${tone.inputBg}`}`}
+        className={`p-3 space-y-2 rounded transition border ${isCustomTheme ? '' : `${tone.buttonBgPrimary}`}`}
         style={{
           ...(isCustomTheme
-            ? { background: story.customBtnSecondaryBgColor || story.customCardBgColor || story.customBgColor }
+            ? { background: story.customBtnBgColor || story.customCardBgColor || story.customBgColor }
             : {}),
           ...getStoryBorderStyle(
             {

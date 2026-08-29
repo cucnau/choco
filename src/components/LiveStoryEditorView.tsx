@@ -586,7 +586,7 @@ export const LiveStoryEditorView: React.FC<LiveStoryEditorViewProps> = (props) =
             </div>
 
             {showCharacterWidget && (
-              <div className="p-3 rounded border space-y-3" style={{ background: currentBtnSecondaryBg, borderColor: currentBorder }}>
+              <div className="p-3 rounded border space-y-3" style={{ background: currentBtnBg, borderColor: currentBorder }}>
                 {/* Chọn tỉ lệ / hình dáng ảnh đại diện */}
                 <div className="space-y-1.5 pb-2 border-b" style={{ borderColor: currentBorder }}>
                   <label className="text-[11px] font-bold block" style={{ color: currentText }}>
@@ -800,7 +800,7 @@ export const LiveStoryEditorView: React.FC<LiveStoryEditorViewProps> = (props) =
             </div>
 
             {showProgressWidget && (
-              <div className="p-3.5 rounded border space-y-3" style={{ background: currentBtnSecondaryBg, borderColor: currentBorder }}>
+              <div className="p-3.5 rounded border space-y-3" style={{ background: currentBtnBg, borderColor: currentBorder }}>
                 <div className="flex items-center gap-2 text-xs">
                   <label className="font-bold shrink-0 text-[11px]" style={{ color: currentText }}>
                     Tổng số chương dự kiến:
@@ -873,7 +873,7 @@ export const LiveStoryEditorView: React.FC<LiveStoryEditorViewProps> = (props) =
             </div>
 
             {showCustomWidget && (
-              <div className="p-3.5 rounded border space-y-2 text-xs" style={{ borderColor: currentBorder, background: currentBtnSecondaryBg }}>
+              <div className="p-3.5 rounded border space-y-2 text-xs" style={{ borderColor: currentBorder, background: currentBtnBg }}>
                 <label className="text-[11px] font-bold block" style={{ color: currentText }}>
                   Nội dung tùy chỉnh / Lời ngỏ / Quy định:
                 </label>

@@ -419,51 +419,53 @@ export const SpecialBlockRenderer: React.FC<SpecialBlockRendererProps> = ({
             block.subItems.map((item, idx) => (
               <div
                 key={idx}
-                className="p-3 rounded-lg border text-xs space-y-1.5 transition-all shadow-xs"
+                className="p-3.5 rounded-lg text-xs space-y-1.5 transition-all shadow-xs"
                 style={{
-                  background: `${tBtnBg}15`,
-                  borderColor: `${tBtnBg}40`,
+                  background: tBtnBg,
+                  color: tBtnText || tText,
+                  border: `1px solid ${tBorder || 'transparent'}`,
                 }}
               >
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
                     <div
                       className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 shadow-xs"
-                      style={{ background: tBtnBg, color: tBtnText }}
+                      style={{ background: tCardBg, color: tText || tAccent }}
                     >
-                      {item.sender ? item.sender.charAt(0).toUpperCase() : 'U'}
+                      {item.sender ? item.sender.charAt(0).toUpperCase() : 'C'}
                     </div>
-                    <span className="font-bold text-[11px]" style={{ color: tText }}>
+                    <span className="font-bold text-[11px]" style={{ color: tBtnText || tText }}>
                       {item.sender || 'Cư dân mạng'}
                     </span>
                   </div>
-                  <div className="flex items-center gap-2 text-[10px] opacity-80 font-mono" style={{ color: tTextMuted }}>
+                  <div className="flex items-center gap-2 text-[10px] opacity-80 font-mono" style={{ color: tBtnText || tTextMuted }}>
                     {item.time && <span>{item.time}</span>}
+                    {item.likes && <span>♥ {item.likes}</span>}
                   </div>
                 </div>
-                <p className="pl-7 leading-relaxed text-xs sm:text-sm" style={{ color: tText }}>
+                <p className="pl-7 leading-relaxed text-xs sm:text-sm" style={{ color: tBtnText || tText }}>
                   {item.text}
                 </p>
               </div>
             ))
           ) : (
             <div
-              className="p-3 rounded-lg border text-xs space-y-1.5"
-              style={{ background: `${tBtnBg}15`, borderColor: `${tBtnBg}40` }}
+              className="p-3.5 rounded-lg text-xs space-y-1.5 shadow-xs"
+              style={{ background: tBtnBg, color: tBtnText || tText, border: `1px solid ${tBorder || 'transparent'}` }}
             >
               {block.title && (
                 <div className="flex items-center justify-between text-[11px]">
-                  <span className="font-bold" style={{ color: tAccent }}>
+                  <span className="font-bold" style={{ color: tBtnText || tAccent }}>
                     {block.title}
                   </span>
                   {block.meta && (
-                    <span className="text-[10px] opacity-75 font-mono" style={{ color: tTextMuted }}>
+                    <span className="text-[10px] opacity-75 font-mono" style={{ color: tBtnText || tTextMuted }}>
                       {block.meta}
                     </span>
                   )}
                 </div>
               )}
-              <div className="space-y-1 text-xs sm:text-sm leading-relaxed" style={{ color: tText }}>
+              <div className="space-y-1 text-xs sm:text-sm leading-relaxed" style={{ color: tBtnText || tText }}>
                 {block.lines.map((line, lIdx) => (
                   <p key={lIdx}>{line}</p>
                 ))}
@@ -522,9 +524,9 @@ export const SpecialBlockRenderer: React.FC<SpecialBlockRendererProps> = ({
                       isRight ? 'rounded-br-xs' : 'rounded-bl-xs'
                     }`}
                     style={{
-                      background: isRight ? tBtnBg : `${tBtnBg}20`,
+                      background: isRight ? tBtnBg : (tBtnSecBg || `${tBtnBg}20`),
                       color: isRight ? tBtnText : tText,
-                      border: isRight ? undefined : `1px solid ${tBtnBg}45`,
+                      border: isRight ? undefined : `1px solid ${tBorder || `${tBtnBg}45`}`,
                     }}
                   >
                     {msg.text}
