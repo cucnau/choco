@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { Story, Chapter, Comment, StoryLayoutBlockId, StoryLayoutSection, StoryLayoutSectionType, StoryLayoutColumnRatio } from '../types';
+import { EmojiPickerButton, CommentReactions, FormattedCommentContent, QuickEmojiBar, ReactionSummary } from './CustomEmoji';
 import {
   Bookmark,
   BookOpen,
@@ -19,6 +20,7 @@ import {
   ChevronLeft,
   ChevronRight,
   LayoutGrid,
+  Trash2,
   List,
   Folder,
   GitCommit,
@@ -139,6 +141,11 @@ export interface StoryBlockRendererProps {
   toggleVolume: (vol: string) => void;
   editorAvatarUrl?: string;
   editorDisplayName: string;
+  onToggleCommentReaction?: (commentId: string, emojiId: string) => void;
+  currentUserUid?: string;
+  onAddComment?: (comment: Omit<Comment, 'id' | 'createdAt'>) => void;
+  onDeleteComment?: (commentId: string) => void;
+  isEditor?: boolean;
 }
 
 const AutoScrollAlbum = ({
@@ -983,6 +990,11 @@ export const StoryBlockRenderer: React.FC<StoryBlockRendererProps> = (props) => 
     toggleVolume,
     editorAvatarUrl,
     editorDisplayName,
+    currentUserUid,
+    onToggleCommentReaction,
+    onAddComment,
+    onDeleteComment,
+    isEditor,
   } = props;
 
   // 1. COVER BLOCK
@@ -1321,7 +1333,7 @@ export const StoryBlockRenderer: React.FC<StoryBlockRendererProps> = (props) => 
           <div className="space-y-2">
             <div
               className={`space-y-3 relative transition-all duration-300 ${
-                !isSynopsisExpanded ? 'max-h-72 sm:max-h-80 overflow-hidden' : ''
+                !isSynopsisExpanded ? 'max-h-none sm:max-h-80 overflow-visible sm:overflow-hidden' : ''
               }`}
             >
               {story.synopsis
@@ -1343,7 +1355,7 @@ export const StoryBlockRenderer: React.FC<StoryBlockRendererProps> = (props) => 
 
               {!isSynopsisExpanded && story.synopsis.length > 250 && (
                 <div
-                  className="absolute bottom-0 inset-x-0 h-16 pointer-events-none"
+                  className="hidden sm:block absolute bottom-0 inset-x-0 h-16 pointer-events-none"
                   style={{
                     background: `linear-gradient(to top, ${cardBgColor} 15%, transparent 100%)`,
                   }}
@@ -1355,7 +1367,7 @@ export const StoryBlockRenderer: React.FC<StoryBlockRendererProps> = (props) => 
               <button
                 type="button"
                 onClick={() => setIsSynopsisExpanded(!isSynopsisExpanded)}
-                className="text-xs font-bold underline hover:opacity-80 transition cursor-pointer pt-0.5"
+                className="hidden sm:inline-block text-xs font-bold underline hover:opacity-80 transition cursor-pointer pt-0.5"
                 style={customStyles.textMuted}
               >
                 {isSynopsisExpanded ? 'Thu gọn' : 'Xem thêm...'}
@@ -1565,18 +1577,23 @@ export const StoryBlockRenderer: React.FC<StoryBlockRendererProps> = (props) => 
 
   // 13. COMMENTS BLOCK
   if (blockId === 'comments') {
+    const rawComments = comments || [];
+    const storyComments = rawComments.filter((cm) => cm && cm.content !== '__story_reactions__');
+
     return (
       <div
         key="comments"
         className="space-y-4 pt-6 border-t"
         style={customStyles.border}
       >
-        <h3 className={`text-xs font-bold uppercase tracking-[0.15em] flex items-center gap-2 ${storyBodyFont}`} style={customStyles.text}>
-          <MessageSquare className="w-4 h-4 opacity-85" style={customStyles.textMuted} />
-          <span>Bình luận ({comments.length})</span>
-        </h3>
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <h3 className={`text-xs font-bold uppercase tracking-[0.15em] flex items-center gap-2 ${storyBodyFont}`} style={customStyles.text}>
+            <MessageSquare className="w-4 h-4 opacity-85" style={customStyles.textMuted} />
+            <span>Bình luận ({storyComments.length})</span>
+          </h3>
+        </div>
 
-        <form onSubmit={handleCommentSubmit} className="flex gap-2">
+        <form onSubmit={handleCommentSubmit} className="flex gap-2 items-center">
           <input
             type="text"
             value={commentText}
@@ -1597,17 +1614,35 @@ export const StoryBlockRenderer: React.FC<StoryBlockRendererProps> = (props) => 
         </form>
 
         <div className="space-y-2">
-          {comments.map((cm) => (
+          {storyComments.map((cm) => (
             <div
               key={cm.id}
               className={`border p-3 space-y-1 ${isCustomTheme ? '' : `${tone.inputBg} ${tone.border}`}`}
               style={isCustomTheme ? { background: story.customBtnSecondaryBgColor || story.customCardBgColor || story.customBgColor, borderColor: story.customBorderColor } : {}}
             >
               <div className="flex items-center justify-between text-xs">
-                <span className={`font-bold ${storyBtnFont}`} style={customStyles.text}>{cm.userName}</span>
+                <div className="flex items-center gap-2">
+                  <span className={`font-bold ${storyBtnFont}`} style={customStyles.text}>{cm.userName}</span>
+                  {(isEditor || (currentUserUid && currentUserUid === cm.userUid)) && onDeleteComment && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (confirm('Bạn có chắc chắn muốn xóa bình luận này không?')) {
+                          onDeleteComment(cm.id);
+                        }
+                      }}
+                      className="text-red-400 hover:text-red-500 p-0.5 rounded transition"
+                      title="Xóa bình luận"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
                 <span className={storyMutedFont} style={customStyles.textMuted}>{cm.createdAt}</span>
               </div>
-              <p className={`text-xs opacity-90 ${storyBodyFont}`} style={customStyles.text}>{cm.content}</p>
+              <p className={`text-xs opacity-90 ${storyBodyFont}`} style={customStyles.text}>
+                <FormattedCommentContent content={cm.content} />
+              </p>
             </div>
           ))}
         </div>
@@ -1616,6 +1651,30 @@ export const StoryBlockRenderer: React.FC<StoryBlockRendererProps> = (props) => 
   }
 
   return null;
+};
+
+const MOBILE_BLOCK_PRIORITY: Record<string, number> = {
+  cover: 1,
+  title: 2,
+  meta: 3,
+  action_buttons: 4,
+  editor_info: 5,
+  synopsis: 6,
+  tags: 7,
+  character_widget: 8,
+  progress_widget: 9,
+  gallery_widget: 10,
+  custom_widget: 11,
+  chapter_list: 12,
+  comments: 13,
+};
+
+export const getSortedMobileBlocks = (blocks: StoryLayoutBlockId[]) => {
+  return [...blocks].sort((a, b) => {
+    const prioA = MOBILE_BLOCK_PRIORITY[a] ?? 99;
+    const prioB = MOBILE_BLOCK_PRIORITY[b] ?? 99;
+    return prioA - prioB;
+  });
 };
 
 export const StoryLayoutContainer: React.FC<Omit<StoryBlockRendererProps, 'blockId'>> = (props) => {
@@ -1628,11 +1687,22 @@ export const StoryLayoutContainer: React.FC<Omit<StoryBlockRendererProps, 'block
         if (sec.type === '1_column') {
           const blocks = sec.blocks || [];
           if (blocks.length === 0) return null;
+          const mobileBlocks = getSortedMobileBlocks(blocks);
+
           return (
-            <div key={sec.id || `sec-1col-${secIdx}`} className="w-full flex flex-col gap-4">
-              {blocks.map((blockId) => (
-                <StoryBlockRenderer key={blockId} blockId={blockId} {...props} />
-              ))}
+            <div key={sec.id || `sec-1col-${secIdx}`} className="w-full">
+              {/* Hiển thị 1 cột trên điện thoại */}
+              <div className="flex sm:hidden flex-col gap-4 w-full">
+                {mobileBlocks.map((blockId) => (
+                  <StoryBlockRenderer key={`m-${blockId}`} blockId={blockId} {...props} />
+                ))}
+              </div>
+              {/* Hiển thị trên máy tính */}
+              <div className="hidden sm:flex flex-col gap-4 w-full">
+                {blocks.map((blockId) => (
+                  <StoryBlockRenderer key={`d-${blockId}`} blockId={blockId} {...props} />
+                ))}
+              </div>
             </div>
           );
         }
@@ -1643,27 +1713,39 @@ export const StoryLayoutContainer: React.FC<Omit<StoryBlockRendererProps, 'block
         if (leftBlocks.length === 0 && rightBlocks.length === 0) return null;
 
         const ratio = sec.columnRatio || 'left_fixed';
-        let gridColsClass = 'grid-cols-1 sm:grid-cols-[224px_1fr]';
+        let gridColsClass = 'sm:grid-cols-[224px_1fr]';
         if (ratio === 'equal') {
-          gridColsClass = 'grid-cols-1 sm:grid-cols-2';
+          gridColsClass = 'sm:grid-cols-2';
         } else if (ratio === 'right_fixed') {
-          gridColsClass = 'grid-cols-1 sm:grid-cols-[1fr_224px]';
+          gridColsClass = 'sm:grid-cols-[1fr_224px]';
         }
 
+        const mobileBlocks = getSortedMobileBlocks([...leftBlocks, ...rightBlocks]);
+
         return (
-          <div key={sec.id || `sec-2col-${secIdx}`} className={`grid ${gridColsClass} gap-6 items-start w-full`}>
-            {/* Cột trái */}
-            <div className="w-full flex flex-col gap-3.5 min-w-0">
-              {leftBlocks.map((blockId) => (
-                <StoryBlockRenderer key={blockId} blockId={blockId} {...props} />
+          <div key={sec.id || `sec-2col-${secIdx}`} className="w-full">
+            {/* Giao diện di động (< sm): Sắp xếp 1 cột theo thứ tự ưu tiên Bìa -> Tên truyện -> Meta (Tác giả, Ngày đăng, Lượt xem) */}
+            <div className="flex sm:hidden flex-col gap-4 w-full">
+              {mobileBlocks.map((blockId) => (
+                <StoryBlockRenderer key={`m-${blockId}`} blockId={blockId} {...props} />
               ))}
             </div>
 
-            {/* Cột phải */}
-            <div className="w-full flex flex-col gap-4 min-w-0">
-              {rightBlocks.map((blockId) => (
-                <StoryBlockRenderer key={blockId} blockId={blockId} {...props} />
-              ))}
+            {/* Giao diện máy tính (>= sm): Bố cục 2 cột song song */}
+            <div className={`hidden sm:grid ${gridColsClass} gap-6 items-start w-full`}>
+              {/* Cột trái */}
+              <div className="w-full flex flex-col gap-3.5 min-w-0">
+                {leftBlocks.map((blockId) => (
+                  <StoryBlockRenderer key={`d-${blockId}`} blockId={blockId} {...props} />
+                ))}
+              </div>
+
+              {/* Cột phải */}
+              <div className="w-full flex flex-col gap-4 min-w-0">
+                {rightBlocks.map((blockId) => (
+                  <StoryBlockRenderer key={`d-${blockId}`} blockId={blockId} {...props} />
+                ))}
+              </div>
             </div>
           </div>
         );

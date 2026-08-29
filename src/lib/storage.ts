@@ -8,7 +8,8 @@ import {
   onSnapshot, 
   query, 
   where,
-  orderBy
+  orderBy,
+  updateDoc
 } from 'firebase/firestore';
 import { db, auth } from './firebase';
 import { safeLocalStorageSet, safeLocalStorageGet, migrateLocalStorageFonts } from './idbStorage';
@@ -609,6 +610,44 @@ export async function saveReadingProgress(storyId: string, chapterId: string, ch
 }
 
 // Comments
+export async function toggleCommentReaction(commentId: string, emojiId: string, userUid?: string): Promise<Comment | null> {
+  const effectiveUid = userUid || auth.currentUser?.uid || 'anonymous_guest';
+  const data = localStorage.getItem(STORAGE_KEYS.COMMENTS);
+  const all: Comment[] = data ? JSON.parse(data) : INITIAL_COMMENTS;
+
+  const targetIdx = all.findIndex((c) => c.id === commentId);
+  if (targetIdx === -1) return null;
+
+  const target = { ...all[targetIdx] };
+  const reactions: Record<string, string[]> = { ...(target.reactions || {}) };
+  const currentUids: string[] = Array.isArray(reactions[emojiId]) ? [...reactions[emojiId]] : [];
+
+  if (currentUids.includes(effectiveUid)) {
+    const updatedUids = currentUids.filter((uid) => uid !== effectiveUid);
+    if (updatedUids.length > 0) {
+      reactions[emojiId] = updatedUids;
+    } else {
+      delete reactions[emojiId];
+    }
+  } else {
+    reactions[emojiId] = [...currentUids, effectiveUid];
+  }
+
+  target.reactions = reactions;
+  all[targetIdx] = target;
+  safeLocalStorageSet(STORAGE_KEYS.COMMENTS, JSON.stringify(all));
+
+  try {
+    await updateDoc(doc(db, 'comments', commentId), {
+      reactions: reactions,
+    });
+  } catch (err) {
+    // Ignore error if document doesn't exist yet in cloud
+  }
+
+  return target;
+}
+
 export async function addComment(comment: Omit<Comment, 'id' | 'createdAt'>): Promise<Comment> {
   const user = auth.currentUser;
   const newComment: Comment = {
@@ -723,6 +762,19 @@ export async function addComment(comment: Omit<Comment, 'id' | 'createdAt'>): Pr
   }
 
   return newComment;
+}
+
+export async function deleteComment(commentId: string): Promise<void> {
+  const data = localStorage.getItem(STORAGE_KEYS.COMMENTS);
+  const all: Comment[] = data ? JSON.parse(data) : INITIAL_COMMENTS;
+  const updated = all.filter((c) => c.id !== commentId);
+  safeLocalStorageSet(STORAGE_KEYS.COMMENTS, JSON.stringify(updated));
+
+  try {
+    await deleteDoc(doc(db, 'comments', commentId));
+  } catch (err) {
+    handleFirestoreError(err, OperationType.WRITE, `comments/${commentId}`);
+  }
 }
 
 // ------------------- THÔNG BÁO (NOTIFICATIONS) -------------------

@@ -28,6 +28,7 @@ export interface Comment {
   createdAt: string;
   parentCommentId?: string; // ID của bình luận cha nếu đây là phản hồi (reply)
   parentCommentAuthorUid?: string; // UID của người được phản hồi để gửi thông báo
+  reactions?: Record<string, string[]>; // Map emojiId -> list of user uids who reacted
 }
 
 export interface Notification {

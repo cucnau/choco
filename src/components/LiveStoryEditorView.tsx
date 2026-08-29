@@ -37,6 +37,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { StoryLayoutBlockId, StoryLayoutSection, Chapter, CharacterInfo, StoryGalleryImage, StoryElement } from '../types';
+import { getSortedMobileBlocks } from './StoryBlocks';
 import { StoryCornerAccents } from '../lib/borderStyles';
 import { StoryElementsLayer } from './StoryElementsLayer';
 
@@ -2138,13 +2139,26 @@ export const LiveStoryEditorView: React.FC<LiveStoryEditorViewProps> = (props) =
           if (sec.type === '1_column') {
             const blocks = sec.blocks || [];
             if (blocks.length === 0) return null;
+            const mobileBlocks = getSortedMobileBlocks(blocks);
+
             return (
-              <div key={sec.id || `sec-1col-${secIdx}`} className="w-full flex flex-col gap-4">
-                {blocks.map((blockId) => (
-                  <div key={blockId} className="w-full">
-                    {renderLiveBlock(blockId)}
-                  </div>
-                ))}
+              <div key={sec.id || `sec-1col-${secIdx}`} className="w-full">
+                {/* Mobile View */}
+                <div className="flex sm:hidden flex-col gap-4 w-full">
+                  {mobileBlocks.map((blockId) => (
+                    <div key={`m-${blockId}`} className="w-full">
+                      {renderLiveBlock(blockId)}
+                    </div>
+                  ))}
+                </div>
+                {/* Desktop View */}
+                <div className="hidden sm:flex flex-col gap-4 w-full">
+                  {blocks.map((blockId) => (
+                    <div key={`d-${blockId}`} className="w-full">
+                      {renderLiveBlock(blockId)}
+                    </div>
+                  ))}
+                </div>
               </div>
             );
           }
@@ -2155,31 +2169,45 @@ export const LiveStoryEditorView: React.FC<LiveStoryEditorViewProps> = (props) =
           if (leftBlocks.length === 0 && rightBlocks.length === 0) return null;
 
           const ratio = sec.columnRatio || 'left_fixed';
-          let gridColsClass = 'grid-cols-1 sm:grid-cols-[224px_1fr]';
+          let gridColsClass = 'sm:grid-cols-[224px_1fr]';
           if (ratio === 'equal') {
-            gridColsClass = 'grid-cols-1 sm:grid-cols-2';
+            gridColsClass = 'sm:grid-cols-2';
           } else if (ratio === 'right_fixed') {
-            gridColsClass = 'grid-cols-1 sm:grid-cols-[1fr_224px]';
+            gridColsClass = 'sm:grid-cols-[1fr_224px]';
           }
 
+          const mobileBlocks = getSortedMobileBlocks([...leftBlocks, ...rightBlocks]);
+
           return (
-            <div key={sec.id || `sec-2col-${secIdx}`} className={`grid ${gridColsClass} gap-6 items-start w-full`}>
-              {/* Cột trái */}
-              <div className="w-full flex flex-col gap-3.5 min-w-0">
-                {leftBlocks.map((blockId) => (
-                  <div key={blockId} className="w-full">
+            <div key={sec.id || `sec-2col-${secIdx}`} className="w-full">
+              {/* Mobile View (< sm): Priority sorted single column (Cover -> Title -> Meta) */}
+              <div className="flex sm:hidden flex-col gap-4 w-full">
+                {mobileBlocks.map((blockId) => (
+                  <div key={`m-${blockId}`} className="w-full">
                     {renderLiveBlock(blockId)}
                   </div>
                 ))}
               </div>
 
-              {/* Cột phải */}
-              <div className="w-full flex flex-col gap-4 min-w-0">
-                {rightBlocks.map((blockId) => (
-                  <div key={blockId} className="w-full">
-                    {renderLiveBlock(blockId)}
-                  </div>
-                ))}
+              {/* Desktop View (>= sm): 2 columns side-by-side */}
+              <div className={`hidden sm:grid ${gridColsClass} gap-6 items-start w-full`}>
+                {/* Cột trái */}
+                <div className="w-full flex flex-col gap-3.5 min-w-0">
+                  {leftBlocks.map((blockId) => (
+                    <div key={`d-${blockId}`} className="w-full">
+                      {renderLiveBlock(blockId)}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Cột phải */}
+                <div className="w-full flex flex-col gap-4 min-w-0">
+                  {rightBlocks.map((blockId) => (
+                    <div key={`d-${blockId}`} className="w-full">
+                      {renderLiveBlock(blockId)}
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           );

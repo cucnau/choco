@@ -20,6 +20,8 @@ import {
   saveReadingProgress, 
   incrementChapterViews, 
   addComment,
+  deleteComment,
+  toggleCommentReaction,
   subscribeStories,
   subscribeChapters,
   subscribeComments,
@@ -708,7 +710,8 @@ export default function App() {
     paragraphIndex?: number, 
     paragraphSnippet?: string,
     parentCommentId?: string,
-    parentCommentAuthorUid?: string
+    parentCommentAuthorUid?: string,
+    reactions?: Record<string, string[]>
   ) => {
     if (!selectedStory) return;
     await addComment({
@@ -721,7 +724,18 @@ export default function App() {
       userName: currentUser?.displayName || currentUser?.email?.split('@')[0] || 'Độc giả',
       userUid: currentUser?.uid,
       content,
+      reactions,
     });
+    refreshData();
+  };
+
+  const handleToggleCommentReaction = async (commentId: string, emojiId: string) => {
+    await toggleCommentReaction(commentId, emojiId, currentUser?.uid);
+    refreshData();
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    await deleteComment(commentId);
     refreshData();
   };
 
@@ -952,6 +966,7 @@ export default function App() {
             currentUser={currentUser}
             userProfile={userProfile}
             isAdmin={isAdmin}
+            isEditor={canPost}
             onSelectChapter={handleSelectChapter}
             onBackToStory={() => {
               setSelectedChapter(null);
@@ -966,6 +981,8 @@ export default function App() {
               }
             }}
             onAddComment={handleAddComment}
+            onDeleteComment={handleDeleteComment}
+            onToggleCommentReaction={handleToggleCommentReaction}
             onUnlockChapter={async (chapterId, price, authorUid) => {
               if (!currentUser) return { success: false, error: 'Chưa đăng nhập' };
               try {
@@ -1010,6 +1027,7 @@ export default function App() {
               userProfile={userProfile}
               currentUser={currentUser}
               isAdmin={isAdmin}
+              isEditor={canPost}
               onToggleBookmark={(id) => handleToggleBookmark(id)}
               onSelectChapter={handleSelectChapter}
               onBack={() => {
@@ -1022,6 +1040,8 @@ export default function App() {
                 else navigateTo('/home');
               }}
               onAddComment={handleAddComment}
+              onDeleteComment={handleDeleteComment}
+              onToggleCommentReaction={handleToggleCommentReaction}
             />
           </div>
         ) : activeTab === 'library' ? (

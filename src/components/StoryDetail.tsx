@@ -334,8 +334,11 @@ interface StoryDetailProps {
   currentUser?: FirebaseUser | null;
   userProfile?: UserProfile | null;
   isAdmin?: boolean;
+  isEditor?: boolean;
   isBookmarked?: boolean;
   onToggleBookmark?: (storyId: string) => void;
+  onToggleCommentReaction?: (commentId: string, emojiId: string) => void;
+  onDeleteComment?: (commentId: string) => void;
 }
 
 export const StoryDetail: React.FC<StoryDetailProps> = ({
@@ -348,8 +351,11 @@ export const StoryDetail: React.FC<StoryDetailProps> = ({
   currentUser,
   userProfile,
   isAdmin = false,
+  isEditor = false,
   isBookmarked = false,
   onToggleBookmark = () => {},
+  onToggleCommentReaction,
+  onDeleteComment,
 }) => {
   const [commentText, setCommentText] = useState('');
   const [isSynopsisExpanded, setIsSynopsisExpanded] = useState(false);
@@ -609,6 +615,11 @@ export const StoryDetail: React.FC<StoryDetailProps> = ({
           toggleVolume={toggleVolume}
           editorAvatarUrl={editorAvatarUrl}
           editorDisplayName={editorDisplayName}
+          currentUserUid={currentUser?.uid}
+          onToggleCommentReaction={onToggleCommentReaction}
+          onAddComment={onAddComment}
+          onDeleteComment={onDeleteComment}
+          isEditor={isEditor}
         />
 
       </article>
@@ -686,6 +697,7 @@ export const StoryDetail: React.FC<StoryDetailProps> = ({
       {/* Hiệu ứng đọc truyện hiển thị trực tiếp ở trang chi tiết truyện */}
       <ReadingEffects 
         effect={story.readingEffect} 
+        effectColor={story.readingEffectColor}
         isDarkTheme={
           isCustomTheme 
             ? !(story.customBgColor && (

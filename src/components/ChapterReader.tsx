@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Story, Chapter, Comment, UserProfile } from '../types';
+import { EmojiPickerButton, CommentReactions, FormattedCommentContent, QuickEmojiBar, ReactionSummary } from './CustomEmoji';
 import { 
   ChevronLeft, 
   ChevronRight, 
@@ -15,7 +16,8 @@ import {
   Eye,
   EyeOff,
   HelpCircle,
-  CheckCircle2
+  CheckCircle2,
+  Trash2
 } from 'lucide-react';
 import { saveReadingProgress, getReadingProgress } from '../lib/readingProgress';
 import { getUserUnlockedPasswordChaptersLocal, unlockChapterWithPassword } from '../lib/storage';
@@ -51,9 +53,12 @@ interface ChapterReaderProps {
   currentUser?: { uid: string; email?: string | null; displayName?: string | null } | null;
   userProfile?: UserProfile | null;
   isAdmin?: boolean;
+  isEditor?: boolean;
   onSelectChapter: (chapter: Chapter) => void;
   onBackToStory: () => void;
-  onAddComment: (content: string, chapterId: string, paragraphIndex?: number, paragraphSnippet?: string, parentCommentId?: string, parentCommentAuthorUid?: string) => void;
+  onAddComment: (content: string, chapterId: string, paragraphIndex?: number, paragraphSnippet?: string, parentCommentId?: string, parentCommentAuthorUid?: string, reactions?: Record<string, string[]>) => void;
+  onDeleteComment?: (commentId: string) => void;
+  onToggleCommentReaction?: (commentId: string, emojiId: string) => void;
   onUnlockChapter?: (chapterId: string, price: number, authorUid?: string) => Promise<{ success: boolean; error?: string; remainingChucu?: number }>;
   onOpenRechargeModal?: () => void;
 }
@@ -66,9 +71,12 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
   currentUser,
   userProfile,
   isAdmin = false,
+  isEditor = false,
   onSelectChapter,
   onBackToStory,
   onAddComment,
+  onDeleteComment,
+  onToggleCommentReaction,
   onUnlockChapter,
   onOpenRechargeModal,
 }) => {
@@ -284,6 +292,30 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
     setParaCommentText('');
   };
 
+  const handleQuickParagraphReaction = (idx: number, snippet: string, emojiId: string) => {
+    const rawParaComments = (comments || []).filter((c) => c && c.paragraphIndex === idx);
+    const paraReactionsComment = rawParaComments.find((c) => c.content === '__paragraph_reactions__');
+    if (paraReactionsComment) {
+      if (onToggleCommentReaction) {
+        onToggleCommentReaction(paraReactionsComment.id, emojiId);
+      }
+    } else {
+      onAddComment('__paragraph_reactions__', chapter.id, idx, snippet.slice(0, 100), undefined, undefined, { [emojiId]: [currentUser?.uid || 'anonymous_guest'] });
+    }
+  };
+
+  const handleQuickChapterReaction = (emojiId: string) => {
+    const rawGeneralComments = (comments || []).filter((c) => c && c.paragraphIndex === undefined);
+    const chapterReactionsComment = rawGeneralComments.find((c) => c.content === '__chapter_reactions__');
+    if (chapterReactionsComment) {
+      if (onToggleCommentReaction) {
+        onToggleCommentReaction(chapterReactionsComment.id, emojiId);
+      }
+    } else {
+      onAddComment('__chapter_reactions__', chapter.id, undefined, undefined, undefined, undefined, { [emojiId]: [currentUser?.uid || 'anonymous_guest'] });
+    }
+  };
+
   // Đồng bộ hệ thống màu sắc theo chuẩn LiveStoryEditor
   const hasSeparateTheme = story.useSeparateChapterTheme;
   const toneKey = hasSeparateTheme ? (story.chapterThemeTone || 'dark-rose') : (story.themeTone || 'dark-rose');
@@ -362,9 +394,12 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
 
   const calculatedWordCount = chapter.wordCount || (chapter.content ? chapter.content.split(/\s+/).filter(Boolean).length : 0);
 
-  const safeComments = comments || [];
+  const safeComments = (comments || []).filter(
+    (c) => c && c.content !== '__paragraph_reactions__' && c.content !== '__chapter_reactions__'
+  );
   const generalComments = safeComments.filter((c) => c && c.paragraphIndex === undefined);
   const paragraphComments = safeComments.filter((c) => c && c.paragraphIndex !== undefined);
+  const chapterReactionsComment = (comments || []).find((c) => c && c.paragraphIndex === undefined && c.content === '__chapter_reactions__');
 
   const displayedComments = commentFilter === 'all'
     ? safeComments
@@ -791,6 +826,7 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
               {contentBlocks.length > 0 ? (
                 contentBlocks.map((block, idx) => {
                   const paraComments = safeComments.filter((c) => c && c.paragraphIndex === idx);
+                  const paraReactionsComment = (comments || []).find((c) => c && c.paragraphIndex === idx && c.content === '__paragraph_reactions__');
                   const isActive = activeParagraphIndex === idx;
 
                   return (
@@ -841,8 +877,8 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
                             }}
                             className={`inline-flex items-center gap-1 px-1.5 py-0.5 text-[11px] rounded transition-all duration-200 border select-none ${
                               paraComments.length > 0
-                                ? 'shadow-xs font-semibold'
-                                : 'opacity-0 group-hover/para:opacity-60 hover:!opacity-100'
+                                ? 'shadow-xs font-semibold opacity-100'
+                                : 'opacity-40 sm:opacity-0 group-hover/para:opacity-60 hover:!opacity-100'
                             }`}
                           >
                             <MessageSquare className="w-3 h-3 opacity-80" />
@@ -885,7 +921,7 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
                           <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
                             {paraComments.length === 0 ? (
                               <p className="text-[11px] italic py-1 opacity-70" style={{ color: currentTextMuted }}>
-                                Chưa có bình luận nào cho đoạn này.
+                                Chưa có bình luận nào cho đoạn này. Thả emoji hoặc để lại bình luận bên dưới nhé!
                               </p>
                             ) : (
                               paraComments.map((cm) => (
@@ -898,19 +934,47 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
                                   }}
                                 >
                                   <div className="flex items-center justify-between text-[11px]">
-                                    <span className="font-bold" style={{ color: currentText }}>{cm.userName}</span>
+                                    <div className="flex items-center gap-1.5">
+                                      <span className="font-bold" style={{ color: currentText }}>{cm.userName}</span>
+                                      {(isAdmin || isEditor || (currentUser && currentUser.uid === cm.userUid)) && onDeleteComment && (
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            if (confirm('Bạn có chắc chắn muốn xóa bình luận này không?')) {
+                                              onDeleteComment(cm.id);
+                                            }
+                                          }}
+                                          className="text-red-400 hover:text-red-500 p-0.5 rounded transition"
+                                          title="Xóa bình luận"
+                                        >
+                                          <Trash2 className="w-3 h-3" />
+                                        </button>
+                                      )}
+                                    </div>
                                     <span className="text-[10px] opacity-65" style={{ color: currentTextMuted }}>{cm.createdAt}</span>
                                   </div>
                                   <p className="leading-relaxed opacity-90" style={{ color: currentText }}>
-                                    {cm.content}
+                                    <FormattedCommentContent content={cm.content} />
                                   </p>
                                 </div>
                               ))
                             )}
                           </div>
 
+                          {/* Paragraph Reactions */}
+                          <div className="pt-1.5 border-t" style={{ borderColor: currentBorder }}>
+                            <span className="text-[11px] font-semibold opacity-75 block select-none mb-1" style={{ color: currentTextMuted }}>
+                              Cảm xúc cho đoạn này:
+                            </span>
+                            <ReactionSummary
+                              reactions={paraReactionsComment ? paraReactionsComment.reactions : {}}
+                              currentUserUid={currentUser?.uid}
+                              onToggleReaction={(emojiId) => handleQuickParagraphReaction(idx, block.rawText, emojiId)}
+                            />
+                          </div>
+
                           {/* Comment Input Box for this paragraph */}
-                          <form onSubmit={(e) => handleParagraphCommentSubmit(e, idx, block.rawText)} className="flex gap-2 pt-1">
+                          <form onSubmit={(e) => handleParagraphCommentSubmit(e, idx, block.rawText)} className="flex gap-2 items-center pt-1">
                             <input
                               type="text"
                               value={paraCommentText}
@@ -1053,7 +1117,7 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
           </div>
 
           {/* Form to submit general chapter comment */}
-          <form onSubmit={handleGeneralCommentSubmit} className="flex gap-2">
+          <form onSubmit={handleGeneralCommentSubmit} className="flex gap-2 items-center mt-3">
             <input
               type="text"
               value={generalCommentText}
@@ -1143,7 +1207,9 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
                     )}
 
                     {/* Comment Content */}
-                    <p className={`opacity-95 leading-relaxed ${storyBodyFont}`} style={{ color: currentText }}>{cm.content}</p>
+                    <p className={`opacity-95 leading-relaxed ${storyBodyFont}`} style={{ color: currentText }}>
+                      <FormattedCommentContent content={cm.content} />
+                    </p>
 
                     {/* Reply & Action Buttons */}
                     <div className="flex items-center gap-3 pt-1">
@@ -1159,6 +1225,21 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
                         <MessageSquare className="w-3 h-3" />
                         <span>Trả lời</span>
                       </button>
+
+                      {(isAdmin || isEditor || (currentUser && currentUser.uid === cm.userUid)) && onDeleteComment && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (confirm('Bạn có chắc chắn muốn xóa bình luận này không?')) {
+                              onDeleteComment(cm.id);
+                            }
+                          }}
+                          className="text-[11px] font-semibold text-red-400 hover:text-red-500 hover:underline flex items-center gap-1 transition-all"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>Xóa</span>
+                        </button>
+                      )}
                     </div>
 
                     {/* Reply Input Form */}
@@ -1171,7 +1252,7 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
                           setReplyText('');
                           setReplyingToId(null);
                         }}
-                        className="mt-2.5 flex gap-2 pl-3 border-l"
+                        className="mt-2.5 flex gap-2 items-center pl-3 border-l"
                         style={{ borderColor: currentBorder }}
                       >
                         <input
@@ -1226,10 +1307,28 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
                             }}
                           >
                             <div className="flex items-center justify-between text-[11px]">
-                              <span className="font-bold" style={{ color: currentText }}>{reply.userName}</span>
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-bold" style={{ color: currentText }}>{reply.userName}</span>
+                                {(isAdmin || isEditor || (currentUser && currentUser.uid === reply.userUid)) && onDeleteComment && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      if (confirm('Bạn có chắc chắn muốn xóa phản hồi này không?')) {
+                                        onDeleteComment(reply.id);
+                                      }
+                                    }}
+                                    className="text-red-400 hover:text-red-500 p-0.5 rounded transition"
+                                    title="Xóa phản hồi"
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                  </button>
+                                )}
+                              </div>
                               <span className="text-[10px]" style={{ color: currentTextMuted }}>{reply.createdAt}</span>
                             </div>
-                            <p className="opacity-90" style={{ color: currentText }}>{reply.content}</p>
+                            <p className="opacity-90" style={{ color: currentText }}>
+                              <FormattedCommentContent content={reply.content} />
+                            </p>
                           </div>
                         ))}
                       </div>

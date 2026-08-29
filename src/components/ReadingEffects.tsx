@@ -83,9 +83,12 @@ export const ReadingEffects: React.FC<ReadingEffectsProps> = ({ effect = 'none',
         }
       }
 
-      draw() {
+      draw(c?: CanvasRenderingContext2D, rgb?: { r: number; g: number; b: number }) {
         ctx.beginPath();
-        if (isDarkTheme) {
+        if (rgb) {
+          ctx.strokeStyle = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${this.opacity + (isDarkTheme ? 0.2 : 0.45)})`;
+          ctx.lineWidth = isDarkTheme ? 1.3 : 1.8;
+        } else if (isDarkTheme) {
           ctx.strokeStyle = `rgba(186, 230, 253, ${this.opacity})`; // Sky blue silver on dark
           ctx.lineWidth = 1.1;
         } else {
@@ -115,9 +118,13 @@ export const ReadingEffects: React.FC<ReadingEffectsProps> = ({ effect = 'none',
         }
       }
 
-      draw() {
+      draw(c?: CanvasRenderingContext2D, rgb?: { r: number; g: number; b: number }) {
         ctx.beginPath();
-        if (isDarkTheme) {
+        if (rgb) {
+          ctx.fillStyle = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${this.opacity + (isDarkTheme ? 0.2 : 0.45)})`;
+          ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2, true);
+          ctx.fill();
+        } else if (isDarkTheme) {
           ctx.fillStyle = `rgba(255, 255, 255, ${this.opacity})`;
           ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2, true);
           ctx.fill();
@@ -148,15 +155,17 @@ export const ReadingEffects: React.FC<ReadingEffectsProps> = ({ effect = 'none',
         }
       }
 
-      draw() {
+      draw(c?: CanvasRenderingContext2D, rgb?: { r: number; g: number; b: number }) {
         ctx.save();
         ctx.translate(this.x, this.y);
         
         const opacityVal = isDarkTheme 
-          ? Math.max(0.15, this.alpha * 0.6) 
-          : Math.max(0.25, this.alpha * 0.7);
+          ? Math.max(0.2, this.alpha * 0.8) 
+          : Math.max(0.35, this.alpha * 0.9);
           
-        if (isDarkTheme) {
+        if (rgb) {
+          ctx.fillStyle = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${opacityVal})`;
+        } else if (isDarkTheme) {
           ctx.fillStyle = `rgba(254, 240, 138, ${opacityVal})`; // Warm soft gold on dark
         } else {
           ctx.fillStyle = `rgba(180, 83, 9, ${opacityVal})`; // Rich amber bronze on light
@@ -2008,7 +2017,7 @@ export const ReadingEffects: React.FC<ReadingEffectsProps> = ({ effect = 'none',
       innerRot: number = 0;
       innerRotSpeed: number = 0;
       alpha: number = 0;
-      maxAlpha: number = 0.35;
+      maxAlpha: number = 0.65;
       state: 'fade_in' | 'active' | 'fade_out' = 'fade_in';
       fadeInSpeed: number = 0.0015;
       fadeOutSpeed: number = 0.0015;
@@ -2136,21 +2145,22 @@ export const ReadingEffects: React.FC<ReadingEffectsProps> = ({ effect = 'none',
         if (this.alpha <= 0.01) return;
 
         const pulse = Math.sin(this.pulseTimer) * 0.12;
-        const currentAlpha = Math.max(0, Math.min(1, (this.alpha + pulse)));
-        const strokeColor = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${currentAlpha})`;
-        const glowColor = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${currentAlpha * 0.7})`;
-        const dimColor = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${currentAlpha * 0.35})`;
-        const fillColor = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${currentAlpha * 0.12})`;
+        const alphaMultiplier = isDarkTheme ? 1.6 : 2.2;
+        const currentAlpha = Math.max(0, Math.min(1, (this.alpha + pulse) * alphaMultiplier));
+        const strokeColor = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${Math.min(1, currentAlpha * (isDarkTheme ? 1.0 : 1.25))})`;
+        const glowColor = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${currentAlpha * (isDarkTheme ? 0.8 : 0.6)})`;
+        const dimColor = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${currentAlpha * (isDarkTheme ? 0.45 : 0.6)})`;
+        const fillColor = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${currentAlpha * (isDarkTheme ? 0.2 : 0.3)})`;
 
         c.save();
         c.translate(this.x, this.y);
         c.scale(this.scale, this.scale);
 
         c.shadowColor = glowColor;
-        c.shadowBlur = isDarkTheme ? 6 : 3;
+        c.shadowBlur = isDarkTheme ? 8 : 4;
         c.strokeStyle = strokeColor;
         c.fillStyle = strokeColor;
-        c.lineWidth = 1.1;
+        c.lineWidth = isDarkTheme ? 1.3 : 1.8;
 
         const r = this.radius;
 
@@ -2735,9 +2745,10 @@ export const ReadingEffects: React.FC<ReadingEffectsProps> = ({ effect = 'none',
             glitchTimer++;
           }
           // Render general particles
+          const generalRgb = hexToRgb(effectColor);
           particles.forEach((p) => {
             p.update();
-            p.draw();
+            p.draw(ctx, generalRgb);
           });
         }
 
