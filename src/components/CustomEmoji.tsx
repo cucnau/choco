@@ -9,9 +9,23 @@ export const resolveEmojiSrc = (src: string): string => {
     return src;
   }
   const cleanSrc = src.startsWith('/') ? src.slice(1) : src;
-  const baseUrl = (import.meta as any).env.BASE_URL || '/';
-  const normalizedBase = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
-  return `${normalizedBase}${cleanSrc}`;
+
+  // Lấy base path tuyệt đối động dựa trên hostname giống như App.tsx để tránh lỗi 404 khi truy cập đường dẫn sâu (deep routing)
+  let basePath = '';
+  if (typeof window !== 'undefined') {
+    if (window.location.hostname.includes('github.io')) {
+      const parts = window.location.pathname.split('/').filter(Boolean);
+      const appRoutes = [
+        'home', 'browse', 'library', 'studio', 'games', 'truyen', 'story', 
+        'tu-sach', 'xuong-viet', 'tro-choi', 'news', 'thong-bao'
+      ];
+      if (parts.length > 0 && !appRoutes.includes(parts[0])) {
+        basePath = '/' + parts[0];
+      }
+    }
+  }
+
+  return `${basePath}/${cleanSrc}`;
 };
 
 interface EmojiImageProps {
