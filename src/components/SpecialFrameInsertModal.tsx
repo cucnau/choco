@@ -150,7 +150,7 @@ export const SpecialFrameInsertModal: React.FC<SpecialFrameInsertModalProps> = (
       setMetaInput('Chủ đề nóng hổi');
     } else if (type === 'chat') {
       setTitleInput('Hội thoại Trò Chuyện');
-      setMetaInput('Đang hoạt động');
+      setMetaInput('');
     } else if (type === 'letter') {
       setTitleInput('Thư Từ / Mật Hàm');
       setMetaInput('Gửi người thừa kế');
@@ -159,13 +159,13 @@ export const SpecialFrameInsertModal: React.FC<SpecialFrameInsertModalProps> = (
       setMetaInput('');
     } else if (type === 'status') {
       setTitleInput('BẢNG TRẠNG THÁI NHÂN VẬT');
-      setMetaInput('Cập nhật');
+      setMetaInput('');
     } else if (type === 'note') {
       setTitleInput('Lời tác giả / Chú thích');
       setMetaInput('');
     } else if (type === 'warning') {
       setTitleInput('CẢNH BÁO NGUY HIỂM');
-      setMetaInput('Cấp độ SSS');
+      setMetaInput('');
     }
 
     // Nếu người dùng đã có nội dung (ví dụ từ việc bôi đen văn bản ban đầu hoặc đã gõ):
@@ -217,26 +217,37 @@ export const SpecialFrameInsertModal: React.FC<SpecialFrameInsertModalProps> = (
   };
 
   const generateSnippet = (): string => {
-    const titleHeader = metaInput.trim() ? `${titleInput.trim()} | ${metaInput.trim()}` : titleInput.trim();
+    const supportsMeta = ['system', 'forum', 'netizen', 'letter'].includes(selectedType);
+    let titleHeader = '';
+    if (supportsMeta && metaInput.trim()) {
+      titleHeader = titleInput.trim() ? `${titleInput.trim()} | ${metaInput.trim()}` : `| ${metaInput.trim()}`;
+    } else {
+      titleHeader = titleInput.trim();
+    }
+
+    const tagOpening = (type: string, header: string) => (header ? `[${type}: ${header}]` : `[${type}]`);
 
     if (selectedType === 'chat') {
       const innerLines = chatRows.map((r) => `[${r.side}: ${r.sender}]: ${r.text}`).join('\n');
-      return `\n[chat: ${titleHeader}]\n${innerLines}\n[/chat]\n`;
+      return `\n${tagOpening('chat', titleHeader)}\n${innerLines}\n[/chat]\n`;
     }
 
     if (selectedType === 'forum' || selectedType === 'netizen') {
       const innerLines = forumRows
-        .map((r) => `[netizen: ${r.sender} | ${r.time} | ${r.likes}]: ${r.text}`)
+        .map((r) => {
+          const header = r.time ? `${r.sender} | ${r.time}` : r.sender;
+          return `[netizen: ${header}]: ${r.text}`;
+        })
         .join('\n');
-      return `\n[forum: ${titleHeader}]\n${innerLines}\n[/forum]\n`;
+      return `\n${tagOpening('forum', titleHeader)}\n${innerLines}\n[/forum]\n`;
     }
 
     if (selectedType === 'status') {
       const innerLines = statusRows.map((r) => `${r.key}: ${r.val}`).join('\n');
-      return `\n[status: ${titleHeader}]\n${innerLines}\n[/status]\n`;
+      return `\n${tagOpening('status', titleHeader)}\n${innerLines}\n[/status]\n`;
     }
 
-    return `\n[${selectedType}: ${titleHeader}]\n${singleContent.trim()}\n[/${selectedType}]\n`;
+    return `\n${tagOpening(selectedType, titleHeader)}\n${singleContent.trim()}\n[/${selectedType}]\n`;
   };
 
   const handleConfirmInsert = () => {
@@ -246,10 +257,11 @@ export const SpecialFrameInsertModal: React.FC<SpecialFrameInsertModalProps> = (
   };
 
   // Preview Block Mock
+  const supportsMeta = ['system', 'forum', 'netizen', 'letter'].includes(selectedType);
   const previewBlock = {
     type: selectedType,
     title: titleInput,
-    meta: metaInput,
+    meta: supportsMeta ? metaInput : '',
     rawText: singleContent,
     lines:
       selectedType === 'status'
@@ -340,7 +352,36 @@ export const SpecialFrameInsertModal: React.FC<SpecialFrameInsertModalProps> = (
             </div>
 
             {/* Tiêu đề & Thông tin phụ */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {supportsMeta ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-[11px] font-semibold block" style={{ color: tText }}>
+                    Tiêu đề khung:
+                  </label>
+                  <input
+                    type="text"
+                    value={titleInput}
+                    onChange={(e) => setTitleInput(e.target.value)}
+                    placeholder="Ví dụ: THÔNG BÁO HỆ THỐNG..."
+                    className="w-full p-2 rounded border text-xs focus:outline-none"
+                    style={{ background: tBg, borderColor: tBorder, color: tText }}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[11px] font-semibold block" style={{ color: tText }}>
+                    Ghi chú góc (Meta / Thời gian):
+                  </label>
+                  <input
+                    type="text"
+                    value={metaInput}
+                    onChange={(e) => setMetaInput(e.target.value)}
+                    placeholder="Ví dụ: 1 phút trước, Cấp SSS..."
+                    className="w-full p-2 rounded border text-xs focus:outline-none"
+                    style={{ background: tBg, borderColor: tBorder, color: tText }}
+                  />
+                </div>
+              </div>
+            ) : (
               <div className="space-y-1">
                 <label className="text-[11px] font-semibold block" style={{ color: tText }}>
                   Tiêu đề khung:
@@ -349,25 +390,12 @@ export const SpecialFrameInsertModal: React.FC<SpecialFrameInsertModalProps> = (
                   type="text"
                   value={titleInput}
                   onChange={(e) => setTitleInput(e.target.value)}
-                  placeholder="Ví dụ: THÔNG BÁO HỆ THỐNG..."
+                  placeholder="Nhập tiêu đề khung..."
                   className="w-full p-2 rounded border text-xs focus:outline-none"
                   style={{ background: tBg, borderColor: tBorder, color: tText }}
                 />
               </div>
-              <div className="space-y-1">
-                <label className="text-[11px] font-semibold block" style={{ color: tText }}>
-                  Ghi chú góc (Meta / Thời gian):
-                </label>
-                <input
-                  type="text"
-                  value={metaInput}
-                  onChange={(e) => setMetaInput(e.target.value)}
-                  placeholder="Ví dụ: 1 phút trước, Cấp SSS..."
-                  className="w-full p-2 rounded border text-xs focus:outline-none"
-                  style={{ background: tBg, borderColor: tBorder, color: tText }}
-                />
-              </div>
-            </div>
+            )}
 
             {/* Form nhập nội dung chi tiết theo từng loại */}
             {selectedType === 'chat' ? (

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { Story, Chapter, Comment, StoryLayoutBlockId, StoryLayoutSection, StoryLayoutSectionType, StoryLayoutColumnRatio } from '../types';
 import {
@@ -331,6 +331,612 @@ const AutoScrollAlbum = ({
           ))}
         </div>
       )}
+    </div>
+  );
+};
+
+interface StoryChapterListRendererProps {
+  story: Story;
+  chapters: Chapter[];
+  onSelectChapter: (chapter: Chapter) => void;
+  getChapterStatus: (chap: Chapter) => {
+    isUnlocked: boolean;
+    isPassUnlocked: boolean;
+    isAuthorOrOwner: boolean;
+    isReading: boolean;
+  };
+  customStyles: any;
+  isCustomTheme: boolean;
+  tone: any;
+  storyBodyFont: string;
+  storyMutedFont: string;
+  storyBtnFont: string;
+  activeBorderColor: string;
+  activeBtnBgColor: string;
+  lastReadProgress?: any;
+}
+
+const StoryChapterListRenderer: React.FC<StoryChapterListRendererProps> = ({
+  story,
+  chapters,
+  onSelectChapter,
+  getChapterStatus,
+  customStyles,
+  isCustomTheme,
+  tone,
+  storyBodyFont,
+  storyMutedFont,
+  storyBtnFont,
+  activeBorderColor,
+  activeBtnBgColor,
+  lastReadProgress,
+}) => {
+  const [collapsedVolumes, setCollapsedVolumes] = useState<Record<string, boolean>>({});
+  const sorted = [...chapters].sort((a, b) => a.chapterNumber - b.chapterNumber);
+  const style = story.chapterListStyle || 'standard';
+
+  if (chapters.length === 0) {
+    return (
+      <div className="p-6 text-center text-xs opacity-75" style={customStyles.textMuted}>
+        Chưa có chương nào được đăng tải.
+      </div>
+    );
+  }
+
+  const renderBadgeStatus = (chap: Chapter) => {
+    const { isUnlocked, isPassUnlocked, isAuthorOrOwner, isReading } = getChapterStatus(chap);
+    return (
+      <div className="flex items-center gap-1.5 flex-wrap">
+        {isReading && (
+          <span
+            className={`inline-flex items-center gap-1 px-1.5 py-0.2 border text-[10px] font-semibold ${storyBtnFont}`}
+            style={{
+              backgroundColor: `${activeBtnBgColor}1a`,
+              borderColor: `${activeBtnBgColor}33`,
+              color: activeBtnBgColor,
+            }}
+          >
+            <BookmarkCheck className="w-3 h-3 opacity-80" />
+            <span>Đang đọc ({lastReadProgress?.progressPercent || 0}%)</span>
+          </span>
+        )}
+        {chap.isLocked && (
+          isUnlocked && !isAuthorOrOwner ? (
+            <span
+              className={`inline-flex items-center gap-1 px-1.5 py-0.2 border text-[10px] font-semibold ${storyBtnFont} ${isCustomTheme ? '' : `${tone.badgeFree} ${tone.badgeFreeBorder} ${tone.badgeFreeText}`}`}
+              style={isCustomTheme ? { backgroundColor: story.customCardBgColor, borderColor: story.customBorderColor, color: story.customTextColor } : {}}
+            >
+              <CheckCircle2 className="w-3 h-3 opacity-80" />
+              <span>Đã mở</span>
+            </span>
+          ) : (
+            <span
+              className={`inline-flex items-center gap-1 px-1.5 py-0.2 border text-[10px] font-semibold shadow-xs ${storyBtnFont} ${isCustomTheme ? '' : `${tone.badgeLocked} ${tone.badgeLockedBorder} ${tone.badgeLockedText}`}`}
+              style={isCustomTheme ? { backgroundColor: story.customBtnBgColor || story.customCardBgColor, borderColor: story.customBorderColor, color: story.customTextColor } : {}}
+            >
+              <Lock className={`w-3 h-3 ${isCustomTheme ? '' : tone.badgeLockedIcon}`} style={isCustomTheme ? { color: story.customTextColor } : {}} />
+              <span>{chap.unlockPrice || 1} C</span>
+            </span>
+          )
+        )}
+        {chap.isPasswordProtected && (
+          isPassUnlocked && !isAuthorOrOwner ? (
+            <span
+              className={`inline-flex items-center gap-1 px-1.5 py-0.2 border text-[10px] font-semibold ${storyBtnFont} ${isCustomTheme ? '' : `${tone.badgeFree} ${tone.badgeFreeBorder} ${tone.badgeFreeText}`}`}
+              style={isCustomTheme ? { backgroundColor: story.customCardBgColor, borderColor: story.customBorderColor, color: story.customTextColor } : {}}
+            >
+              <CheckCircle2 className="w-3 h-3 opacity-80" />
+              <span>Mở Pass</span>
+            </span>
+          ) : (
+            <span
+              className={`inline-flex items-center gap-1 px-1.5 py-0.2 border text-[10px] font-semibold shadow-xs ${storyBtnFont} ${isCustomTheme ? '' : `${tone.badgeLocked} ${tone.badgeLockedBorder} ${tone.badgeLockedText}`}`}
+              style={isCustomTheme ? { backgroundColor: story.customBtnBgColor || story.customCardBgColor, borderColor: story.customBorderColor, color: story.customTextColor } : {}}
+            >
+              <Key className={`w-3 h-3 ${isCustomTheme ? '' : tone.badgeLockedIcon}`} style={isCustomTheme ? { color: story.customTextColor } : {}} />
+              <span>Pass</span>
+            </span>
+          )
+        )}
+      </div>
+    );
+  };
+
+  // 1. GRID
+  if (style === 'grid') {
+    return (
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5">
+        {sorted.map((chap) => (
+          <div
+            key={chap.id}
+            onClick={() => onSelectChapter(chap)}
+            className={`p-3 rounded border flex flex-col justify-between gap-2 hover:opacity-90 transition cursor-pointer ${isCustomTheme ? '' : `${tone.inputBg}`}`}
+            style={{
+              ...(isCustomTheme ? { background: story.customBtnSecondaryBgColor || story.customCardBgColor || story.customBgColor } : {}),
+              borderColor: activeBorderColor,
+            }}
+          >
+            <div className="min-w-0">
+              {chap.volumeTitle && (
+                <span className={`text-[9px] font-bold uppercase tracking-wider block opacity-70 truncate mb-0.5 ${storyMutedFont}`} style={customStyles.textMuted}>
+                  {chap.volumeTitle}
+                </span>
+              )}
+              <span className={`font-bold text-xs line-clamp-2 ${storyBodyFont}`} style={customStyles.text}>
+                {chap.title || `Chương ${chap.chapterNumber}`}
+              </span>
+            </div>
+            <div className="flex items-center justify-between gap-1 pt-1 border-t border-dashed" style={{ borderColor: `${activeBorderColor}60` }}>
+              <span className={`text-[10px] font-mono opacity-65 ${storyMutedFont}`} style={customStyles.textMuted}>
+                {(chap.content || '').match(/\S+/g)?.length || 0} từ
+              </span>
+              {renderBadgeStatus(chap)}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  // 2. ACCORDION
+  if (style === 'accordion') {
+    const groupedByVolume: { volume: string; list: Chapter[] }[] = [];
+    const unassigned: Chapter[] = [];
+    sorted.forEach((c) => {
+      if (c.volumeTitle) {
+        let group = groupedByVolume.find((g) => g.volume === c.volumeTitle);
+        if (!group) {
+          group = { volume: c.volumeTitle, list: [] };
+          groupedByVolume.push(group);
+        }
+        group.list.push(c);
+      } else {
+        unassigned.push(c);
+      }
+    });
+    if (unassigned.length > 0) {
+      groupedByVolume.push({ volume: 'Chương chưa phân quyển', list: unassigned });
+    }
+
+    return (
+      <div className="space-y-3">
+        {groupedByVolume.map((grp, gIdx) => {
+          const isCollapsed = !!collapsedVolumes[grp.volume];
+          return (
+            <div
+              key={gIdx}
+              className="rounded border overflow-hidden transition"
+              style={{
+                borderColor: activeBorderColor,
+                background: isCustomTheme ? (story.customBtnSecondaryBgColor || story.customCardBgColor) : undefined,
+              }}
+            >
+              <button
+                type="button"
+                onClick={() =>
+                  setCollapsedVolumes((prev) => ({
+                    ...prev,
+                    [grp.volume]: !prev[grp.volume],
+                  }))
+                }
+                className="w-full px-3.5 py-2.5 flex items-center justify-between gap-2 text-left font-bold text-xs transition cursor-pointer select-none"
+                style={{
+                  background: isCustomTheme ? (story.customBtnBgColor || story.customCardBgColor) : activeBtnBgColor,
+                  color: isCustomTheme ? (story.customBtnTextColor || story.customTextColor) : '#ffffff',
+                }}
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <Folder className="w-4 h-4 shrink-0" />
+                  <span className="truncate uppercase tracking-wider">{grp.volume}</span>
+                  <span className="text-[10px] font-mono opacity-80 font-normal">
+                    ({grp.list.length} chương)
+                  </span>
+                </div>
+                {isCollapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+              </button>
+
+              {!isCollapsed && (
+                <div className="p-2 space-y-1.5" style={{ background: isCustomTheme ? story.customCardBgColor : undefined }}>
+                  {grp.list.map((chap, cIdx) => (
+                    <div
+                      key={chap.id}
+                      onClick={() => onSelectChapter(chap)}
+                      className={`p-2.5 rounded border text-xs flex items-center justify-between gap-2 hover:opacity-90 transition cursor-pointer ${isCustomTheme ? '' : `${tone.inputBg}`}`}
+                      style={{
+                        ...(isCustomTheme ? { background: story.customBtnSecondaryBgColor || story.customCardBgColor } : {}),
+                        borderColor: `${activeBorderColor}70`,
+                      }}
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span
+                          className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-mono font-bold shrink-0 opacity-75"
+                          style={{ background: `${activeBorderColor}40`, color: customStyles.text.color }}
+                        >
+                          {cIdx + 1}
+                        </span>
+                        <span className={`font-bold text-xs truncate ${storyBodyFont}`} style={customStyles.text}>
+                          {chap.title || `Chương ${chap.chapterNumber}`}
+                        </span>
+                      </div>
+                      {renderBadgeStatus(chap)}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
+  // 3. TIMELINE
+  if (style === 'timeline') {
+    return (
+      <div className="relative pl-6 sm:pl-8 space-y-3.5 before:absolute before:left-3 sm:before:left-4 before:top-2 before:bottom-2 before:w-0.5 before:bg-current before:opacity-30" style={{ color: activeBorderColor }}>
+        {sorted.map((chap) => (
+          <div key={chap.id} className="relative group">
+            <div
+              className="absolute -left-6 sm:-left-8 top-3 w-3 h-3 rounded-full border-2 transform -translate-x-1/2 transition-transform group-hover:scale-125 shadow-xs"
+              style={{
+                background: isCustomTheme ? (story.customBtnBgColor || activeBorderColor) : activeBtnBgColor,
+                borderColor: isCustomTheme ? story.customCardBgColor : '#ffffff',
+              }}
+            />
+            <div
+              onClick={() => onSelectChapter(chap)}
+              className={`p-3 rounded border text-xs flex items-center justify-between gap-3 hover:opacity-90 transition cursor-pointer ${isCustomTheme ? '' : `${tone.inputBg}`}`}
+              style={{
+                ...(isCustomTheme ? { background: story.customBtnSecondaryBgColor || story.customCardBgColor } : {}),
+                borderColor: activeBorderColor,
+              }}
+            >
+              <div className="flex-1 min-w-0">
+                {chap.volumeTitle && (
+                  <span className={`text-[9px] font-bold uppercase tracking-wider block opacity-75 ${storyMutedFont}`} style={customStyles.textMuted}>
+                    {chap.volumeTitle}
+                  </span>
+                )}
+                <div className="flex items-center gap-2">
+                  <span className={`font-bold text-xs truncate ${storyBodyFont}`} style={customStyles.text}>
+                    {chap.title || `Chương ${chap.chapterNumber}`}
+                  </span>
+                  {renderBadgeStatus(chap)}
+                </div>
+                <div className={`text-[10px] font-mono opacity-65 flex items-center gap-2 mt-0.5 ${storyMutedFont}`} style={customStyles.textMuted}>
+                  <span>{(chap.content || '').match(/\S+/g)?.length || 0} từ</span>
+                  <span>•</span>
+                  <span>{chap.updatedAt || chap.createdAt}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  // 4. MINIMAL_TABLE
+  if (style === 'minimal_table') {
+    return (
+      <div className="border rounded overflow-hidden" style={{ borderColor: activeBorderColor }}>
+        <table className="w-full text-left text-xs border-collapse">
+          <thead>
+            <tr className="border-b text-[10px] font-mono uppercase font-bold" style={{ background: `${activeBorderColor}25`, borderColor: activeBorderColor, color: customStyles.textMuted.color }}>
+              <th className="p-2.5 w-12 text-center">#</th>
+              <th className="p-2.5">Tên chương</th>
+              <th className="p-2.5 w-24 hidden sm:table-cell text-center">Số từ</th>
+              <th className="p-2.5 w-32 hidden md:table-cell">Ngày đăng</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y" style={{ borderColor: `${activeBorderColor}40` }}>
+            {sorted.map((chap, idx) => (
+              <tr
+                key={chap.id}
+                onClick={() => onSelectChapter(chap)}
+                className={`hover:opacity-85 transition cursor-pointer ${isCustomTheme ? '' : `${tone.inputBg}`}`}
+                style={{ background: isCustomTheme ? (idx % 2 === 0 ? story.customCardBgColor : story.customBtnSecondaryBgColor) : undefined }}
+              >
+                <td className="p-2.5 text-center font-mono font-bold opacity-70" style={customStyles.textMuted}>
+                  {idx + 1}
+                </td>
+                <td className="p-2.5">
+                  <div className="flex items-center gap-2">
+                    <span className={`font-bold text-xs ${storyBodyFont}`} style={customStyles.text}>
+                      {chap.title || `Chương ${chap.chapterNumber}`}
+                    </span>
+                    {renderBadgeStatus(chap)}
+                  </div>
+                  {chap.volumeTitle && (
+                    <span className={`text-[9px] uppercase tracking-wider opacity-60 block ${storyMutedFont}`} style={customStyles.textMuted}>
+                      {chap.volumeTitle}
+                    </span>
+                  )}
+                </td>
+                <td className="p-2.5 text-center font-mono text-[11px] opacity-75 hidden sm:table-cell" style={customStyles.textMuted}>
+                  {(chap.content || '').match(/\S+/g)?.length || 0}
+                </td>
+                <td className="p-2.5 text-[11px] font-mono opacity-70 hidden md:table-cell" style={customStyles.textMuted}>
+                  {chap.updatedAt || chap.createdAt}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  }
+
+  // 5. BOOK_CATALOG
+  if (style === 'book_catalog') {
+    return (
+      <div
+        className="p-4 sm:p-6 rounded border space-y-2.5 font-serif"
+        style={{
+          borderColor: activeBorderColor,
+          background: isCustomTheme ? (story.customBtnSecondaryBgColor || story.customCardBgColor) : undefined,
+        }}
+      >
+        <div className="text-center pb-2 border-b border-dashed mb-4" style={{ borderColor: activeBorderColor }}>
+          <span className="text-xs font-bold uppercase tracking-widest" style={customStyles.text}>
+            MỤC LỤC TÁC PHẨM
+          </span>
+        </div>
+        {sorted.map((chap) => (
+          <div
+            key={chap.id}
+            onClick={() => onSelectChapter(chap)}
+            className="flex items-baseline justify-between gap-2 hover:opacity-85 transition cursor-pointer py-1"
+          >
+            <div className="flex items-center gap-2 min-w-0 shrink-0 max-w-[70%]">
+              <span className={`font-bold text-xs ${storyBodyFont}`} style={customStyles.text}>
+                {chap.title || `Chương ${chap.chapterNumber}`}
+              </span>
+              {renderBadgeStatus(chap)}
+            </div>
+            <div className="flex-1 border-b border-dotted min-w-[20px] mx-1 opacity-50" style={{ borderColor: customStyles.textMuted.color }} />
+            <div className={`flex items-center gap-2 shrink-0 font-mono text-[10px] opacity-75 ${storyMutedFont}`} style={customStyles.textMuted}>
+              <span>{(chap.content || '').match(/\S+/g)?.length || 0} từ</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  // 6. SCROLL_STRIP
+  if (style === 'scroll_strip') {
+    return (
+      <div className="flex flex-wrap gap-2">
+        {sorted.map((chap) => (
+          <div
+            key={chap.id}
+            onClick={() => onSelectChapter(chap)}
+            className={`px-3 py-1.5 rounded-full border text-xs font-bold flex items-center gap-2 hover:opacity-85 transition cursor-pointer shadow-xs ${isCustomTheme ? '' : `${tone.inputBg}`}`}
+            style={{
+              ...(isCustomTheme ? { background: story.customBtnSecondaryBgColor || story.customCardBgColor } : {}),
+              borderColor: activeBorderColor,
+              color: customStyles.text.color,
+            }}
+          >
+            <Tag className="w-3 h-3 opacity-60" />
+            <span className="truncate max-w-[140px] sm:max-w-[200px]">{chap.title || `C.${chap.chapterNumber}`}</span>
+            {renderBadgeStatus(chap)}
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  // 7. CARDS_BENTO
+  if (style === 'cards_bento') {
+    return (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        {sorted.map((chap, idx) => {
+          const isFeatured = idx === 0 || idx % 5 === 0;
+          return (
+            <div
+              key={chap.id}
+              onClick={() => onSelectChapter(chap)}
+              className={`p-3.5 rounded-xl border flex flex-col justify-between gap-3 hover:opacity-90 transition cursor-pointer shadow-xs ${
+                isFeatured ? 'sm:col-span-2' : ''
+              } ${isCustomTheme ? '' : `${tone.inputBg}`}`}
+              style={{
+                background: isFeatured
+                  ? (isCustomTheme && story.customBtnBgColor ? `${story.customBtnBgColor}18` : `${activeBtnBgColor}15`)
+                  : (isCustomTheme ? (story.customBtnSecondaryBgColor || story.customCardBgColor) : undefined),
+                borderColor: isFeatured ? (isCustomTheme && story.customBtnBgColor ? story.customBtnBgColor : activeBtnBgColor) : activeBorderColor,
+              }}
+            >
+              <div>
+                <div className="flex items-center justify-between gap-2 mb-1">
+                  <span
+                    className="text-[10px] font-mono font-bold uppercase tracking-wider px-1.5 py-0.5 rounded"
+                    style={{
+                      background: isCustomTheme ? (story.customBtnBgColor || activeBtnBgColor) : activeBtnBgColor,
+                      color: isCustomTheme ? (story.customBtnTextColor || '#ffffff') : '#ffffff',
+                    }}
+                  >
+                    #{idx + 1}
+                  </span>
+                  {renderBadgeStatus(chap)}
+                </div>
+                <span className={`font-bold text-xs sm:text-sm line-clamp-2 ${storyBodyFont}`} style={customStyles.text}>
+                  {chap.title || `Chương ${chap.chapterNumber}`}
+                </span>
+                {chap.volumeTitle && (
+                  <span className={`text-[10px] uppercase font-bold opacity-60 block mt-1 ${storyMutedFont}`} style={customStyles.textMuted}>
+                    {chap.volumeTitle}
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center justify-between gap-2 pt-2 border-t border-dashed" style={{ borderColor: `${activeBorderColor}60` }}>
+                <span className={`text-[10px] font-mono opacity-70 ${storyMutedFont}`} style={customStyles.textMuted}>
+                  {(chap.content || '').match(/\S+/g)?.length || 0} từ • {chap.updatedAt || chap.createdAt}
+                </span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
+  // 8. MODERN_COMPACT
+  if (style === 'modern_compact') {
+    return (
+      <div className="space-y-2">
+        {sorted.map((chap, idx) => (
+          <div
+            key={chap.id}
+            onClick={() => onSelectChapter(chap)}
+            className={`p-3 rounded-lg border text-xs flex items-center gap-3 hover:opacity-90 transition cursor-pointer shadow-xs ${isCustomTheme ? '' : `${tone.inputBg}`}`}
+            style={{
+              ...(isCustomTheme ? { background: story.customBtnSecondaryBgColor || story.customCardBgColor } : {}),
+              borderColor: activeBorderColor,
+            }}
+          >
+            <div
+              className="w-10 h-10 rounded flex items-center justify-center font-mono font-black text-sm shrink-0 border"
+              style={{
+                background: isCustomTheme && story.customBtnBgColor ? `${story.customBtnBgColor}20` : `${activeBtnBgColor}20`,
+                borderColor: isCustomTheme && story.customBtnBgColor ? story.customBtnBgColor : activeBtnBgColor,
+                color: customStyles.text.color,
+              }}
+            >
+              {String(idx + 1).padStart(2, '0')}
+            </div>
+            <div className="flex-1 min-w-0">
+              {chap.volumeTitle && (
+                <span className={`text-[9px] font-bold uppercase tracking-wider block opacity-70 ${storyMutedFont}`} style={customStyles.textMuted}>
+                  {chap.volumeTitle}
+                </span>
+              )}
+              <div className="flex items-center gap-2">
+                <span className={`font-bold text-xs truncate ${storyBodyFont}`} style={customStyles.text}>
+                  {chap.title || `Chương ${chap.chapterNumber}`}
+                </span>
+                {renderBadgeStatus(chap)}
+              </div>
+              <span className={`text-[10px] font-mono opacity-65 block mt-0.5 ${storyMutedFont}`} style={customStyles.textMuted}>
+                {(chap.content || '').match(/\S+/g)?.length || 0} từ • {chap.updatedAt || chap.createdAt}
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  // 9. NUMBERS_ONLY
+  if (style === 'numbers_only') {
+    return (
+      <div className="grid grid-cols-5 sm:grid-cols-8 md:grid-cols-10 gap-2">
+        {sorted.map((chap, idx) => (
+          <div
+            key={chap.id}
+            onClick={() => onSelectChapter(chap)}
+            className={`aspect-square rounded-lg border font-mono font-bold text-xs flex flex-col items-center justify-center relative hover:scale-105 transition cursor-pointer shadow-xs group ${isCustomTheme ? '' : `${tone.inputBg}`}`}
+            style={{
+              ...(isCustomTheme ? { background: story.customBtnSecondaryBgColor || story.customCardBgColor } : {}),
+              borderColor: activeBorderColor,
+              color: customStyles.text.color,
+            }}
+            title={chap.title || `Chương ${chap.chapterNumber}`}
+          >
+            <span>{idx + 1}</span>
+            {chap.isLocked && (
+              <Lock className="w-2.5 h-2.5 text-amber-400 absolute top-1 right-1" />
+            )}
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  // 10. STANDARD
+  return (
+    <div className="space-y-2">
+      {sorted.map((chap, idx) => {
+        const prevChap = idx > 0 ? sorted[idx - 1] : null;
+        const isNewVolume = !!(chap.volumeTitle && (!prevChap || prevChap.volumeTitle !== chap.volumeTitle));
+        const isTransitionToNoVolume = !chap.volumeTitle && !!(prevChap && prevChap.volumeTitle);
+
+        return (
+          <React.Fragment key={chap.id}>
+            {isNewVolume && (
+              <div className="pt-3 pb-1">
+                <div
+                  className="px-3.5 py-2 flex items-center justify-between border font-bold text-xs uppercase tracking-wider rounded-xs select-none shadow-xs"
+                  style={{
+                    background: isCustomTheme
+                      ? (story.customBtnSecondaryBgColor || story.customCardBgColor || story.customBgColor)
+                      : undefined,
+                    borderColor: activeBorderColor,
+                    color: customStyles.text.color,
+                  }}
+                >
+                  <div className="flex items-center gap-2">
+                    <BookOpen className="w-3.5 h-3.5 opacity-80" />
+                    <span className={storyBodyFont}>{chap.volumeTitle}</span>
+                  </div>
+                  <span className={`text-[10px] font-normal font-mono ${storyMutedFont}`} style={customStyles.textMuted}>
+                    {(sorted || []).filter((c) => c && c.volumeTitle === chap.volumeTitle).length} chương
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {isTransitionToNoVolume && (
+              <div className="pt-3 pb-1">
+                <div
+                  className="px-3 py-1.5 flex items-center gap-2 border border-dashed text-xs opacity-75 rounded-xs"
+                  style={{
+                    borderColor: activeBorderColor,
+                    color: customStyles.textMuted.color,
+                  }}
+                >
+                  <BookOpen className="w-3 h-3 opacity-60" />
+                  <span className={`text-[11px] uppercase tracking-wider font-semibold ${storyMutedFont}`}>Các chương tiếp theo</span>
+                </div>
+              </div>
+            )}
+
+            <div
+              onClick={() => onSelectChapter(chap)}
+              className={`p-3 text-xs flex items-center justify-between cursor-pointer transition ${isCustomTheme ? '' : `${tone.inputBg}`}`}
+              style={{
+                ...(isCustomTheme
+                  ? { background: story.customBtnSecondaryBgColor || story.customCardBgColor || story.customBgColor }
+                  : {}),
+                ...getStoryBorderStyle(
+                  {
+                    borderStyle: 'solid',
+                    borderWidth: 'thin',
+                    borderRadius: story.borderRadius,
+                    borderGlow: 'none',
+                  },
+                  activeBorderColor
+                ),
+              }}
+            >
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <span
+                  className={`font-bold ${storyBodyFont} ${story.bodyFontSize ? '' : 'text-sm'}`}
+                  style={{
+                    ...customStyles.text,
+                    ...(story.bodyFontSize ? { fontSize: story.bodyFontSize } : {}),
+                  }}
+                >
+                  {chap.title}
+                </span>
+                {renderBadgeStatus(chap)}
+              </div>
+              <span className={`text-xs ${storyMutedFont}`} style={customStyles.textMuted}>{chap.createdAt}</span>
+            </div>
+          </React.Fragment>
+        );
+      })}
     </div>
   );
 };
@@ -925,10 +1531,6 @@ export const StoryBlockRenderer: React.FC<StoryBlockRendererProps> = (props) => 
 
   // 12. CHAPTER LIST BLOCK
   if (blockId === 'chapter_list') {
-    const sorted = [...chapters].sort((a, b) => a.chapterNumber - b.chapterNumber);
-    const volumes = Array.from(new Set(chapters.map(c => c.volumeTitle).filter(Boolean))) as string[];
-    const style = story.chapterListStyle || 'standard';
-
     return (
       <div
         key="chapter_list"
@@ -942,152 +1544,21 @@ export const StoryBlockRenderer: React.FC<StoryBlockRendererProps> = (props) => 
           </h3>
         </div>
 
-        {chapters.length === 0 ? (
-          <div className="p-6 text-center text-xs opacity-75" style={customStyles.textMuted}>
-            Chưa có chương nào được đăng tải.
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {sorted.map((chap, idx) => {
-              const prevChap = idx > 0 ? sorted[idx - 1] : null;
-              const isNewVolume = !!(chap.volumeTitle && (!prevChap || prevChap.volumeTitle !== chap.volumeTitle));
-              const isTransitionToNoVolume = !chap.volumeTitle && !!(prevChap && prevChap.volumeTitle);
-              const { isUnlocked, isPassUnlocked, isAuthorOrOwner, isReading } = getChapterStatus(chap);
-
-              return (
-                <React.Fragment key={chap.id}>
-                  {isNewVolume && (
-                    <div className="pt-3 pb-1">
-                      <div
-                        className="px-3.5 py-2 flex items-center justify-between border font-bold text-xs uppercase tracking-wider rounded-xs select-none shadow-xs"
-                        style={{
-                          background: isCustomTheme
-                            ? (story.customBtnSecondaryBgColor || story.customCardBgColor || story.customBgColor)
-                            : undefined,
-                          borderColor: activeBorderColor,
-                          color: customStyles.text.color,
-                        }}
-                      >
-                        <div className="flex items-center gap-2">
-                          <BookOpen className="w-3.5 h-3.5 opacity-80" />
-                          <span className={storyBodyFont}>{chap.volumeTitle}</span>
-                        </div>
-                        <span className={`text-[10px] font-normal font-mono ${storyMutedFont}`} style={customStyles.textMuted}>
-                          {(sorted || []).filter(c => c && c.volumeTitle === chap.volumeTitle).length} chương
-                        </span>
-                      </div>
-                    </div>
-                  )}
-
-                  {isTransitionToNoVolume && (
-                    <div className="pt-3 pb-1">
-                      <div
-                        className="px-3 py-1.5 flex items-center gap-2 border border-dashed text-xs opacity-75 rounded-xs"
-                        style={{
-                          borderColor: activeBorderColor,
-                          color: customStyles.textMuted.color,
-                        }}
-                      >
-                        <BookOpen className="w-3 h-3 opacity-60" />
-                        <span className={`text-[11px] uppercase tracking-wider font-semibold ${storyMutedFont}`}>Các chương tiếp theo</span>
-                      </div>
-                    </div>
-                  )}
-
-                  <div
-                    onClick={() => onSelectChapter(chap)}
-                    className={`p-3 text-xs flex items-center justify-between cursor-pointer transition ${isCustomTheme ? '' : `${tone.inputBg}`}`}
-                    style={{
-                      ...(isCustomTheme
-                        ? { background: story.customBtnSecondaryBgColor || story.customCardBgColor || story.customBgColor }
-                        : {}),
-                      ...getStoryBorderStyle(
-                        {
-                          borderStyle: 'solid',
-                          borderWidth: 'thin',
-                          borderRadius: story.borderRadius,
-                          borderGlow: 'none',
-                        },
-                        activeBorderColor
-                      ),
-                    }}
-                  >
-                    <div className="flex items-center gap-2.5 flex-wrap">
-                      <span
-                        className={`font-bold ${storyBodyFont} ${story.bodyFontSize ? '' : 'text-sm'}`}
-                        style={{
-                          ...customStyles.text,
-                          ...(story.bodyFontSize ? { fontSize: story.bodyFontSize } : {}),
-                        }}
-                      >
-                        {chap.title}
-                      </span>
-
-                      {isReading && (
-                        <span
-                          className={`inline-flex items-center gap-1 px-2 py-0.5 border text-[11px] font-semibold ${storyBtnFont}`}
-                          style={{
-                            backgroundColor: `${activeBtnBgColor}1a`,
-                            borderColor: `${activeBtnBgColor}33`,
-                            color: activeBtnBgColor,
-                          }}
-                        >
-                          <BookmarkCheck className="w-3.5 h-3.5 opacity-80" />
-                          <span>Đang đọc dở ({lastReadProgress?.progressPercent || 0}%)</span>
-                        </span>
-                      )}
-                      {chap.isLocked ? (
-                        (isUnlocked && !isAuthorOrOwner) ? (
-                          <span
-                            className={`inline-flex items-center gap-1.5 px-2 py-0.5 border text-[11px] font-semibold ${storyBtnFont} ${isCustomTheme ? '' : `${tone.badgeFree} ${tone.badgeFreeBorder} ${tone.badgeFreeText}`}`}
-                            style={isCustomTheme ? { backgroundColor: story.customCardBgColor, borderColor: story.customBorderColor, color: story.customTextColor } : {}}
-                          >
-                            <CheckCircle2 className="w-3.5 h-3.5 opacity-80" />
-                            <span>Đã mở khóa</span>
-                          </span>
-                        ) : (
-                          <span
-                            className={`inline-flex items-center gap-1.5 px-2 py-0.5 border text-[11px] font-semibold shadow-xs ${storyBtnFont} ${isCustomTheme ? '' : `${tone.badgeLocked} ${tone.badgeLockedBorder} ${tone.badgeLockedText}`}`}
-                            style={isCustomTheme ? { backgroundColor: story.customBtnBgColor || story.customCardBgColor, borderColor: story.customBorderColor, color: story.customTextColor } : {}}
-                          >
-                            <Lock
-                              className={`w-3.5 h-3.5 ${isCustomTheme ? '' : tone.badgeLockedIcon}`}
-                              style={isCustomTheme ? { color: story.customTextColor } : {}}
-                            />
-                            <span>{chap.unlockPrice || 1} Chucu</span>
-                          </span>
-                        )
-                      ) : null}
-                      {chap.isPasswordProtected ? (
-                        (isPassUnlocked && !isAuthorOrOwner) ? (
-                          <span
-                            className={`inline-flex items-center gap-1.5 px-2 py-0.5 border text-[11px] font-semibold ${storyBtnFont} ${isCustomTheme ? '' : `${tone.badgeFree} ${tone.badgeFreeBorder} ${tone.badgeFreeText}`}`}
-                            style={isCustomTheme ? { backgroundColor: story.customCardBgColor, borderColor: story.customBorderColor, color: story.customTextColor } : {}}
-                          >
-                            <CheckCircle2 className="w-3.5 h-3.5 opacity-80" />
-                            <span>Đã mở Pass</span>
-                          </span>
-                        ) : (
-                          <span
-                            className={`inline-flex items-center gap-1.5 px-2 py-0.5 border text-[11px] font-semibold shadow-xs ${storyBtnFont} ${isCustomTheme ? '' : `${tone.badgeLocked} ${tone.badgeLockedBorder} ${tone.badgeLockedText}`}`}
-                            style={isCustomTheme ? { backgroundColor: story.customBtnBgColor || story.customCardBgColor, borderColor: story.customBorderColor, color: story.customTextColor } : {}}
-                          >
-                            <Key
-                              className={`w-3.5 h-3.5 ${isCustomTheme ? '' : tone.badgeLockedIcon}`}
-                              style={isCustomTheme ? { color: story.customTextColor } : {}}
-                            />
-                            <span>Có Pass</span>
-                          </span>
-                        )
-                      ) : null}
-                    </div>
-                    <span className={`text-xs ${storyMutedFont}`} style={customStyles.textMuted}>{chap.createdAt}</span>
-                  </div>
-                </React.Fragment>
-              );
-            })}
-          </div>
-        )}
+        <StoryChapterListRenderer
+          story={story}
+          chapters={chapters}
+          onSelectChapter={onSelectChapter}
+          getChapterStatus={getChapterStatus}
+          customStyles={customStyles}
+          isCustomTheme={isCustomTheme}
+          tone={tone}
+          storyBodyFont={storyBodyFont}
+          storyMutedFont={storyMutedFont}
+          storyBtnFont={storyBtnFont}
+          activeBorderColor={activeBorderColor}
+          activeBtnBgColor={activeBtnBgColor}
+          lastReadProgress={lastReadProgress}
+        />
       </div>
     );
   }

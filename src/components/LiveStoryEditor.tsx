@@ -2230,12 +2230,23 @@ const [galleryAutoScrollSpeed, setGalleryAutoScrollSpeed] = useState<'slow' | 'n
 
   return (
     <div
-      className="fixed inset-0 z-[100] overflow-y-auto w-full h-full min-h-screen transition-colors duration-200"
+      className="live-editor-root fixed inset-0 z-[100] overflow-y-auto w-full h-full min-h-screen transition-colors duration-200"
       style={{
         background: currentBg,
         color: currentText,
       }}
     >
+      {/* Dynamic selection style based on active theme */}
+      <style>{`
+        .live-editor-root ::selection,
+        .live-editor-root *::selection,
+        .live-editor-root input::selection,
+        .live-editor-root textarea::selection {
+          background-color: ${currentBtnBg} !important;
+          color: ${currentBtnText} !important;
+        }
+      `}</style>
+
       {/* Hiệu ứng đọc thời gian thực */}
       {activeReadingEffect !== 'none' && <ReadingEffects effect={activeReadingEffect} effectColor={activeReadingEffectColor} isDarkTheme={isDarkTheme} />}
 
@@ -4720,25 +4731,25 @@ const [galleryAutoScrollSpeed, setGalleryAutoScrollSpeed] = useState<'slow' | 'n
 
         {/* CHAPTER EDITOR VIEW VS STORY PAGE VIEW */}
         {editingChapterItem !== null ? (
-          <div className="space-y-6 font-mono text-xs">
+          <div className={`space-y-6 text-xs ${customBodyFont}`}>
             {/* Top Action Header */}
-            <div className="flex items-center justify-between gap-3 p-3.5 rounded-lg border font-mono shadow-sm" style={{ background: currentCardBg, borderColor: currentBorder }}>
+            <div className={`flex items-center justify-between gap-3 p-3.5 rounded-lg border shadow-sm ${customBodyFont}`} style={{ background: currentCardBg, borderColor: currentBorder }}>
               <button
                 type="button"
                 onClick={() => setEditingChapterItem(null)}
-                className="px-3 py-1.5 text-xs font-bold rounded border flex items-center gap-1.5 hover:opacity-80 transition cursor-pointer"
+                className={`px-3 py-1.5 text-xs font-bold rounded border flex items-center gap-1.5 hover:opacity-80 transition cursor-pointer ${customBtnFont}`}
                 style={{ background: currentBtnSecondaryBg, borderColor: currentBorder, color: currentText }}
               >
                 <ArrowLeft className="w-4 h-4" />
                 <span>Quay lại trang truyện</span>
               </button>
-              <div className="text-xs sm:text-sm font-bold truncate max-w-xs sm:max-w-md" style={{ color: currentText }}>
+              <div className={`text-xs sm:text-sm font-bold truncate max-w-xs sm:max-w-md ${customTitleFont}`} style={{ color: currentText }}>
                 Sửa chương {editingChapterItem.chapterNumber}: {chapterTitleInput || '(Chưa có tiêu đề)'}
               </div>
               <button
                 type="button"
                 onClick={handleSaveChapterItem}
-                className="px-4 py-1.5 text-xs font-bold uppercase rounded border shadow-sm flex items-center gap-1.5 hover:opacity-90 transition cursor-pointer"
+                className={`px-4 py-1.5 text-xs font-bold uppercase rounded border shadow-sm flex items-center gap-1.5 hover:opacity-90 transition cursor-pointer ${customBtnFont}`}
                 style={{ background: currentBtnBg, borderColor: currentBtnBorder, color: currentBtnText }}
               >
                 <Check className="w-4 h-4" />
@@ -4748,7 +4759,7 @@ const [galleryAutoScrollSpeed, setGalleryAutoScrollSpeed] = useState<'slow' | 'n
 
             {/* LIVE CHAPTER READER PREVIEW (NOW AN INLINE DIRECT EDITOR) */}
             <article
-              className="p-6 sm:p-8 space-y-6 relative transition-all duration-200 shadow-xl rounded"
+              className={`p-6 sm:p-8 space-y-6 relative transition-all duration-200 shadow-xl rounded ${customBodyFont}`}
               style={{
                 background: currentCardBg,
                 ...getStoryBorderStyle(currentBorderObj, currentBorder),
@@ -4786,7 +4797,7 @@ const [galleryAutoScrollSpeed, setGalleryAutoScrollSpeed] = useState<'slow' | 'n
                               setShowNewVolumeInput(false);
                             }
                           }}
-                          className="px-2 py-1 text-xs rounded border bg-transparent focus:outline-none max-w-[220px]"
+                          className={`px-2 py-1 text-xs rounded border bg-transparent focus:outline-none max-w-[220px] ${customMutedFont}`}
                           style={{ borderColor: currentBorder, color: currentText, backgroundColor: currentBtnSecondaryBg }}
                         >
                           <option value="" style={{ color: '#000' }}>-- Chọn phần (Không phân phần) --</option>
@@ -4806,7 +4817,7 @@ const [galleryAutoScrollSpeed, setGalleryAutoScrollSpeed] = useState<'slow' | 'n
                       value={chapterVolumeTitleInput}
                       onChange={(e) => setChapterVolumeTitleInput(e.target.value)}
                       placeholder="Nhập tên phần mới..."
-                      className="px-2 py-1 text-xs rounded border text-center w-full max-w-[220px] focus:outline-none"
+                      className={`px-2 py-1 text-xs rounded border text-center w-full max-w-[220px] focus:outline-none ${customMutedFont}`}
                       style={{ borderColor: currentBorder, color: currentText, backgroundColor: currentBtnSecondaryBg }}
                     />
                   )}
@@ -4819,12 +4830,12 @@ const [galleryAutoScrollSpeed, setGalleryAutoScrollSpeed] = useState<'slow' | 'n
                     value={chapterTitleInput}
                     onChange={(e) => setChapterTitleInput(e.target.value)}
                     placeholder={`Chương ${editingChapterItem.chapterNumber}: Tiêu đề`}
-                    className={`w-full text-center bg-transparent border-b border-dashed focus:border-solid focus:outline-none text-2xl sm:text-3xl font-bold tracking-wide leading-snug ${customTitleFont} py-1 px-2`}
-                    style={{ color: currentText, borderColor: currentBorder }}
+                    className={`w-full text-center bg-transparent border-b border-dashed focus:border-solid focus:outline-none font-bold tracking-wide leading-snug ${customTitleFont} py-1 px-2`}
+                    style={{ color: currentText, borderColor: currentBorder, fontSize: titleFontSize || '24px' }}
                   />
                 </div>
 
-                <div className={`flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs font-mono ${customMutedFont}`} style={{ color: currentTextMuted }}>
+                <div className={`flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs ${customMutedFont}`} style={{ color: currentTextMuted }}>
                   {author && (
                     <>
                       <span>Tác giả: {author}</span>
@@ -4855,7 +4866,7 @@ const [galleryAutoScrollSpeed, setGalleryAutoScrollSpeed] = useState<'slow' | 'n
 
               {/* SPECIAL FRAMES TOOLBAR FOR CHAPTER */}
               <div
-                className="p-2 sm:p-2.5 rounded-lg border flex flex-wrap items-center justify-between gap-2 text-xs font-mono select-none"
+                className={`p-2 sm:p-2.5 rounded-lg border flex flex-wrap items-center justify-between gap-2 text-xs select-none ${customBtnFont}`}
                 style={{ background: currentBtnSecondaryBg, borderColor: currentBorder }}
               >
                 <div className="flex items-center gap-1.5 flex-wrap">
@@ -4966,14 +4977,7 @@ const [galleryAutoScrollSpeed, setGalleryAutoScrollSpeed] = useState<'slow' | 'n
 
               {/* Chapter Content -> DIRECT INLINE TEXTAREA OR LIVE RENDERED PREVIEW */}
               {chapterViewMode === 'edit' ? (
-                <div className={`space-y-4 text-base relative ${customBodyFont}`} style={{ color: currentText }}>
-                  {/* Dynamic selection style based on active theme */}
-                  <style>{`
-                    .chapter-live-textarea::selection {
-                      background-color: ${currentBtnBg}66 !important;
-                      color: inherit !important;
-                    }
-                  `}</style>
+                <div className={`space-y-4 relative ${customBodyFont}`} style={{ color: currentText, fontSize: bodyFontSize || '16px' }}>
                   <textarea
                     ref={chapterTextareaRef}
                     rows={16}
@@ -4987,8 +4991,8 @@ const [galleryAutoScrollSpeed, setGalleryAutoScrollSpeed] = useState<'slow' | 'n
                     onMouseUp={handleChapterTextSelect}
                     onTouchEnd={handleChapterTextSelect}
                     placeholder="Dán hoặc gõ nội dung chương vào đây... Bạn có thể bôi đen bất kỳ đoạn văn bản nào để tạo khung đặc biệt trực tiếp."
-                    className="chapter-live-textarea w-full min-h-[500px] bg-transparent focus:outline-none resize-y text-base sm:text-[17px] leading-relaxed border-none p-2 sm:p-4 font-inherit"
-                    style={{ color: currentText }}
+                    className={`chapter-live-textarea w-full min-h-[500px] bg-transparent focus:outline-none resize-y leading-relaxed border-none p-2 sm:p-4 ${customBodyFont}`}
+                    style={{ color: currentText, fontSize: bodyFontSize || '16px' }}
                   />
 
                   {/* Floating Selection Toolbar for Highlighted text */}
@@ -5014,7 +5018,7 @@ const [galleryAutoScrollSpeed, setGalleryAutoScrollSpeed] = useState<'slow' | 'n
                 </div>
               ) : (
                 /* LIVE PREVIEW OF CHAPTER WITH ALL SPECIAL FRAMES RENDERED */
-                <div className={`space-y-5 leading-relaxed text-base sm:text-[17px] min-h-[500px] p-2 sm:p-4 ${customBodyFont}`} style={{ color: currentText }}>
+                <div className={`space-y-5 leading-relaxed min-h-[500px] p-2 sm:p-4 ${customBodyFont}`} style={{ color: currentText, fontSize: bodyFontSize || '16px' }}>
                   {parseChapterContentBlocks(chapterContentInput).length > 0 ? (
                     parseChapterContentBlocks(chapterContentInput).map((block, bIdx) => (
                       <div key={bIdx} className="transition-all">
@@ -5041,7 +5045,7 @@ const [galleryAutoScrollSpeed, setGalleryAutoScrollSpeed] = useState<'slow' | 'n
                       </div>
                     ))
                   ) : (
-                    <div className="py-16 text-center text-xs opacity-50 font-mono">
+                    <div className={`py-16 text-center text-xs opacity-50 ${customMutedFont}`}>
                       (Chưa có nội dung chữ trong chương này để xem trước)
                     </div>
                   )}
@@ -5050,7 +5054,7 @@ const [galleryAutoScrollSpeed, setGalleryAutoScrollSpeed] = useState<'slow' | 'n
             </article>
 
             {/* CONFIGURATION & SETTINGS PANEL */}
-            <div className="p-5 sm:p-6 rounded border space-y-5 font-mono text-xs shadow-md" style={{ background: currentCardBg, borderColor: currentBorder }}>
+            <div className={`p-5 sm:p-6 rounded border space-y-5 text-xs shadow-md ${customBodyFont}`} style={{ background: currentCardBg, borderColor: currentBorder }}>
               {/* Lock & Pass Settings */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4" style={{ borderColor: currentBorder }}>
                 {/* Lock Chucu */}
@@ -5189,6 +5193,7 @@ const [galleryAutoScrollSpeed, setGalleryAutoScrollSpeed] = useState<'slow' | 'n
             customTitleFont={customTitleFont}
             customBodyFont={customBodyFont}
             customMutedFont={customMutedFont}
+            customBtnFont={customBtnFont}
             titleFontSize={titleFontSize}
             bodyFontSize={bodyFontSize}
             coverUrl={coverUrl}

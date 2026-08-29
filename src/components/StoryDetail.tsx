@@ -512,9 +512,18 @@ export const StoryDetail: React.FC<StoryDetailProps> = ({
 
   return (
     <div 
-      className={`max-w-4xl mx-auto px-4 py-6 space-y-6 relative ${storyBodyFont} ${isCustomTheme ? '' : tone.text}`}
+      className={`story-detail-root max-w-4xl mx-auto px-4 py-6 space-y-6 relative ${storyBodyFont} ${isCustomTheme ? '' : tone.text}`}
       style={customStyles.container}
     >
+      {/* Dynamic selection style based on story theme */}
+      <style>{`
+        .story-detail-root ::selection,
+        .story-detail-root *::selection {
+          background-color: ${activeBtnBgColor} !important;
+          color: ${isCustomTheme ? (story.customTextColor || '#ffffff') : '#ffffff'} !important;
+        }
+      `}</style>
+
       {story.readingEffect && story.readingEffect !== 'none' && (
         <ReadingEffects effect={story.readingEffect} effectColor={story.readingEffectColor} isDarkTheme={isDarkTheme} />
       )}

@@ -52,7 +52,9 @@ export interface ParsedBlock {
 export function parseChapterContentBlocks(content: string): ParsedBlock[] {
   if (!content) return [];
 
-  const lines = content.split('\n');
+  // Normalize Unicode to NFC so decomposed diacritics are properly composed
+  const normalizedContent = content.normalize('NFC');
+  const lines = normalizedContent.split('\n');
   const blocks: ParsedBlock[] = [];
 
   let currentBlockType: SpecialBlockType | null = null;
@@ -61,18 +63,13 @@ export function parseChapterContentBlocks(content: string): ParsedBlock[] {
   let currentBlockLines: string[] = [];
 
   const flushNormalParagraphs = (rawLines: string[]) => {
-    const text = rawLines.join('\n');
-    if (!text.trim()) return;
-
-    // Tách theo các đoạn được phân cách bởi 1 hoặc nhiều dòng trống (\n\n)
-    const splitParas = text.split(/\n\s*\n+/);
-    splitParas.forEach((p) => {
-      const cleanP = p.trim();
+    rawLines.forEach((line) => {
+      const cleanP = line.trim();
       if (cleanP) {
         blocks.push({
           type: 'paragraph',
           rawText: cleanP,
-          lines: cleanP.split('\n').map((l) => l.trim()).filter(Boolean),
+          lines: [cleanP],
         });
       }
     });
@@ -311,6 +308,7 @@ export const SpecialBlockRenderer: React.FC<SpecialBlockRendererProps> = ({
 
   // 1. THÔNG BÁO HỆ THỐNG (System Alert / Game Hologram Panel)
   if (block.type === 'system') {
+    const hasHeader = Boolean(block.title || block.meta);
     return (
       <div
         className="my-5 p-4 sm:p-5 rounded-lg border-2 shadow-lg relative overflow-hidden transition-all duration-200 backdrop-blur-xs font-mono"
@@ -327,38 +325,41 @@ export const SpecialBlockRenderer: React.FC<SpecialBlockRendererProps> = ({
         />
 
         {/* Header hệ thống */}
-        <div
-          className="flex items-center justify-between gap-2 border-b pb-2.5 mb-3"
-          style={{ borderColor: `${tAccent}40` }}
-        >
-          <div className="flex items-center gap-2">
-            <div
-              className="p-1.5 rounded-md shadow-xs flex items-center justify-center animate-pulse"
-              style={{ background: `${tAccent}25`, color: tAccent }}
-            >
-              <Cpu className="w-4 h-4" />
-            </div>
-            <div>
-              <span className="text-xs font-black uppercase tracking-wider block" style={{ color: tAccent }}>
-                {block.title || 'THÔNG BÁO HỆ THỐNG'}
-              </span>
-              {block.meta && (
-                <span className="text-[10px] opacity-75 font-mono" style={{ color: tTextMuted }}>
-                  {block.meta}
-                </span>
-              )}
-            </div>
-          </div>
-          <span
-            className="text-[9px] px-2 py-0.5 rounded font-bold uppercase tracking-widest border"
-            style={{ borderColor: `${tAccent}50`, color: tAccent, background: `${tAccent}15` }}
+        {hasHeader && (
+          <div
+            className="flex items-center justify-between gap-2 border-b pb-2.5 mb-3"
+            style={{ borderColor: `${tAccent}40` }}
           >
-            SYSTEM ALERT
-          </span>
-        </div>
+            {block.title ? (
+              <div className="flex items-center gap-2">
+                <div
+                  className="p-1.5 rounded-md shadow-xs flex items-center justify-center animate-pulse"
+                  style={{ background: tBtnBg, color: tBtnText }}
+                >
+                  <Cpu className="w-4 h-4" />
+                </div>
+                <div>
+                  <span className="text-xs font-black uppercase tracking-wider block" style={{ color: tAccent }}>
+                    {block.title}
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <div />
+            )}
+            {block.meta && (
+              <span
+                className="text-[9px] px-2 py-0.5 rounded font-bold uppercase tracking-wider border shadow-xs"
+                style={{ borderColor: tAccent, color: tBtnText, background: tBtnBg }}
+              >
+                {block.meta}
+              </span>
+            )}
+          </div>
+        )}
 
         {/* Nội dung thông báo */}
-        <div className="space-y-2 text-xs sm:text-sm leading-relaxed" style={{ color: tText }}>
+        <div className="space-y-1.5 text-xs sm:text-sm leading-relaxed" style={{ color: tText }}>
           {block.lines.map((line, lIdx) => (
             <p key={lIdx} className="flex items-start gap-2">
               <span style={{ color: tAccent }} className="font-bold select-none shrink-0">
@@ -374,34 +375,43 @@ export const SpecialBlockRenderer: React.FC<SpecialBlockRendererProps> = ({
 
   // 2. BÌNH LUẬN CƯ DÂN MẠNG / DIỄN ĐÀN (Forum / Netizen Comments)
   if (block.type === 'forum' || block.type === 'netizen') {
+    const hasHeader = Boolean(block.title || block.meta);
     return (
       <div
         className="my-5 p-4 sm:p-5 rounded-xl border shadow-md relative space-y-3 transition-all"
         style={{
           background: tCardBg,
-          borderColor: tBorder,
+          borderColor: `${tAccent}50`,
         }}
       >
         {/* Header diễn đàn */}
-        <div
-          className="flex items-center justify-between border-b pb-2"
-          style={{ borderColor: `${tBorder}80` }}
-        >
-          <div className="flex items-center gap-2">
-            <div
-              className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold"
-              style={{ background: tBtnSecBg, color: tAccent }}
-            >
-              <MessageSquare className="w-3.5 h-3.5" />
-            </div>
-            <span className="text-xs font-bold uppercase tracking-wider" style={{ color: tAccent }}>
-              {block.title || 'Diễn đàn / Bình luận Cư dân mạng'}
-            </span>
+        {hasHeader && (
+          <div
+            className="flex items-center justify-between border-b pb-2"
+            style={{ borderColor: `${tAccent}30` }}
+          >
+            {block.title ? (
+              <div className="flex items-center gap-2">
+                <div
+                  className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shadow-xs"
+                  style={{ background: tBtnBg, color: tBtnText }}
+                >
+                  <MessageSquare className="w-3.5 h-3.5" />
+                </div>
+                <span className="text-xs font-bold uppercase tracking-wider" style={{ color: tAccent }}>
+                  {block.title}
+                </span>
+              </div>
+            ) : (
+              <div />
+            )}
+            {block.meta && (
+              <span className="text-[10px] opacity-80 font-mono font-medium" style={{ color: tTextMuted }}>
+                {block.meta}
+              </span>
+            )}
           </div>
-          <span className="text-[10px] opacity-60 font-mono" style={{ color: tTextMuted }}>
-            {block.meta || 'Mạng xã hội'}
-          </span>
-        </div>
+        )}
 
         {/* Danh sách bình luận */}
         <div className="space-y-2.5 pt-1">
@@ -409,17 +419,17 @@ export const SpecialBlockRenderer: React.FC<SpecialBlockRendererProps> = ({
             block.subItems.map((item, idx) => (
               <div
                 key={idx}
-                className="p-3 rounded-lg border text-xs space-y-1.5 transition-all"
+                className="p-3 rounded-lg border text-xs space-y-1.5 transition-all shadow-xs"
                 style={{
-                  background: tBg,
-                  borderColor: tBorder,
+                  background: `${tBtnBg}15`,
+                  borderColor: `${tBtnBg}40`,
                 }}
               >
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
                     <div
-                      className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0"
-                      style={{ background: tBtnSecBg, color: tAccent }}
+                      className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 shadow-xs"
+                      style={{ background: tBtnBg, color: tBtnText }}
                     >
                       {item.sender ? item.sender.charAt(0).toUpperCase() : 'U'}
                     </div>
@@ -427,16 +437,11 @@ export const SpecialBlockRenderer: React.FC<SpecialBlockRendererProps> = ({
                       {item.sender || 'Cư dân mạng'}
                     </span>
                   </div>
-                  <div className="flex items-center gap-2 text-[10px] opacity-70 font-mono" style={{ color: tTextMuted }}>
+                  <div className="flex items-center gap-2 text-[10px] opacity-80 font-mono" style={{ color: tTextMuted }}>
                     {item.time && <span>{item.time}</span>}
-                    {item.likes && (
-                      <span className="flex items-center gap-1 text-rose-400">
-                        <ThumbsUp className="w-2.5 h-2.5" /> {item.likes}
-                      </span>
-                    )}
                   </div>
                 </div>
-                <p className="pl-7 leading-relaxed opacity-95 text-xs sm:text-sm" style={{ color: tText }}>
+                <p className="pl-7 leading-relaxed text-xs sm:text-sm" style={{ color: tText }}>
                   {item.text}
                 </p>
               </div>
@@ -444,18 +449,20 @@ export const SpecialBlockRenderer: React.FC<SpecialBlockRendererProps> = ({
           ) : (
             <div
               className="p-3 rounded-lg border text-xs space-y-1.5"
-              style={{ background: tBg, borderColor: tBorder }}
+              style={{ background: `${tBtnBg}15`, borderColor: `${tBtnBg}40` }}
             >
-              <div className="flex items-center justify-between text-[11px]">
-                <span className="font-bold" style={{ color: tAccent }}>
-                  {block.title || 'Cư dân mạng ẩn danh'}
-                </span>
-                {block.meta && (
-                  <span className="text-[10px] opacity-65 font-mono" style={{ color: tTextMuted }}>
-                    {block.meta}
+              {block.title && (
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="font-bold" style={{ color: tAccent }}>
+                    {block.title}
                   </span>
-                )}
-              </div>
+                  {block.meta && (
+                    <span className="text-[10px] opacity-75 font-mono" style={{ color: tTextMuted }}>
+                      {block.meta}
+                    </span>
+                  )}
+                </div>
+              )}
               <div className="space-y-1 text-xs sm:text-sm leading-relaxed" style={{ color: tText }}>
                 {block.lines.map((line, lIdx) => (
                   <p key={lIdx}>{line}</p>
@@ -475,22 +482,27 @@ export const SpecialBlockRenderer: React.FC<SpecialBlockRendererProps> = ({
         className="my-5 p-3 sm:p-4 rounded-2xl border shadow-lg max-w-xl mx-auto space-y-3"
         style={{
           background: tCardBg,
-          borderColor: tBorder,
+          borderColor: `${tAccent}40`,
         }}
       >
         {/* Header khung chat */}
-        <div
-          className="flex items-center justify-between border-b pb-2 px-1"
-          style={{ borderColor: `${tBorder}80` }}
-        >
-          <div className="flex items-center gap-2">
-            <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="text-xs font-bold" style={{ color: tText }}>
-              {block.title || 'Hộp thoại trò chuyện'}
-            </span>
+        {block.title && (
+          <div
+            className="flex items-center justify-between border-b pb-2 px-1"
+            style={{ borderColor: `${tAccent}25` }}
+          >
+            <div className="flex items-center gap-2">
+              <div
+                className="w-2.5 h-2.5 rounded-full animate-pulse"
+                style={{ background: tBtnBg }}
+              />
+              <span className="text-xs font-bold" style={{ color: tAccent }}>
+                {block.title}
+              </span>
+            </div>
+            <Smartphone className="w-4 h-4 opacity-70" style={{ color: tAccent }} />
           </div>
-          <Smartphone className="w-4 h-4 opacity-50" style={{ color: tTextMuted }} />
-        </div>
+        )}
 
         {/* Nội dung các bong bóng chat */}
         <div className="space-y-3 py-1">
@@ -502,7 +514,7 @@ export const SpecialBlockRenderer: React.FC<SpecialBlockRendererProps> = ({
                   key={mIdx}
                   className={`flex flex-col ${isRight ? 'items-end' : 'items-start'} space-y-1`}
                 >
-                  <span className="text-[10px] px-1 font-semibold opacity-75 font-mono" style={{ color: tTextMuted }}>
+                  <span className="text-[10px] px-1 font-semibold opacity-80 font-mono" style={{ color: tTextMuted }}>
                     {msg.sender}
                   </span>
                   <div
@@ -510,9 +522,9 @@ export const SpecialBlockRenderer: React.FC<SpecialBlockRendererProps> = ({
                       isRight ? 'rounded-br-xs' : 'rounded-bl-xs'
                     }`}
                     style={{
-                      background: isRight ? tBtnBg : tBtnSecBg,
+                      background: isRight ? tBtnBg : `${tBtnBg}20`,
                       color: isRight ? tBtnText : tText,
-                      border: isRight ? undefined : `1px solid ${tBorder}`,
+                      border: isRight ? undefined : `1px solid ${tBtnBg}45`,
                     }}
                   >
                     {msg.text}
@@ -525,8 +537,8 @@ export const SpecialBlockRenderer: React.FC<SpecialBlockRendererProps> = ({
               {block.lines.map((l, lIdx) => (
                 <div key={lIdx} className="flex flex-col items-start space-y-1">
                   <div
-                    className="max-w-[85%] px-3.5 py-2 rounded-2xl rounded-bl-xs text-xs sm:text-sm leading-relaxed border"
-                    style={{ background: tBtnSecBg, color: tText, borderColor: tBorder }}
+                    className="max-w-[85%] px-3.5 py-2 rounded-2xl rounded-bl-xs text-xs sm:text-sm leading-relaxed border shadow-xs"
+                    style={{ background: `${tBtnBg}20`, color: tText, borderColor: `${tBtnBg}45` }}
                   >
                     {l}
                   </div>
@@ -541,32 +553,39 @@ export const SpecialBlockRenderer: React.FC<SpecialBlockRendererProps> = ({
 
   // 4. THƯ TỪ / MẬT HÀM / NHẬT KÝ (Letter / Parchment / Secret Note)
   if (block.type === 'letter') {
+    const hasHeader = Boolean(block.title || block.meta);
     return (
       <div
         className="my-5 p-5 sm:p-7 rounded-lg border-2 shadow-md relative space-y-3 transition-all"
         style={{
-          background: `linear-gradient(to bottom right, ${tCardBg}, ${tBg})`,
-          borderColor: tBorder,
-          boxShadow: 'inset 0 0 20px rgba(0,0,0,0.2)',
+          background: tCardBg,
+          borderColor: `${tAccent}50`,
+          boxShadow: 'inset 0 0 15px rgba(0,0,0,0.05)',
         }}
       >
         {/* Con dấu thư / Icon phong bì góc */}
-        <div className="flex items-center justify-between border-b pb-2 border-dashed" style={{ borderColor: tBorder }}>
-          <div className="flex items-center gap-2">
-            <Mail className="w-4 h-4 opacity-75" style={{ color: tAccent }} />
-            <span className="text-xs font-serif font-bold italic tracking-wide" style={{ color: tAccent }}>
-              {block.title || 'Bức Thư / Mật Hàm'}
-            </span>
+        {hasHeader && (
+          <div className="flex items-center justify-between border-b pb-2 border-dashed" style={{ borderColor: `${tAccent}40` }}>
+            {block.title ? (
+              <div className="flex items-center gap-2">
+                <Mail className="w-4 h-4 opacity-80" style={{ color: tAccent }} />
+                <span className="text-xs font-lora font-serif font-bold italic tracking-wide" style={{ color: tAccent, fontFamily: "'Lora', 'EB Garamond', 'Noto Serif', serif" }}>
+                  {block.title}
+                </span>
+              </div>
+            ) : (
+              <div />
+            )}
+            {block.meta && (
+              <span className="text-[10px] italic font-lora font-serif opacity-80" style={{ color: tTextMuted, fontFamily: "'Lora', 'EB Garamond', 'Noto Serif', serif" }}>
+                {block.meta}
+              </span>
+            )}
           </div>
-          {block.meta && (
-            <span className="text-[10px] italic font-serif opacity-70" style={{ color: tTextMuted }}>
-              {block.meta}
-            </span>
-          )}
-        </div>
+        )}
 
         {/* Nội dung thư dạng chữ nghiêng trang nhã */}
-        <div className="space-y-2 text-xs sm:text-sm leading-relaxed italic font-serif pt-1" style={{ color: tText }}>
+        <div className="space-y-2 text-xs sm:text-sm leading-relaxed italic font-lora font-serif pt-1" style={{ color: tText, fontFamily: "'Lora', 'EB Garamond', 'Noto Serif', serif" }}>
           {block.lines.map((line, lIdx) => (
             <p key={lIdx} className="indent-4">
               {line}
@@ -583,15 +602,17 @@ export const SpecialBlockRenderer: React.FC<SpecialBlockRendererProps> = ({
       <div
         className="my-4 p-3.5 sm:p-4 rounded-xl border border-dashed shadow-xs relative space-y-1.5"
         style={{
-          background: `${tCardBg}88`,
-          borderColor: `${tAccent}60`,
+          background: `${tBtnBg}15`,
+          borderColor: `${tAccent}70`,
         }}
       >
-        <div className="flex items-center gap-1.5 text-[11px] font-semibold" style={{ color: tAccent }}>
-          <Cloud className="w-3.5 h-3.5" />
-          <span>{block.title ? `Suy nghĩ của ${block.title}` : 'Độc thoại nội tâm'}</span>
-        </div>
-        <div className="space-y-1 text-xs sm:text-sm leading-relaxed italic opacity-95 pl-4 border-l-2" style={{ color: tText, borderColor: tAccent }}>
+        {block.title && (
+          <div className="flex items-center gap-1.5 text-[11px] font-semibold" style={{ color: tAccent }}>
+            <Cloud className="w-3.5 h-3.5" />
+            <span>{block.title}</span>
+          </div>
+        )}
+        <div className={`space-y-1 text-xs sm:text-sm leading-relaxed italic opacity-95 ${block.title ? 'pl-4 border-l-2' : ''}`} style={{ color: tText, borderColor: tAccent }}>
           {block.lines.map((line, lIdx) => (
             <p key={lIdx}>{line}</p>
           ))}
@@ -606,21 +627,20 @@ export const SpecialBlockRenderer: React.FC<SpecialBlockRendererProps> = ({
       <div
         className="my-5 p-4 sm:p-5 rounded-lg border-2 shadow-xl space-y-3 font-mono"
         style={{
-          background: tBg,
+          background: tCardBg,
           borderColor: tAccent,
         }}
       >
-        <div className="flex items-center justify-between border-b pb-2" style={{ borderColor: `${tAccent}50` }}>
-          <div className="flex items-center gap-2">
-            <Shield className="w-4 h-4" style={{ color: tAccent }} />
-            <span className="text-xs font-bold uppercase tracking-wider" style={{ color: tAccent }}>
-              {block.title || 'BẢNG TRẠNG THÁI NHÂN VẬT'}
-            </span>
+        {block.title && (
+          <div className="flex items-center justify-between border-b pb-2" style={{ borderColor: `${tAccent}50` }}>
+            <div className="flex items-center gap-2">
+              <Shield className="w-4 h-4" style={{ color: tAccent }} />
+              <span className="text-xs font-bold uppercase tracking-wider" style={{ color: tAccent }}>
+                {block.title}
+              </span>
+            </div>
           </div>
-          <span className="text-[9px] px-1.5 py-0.5 rounded font-bold uppercase bg-amber-500/20 text-amber-300 border border-amber-500/40">
-            STATUS
-          </span>
-        </div>
+        )}
 
         <div className="space-y-1.5 text-xs sm:text-sm leading-relaxed" style={{ color: tText }}>
           {block.lines.map((line, lIdx) => {
@@ -628,11 +648,11 @@ export const SpecialBlockRenderer: React.FC<SpecialBlockRendererProps> = ({
             if (hasColon) {
               const [k, ...v] = line.split(':');
               return (
-                <div key={lIdx} className="flex items-start justify-between gap-2 border-b border-white/5 pb-1">
-                  <span className="font-semibold opacity-75 shrink-0" style={{ color: tTextMuted }}>
+                <div key={lIdx} className="flex items-start justify-between gap-2 border-b border-dashed pb-1" style={{ borderColor: `${tBorder}60` }}>
+                  <span className="font-semibold opacity-80 shrink-0" style={{ color: tTextMuted }}>
                     {k.trim()}:
                   </span>
-                  <span className="font-bold text-right" style={{ color: tText }}>
+                  <span className="font-bold text-right" style={{ color: tAccent }}>
                     {v.join(':').trim()}
                   </span>
                 </div>
@@ -651,15 +671,17 @@ export const SpecialBlockRenderer: React.FC<SpecialBlockRendererProps> = ({
       <div
         className="my-4 p-3.5 rounded-lg border border-dashed text-xs space-y-1.5"
         style={{
-          background: tBtnSecBg,
-          borderColor: tBorder,
+          background: `${tBtnBg}15`,
+          borderColor: `${tAccent}60`,
         }}
       >
-        <div className="flex items-center gap-1.5 text-[11px] font-bold" style={{ color: tAccent }}>
-          <StickyNote className="w-3.5 h-3.5" />
-          <span>{block.title || 'Lời tác giả / Chú thích:'}</span>
-        </div>
-        <div className="space-y-1 text-xs leading-relaxed opacity-90 pl-3.5" style={{ color: tText }}>
+        {block.title && (
+          <div className="flex items-center gap-1.5 text-[11px] font-bold" style={{ color: tAccent }}>
+            <StickyNote className="w-3.5 h-3.5" />
+            <span>{block.title}</span>
+          </div>
+        )}
+        <div className={`space-y-1 text-xs leading-relaxed opacity-90 ${block.title ? 'pl-3.5' : ''}`} style={{ color: tText }}>
           {block.lines.map((line, lIdx) => (
             <p key={lIdx}>{line}</p>
           ))}
@@ -672,10 +694,12 @@ export const SpecialBlockRenderer: React.FC<SpecialBlockRendererProps> = ({
   if (block.type === 'warning') {
     return (
       <div className="my-5 p-4 rounded-lg border-2 border-rose-500/80 bg-rose-950/30 text-rose-200 shadow-lg space-y-2 font-mono">
-        <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-rose-400 border-b border-rose-500/30 pb-1.5">
-          <AlertTriangle className="w-4 h-4 shrink-0 animate-bounce" />
-          <span>{block.title || 'CẢNH BÁO NGUY HIỂM / BÁO ĐỘNG'}</span>
-        </div>
+        {block.title && (
+          <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-rose-400 border-b border-rose-500/30 pb-1.5">
+            <AlertTriangle className="w-4 h-4 shrink-0 animate-bounce" />
+            <span>{block.title}</span>
+          </div>
+        )}
         <div className="space-y-1 text-xs sm:text-sm leading-relaxed">
           {block.lines.map((line, lIdx) => (
             <p key={lIdx}>{line}</p>

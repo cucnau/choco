@@ -32,6 +32,8 @@ import {
   Pencil,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
+  ChevronUp,
   Sparkles,
 } from 'lucide-react';
 import { StoryLayoutBlockId, StoryLayoutSection, Chapter, CharacterInfo, StoryGalleryImage, StoryElement } from '../types';
@@ -54,6 +56,7 @@ interface LiveStoryEditorViewProps {
   customTitleFont: string;
   customBodyFont: string;
   customMutedFont: string;
+  customBtnFont?: string;
   titleFontSize: string;
   bodyFontSize: string;
   coverUrl: string;
@@ -158,6 +161,7 @@ export const LiveStoryEditorView: React.FC<LiveStoryEditorViewProps> = (props) =
     customTitleFont,
     customBodyFont,
     customMutedFont,
+    customBtnFont = 'font-mono',
     titleFontSize,
     bodyFontSize,
     coverUrl,
@@ -254,6 +258,7 @@ export const LiveStoryEditorView: React.FC<LiveStoryEditorViewProps> = (props) =
   const [inlineAlbumUrlInput, setInlineAlbumUrlInput] = useState('');
   const [inlineAlbumCaptionInput, setInlineAlbumCaptionInput] = useState('');
   const [editorAlbumIndex, setEditorAlbumIndex] = useState(0);
+  const [collapsedVolumes, setCollapsedVolumes] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     if (galleryMode !== 'album' || galleryImages.length <= 1) return;
@@ -442,7 +447,7 @@ export const LiveStoryEditorView: React.FC<LiveStoryEditorViewProps> = (props) =
 
       case 'action_buttons':
         return (
-          <div id="editor-block-actions" className="flex flex-col gap-2 font-mono">
+          <div id="editor-block-actions" className={`flex flex-col gap-2 ${customBtnFont}`}>
             <button
               id="btn-preview-read-first"
               disabled
@@ -474,9 +479,9 @@ export const LiveStoryEditorView: React.FC<LiveStoryEditorViewProps> = (props) =
 
       case 'tags':
         return (
-          <div id="editor-block-tags" className="space-y-1.5 font-mono">
+          <div id="editor-block-tags" className={`space-y-1.5 ${customBtnFont}`}>
             <div className="flex items-center justify-between">
-              <span className="text-[10px] uppercase tracking-wider font-bold" style={{ color: currentTextMuted }}>
+              <span className={`text-[10px] uppercase tracking-wider font-bold ${customMutedFont}`} style={{ color: currentTextMuted }}>
                 Thể loại / Thẻ tags:
               </span>
             </div>
@@ -515,7 +520,7 @@ export const LiveStoryEditorView: React.FC<LiveStoryEditorViewProps> = (props) =
                     handleAddTag();
                   }
                 }}
-                className="flex-1 px-2 py-1 bg-transparent rounded border text-[11px] focus:outline-none"
+                className={`flex-1 px-2 py-1 bg-transparent rounded border text-[11px] focus:outline-none ${customBodyFont}`}
                 style={{ borderColor: currentBorder, color: currentText }}
               />
               <button
@@ -536,7 +541,7 @@ export const LiveStoryEditorView: React.FC<LiveStoryEditorViewProps> = (props) =
 
       case 'character_widget':
         return (
-          <div id="editor-block-characters" className="space-y-2.5 font-mono">
+          <div id="editor-block-characters" className={`space-y-2.5 ${customBodyFont}`}>
             {/* Header Widget */}
             <div className="flex items-center justify-between flex-wrap gap-2">
               <div className="flex items-center gap-1.5 min-w-0 flex-1">
@@ -546,12 +551,12 @@ export const LiveStoryEditorView: React.FC<LiveStoryEditorViewProps> = (props) =
                   value={characterWidgetTitle}
                   onChange={(e) => setCharacterWidgetTitle && setCharacterWidgetTitle(e.target.value)}
                   placeholder="Tiêu đề widget nhân vật..."
-                  className="bg-transparent font-bold text-xs border-b border-dashed hover:border-solid focus:border-solid focus:outline-none px-1 py-0.5 truncate"
+                  className={`bg-transparent font-bold text-xs border-b border-dashed hover:border-solid focus:border-solid focus:outline-none px-1 py-0.5 truncate ${customTitleFont}`}
                   style={{ borderColor: currentBorder, color: currentText }}
                 />
               </div>
 
-              <div className="flex items-center gap-1.5">
+              <div className={`flex items-center gap-1.5 ${customBtnFont}`}>
                 {handleOpenAddChar && (
                   <button
                     type="button"
@@ -587,7 +592,7 @@ export const LiveStoryEditorView: React.FC<LiveStoryEditorViewProps> = (props) =
                   <label className="text-[11px] font-bold block" style={{ color: currentText }}>
                     Tỉ lệ & Hình dáng ảnh nhân vật:
                   </label>
-                  <div className="flex flex-wrap gap-1">
+                  <div className={`flex flex-wrap gap-1 ${customBtnFont}`}>
                     {[
                       { id: 'circle', label: 'Tròn (1:1)' },
                       { id: 'square', label: 'Vuông (1:1)' },
@@ -620,7 +625,7 @@ export const LiveStoryEditorView: React.FC<LiveStoryEditorViewProps> = (props) =
 
                 {/* Danh sách nhân vật */}
                 {characters.length === 0 ? (
-                  <div className="p-3 rounded border border-dashed text-[11px] text-center opacity-70" style={{ borderColor: currentBorder }}>
+                  <div className={`p-3 rounded border border-dashed text-[11px] text-center opacity-70 ${customMutedFont}`} style={{ borderColor: currentBorder }}>
                     Chưa có nhân vật nào. Bấm nút <strong>"+ Thêm nhân vật"</strong> để tạo nhân vật mới.
                   </div>
                 ) : (
@@ -636,7 +641,7 @@ export const LiveStoryEditorView: React.FC<LiveStoryEditorViewProps> = (props) =
                       return (
                         <div
                           key={char.id}
-                          className="p-2.5 rounded border flex items-center justify-between gap-2.5 text-xs transition hover:bg-black/10"
+                          className={`p-2.5 rounded border flex items-center justify-between gap-2.5 text-xs transition hover:bg-black/10 ${customBodyFont}`}
                           style={{ background: currentCardBg, borderColor: currentBorder, color: currentText }}
                         >
                           <div className="flex items-center gap-2.5 min-w-0 flex-1">
@@ -651,18 +656,18 @@ export const LiveStoryEditorView: React.FC<LiveStoryEditorViewProps> = (props) =
                               <div className="flex items-center gap-1.5 flex-wrap">
                                 <span className="font-bold text-xs truncate">{char.name}</span>
                                 {char.role && (
-                                  <span className="text-[9px] px-1.5 py-0.2 rounded font-bold border opacity-90" style={{ background: currentBtnSecondaryBg, borderColor: currentBorder }}>
+                                  <span className={`text-[9px] px-1.5 py-0.2 rounded font-bold border opacity-90 ${customBtnFont}`} style={{ background: currentBtnSecondaryBg, borderColor: currentBorder }}>
                                     {char.role}
                                   </span>
                                 )}
                               </div>
                               {char.description && (
-                                <p className="text-[10px] opacity-75 truncate leading-tight mt-0.5">{char.description}</p>
+                                <p className={`text-[10px] opacity-75 truncate leading-tight mt-0.5 ${customMutedFont}`}>{char.description}</p>
                               )}
                             </div>
                           </div>
 
-                          <div className="flex items-center gap-1 shrink-0">
+                          <div className={`flex items-center gap-1 shrink-0 ${customBtnFont}`}>
                             {handleOpenEditChar && (
                               <button
                                 type="button"
@@ -766,7 +771,7 @@ export const LiveStoryEditorView: React.FC<LiveStoryEditorViewProps> = (props) =
 
       case 'progress_widget':
         return (
-          <div id="editor-block-progress" className="space-y-2 font-mono">
+          <div id="editor-block-progress" className={`space-y-2 ${customBodyFont}`}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1.5 min-w-0 flex-1">
                 <TrendingUp className="w-3.5 h-3.5 shrink-0" style={{ color: currentTextMuted }} />
@@ -775,7 +780,7 @@ export const LiveStoryEditorView: React.FC<LiveStoryEditorViewProps> = (props) =
                   value={progressTitle}
                   onChange={(e) => setProgressTitle && setProgressTitle(e.target.value)}
                   placeholder="Tiêu đề widget tiến độ..."
-                  className="bg-transparent font-bold text-xs border-b border-dashed hover:border-solid focus:border-solid focus:outline-none px-1 py-0.5 truncate"
+                  className={`bg-transparent font-bold text-xs border-b border-dashed hover:border-solid focus:border-solid focus:outline-none px-1 py-0.5 truncate ${customTitleFont}`}
                   style={{ borderColor: currentBorder, color: currentText }}
                 />
               </div>
@@ -784,7 +789,7 @@ export const LiveStoryEditorView: React.FC<LiveStoryEditorViewProps> = (props) =
                 id="btn-toggle-progress-widget"
                 type="button"
                 onClick={() => setShowProgressWidget(!showProgressWidget)}
-                className={`text-[10px] font-bold px-2 py-0.5 rounded border transition cursor-pointer flex items-center gap-1 ${
+                className={`text-[10px] font-bold px-2 py-0.5 rounded border transition cursor-pointer flex items-center gap-1 ${customBtnFont} ${
                   showProgressWidget ? '' : 'opacity-60 hover:opacity-100'
                 }`}
                 style={showProgressWidget ? { backgroundColor: currentBtnBg, borderColor: currentBtnBorder, color: currentBtnText } : { borderColor: currentBorder, color: currentTextMuted }}
@@ -809,7 +814,7 @@ export const LiveStoryEditorView: React.FC<LiveStoryEditorViewProps> = (props) =
                     className="w-24 p-1 rounded border text-xs font-bold focus:outline-none"
                     style={{ background: currentCardBg, borderColor: currentBorder, color: currentText }}
                   />
-                  <span className="text-[10px] opacity-75 font-mono">
+                  <span className={`text-[10px] opacity-75 ${customMutedFont}`}>
                     (Đã phát hành: {storyChapters.length} chương)
                   </span>
                 </div>
@@ -839,7 +844,7 @@ export const LiveStoryEditorView: React.FC<LiveStoryEditorViewProps> = (props) =
 
       case 'custom_widget':
         return (
-          <div id="editor-block-custom-widget" className="space-y-2 font-mono">
+          <div id="editor-block-custom-widget" className={`space-y-2 ${customBodyFont}`}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1.5 min-w-0 flex-1">
                 <FileText className="w-3.5 h-3.5 shrink-0" style={{ color: currentTextMuted }} />
@@ -848,7 +853,7 @@ export const LiveStoryEditorView: React.FC<LiveStoryEditorViewProps> = (props) =
                   value={customWidgetTitle}
                   onChange={(e) => setCustomWidgetTitle && setCustomWidgetTitle(e.target.value)}
                   placeholder="Tiêu đề widget tùy chỉnh / thông báo..."
-                  className="bg-transparent font-bold text-xs border-b border-dashed hover:border-solid focus:border-solid focus:outline-none px-1 py-0.5 truncate"
+                  className={`bg-transparent font-bold text-xs border-b border-dashed hover:border-solid focus:border-solid focus:outline-none px-1 py-0.5 truncate ${customTitleFont}`}
                   style={{ borderColor: currentBorder, color: currentText }}
                 />
               </div>
@@ -857,10 +862,10 @@ export const LiveStoryEditorView: React.FC<LiveStoryEditorViewProps> = (props) =
                 id="btn-toggle-custom-widget"
                 type="button"
                 onClick={() => setShowCustomWidget(!showCustomWidget)}
-                className={`text-[10px] font-bold px-2 py-0.5 rounded border transition cursor-pointer flex items-center gap-1 ${
+                className={`text-[10px] font-bold px-2 py-0.5 rounded border transition cursor-pointer flex items-center gap-1 ${customBtnFont} ${
                   showCustomWidget ? '' : 'opacity-60 hover:opacity-100'
                 }`}
-                style={showCustomWidget ? { backgroundColor: currentBtnBg, borderColor: currentBtnBorder, color: currentBtnText } : { borderColor: currentBorder, color: currentTextMuted }}
+                style={showProgressWidget ? { backgroundColor: currentBtnBg, borderColor: currentBtnBorder, color: currentBtnText } : { borderColor: currentBorder, color: currentTextMuted }}
               >
                 {showCustomWidget ? <Check className="w-3 h-3" /> : <Plus className="w-3 h-3" />}
                 <span>{showCustomWidget ? 'Đang hiện' : 'Ẩn'}</span>
@@ -868,7 +873,7 @@ export const LiveStoryEditorView: React.FC<LiveStoryEditorViewProps> = (props) =
             </div>
 
             {showCustomWidget && (
-              <div className="p-3.5 rounded border space-y-2 font-mono text-xs" style={{ borderColor: currentBorder, background: currentBtnSecondaryBg }}>
+              <div className="p-3.5 rounded border space-y-2 text-xs" style={{ borderColor: currentBorder, background: currentBtnSecondaryBg }}>
                 <label className="text-[11px] font-bold block" style={{ color: currentText }}>
                   Nội dung tùy chỉnh / Lời ngỏ / Quy định:
                 </label>
@@ -877,7 +882,7 @@ export const LiveStoryEditorView: React.FC<LiveStoryEditorViewProps> = (props) =
                   value={customWidgetContent}
                   onChange={(e) => setCustomWidgetContent && setCustomWidgetContent(e.target.value)}
                   placeholder="Nhập thông báo, lịch ra chương hoặc lời ngỏ dành cho người đọc..."
-                  className="w-full p-2.5 rounded border text-xs leading-relaxed focus:outline-none resize-y"
+                  className={`w-full p-2.5 rounded border text-xs leading-relaxed focus:outline-none resize-y ${customBodyFont}`}
                   style={{ background: currentCardBg, borderColor: currentBorder, color: currentText }}
                 />
               </div>
@@ -887,7 +892,7 @@ export const LiveStoryEditorView: React.FC<LiveStoryEditorViewProps> = (props) =
 
       case 'gallery_widget':
         return (
-          <div id="editor-block-gallery" className="space-y-2.5 font-mono">
+          <div id="editor-block-gallery" className={`space-y-2.5 ${customBodyFont}`}>
             {/* Header Widget */}
             <div className="flex items-center justify-between flex-wrap gap-2">
               <div className="flex items-center gap-1.5 min-w-0 flex-1">
@@ -897,7 +902,7 @@ export const LiveStoryEditorView: React.FC<LiveStoryEditorViewProps> = (props) =
                   value={galleryWidgetTitle}
                   onChange={(e) => setGalleryWidgetTitle && setGalleryWidgetTitle(e.target.value)}
                   placeholder="Tiêu đề widget ảnh..."
-                  className="bg-transparent font-bold text-xs border-b border-dashed hover:border-solid focus:border-solid focus:outline-none px-1 py-0.5 truncate"
+                  className={`bg-transparent font-bold text-xs border-b border-dashed hover:border-solid focus:border-solid focus:outline-none px-1 py-0.5 truncate ${customTitleFont}`}
                   style={{ borderColor: currentBorder, color: currentText }}
                 />
               </div>
@@ -906,7 +911,7 @@ export const LiveStoryEditorView: React.FC<LiveStoryEditorViewProps> = (props) =
                 id="btn-toggle-gallery-widget"
                 type="button"
                 onClick={() => setShowGalleryWidget(!showGalleryWidget)}
-                className={`text-[10px] font-bold px-2 py-0.5 rounded border transition cursor-pointer flex items-center gap-1 ${
+                className={`text-[10px] font-bold px-2 py-0.5 rounded border transition cursor-pointer flex items-center gap-1 ${customBtnFont} ${
                   showGalleryWidget ? '' : 'opacity-60 hover:opacity-100'
                 }`}
                 style={showGalleryWidget ? { backgroundColor: currentBtnBg, borderColor: currentBtnBorder, color: currentBtnText } : { borderColor: currentBorder, color: currentTextMuted }}
@@ -917,12 +922,12 @@ export const LiveStoryEditorView: React.FC<LiveStoryEditorViewProps> = (props) =
             </div>
 
             {showGalleryWidget && (
-              <div className="p-3.5 rounded border space-y-3 font-mono text-xs" style={{ borderColor: currentBorder, background: currentBtnSecondaryBg }}>
+              <div className="p-3.5 rounded border space-y-3 text-xs" style={{ borderColor: currentBorder, background: currentBtnSecondaryBg }}>
                 {/* Chọn Chế độ: Ảnh Đơn vs Album */}
                 <div className="flex items-center justify-between flex-wrap gap-2 pb-2 border-b" style={{ borderColor: currentBorder }}>
                   <div className="flex items-center gap-2">
                     <span className="text-[11px] font-bold" style={{ color: currentText }}>Kiểu hiển thị:</span>
-                    <div className="flex gap-1.5">
+                    <div className={`flex gap-1.5 ${customBtnFont}`}>
                       <button
                         type="button"
                         onClick={() => setGalleryMode && setGalleryMode('single')}
@@ -1464,10 +1469,10 @@ export const LiveStoryEditorView: React.FC<LiveStoryEditorViewProps> = (props) =
 
       case 'chapter_list':
         return (
-          <div id="editor-block-chapters" className="space-y-3 pt-4 border-t font-mono" style={{ borderColor: currentBorder }}>
+          <div id="editor-block-chapters" className={`space-y-3 pt-4 border-t ${customBodyFont}`} style={{ borderColor: currentBorder }}>
             <div className="flex items-center justify-between flex-wrap gap-2">
-              <div className="flex items-center gap-2 flex-wrap">
-                <h3 className={`text-xs font-bold uppercase tracking-wider flex items-center gap-2 ${customBodyFont}`} style={{ color: currentText }}>
+              <div className={`flex items-center gap-2 flex-wrap ${customBtnFont}`}>
+                <h3 className={`text-xs font-bold uppercase tracking-wider flex items-center gap-2 ${customTitleFont}`} style={{ color: currentText }}>
                   <BookOpen className="w-4 h-4 opacity-80" />
                   <span>Danh sách chương ({storyChapters.length})</span>
                 </h3>
@@ -1504,7 +1509,7 @@ export const LiveStoryEditorView: React.FC<LiveStoryEditorViewProps> = (props) =
               </div>
 
               {/* Quick Layout Style Switcher */}
-              <div className="flex items-center gap-1 p-0.5 rounded border flex-wrap" style={{ borderColor: currentBorder, background: currentCardBg }}>
+              <div className={`flex items-center gap-1 p-0.5 rounded border flex-wrap ${customBtnFont}`} style={{ borderColor: currentBorder, background: currentCardBg }}>
                 {[
                   { id: 'standard', label: 'Chuẩn', icon: List },
                   { id: 'grid', label: 'Lưới', icon: LayoutGrid },
@@ -1557,6 +1562,477 @@ export const LiveStoryEditorView: React.FC<LiveStoryEditorViewProps> = (props) =
                 );
               }
 
+              const renderChapterActions = (chap: Chapter, idx: number) => (
+                <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+                  {handleMoveChapter && (
+                    <div className="flex items-center gap-0.5 border-r pr-1 opacity-80" style={{ borderColor: currentBorder }}>
+                      <button
+                        type="button"
+                        disabled={idx === 0}
+                        onClick={() => handleMoveChapter(chap.id, 'up')}
+                        className="p-1 text-xs opacity-70 hover:opacity-100 disabled:opacity-20 transition cursor-pointer disabled:cursor-not-allowed"
+                        style={{ color: currentText }}
+                        title="Di chuyển lên trên"
+                      >
+                        <ArrowUp className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        disabled={idx === storyChapters.length - 1}
+                        onClick={() => handleMoveChapter(chap.id, 'down')}
+                        className="p-1 text-xs opacity-70 hover:opacity-100 disabled:opacity-20 transition cursor-pointer disabled:cursor-not-allowed"
+                        style={{ color: currentText }}
+                        title="Di chuyển xuống dưới"
+                      >
+                        <ArrowDown className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setChapterToDeleteItem(chap)}
+                    className="p-1.5 text-xs text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded transition cursor-pointer"
+                    title="Xóa chương này"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              );
+
+              // 1. GRID (Lưới ô gọn gàng)
+              if (chapterListStyle === 'grid') {
+                return (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5">
+                    {storyChapters.map((chap, idx) => (
+                      <div
+                        key={chap.id}
+                        className="p-3 rounded border flex flex-col justify-between gap-2 hover:opacity-95 transition cursor-pointer relative group"
+                        style={{ background: currentBtnSecondaryBg, borderColor: currentBorder }}
+                        onClick={() => handleOpenEditChapterItem(chap)}
+                      >
+                        <div className="min-w-0">
+                          {chap.volumeTitle && (
+                            <span className="text-[9px] font-bold uppercase tracking-wider block opacity-70 truncate mb-0.5" style={{ color: currentTextMuted }}>
+                              {chap.volumeTitle}
+                            </span>
+                          )}
+                          <span className="font-bold text-xs line-clamp-2" style={{ color: currentText }}>
+                            {chap.title || `Chương ${chap.chapterNumber}`}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between gap-1 pt-1 border-t border-dashed" style={{ borderColor: `${currentBorder}60` }}>
+                          <span className="text-[10px] font-mono opacity-65" style={{ color: currentTextMuted }}>
+                            {(chap.content || '').match(/\S+/g)?.length || 0} từ
+                          </span>
+                          <div className="flex items-center gap-1">
+                            {chap.isLocked && (
+                              <span className="text-[9px] px-1 py-0.2 rounded font-bold bg-amber-500/20 text-amber-400 border border-amber-500/40 flex items-center gap-0.5">
+                                <Lock className="w-2.5 h-2.5" /> {chap.unlockPrice || 1}
+                              </span>
+                            )}
+                            <button
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); setChapterToDeleteItem(chap); }}
+                              className="opacity-0 group-hover:opacity-100 p-0.5 text-rose-400 hover:text-rose-300 transition"
+                              title="Xóa chương"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                );
+              }
+
+              // 2. ACCORDION (Gấp gọn theo Quyển)
+              if (chapterListStyle === 'accordion') {
+                const groupedByVolume: { volume: string; list: Chapter[] }[] = [];
+                const unassigned: Chapter[] = [];
+                storyChapters.forEach((c) => {
+                  if (c.volumeTitle) {
+                    let group = groupedByVolume.find((g) => g.volume === c.volumeTitle);
+                    if (!group) {
+                      group = { volume: c.volumeTitle, list: [] };
+                      groupedByVolume.push(group);
+                    }
+                    group.list.push(c);
+                  } else {
+                    unassigned.push(c);
+                  }
+                });
+                if (unassigned.length > 0) {
+                  groupedByVolume.push({ volume: 'Chương chưa phân quyển', list: unassigned });
+                }
+
+                return (
+                  <div className="space-y-3">
+                    {groupedByVolume.map((grp, gIdx) => {
+                      const isCollapsed = !!collapsedVolumes[grp.volume];
+                      return (
+                        <div
+                          key={gIdx}
+                          className="rounded border overflow-hidden transition"
+                          style={{ borderColor: currentBorder, background: currentBtnSecondaryBg }}
+                        >
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setCollapsedVolumes((prev) => ({
+                                ...prev,
+                                [grp.volume]: !prev[grp.volume],
+                              }))
+                            }
+                            className="w-full px-3.5 py-2.5 flex items-center justify-between gap-2 text-left font-bold text-xs transition cursor-pointer select-none"
+                            style={{
+                              background: currentBtnBg,
+                              color: currentBtnText,
+                            }}
+                          >
+                            <div className="flex items-center gap-2 min-w-0">
+                              <Folder className="w-4 h-4 shrink-0" />
+                              <span className="truncate uppercase tracking-wider">{grp.volume}</span>
+                              <span className="text-[10px] font-mono opacity-80 font-normal">
+                                ({grp.list.length} chương)
+                              </span>
+                            </div>
+                            {isCollapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+                          </button>
+
+                          {!isCollapsed && (
+                            <div className="p-2 space-y-1.5" style={{ background: currentCardBg }}>
+                              {grp.list.map((chap, cIdx) => (
+                                <div
+                                  key={chap.id}
+                                  className="p-2 rounded border text-xs flex items-center justify-between gap-2 hover:opacity-95 transition cursor-pointer"
+                                  style={{ background: currentBtnSecondaryBg, borderColor: `${currentBorder}70` }}
+                                  onClick={() => handleOpenEditChapterItem(chap)}
+                                >
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-mono font-bold shrink-0 opacity-75" style={{ background: `${currentBorder}40`, color: currentText }}>
+                                      {cIdx + 1}
+                                    </span>
+                                    <span className="font-bold text-xs truncate" style={{ color: currentText }}>
+                                      {chap.title || `Chương ${chap.chapterNumber}`}
+                                    </span>
+                                    {chap.isLocked && (
+                                      <span className="text-[9px] px-1.5 py-0.2 rounded font-bold bg-amber-500/20 text-amber-400 border border-amber-500/40 flex items-center gap-0.5">
+                                        <Lock className="w-2.5 h-2.5" /> {chap.unlockPrice || 1}
+                                      </span>
+                                    )}
+                                  </div>
+                                  {renderChapterActions(chap, storyChapters.indexOf(chap))}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              }
+
+              // 3. TIMELINE (Dòng thời gian nghệ thuật)
+              if (chapterListStyle === 'timeline') {
+                return (
+                  <div className="relative pl-6 sm:pl-8 space-y-4 before:absolute before:left-3 sm:before:left-4 before:top-2 before:bottom-2 before:w-0.5 before:bg-current before:opacity-30" style={{ color: currentBorder }}>
+                    {storyChapters.map((chap, idx) => (
+                      <div key={chap.id} className="relative group">
+                        {/* Timeline Node Dot */}
+                        <div
+                          className="absolute -left-6 sm:-left-8 top-3 w-3 h-3 rounded-full border-2 transform -translate-x-1/2 transition-transform group-hover:scale-125 shadow-xs"
+                          style={{ background: currentBtnBg, borderColor: currentCardBg }}
+                        />
+                        <div
+                          className="p-3 rounded border text-xs flex items-center justify-between gap-3 hover:opacity-95 transition cursor-pointer shadow-xs"
+                          style={{ background: currentBtnSecondaryBg, borderColor: currentBorder }}
+                          onClick={() => handleOpenEditChapterItem(chap)}
+                        >
+                          <div className="flex-1 min-w-0">
+                            {chap.volumeTitle && (
+                              <span className="text-[9px] font-bold uppercase tracking-wider block opacity-75" style={{ color: currentTextMuted }}>
+                                {chap.volumeTitle}
+                              </span>
+                            )}
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-xs truncate" style={{ color: currentText }}>
+                                {chap.title || `Chương ${chap.chapterNumber}`}
+                              </span>
+                              {chap.isLocked && (
+                                <span className="text-[9px] px-1.5 py-0.2 rounded font-bold bg-amber-500/20 text-amber-400 border border-amber-500/40 flex items-center gap-0.5">
+                                  <Lock className="w-2.5 h-2.5" /> {chap.unlockPrice || 1}
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-[10px] font-mono opacity-65 flex items-center gap-2 mt-0.5" style={{ color: currentTextMuted }}>
+                              <span>{(chap.content || '').match(/\S+/g)?.length || 0} từ</span>
+                              <span>•</span>
+                              <span>{chap.updatedAt || chap.createdAt}</span>
+                            </div>
+                          </div>
+                          {renderChapterActions(chap, idx)}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                );
+              }
+
+              // 4. MINIMAL_TABLE (Bảng phẳng tối giản)
+              if (chapterListStyle === 'minimal_table') {
+                return (
+                  <div className="border rounded overflow-hidden" style={{ borderColor: currentBorder }}>
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr className="border-b text-[10px] font-mono uppercase font-bold" style={{ background: `${currentBorder}25`, borderColor: currentBorder, color: currentTextMuted }}>
+                          <th className="p-2.5 w-12 text-center">#</th>
+                          <th className="p-2.5">Tên chương</th>
+                          <th className="p-2.5 w-24 hidden sm:table-cell text-center">Số từ</th>
+                          <th className="p-2.5 w-32 hidden md:table-cell">Ngày đăng</th>
+                          <th className="p-2.5 w-20 text-right">Thao tác</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y" style={{ borderColor: `${currentBorder}40` }}>
+                        {storyChapters.map((chap, idx) => (
+                          <tr
+                            key={chap.id}
+                            className="hover:opacity-90 transition cursor-pointer"
+                            style={{ background: idx % 2 === 0 ? currentCardBg : currentBtnSecondaryBg }}
+                            onClick={() => handleOpenEditChapterItem(chap)}
+                          >
+                            <td className="p-2.5 text-center font-mono font-bold opacity-70" style={{ color: currentTextMuted }}>
+                              {idx + 1}
+                            </td>
+                            <td className="p-2.5">
+                              <div className="flex items-center gap-2">
+                                <span className="font-bold text-xs" style={{ color: currentText }}>
+                                  {chap.title || `Chương ${chap.chapterNumber}`}
+                                </span>
+                                {chap.isLocked && (
+                                  <span className="text-[9px] px-1 py-0.2 rounded font-bold bg-amber-500/20 text-amber-400 border border-amber-500/40 flex items-center gap-0.5">
+                                    <Lock className="w-2.5 h-2.5" />
+                                  </span>
+                                )}
+                              </div>
+                              {chap.volumeTitle && (
+                                <span className="text-[9px] uppercase tracking-wider opacity-60 block" style={{ color: currentTextMuted }}>
+                                  {chap.volumeTitle}
+                                </span>
+                              )}
+                            </td>
+                            <td className="p-2.5 text-center font-mono text-[11px] opacity-75 hidden sm:table-cell" style={{ color: currentTextMuted }}>
+                              {(chap.content || '').match(/\S+/g)?.length || 0}
+                            </td>
+                            <td className="p-2.5 text-[11px] font-mono opacity-70 hidden md:table-cell" style={{ color: currentTextMuted }}>
+                              {chap.updatedAt || chap.createdAt}
+                            </td>
+                            <td className="p-2.5 text-right">
+                              {renderChapterActions(chap, idx)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                );
+              }
+
+              // 5. BOOK_CATALOG (Mục lục sách xuất bản)
+              if (chapterListStyle === 'book_catalog') {
+                return (
+                  <div className="p-4 sm:p-6 rounded border space-y-2.5 font-serif" style={{ borderColor: currentBorder, background: currentBtnSecondaryBg }}>
+                    <div className="text-center pb-2 border-b border-dashed mb-4" style={{ borderColor: currentBorder }}>
+                      <span className="text-xs font-bold uppercase tracking-widest" style={{ color: currentText }}>
+                        MỤC LỤC TÁC PHẨM
+                      </span>
+                    </div>
+                    {storyChapters.map((chap, idx) => (
+                      <div
+                        key={chap.id}
+                        className="flex items-baseline justify-between gap-2 hover:opacity-90 transition cursor-pointer group py-1"
+                        onClick={() => handleOpenEditChapterItem(chap)}
+                      >
+                        <div className="flex items-center gap-2 min-w-0 shrink-0 max-w-[70%]">
+                          <span className="font-bold text-xs" style={{ color: currentText }}>
+                            {chap.title || `Chương ${chap.chapterNumber}`}
+                          </span>
+                          {chap.isLocked && (
+                            <span className="text-[9px] px-1 py-0.2 rounded font-bold bg-amber-500/20 text-amber-400 border border-amber-500/40">
+                              <Lock className="w-2.5 h-2.5 inline" />
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex-1 border-b border-dotted min-w-[20px] mx-1 opacity-50" style={{ borderColor: currentTextMuted }} />
+                        <div className="flex items-center gap-2 shrink-0 font-mono text-[10px] opacity-75" style={{ color: currentTextMuted }}>
+                          <span>{(chap.content || '').match(/\S+/g)?.length || 0} từ</span>
+                          {renderChapterActions(chap, idx)}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                );
+              }
+
+              // 6. SCROLL_STRIP (Thẻ con nhộng huy hiệu)
+              if (chapterListStyle === 'scroll_strip') {
+                return (
+                  <div className="flex flex-wrap gap-2">
+                    {storyChapters.map((chap, idx) => (
+                      <div
+                        key={chap.id}
+                        className="px-3 py-1.5 rounded-full border text-xs font-bold flex items-center gap-2 hover:opacity-90 transition cursor-pointer shadow-xs group"
+                        style={{ background: currentBtnSecondaryBg, borderColor: currentBorder, color: currentText }}
+                        onClick={() => handleOpenEditChapterItem(chap)}
+                      >
+                        <Tag className="w-3 h-3 opacity-60" />
+                        <span className="truncate max-w-[140px] sm:max-w-[200px]">{chap.title || `C.${chap.chapterNumber}`}</span>
+                        {chap.isLocked && (
+                          <span className="text-amber-400">
+                            <Lock className="w-2.5 h-2.5" />
+                          </span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); setChapterToDeleteItem(chap); }}
+                          className="opacity-0 group-hover:opacity-100 text-rose-400 hover:text-rose-300 transition"
+                          title="Xóa"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                );
+              }
+
+              // 7. CARDS_BENTO (Thẻ Bento đa giác quan)
+              if (chapterListStyle === 'cards_bento') {
+                return (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {storyChapters.map((chap, idx) => {
+                      const isFeatured = idx === 0 || idx % 5 === 0;
+                      return (
+                        <div
+                          key={chap.id}
+                          className={`p-3.5 rounded-xl border flex flex-col justify-between gap-3 hover:opacity-95 transition cursor-pointer shadow-xs ${
+                            isFeatured ? 'sm:col-span-2' : ''
+                          }`}
+                          style={{
+                            background: isFeatured ? `${currentBtnBg}15` : currentBtnSecondaryBg,
+                            borderColor: isFeatured ? currentBtnBg : currentBorder,
+                          }}
+                          onClick={() => handleOpenEditChapterItem(chap)}
+                        >
+                          <div>
+                            <div className="flex items-center justify-between gap-2 mb-1">
+                              <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-1.5 py-0.5 rounded" style={{ background: currentBtnBg, color: currentBtnText }}>
+                                #{idx + 1}
+                              </span>
+                              {chap.isLocked && (
+                                <span className="text-[9px] px-1.5 py-0.5 rounded font-bold bg-amber-500/20 text-amber-400 border border-amber-500/40 flex items-center gap-0.5">
+                                  <Lock className="w-2.5 h-2.5" /> {chap.unlockPrice || 1}
+                                </span>
+                              )}
+                            </div>
+                            <span className="font-bold text-xs sm:text-sm line-clamp-2" style={{ color: currentText }}>
+                              {chap.title || `Chương ${chap.chapterNumber}`}
+                            </span>
+                            {chap.volumeTitle && (
+                              <span className="text-[10px] uppercase font-bold opacity-60 block mt-1" style={{ color: currentTextMuted }}>
+                                {chap.volumeTitle}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center justify-between gap-2 pt-2 border-t border-dashed" style={{ borderColor: `${currentBorder}60` }}>
+                            <span className="text-[10px] font-mono opacity-70" style={{ color: currentTextMuted }}>
+                              {(chap.content || '').match(/\S+/g)?.length || 0} từ • {chap.updatedAt || chap.createdAt}
+                            </span>
+                            {renderChapterActions(chap, idx)}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              }
+
+              // 8. MODERN_COMPACT (Hàng ngang số to)
+              if (chapterListStyle === 'modern_compact') {
+                return (
+                  <div className="space-y-2">
+                    {storyChapters.map((chap, idx) => (
+                      <div
+                        key={chap.id}
+                        className="p-3 rounded-lg border text-xs flex items-center gap-3 hover:opacity-95 transition cursor-pointer shadow-xs"
+                        style={{ background: currentBtnSecondaryBg, borderColor: currentBorder }}
+                        onClick={() => handleOpenEditChapterItem(chap)}
+                      >
+                        <div
+                          className="w-10 h-10 rounded flex items-center justify-center font-mono font-black text-sm shrink-0 border"
+                          style={{ background: `${currentBtnBg}20`, borderColor: currentBtnBg, color: currentText }}
+                        >
+                          {String(idx + 1).padStart(2, '0')}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          {chap.volumeTitle && (
+                            <span className="text-[9px] font-bold uppercase tracking-wider block opacity-70" style={{ color: currentTextMuted }}>
+                              {chap.volumeTitle}
+                            </span>
+                          )}
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-xs truncate" style={{ color: currentText }}>
+                              {chap.title || `Chương ${chap.chapterNumber}`}
+                            </span>
+                            {chap.isLocked && (
+                              <span className="text-[9px] px-1.5 py-0.5 rounded font-bold bg-amber-500/20 text-amber-400 border border-amber-500/40 flex items-center gap-0.5">
+                                <Lock className="w-2.5 h-2.5" /> {chap.unlockPrice || 1}
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-[10px] font-mono opacity-65 block mt-0.5" style={{ color: currentTextMuted }}>
+                            {(chap.content || '').match(/\S+/g)?.length || 0} từ • {chap.updatedAt || chap.createdAt}
+                          </span>
+                        </div>
+                        {renderChapterActions(chap, idx)}
+                      </div>
+                    ))}
+                  </div>
+                );
+              }
+
+              // 9. NUMBERS_ONLY (Chỉ hiện số chương)
+              if (chapterListStyle === 'numbers_only') {
+                return (
+                  <div className="grid grid-cols-5 sm:grid-cols-8 md:grid-cols-10 gap-2">
+                    {storyChapters.map((chap, idx) => (
+                      <div
+                        key={chap.id}
+                        className="aspect-square rounded-lg border font-mono font-bold text-xs flex flex-col items-center justify-center relative hover:scale-105 transition cursor-pointer shadow-xs group"
+                        style={{ background: currentBtnSecondaryBg, borderColor: currentBorder, color: currentText }}
+                        onClick={() => handleOpenEditChapterItem(chap)}
+                        title={chap.title || `Chương ${chap.chapterNumber}`}
+                      >
+                        <span>{idx + 1}</span>
+                        {chap.isLocked && (
+                          <Lock className="w-2.5 h-2.5 text-amber-400 absolute top-1 right-1" />
+                        )}
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); setChapterToDeleteItem(chap); }}
+                          className="opacity-0 group-hover:opacity-100 absolute bottom-1 right-1 text-rose-400 hover:text-rose-300 transition"
+                          title="Xóa"
+                        >
+                          <Trash2 className="w-2.5 h-2.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                );
+              }
+
+              // 10. STANDARD (Chuẩn / Thẻ truyền thống)
               return (
                 <div className="space-y-2">
                   {storyChapters.map((chap, idx) => (
@@ -1589,40 +2065,7 @@ export const LiveStoryEditorView: React.FC<LiveStoryEditorViewProps> = (props) =
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-1 shrink-0">
-                        {handleMoveChapter && (
-                          <div className="flex items-center gap-0.5 border-r pr-1 opacity-80" style={{ borderColor: currentBorder }}>
-                            <button
-                              type="button"
-                              disabled={idx === 0}
-                              onClick={(e) => { e.stopPropagation(); handleMoveChapter(chap.id, 'up'); }}
-                              className="p-1 text-xs opacity-70 hover:opacity-100 disabled:opacity-20 transition cursor-pointer disabled:cursor-not-allowed"
-                              style={{ color: currentText }}
-                              title="Di chuyển lên trên"
-                            >
-                              <ArrowUp className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              type="button"
-                              disabled={idx === storyChapters.length - 1}
-                              onClick={(e) => { e.stopPropagation(); handleMoveChapter(chap.id, 'down'); }}
-                              className="p-1 text-xs opacity-70 hover:opacity-100 disabled:opacity-20 transition cursor-pointer disabled:cursor-not-allowed"
-                              style={{ color: currentText }}
-                              title="Di chuyển xuống dưới"
-                            >
-                              <ArrowDown className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        )}
-                        <button
-                          type="button"
-                          onClick={(e) => { e.stopPropagation(); setChapterToDeleteItem(chap); }}
-                          className="p-1.5 text-xs text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded transition cursor-pointer"
-                          title="Xóa chương này"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
+                      {renderChapterActions(chap, idx)}
                     </div>
                   ))}
                 </div>

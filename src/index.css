@@ -43,6 +43,8 @@
   --font-pixel: 'JetBrains Mono', monospace;
   --font-tech: 'JetBrains Mono', monospace;
   --font-orbitron: 'JetBrains Mono', monospace;
+  --font-serif: 'Lora', 'EB Garamond', 'Noto Serif', 'Times New Roman', serif;
+  --font-sans: 'Be Vietnam Pro', 'Inter', system-ui, sans-serif;
 }
 
 @layer base {
@@ -75,6 +77,9 @@
   }
   .font-mono-code {
     font-family: 'JetBrains Mono', monospace;
+  }
+  .font-serif {
+    font-family: 'Lora', 'EB Garamond', 'Noto Serif', 'Times New Roman', serif !important;
   }
 
   /* Vietnamese Typography Support */

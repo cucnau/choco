@@ -374,12 +374,21 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
 
   return (
     <div 
-      className={`min-h-screen pb-20 transition-colors duration-300 relative ${readerFont}`}
+      className={`chapter-reader-root min-h-screen pb-20 transition-colors duration-300 relative ${readerFont}`}
       style={{
         background: currentBg,
         color: currentText,
       }}
     >
+      {/* Dynamic selection style based on chapter theme */}
+      <style>{`
+        .chapter-reader-root ::selection,
+        .chapter-reader-root *::selection {
+          background-color: ${currentBtnBg} !important;
+          color: ${currentBtnText} !important;
+        }
+      `}</style>
+
       {/* Hiệu ứng hạt rơi ở trang đọc chương */}
       {activeReadingEffect !== 'none' && <ReadingEffects effect={activeReadingEffect} effectColor={activeReadingEffectColor} isDarkTheme={isDarkTheme} />}
       
@@ -793,7 +802,7 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
                       <div className="relative flex items-start gap-2">
                         <div className="flex-1 min-w-0">
                           {block.type === 'paragraph' ? (
-                            <p className={`leading-relaxed transition-opacity ${isActive ? 'opacity-100 font-medium' : ''}`}>
+                            <p className={`leading-relaxed whitespace-pre-line transition-opacity ${isActive ? 'opacity-100 font-medium' : ''}`}>
                               {block.rawText}
                             </p>
                           ) : (
