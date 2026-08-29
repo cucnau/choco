@@ -3,6 +3,17 @@ import { CUSTOM_EMOJIS, getEmojiById } from '../config/emojis';
 import { Comment } from '../types';
 import { Smile, Plus } from 'lucide-react';
 
+export const resolveEmojiSrc = (src: string): string => {
+  if (!src) return '';
+  if (src.startsWith('http://') || src.startsWith('https://') || src.startsWith('data:')) {
+    return src;
+  }
+  const cleanSrc = src.startsWith('/') ? src.slice(1) : src;
+  const baseUrl = (import.meta as any).env.BASE_URL || '/';
+  const normalizedBase = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
+  return `${normalizedBase}${cleanSrc}`;
+};
+
 interface EmojiImageProps {
   id: string;
   size?: 'sm' | 'md' | 'lg' | 'xl';
@@ -31,7 +42,7 @@ export const EmojiImage: React.FC<EmojiImageProps> = ({ id, size = 'md', classNa
 
   return (
     <img
-      src={emoji.src}
+      src={resolveEmojiSrc(emoji.src)}
       alt={alt || emoji.name}
       title={alt || emoji.name}
       onError={() => setHasError(true)}
