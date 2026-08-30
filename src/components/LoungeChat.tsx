@@ -11,6 +11,30 @@ interface LoungeChatProps {
   userProfile: { displayName: string; photoURL: string } | null;
 }
 
+const renderContentWithLinks = (text: string) => {
+  if (!text) return null;
+  const urlRegex = /(https?:\/\/[^\s]+|www\.[^\s]+)/g;
+  const parts = text.split(urlRegex);
+
+  return parts.map((part, i) => {
+    if (part.match(urlRegex)) {
+      const href = part.startsWith('www.') ? `https://${part}` : part;
+      return (
+        <a
+          key={i}
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-[#e879f9] hover:underline hover:text-[#fbcfe8] transition duration-150 break-all inline"
+        >
+          {part}
+        </a>
+      );
+    }
+    return part;
+  });
+};
+
 export const LoungeChat: React.FC<LoungeChatProps> = ({
   messages,
   currentUser,
@@ -124,7 +148,7 @@ export const LoungeChat: React.FC<LoungeChatProps> = ({
                         : 'bg-[#180e14] text-[#e0d0d5] border border-[#2d1822]'
                     }`}
                   >
-                    {msg.content}
+                    {renderContentWithLinks(msg.content)}
                   </div>
                 </div>
               </div>

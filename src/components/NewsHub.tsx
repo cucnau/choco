@@ -13,6 +13,30 @@ interface NewsHubProps {
   isEditor: boolean;
 }
 
+const renderContentWithLinks = (text: string) => {
+  if (!text) return null;
+  const urlRegex = /(https?:\/\/[^\s]+|www\.[^\s]+)/g;
+  const parts = text.split(urlRegex);
+
+  return parts.map((part, i) => {
+    if (part.match(urlRegex)) {
+      const href = part.startsWith('www.') ? `https://${part}` : part;
+      return (
+        <a
+          key={i}
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-[#e879f9] hover:underline hover:text-[#fbcfe8] transition duration-150 break-all inline"
+        >
+          {part}
+        </a>
+      );
+    }
+    return part;
+  });
+};
+
 export const NewsHub: React.FC<NewsHubProps> = ({ currentUser, userProfile, isEditor }) => {
   const [posts, setPosts] = useState<NewsPost[]>([]);
   const [title, setTitle] = useState('');
@@ -231,7 +255,7 @@ export const NewsHub: React.FC<NewsHubProps> = ({ currentUser, userProfile, isEd
                       </span>
                     </div>
                     <div className="text-sm text-[#fbcfe8]/90 leading-relaxed whitespace-pre-wrap font-sans">
-                      {post.content}
+                      {renderContentWithLinks(post.content)}
                     </div>
                   </>
                 )}
