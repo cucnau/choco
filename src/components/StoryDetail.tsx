@@ -419,6 +419,7 @@ export const StoryDetail: React.FC<StoryDetailProps> = ({
   const tone = THEME_TONES[toneKey] || THEME_TONES['dark-rose'];
 
   const storyTitleFont = story.customTitleFont || story.defaultFont || 'font-mono';
+  const storySubtitleFont = story.customSubtitleFont || story.customTitleFont || story.defaultFont || 'font-mono';
   const storyBodyFont = story.customBodyFont || story.defaultFont || 'font-mono';
   const storyMutedFont = story.customMutedFont || story.defaultFont || 'font-mono';
   const storyBtnFont = story.customBtnFont || story.defaultFont || 'font-mono';
@@ -589,6 +590,7 @@ export const StoryDetail: React.FC<StoryDetailProps> = ({
           isCustomTheme={isCustomTheme}
           tone={tone}
           storyTitleFont={storyTitleFont}
+          storySubtitleFont={storySubtitleFont}
           storyBodyFont={storyBodyFont}
           storyMutedFont={storyMutedFont}
           storyBtnFont={storyBtnFont}

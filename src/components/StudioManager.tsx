@@ -779,6 +779,10 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
       gallerySingleImageCaption: storyData.gallerySingleImageCaption,
       galleryImages: storyData.galleryImages,
       galleryAutoScrollSpeed: storyData.galleryAutoScrollSpeed,
+      galleryImageSize: storyData.galleryImageSize,
+
+      // Element / Sticker / Họa tiết trang trí tự do trên trang truyện
+      storyElements: storyData.storyElements,
 
       // Kiểu trình bày danh sách chương
       chapterListStyle: storyData.chapterListStyle,

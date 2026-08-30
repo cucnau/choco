@@ -145,6 +145,7 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
   }
 
   const storyTitleFont = story.customTitleFont || story.defaultFont || 'font-mono';
+  const storySubtitleFont = story.customSubtitleFont || story.customTitleFont || story.defaultFont || 'font-mono';
   const storyMutedFont = story.customMutedFont || story.defaultFont || 'font-mono';
   const storyBtnFont = story.customBtnFont || story.defaultFont || 'font-mono';
   const storyBodyFont = readerFont;
@@ -562,7 +563,7 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
             </div>
             <div className="flex items-center justify-center gap-2 flex-wrap">
               <h1 
-                className={`font-bold tracking-wide leading-snug ${storyBodyFont} ${story.titleFontSize ? '' : 'text-xl sm:text-2xl'}`} 
+                className={`font-bold tracking-wide leading-snug ${storySubtitleFont} ${story.titleFontSize ? '' : 'text-xl sm:text-2xl'}`} 
                 style={{
                   color: currentText,
                   ...(story.titleFontSize ? { fontSize: story.titleFontSize } : {})
@@ -638,7 +639,7 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
                   >
                     <Lock className="w-6 h-6" />
                   </div>
-                  <h3 className={`text-base sm:text-lg font-bold uppercase tracking-wider ${storyBodyFont}`} style={{ color: currentText }}>
+                  <h3 className={`text-base sm:text-lg font-bold uppercase tracking-wider ${storySubtitleFont}`} style={{ color: currentText }}>
                     Chương này đã bị khóa bằng Chucu
                   </h3>
                   <p className={`text-xs ${storyMutedFont}`} style={{ color: currentTextMuted }}>
@@ -732,7 +733,7 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
                   >
                     <Key className="w-6 h-6" />
                   </div>
-                  <h3 className={`text-base sm:text-lg font-bold uppercase tracking-wider ${storyBodyFont}`} style={{ color: currentText }}>
+                  <h3 className={`text-base sm:text-lg font-bold uppercase tracking-wider ${storySubtitleFont}`} style={{ color: currentText }}>
                     Chương này yêu cầu mật khẩu (Pass)
                   </h3>
                   <p className={`text-xs ${storyMutedFont}`} style={{ color: currentTextMuted }}>
@@ -1068,7 +1069,7 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
           >
           <div className="flex flex-wrap items-center justify-between gap-2 border-b pb-2.5" style={{ borderColor: currentBorder }}>
             <h3 
-              className={`text-xs font-bold uppercase tracking-[0.15em] flex items-center gap-2 ${storyBodyFont}`}
+              className={`text-xs font-bold uppercase tracking-[0.15em] flex items-center gap-2 ${storySubtitleFont}`}
               style={{ color: currentText }}
             >
               <MessageSquare className="w-4 h-4" style={{ color: currentTextMuted }} />

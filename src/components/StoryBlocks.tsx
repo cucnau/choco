@@ -115,6 +115,7 @@ export interface StoryBlockRendererProps {
   isCustomTheme: boolean;
   tone: any;
   storyTitleFont: string;
+  storySubtitleFont: string;
   storyBodyFont: string;
   storyMutedFont: string;
   storyBtnFont: string;
@@ -356,6 +357,7 @@ interface StoryChapterListRendererProps {
   isCustomTheme: boolean;
   tone: any;
   storyBodyFont: string;
+  storySubtitleFont: string;
   storyMutedFont: string;
   storyBtnFont: string;
   activeBorderColor: string;
@@ -372,6 +374,7 @@ const StoryChapterListRenderer: React.FC<StoryChapterListRendererProps> = ({
   isCustomTheme,
   tone,
   storyBodyFont,
+  storySubtitleFont,
   storyMutedFont,
   storyBtnFont,
   activeBorderColor,
@@ -874,7 +877,7 @@ const StoryChapterListRenderer: React.FC<StoryChapterListRendererProps> = ({
             {isNewVolume && (
               <div className="pt-3 pb-1">
                 <div
-                  className="px-3.5 py-2 flex items-center justify-between border font-bold text-xs uppercase tracking-wider rounded-xs select-none shadow-xs"
+                  className={`px-3.5 py-2 flex items-center justify-between border font-bold text-xs uppercase tracking-wider rounded-xs select-none shadow-xs ${storySubtitleFont}`}
                   style={{
                     background: isCustomTheme
                       ? (story.customBtnSecondaryBgColor || story.customCardBgColor || story.customBgColor)
@@ -885,7 +888,7 @@ const StoryChapterListRenderer: React.FC<StoryChapterListRendererProps> = ({
                 >
                   <div className="flex items-center gap-2">
                     <BookOpen className="w-3.5 h-3.5 opacity-80" />
-                    <span className={storyBodyFont}>{chap.volumeTitle}</span>
+                    <span className={storySubtitleFont}>{chap.volumeTitle}</span>
                   </div>
                   <span className={`text-[10px] font-normal font-mono ${storyMutedFont}`} style={customStyles.textMuted}>
                     {(sorted || []).filter((c) => c && c.volumeTitle === chap.volumeTitle).length} chương
@@ -964,6 +967,7 @@ export const StoryBlockRenderer: React.FC<StoryBlockRendererProps> = (props) => 
     isCustomTheme,
     tone,
     storyTitleFont,
+    storySubtitleFont,
     storyBodyFont,
     storyMutedFont,
     storyBtnFont,
@@ -1235,7 +1239,7 @@ export const StoryBlockRenderer: React.FC<StoryBlockRendererProps> = (props) => 
       >
         <div className="flex items-center gap-1.5 border-b pb-1.5 opacity-90" style={{ borderColor: isCustomTheme ? story.customBorderColor : tone.border }}>
           <Users className="w-3.5 h-3.5 shrink-0" style={customStyles.text} />
-          <span className={`text-xs font-bold uppercase tracking-wider ${storyBodyFont}`} style={customStyles.text}>
+          <span className={`text-xs font-bold uppercase tracking-wider ${storySubtitleFont}`} style={customStyles.text}>
             {story.characterWidgetTitle || 'Thông tin nhân vật'}
           </span>
         </div>
@@ -1328,7 +1332,7 @@ export const StoryBlockRenderer: React.FC<StoryBlockRendererProps> = (props) => 
   if (blockId === 'synopsis') {
     return (
       <div key="synopsis" className="space-y-2">
-        <h4 className={`text-xs font-bold uppercase tracking-wider mb-1 ${storyBodyFont}`} style={customStyles.textMuted}>Giới thiệu:</h4>
+        <h4 className={`text-xs font-bold uppercase tracking-wider mb-1 ${storySubtitleFont}`} style={customStyles.textMuted}>Giới thiệu:</h4>
         {story.synopsis ? (
           <div className="space-y-2">
             <div
@@ -1407,7 +1411,7 @@ export const StoryBlockRenderer: React.FC<StoryBlockRendererProps> = (props) => 
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5 opacity-90">
             <TrendingUp className="w-3.5 h-3.5 shrink-0" style={customStyles.text} />
-            <span className={`text-xs font-bold uppercase tracking-wider ${storyBodyFont}`} style={customStyles.text}>
+            <span className={`text-xs font-bold uppercase tracking-wider ${storySubtitleFont}`} style={customStyles.text}>
               {(!story.progressWidgetTitle || story.progressWidgetTitle === 'Tiến độ bộ truyện') ? 'Tiến độ' : story.progressWidgetTitle}
             </span>
           </div>
@@ -1469,7 +1473,7 @@ export const StoryBlockRenderer: React.FC<StoryBlockRendererProps> = (props) => 
         {story.customWidgetTitle && (
           <div className="flex items-center gap-1.5 opacity-90 border-b pb-1.5" style={{ borderColor: isCustomTheme ? story.customBorderColor : tone.border }}>
             <FileText className="w-3.5 h-3.5 shrink-0" style={customStyles.text} />
-            <span className={`text-xs font-bold uppercase tracking-wider ${storyBodyFont}`} style={customStyles.text}>
+            <span className={`text-xs font-bold uppercase tracking-wider ${storySubtitleFont}`} style={customStyles.text}>
               {story.customWidgetTitle}
             </span>
           </div>
@@ -1550,7 +1554,7 @@ export const StoryBlockRenderer: React.FC<StoryBlockRendererProps> = (props) => 
         style={customStyles.border}
       >
         <div className="flex items-center justify-between flex-wrap gap-2">
-          <h3 className={`text-xs font-bold uppercase tracking-[0.15em] flex items-center gap-2 ${storyBodyFont}`} style={customStyles.text}>
+          <h3 className={`text-xs font-bold uppercase tracking-[0.15em] flex items-center gap-2 ${storySubtitleFont}`} style={customStyles.text}>
             <BookOpen className="w-4 h-4 opacity-80" />
             <span>Danh sách chương ({chapters.length})</span>
           </h3>
@@ -1565,6 +1569,7 @@ export const StoryBlockRenderer: React.FC<StoryBlockRendererProps> = (props) => 
           isCustomTheme={isCustomTheme}
           tone={tone}
           storyBodyFont={storyBodyFont}
+          storySubtitleFont={storySubtitleFont}
           storyMutedFont={storyMutedFont}
           storyBtnFont={storyBtnFont}
           activeBorderColor={activeBorderColor}
@@ -1592,7 +1597,7 @@ export const StoryBlockRenderer: React.FC<StoryBlockRendererProps> = (props) => 
         style={customStyles.border}
       >
         <div className="flex flex-wrap items-center justify-between gap-4">
-          <h3 className={`text-xs font-bold uppercase tracking-[0.15em] flex items-center gap-2 ${storyBodyFont}`} style={customStyles.text}>
+          <h3 className={`text-xs font-bold uppercase tracking-[0.15em] flex items-center gap-2 ${storySubtitleFont}`} style={customStyles.text}>
             <MessageSquare className="w-4 h-4 opacity-85" style={customStyles.textMuted} />
             <span>Bình luận ({storyComments.length})</span>
           </h3>
