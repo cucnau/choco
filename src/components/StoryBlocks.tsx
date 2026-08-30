@@ -1578,7 +1578,12 @@ export const StoryBlockRenderer: React.FC<StoryBlockRendererProps> = (props) => 
   // 13. COMMENTS BLOCK
   if (blockId === 'comments') {
     const rawComments = comments || [];
-    const storyComments = rawComments.filter((cm) => cm && cm.content !== '__story_reactions__');
+    const storyComments = rawComments.filter(
+      (cm) => cm && 
+        cm.content !== '__story_reactions__' && 
+        cm.content !== '__paragraph_reactions__' && 
+        cm.content !== '__chapter_reactions__'
+    );
 
     return (
       <div

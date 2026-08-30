@@ -17,8 +17,10 @@ export const LatestCommentsSection: React.FC<LatestCommentsSectionProps> = ({
   onSelectStory,
   onSelectChapter,
 }) => {
-  // Sort comments by timestamp/id (newest first)
-  const recentComments = [...(comments || [])].filter(Boolean).slice(0, 3);
+  // Sort comments by timestamp/id (newest first), filtering out special reaction comments
+  const recentComments = [...(comments || [])]
+    .filter((cm) => cm && cm.content !== '__paragraph_reactions__' && cm.content !== '__chapter_reactions__' && cm.content !== '__story_reactions__')
+    .slice(0, 3);
 
   const handleCommentClick = (comment: Comment) => {
     if (!comment) return;
