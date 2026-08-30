@@ -145,9 +145,12 @@ interface LiveStoryEditorViewProps {
   setChapterToDeleteItem: (chap: Chapter) => void;
   handleMoveChapter?: (chapId: string, direction: 'up' | 'down') => void;
   getStoryBorderStyle: (borderConfig: any, fallbackColor: string) => React.CSSProperties;
+  isPlacingElements?: boolean;
 }
 
 export const LiveStoryEditorView: React.FC<LiveStoryEditorViewProps> = (props) => {
+  const { isPlacingElements, ...restProps } = props; // Extract to avoid passing to DOM elements if necessary, though we just destructure later
+
   const {
     storyLayoutSections,
     currentCardBg,
@@ -708,25 +711,33 @@ export const LiveStoryEditorView: React.FC<LiveStoryEditorViewProps> = (props) =
       case 'title':
         return (
           <div id="editor-block-title" className="space-y-1">
-            <span className="text-[10px] font-mono uppercase tracking-wider block opacity-70" style={{ color: currentTextMuted }}>
+            <span className="text-[10px] font-mono uppercase tracking-wider block opacity-70" style={{ color: currentTextMuted, display: isPlacingElements ? 'none' : 'block' }}>
               Tên truyện (Nhấp để sửa trực tiếp):
             </span>
-            <input
-              id="input-story-title"
-              type="text"
-              placeholder="Nhập tên truyện tại đây..."
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className={`w-full p-2.5 bg-transparent rounded border border-dashed hover:border-solid focus:border-solid transition-all font-bold tracking-[0.02em] focus:outline-none focus:ring-1 ${customTitleFont}`}
-              style={{
-                borderColor: currentBorder,
-                color: currentText,
-                fontSize: titleFontSize,
-              }}
-            />
+            {isPlacingElements ? (
+              <h1
+                className={`font-bold tracking-[0.02em] ${customTitleFont}`}
+                style={{ color: currentText, fontSize: titleFontSize }}
+              >
+                {title || 'Tên Truyện Mới'}
+              </h1>
+            ) : (
+              <input
+                id="input-story-title"
+                type="text"
+                placeholder="Nhập tên truyện tại đây..."
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className={`w-full p-2.5 bg-transparent rounded border border-dashed hover:border-solid focus:border-solid transition-all font-bold tracking-[0.02em] focus:outline-none focus:ring-1 ${customTitleFont}`}
+                style={{
+                  borderColor: currentBorder,
+                  color: currentText,
+                  fontSize: titleFontSize,
+                }}
+              />
+            )}
           </div>
         );
-
       case 'meta':
         return (
           <div
@@ -736,15 +747,21 @@ export const LiveStoryEditorView: React.FC<LiveStoryEditorViewProps> = (props) =
           >
             <div className="flex items-center gap-2">
               <span className="shrink-0 font-medium">Tác giả:</span>
-              <input
-                id="input-story-author"
-                type="text"
-                placeholder="Tên tác giả..."
-                value={author}
-                onChange={(e) => setAuthor(e.target.value)}
-                className="flex-1 px-2 py-1 bg-transparent rounded border border-dashed hover:border-solid focus:border-solid transition-all text-xs font-semibold focus:outline-none"
-                style={{ borderColor: currentBorder, color: currentText }}
-              />
+              {isPlacingElements ? (
+                <span className="font-semibold" style={{ color: currentText }}>
+                  {author || 'Chưa rõ'}
+                </span>
+              ) : (
+                <input
+                  id="input-story-author"
+                  type="text"
+                  placeholder="Tên tác giả..."
+                  value={author}
+                  onChange={(e) => setAuthor(e.target.value)}
+                  className="flex-1 px-2 py-1 bg-transparent rounded border border-dashed hover:border-solid focus:border-solid transition-all text-xs font-semibold focus:outline-none"
+                  style={{ borderColor: currentBorder, color: currentText }}
+                />
+              )}
             </div>
             <div className="flex items-center gap-4 text-[11px] opacity-75 font-mono">
               <p>Ngày tạo: <span>{initialStory?.createdAt || new Date().toISOString().split('T')[0]}</span></p>
@@ -756,22 +773,31 @@ export const LiveStoryEditorView: React.FC<LiveStoryEditorViewProps> = (props) =
       case 'synopsis':
         return (
           <div id="editor-block-synopsis" className="space-y-1.5">
-            <span className={`text-xs font-bold uppercase tracking-wider block ${customBodyFont}`} style={{ color: currentTextMuted }}>
+            <span className={`text-xs font-bold uppercase tracking-wider block ${customBodyFont}`} style={{ color: currentTextMuted, display: isPlacingElements ? 'none' : 'block' }}>
               Giới thiệu truyện (Nhấp để sửa):
             </span>
-            <textarea
-              id="textarea-story-synopsis"
-              rows={7}
-              placeholder="Nhập phần tóm tắt, trích đoạn hoặc giới thiệu nội dung cuốn hút của bộ truyện..."
-              value={synopsis}
-              onChange={(e) => setSynopsis(e.target.value)}
-              className={`w-full p-3 bg-transparent rounded border border-dashed hover:border-solid focus:border-solid transition-all leading-relaxed focus:outline-none focus:ring-1 resize-y ${customBodyFont}`}
-              style={{
-                borderColor: currentBorder,
-                color: currentText,
-                fontSize: bodyFontSize,
-              }}
-            />
+            {isPlacingElements ? (
+              <div
+                className={`whitespace-pre-wrap leading-relaxed ${customBodyFont}`}
+                style={{ color: currentText, fontSize: bodyFontSize }}
+              >
+                {synopsis || 'Chưa có giới thiệu.'}
+              </div>
+            ) : (
+              <textarea
+                id="textarea-story-synopsis"
+                rows={7}
+                placeholder="Nhập phần tóm tắt, trích đoạn hoặc giới thiệu nội dung cuốn hút của bộ truyện..."
+                value={synopsis}
+                onChange={(e) => setSynopsis(e.target.value)}
+                className={`w-full p-3 bg-transparent rounded border border-dashed hover:border-solid focus:border-solid transition-all leading-relaxed focus:outline-none focus:ring-1 resize-y ${customBodyFont}`}
+                style={{
+                  borderColor: currentBorder,
+                  color: currentText,
+                  fontSize: bodyFontSize,
+                }}
+              />
+            )}
           </div>
         );
 
@@ -880,17 +906,26 @@ export const LiveStoryEditorView: React.FC<LiveStoryEditorViewProps> = (props) =
 
             {showCustomWidget && (
               <div className="p-3.5 rounded border space-y-2 text-xs" style={{ borderColor: currentBorder, background: currentBtnBg }}>
-                <label className="text-[11px] font-bold block" style={{ color: currentText }}>
+                <label className="text-[11px] font-bold block" style={{ color: currentText, display: isPlacingElements ? 'none' : 'block' }}>
                   Nội dung tùy chỉnh / Lời ngỏ / Quy định:
                 </label>
-                <textarea
-                  rows={4}
-                  value={customWidgetContent}
-                  onChange={(e) => setCustomWidgetContent && setCustomWidgetContent(e.target.value)}
-                  placeholder="Nhập thông báo, lịch ra chương hoặc lời ngỏ dành cho người đọc..."
-                  className={`w-full p-2.5 rounded border text-xs leading-relaxed focus:outline-none resize-y ${customBodyFont}`}
-                  style={{ background: currentCardBg, borderColor: currentBorder, color: currentText }}
-                />
+                {isPlacingElements ? (
+                  <div
+                    className={`whitespace-pre-wrap leading-relaxed text-sm ${customBodyFont}`}
+                    style={{ color: currentText }}
+                  >
+                    {customWidgetContent || 'Chưa có nội dung.'}
+                  </div>
+                ) : (
+                  <textarea
+                    rows={4}
+                    value={customWidgetContent}
+                    onChange={(e) => setCustomWidgetContent && setCustomWidgetContent(e.target.value)}
+                    placeholder="Nhập thông báo, lịch ra chương hoặc lời ngỏ dành cho người đọc..."
+                    className={`w-full p-2.5 rounded border text-xs leading-relaxed focus:outline-none resize-y ${customBodyFont}`}
+                    style={{ background: currentCardBg, borderColor: currentBorder, color: currentText }}
+                  />
+                )}
               </div>
             )}
           </div>
@@ -2102,12 +2137,33 @@ export const LiveStoryEditorView: React.FC<LiveStoryEditorViewProps> = (props) =
     <article
       ref={articleRef as any}
       id="live-editor-story-article"
-      className="p-6 space-y-6 relative transition-all duration-200 overflow-visible"
+      className={`p-6 space-y-6 relative transition-all duration-200 overflow-visible ${isPlacingElements ? 'is-placing-elements' : ''}`}
       style={{
         background: currentCardBg,
         ...getStoryBorderStyle(currentBorderObj, currentBorder),
       }}
     >
+      {/* Hide inline edit controls when placing elements to match StoryDetail height exactly */}
+      {isPlacingElements && (
+        <style>{`
+          .is-placing-elements button:not(.story-elements-layer button) {
+            display: none !important;
+          }
+          .is-placing-elements textarea {
+            display: none !important;
+          }
+          .is-placing-elements input:not([type="range"]) {
+            display: none !important;
+          }
+          .is-placing-elements .border-dashed {
+            border-color: transparent !important;
+          }
+          .is-placing-elements .p-3.rounded.border.border-dashed {
+             display: none !important;
+          }
+        `}</style>
+      )}
+
       {/* Corner Accents */}
       <StoryCornerAccents accent={activeBCorner} borderStyle={currentBorderObj?.borderStyle} color={currentBorder} />
 

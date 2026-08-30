@@ -5299,6 +5299,7 @@ const [galleryAutoScrollSpeed, setGalleryAutoScrollSpeed] = useState<'slow' | 'n
           </div>
         ) : (
           <LiveStoryEditorView
+            isPlacingElements={activeDrawerTab === 'elements'}
             storyLayoutSections={storyLayoutSections}
             currentCardBg={currentCardBg}
             currentBtnBg={currentBtnBg}
