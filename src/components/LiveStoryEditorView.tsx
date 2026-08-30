@@ -56,6 +56,7 @@ interface LiveStoryEditorViewProps {
   activeBCorner: any;
   customTitleFont: string;
   customSubtitleFont?: string;
+  customChapterTitleFont?: string;
   customBodyFont: string;
   customMutedFont: string;
   customBtnFont?: string;
@@ -162,6 +163,7 @@ export const LiveStoryEditorView: React.FC<LiveStoryEditorViewProps> = (props) =
     activeBCorner,
     customTitleFont,
     customSubtitleFont,
+    customChapterTitleFont,
     customBodyFont,
     customMutedFont,
     customBtnFont = 'font-mono',

@@ -145,6 +145,7 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
   }
 
   const storyTitleFont = story.customTitleFont || story.defaultFont || 'font-mono';
+  const storyChapterTitleFont = story.customChapterTitleFont || story.customSubtitleFont || story.customTitleFont || story.defaultFont || 'font-mono';
   const storySubtitleFont = story.customSubtitleFont || story.customTitleFont || story.defaultFont || 'font-mono';
   const storyMutedFont = story.customMutedFont || story.defaultFont || 'font-mono';
   const storyBtnFont = story.customBtnFont || story.defaultFont || 'font-mono';
@@ -563,7 +564,7 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
             </div>
             <div className="flex items-center justify-center gap-2 flex-wrap">
               <h1 
-                className={`font-bold tracking-wide leading-snug ${storySubtitleFont} ${story.titleFontSize ? '' : 'text-xl sm:text-2xl'}`} 
+                className={`font-bold tracking-wide leading-snug ${storyChapterTitleFont} ${story.titleFontSize ? '' : 'text-xl sm:text-2xl'}`} 
                 style={{
                   color: currentText,
                   ...(story.titleFontSize ? { fontSize: story.titleFontSize } : {})

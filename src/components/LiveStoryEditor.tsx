@@ -723,6 +723,7 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
       (initialStory?.customBtnBgColor || initialStory?.customBgColor ? 'custom' : 'dark-rose')
   );
   const [customTitleFont, setCustomTitleFont] = useState(initialStory?.customTitleFont || initialStory?.defaultFont || 'font-mono');
+  const [customChapterTitleFont, setCustomChapterTitleFont] = useState(initialStory?.customChapterTitleFont || initialStory?.customSubtitleFont || initialStory?.customTitleFont || initialStory?.defaultFont || 'font-mono');
   const [customSubtitleFont, setCustomSubtitleFont] = useState(initialStory?.customSubtitleFont || initialStory?.customTitleFont || initialStory?.defaultFont || 'font-mono');
   const [customBodyFont, setCustomBodyFont] = useState(initialStory?.customBodyFont || initialStory?.defaultFont || 'font-mono');
   const [customMutedFont, setCustomMutedFont] = useState(initialStory?.customMutedFont || initialStory?.defaultFont || 'font-mono');
@@ -2180,6 +2181,7 @@ const [galleryAutoScrollSpeed, setGalleryAutoScrollSpeed] = useState<'slow' | 'n
       themeTone,
       defaultFont: customBodyFont,
       customTitleFont,
+      customChapterTitleFont,
       customSubtitleFont,
       customBodyFont,
       customMutedFont,
@@ -2742,13 +2744,31 @@ const [galleryAutoScrollSpeed, setGalleryAutoScrollSpeed] = useState<'slow' | 'n
                 </select>
               </div>
 
-              <div>
+               <div>
                 <label className="block text-[11px] font-semibold mb-1" style={{ color: currentText }}>
-                  Font tiêu đề phụ (tiêu đề chương v.v.):
+                  Font tiêu đề phụ/Tiêu đề widget:
                 </label>
                 <select
                   value={customSubtitleFont}
                   onChange={(e) => setCustomSubtitleFont(e.target.value)}
+                  className="w-full p-2 rounded border text-xs focus:outline-none"
+                  style={{ background: currentBg, borderColor: currentBorder, color: currentText }}
+                >
+                  {ALL_FONTS.map((f) => (
+                    <option key={f.value} value={f.value} style={{ background: currentCardBg, color: currentText }}>
+                      {f.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-semibold mb-1" style={{ color: currentText }}>
+                  Font tiêu đề chương:
+                </label>
+                <select
+                  value={customChapterTitleFont}
+                  onChange={(e) => setCustomChapterTitleFont(e.target.value)}
                   className="w-full p-2 rounded border text-xs focus:outline-none"
                   style={{ background: currentBg, borderColor: currentBorder, color: currentText }}
                 >
@@ -5293,6 +5313,7 @@ const [galleryAutoScrollSpeed, setGalleryAutoScrollSpeed] = useState<'slow' | 'n
             activeBCorner={activeBCorner}
             customTitleFont={customTitleFont}
             customSubtitleFont={customSubtitleFont}
+            customChapterTitleFont={customChapterTitleFont}
             customBodyFont={customBodyFont}
             customMutedFont={customMutedFont}
             customBtnFont={customBtnFont}

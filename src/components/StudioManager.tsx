@@ -537,6 +537,7 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
   const [themeTone, setThemeTone] = useState('dark-rose');
   const [defaultFont, setDefaultFont] = useState('font-mono');
   const [customTitleFont, setCustomTitleFont] = useState('font-mono');
+  const [customChapterTitleFont, setCustomChapterTitleFont] = useState('font-mono');
   const [customSubtitleFont, setCustomSubtitleFont] = useState('font-mono');
   const [customBodyFont, setCustomBodyFont] = useState('font-mono');
   const [customMutedFont, setCustomMutedFont] = useState('font-mono');
@@ -732,6 +733,7 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
       themeTone: storyData.themeTone || 'dark-rose',
       defaultFont: storyData.customBodyFont || 'font-mono',
       customTitleFont: storyData.customTitleFont,
+      customChapterTitleFont: storyData.customChapterTitleFont,
       customSubtitleFont: storyData.customSubtitleFont,
       customBodyFont: storyData.customBodyFont,
       customMutedFont: storyData.customMutedFont,
@@ -888,6 +890,7 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
     setThemeTone(story.themeTone || 'dark-rose');
     setDefaultFont(story.defaultFont || 'font-mono');
     setCustomTitleFont(story.customTitleFont || story.defaultFont || 'font-mono');
+    setCustomChapterTitleFont(story.customChapterTitleFont || story.customSubtitleFont || story.customTitleFont || story.defaultFont || 'font-mono');
     setCustomSubtitleFont(story.customSubtitleFont || story.customTitleFont || story.defaultFont || 'font-mono');
     setCustomBodyFont(story.customBodyFont || story.defaultFont || 'font-mono');
     setCustomMutedFont(story.customMutedFont || story.defaultFont || 'font-mono');
@@ -973,6 +976,7 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
       themeTone: themeTone,
       defaultFont: customBodyFont,
       customTitleFont: customTitleFont,
+      customChapterTitleFont: customChapterTitleFont,
       customSubtitleFont: customSubtitleFont,
       customBodyFont: customBodyFont,
       customMutedFont: customMutedFont,
@@ -2340,10 +2344,23 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-xs text-[#8a717a] block font-mono-code">Font tiêu đề phụ (tiêu đề chương v.v.):</label>
+                    <label className="text-xs text-[#8a717a] block font-mono-code">Font tiêu đề phụ/Tiêu đề widget:</label>
                     <select
                       value={customSubtitleFont}
                       onChange={(e) => setCustomSubtitleFont(e.target.value)}
+                      className="w-full bg-[#170d12] border border-[#2d1822] p-2 text-xs text-[#e0c0cc] focus:outline-none focus:border-[#522d3d] font-mono-code"
+                    >
+                      {FONT_OPTIONS.map((f) => (
+                        <option key={f.value} value={f.value}>{f.label}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs text-[#8a717a] block font-mono-code">Font tiêu đề chương:</label>
+                    <select
+                      value={customChapterTitleFont}
+                      onChange={(e) => setCustomChapterTitleFont(e.target.value)}
                       className="w-full bg-[#170d12] border border-[#2d1822] p-2 text-xs text-[#e0c0cc] focus:outline-none focus:border-[#522d3d] font-mono-code"
                     >
                       {FONT_OPTIONS.map((f) => (
