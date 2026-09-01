@@ -530,10 +530,6 @@ export const StoryDetail: React.FC<StoryDetailProps> = ({
           color: ${isCustomTheme ? (story.customTextColor || '#ffffff') : '#ffffff'} !important;
         }
       `}</style>
-
-      {story.readingEffect && story.readingEffect !== 'none' && (
-        <ReadingEffects effect={story.readingEffect} effectColor={story.readingEffectColor} isDarkTheme={isDarkTheme} />
-      )}
       
       {/* Back Button */}
       <button

@@ -107,6 +107,7 @@ export interface Story {
   customTextMutedColor?: string; // Màu chữ phụ/nhỏ
   customBorderColor?: string; // Màu đường viền khung
   customBtnBgColor?: string; // Màu nền nút bấm chính (Màu đơn hoặc Gradient CSS)
+  customBtnTextColor?: string; // Màu chữ nút bấm chính
   customBtnSecondaryBgColor?: string; // Màu nền nút phụ / ô editor / danh sách chương (Màu đơn hoặc Gradient CSS)
   tags?: string[]; // Danh sách các tag thể loại của truyện
 
