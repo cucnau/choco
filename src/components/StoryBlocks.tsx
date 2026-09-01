@@ -681,15 +681,15 @@ const StoryChapterListRenderer: React.FC<StoryChapterListRendererProps> = ({
   if (style === 'book_catalog') {
     return (
       <div
-        className="p-4 sm:p-6 rounded border space-y-2.5 font-serif"
+        className={`p-4 sm:p-6 rounded border space-y-2.5 ${storyBodyFont}`}
         style={{
           borderColor: activeBorderColor,
           background: isCustomTheme ? (story.customBtnSecondaryBgColor || story.customCardBgColor) : undefined,
         }}
       >
         <div className="text-center pb-2 border-b border-dashed mb-4" style={{ borderColor: activeBorderColor }}>
-          <span className="text-xs font-bold uppercase tracking-widest" style={customStyles.text}>
-            MỤC LỤC TÁC PHẨM
+          <span className={`text-xs font-bold uppercase tracking-widest ${storySubtitleFont || storyBodyFont}`} style={customStyles.text}>
+            MỤC LỤC
           </span>
         </div>
         {sorted.map((chap) => (
@@ -841,12 +841,12 @@ const StoryChapterListRenderer: React.FC<StoryChapterListRendererProps> = ({
   // 9. NUMBERS_ONLY
   if (style === 'numbers_only') {
     return (
-      <div className="grid grid-cols-5 sm:grid-cols-8 md:grid-cols-10 gap-2">
+      <div className="flex flex-wrap gap-2 sm:gap-2.5">
         {sorted.map((chap, idx) => (
           <div
             key={chap.id}
             onClick={() => onSelectChapter(chap)}
-            className={`aspect-square rounded-lg border font-mono font-bold text-xs flex flex-col items-center justify-center relative hover:scale-105 transition cursor-pointer shadow-xs group ${isCustomTheme ? '' : `${tone.inputBg}`}`}
+            className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full border font-bold text-xs sm:text-sm flex items-center justify-center relative hover:scale-110 active:scale-95 transition-all cursor-pointer shadow-xs group ${storyBodyFont} ${isCustomTheme ? '' : `${tone.inputBg}`}`}
             style={{
               ...(isCustomTheme ? { background: story.customBtnSecondaryBgColor || story.customCardBgColor } : {}),
               borderColor: activeBorderColor,
@@ -856,7 +856,9 @@ const StoryChapterListRenderer: React.FC<StoryChapterListRendererProps> = ({
           >
             <span>{idx + 1}</span>
             {chap.isLocked && (
-              <Lock className="w-2.5 h-2.5 text-amber-400 absolute top-1 right-1" />
+              <span className="absolute -top-1 -right-1 bg-amber-500/90 text-white rounded-full p-0.5 shadow-xs">
+                <Lock className="w-2.5 h-2.5" />
+              </span>
             )}
           </div>
         ))}

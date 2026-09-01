@@ -9,6 +9,7 @@ import { BulkChapterModal } from './BulkChapterModal';
 import {
   normalizeStorySections,
   DEFAULT_STORY_LAYOUT_SECTIONS,
+  StoryLayoutContainer,
 } from './StoryBlocks';
 import {
   ArrowLeft,
@@ -1024,6 +1025,24 @@ const [galleryAutoScrollSpeed, setGalleryAutoScrollSpeed] = useState<'slow' | 'n
   const [isCompressingElementImg, setIsCompressingElementImg] = useState(false);
   const elementFileInputRef = useRef<HTMLInputElement>(null);
   const [elementUrlInput, setElementUrlInput] = useState('');
+
+  // View mode: 'edit' (Soạn thảo) vs 'preview' (Xem trước & Đính Element 1:1)
+  const [editorMainView, setEditorMainView] = useState<'edit' | 'preview'>('edit');
+  const previewArticleRef = useRef<HTMLElement | null>(null);
+  const [previewStripPaused, setPreviewStripPaused] = useState(false);
+  const [previewSynopsisExpanded, setPreviewSynopsisExpanded] = useState(false);
+  const [previewSearchChapterQuery, setPreviewSearchChapterQuery] = useState('');
+  const [previewSelectedVolumeFilter, setPreviewSelectedVolumeFilter] = useState<string | null>('ALL');
+  const [previewExpandedVolumes, setPreviewExpandedVolumes] = useState<Record<string, boolean>>({});
+  const [previewLightboxImages, setPreviewLightboxImages] = useState<Array<{ url: string; caption?: string }>>([]);
+  const [previewLightboxCurrentIndex, setPreviewLightboxCurrentIndex] = useState(0);
+
+  const togglePreviewVolume = (vol: string) => {
+    setPreviewExpandedVolumes((prev) => ({
+      ...prev,
+      [vol]: !prev[vol],
+    }));
+  };
 
   // Floating Design Drawer Tabs
   const [activeDrawerTab, setActiveDrawerTab] = useState<'theme' | 'fonts' | 'borders' | 'effects' | 'elements' | 'widgets' | 'layout' | null>(null);
@@ -2232,6 +2251,89 @@ const [galleryAutoScrollSpeed, setGalleryAutoScrollSpeed] = useState<'slow' | 'n
 
   const activeReadingEffectColor = isViewingChapterEffect ? chapterReadingEffectColor : readingEffectColor;
 
+  const previewStoryObject: Story = {
+    id: initialStory?.id || workingStoryId || 'preview-story-id',
+    title: title || 'Chưa đặt tên truyện',
+    author: author || 'Tác giả',
+    synopsis: synopsis || '',
+    coverUrl: coverUrl || '',
+    authorEmail: initialStory?.authorEmail || currentUser?.email || '',
+    authorUid: initialStory?.authorUid || currentUser?.uid || '',
+    tags: tags || [],
+    status: initialStory?.status || 'ongoing',
+    viewsCount: initialStory?.viewsCount || 0,
+    likesCount: initialStory?.likesCount || 0,
+    createdAt: initialStory?.createdAt || new Date().toISOString().split('T')[0],
+    updatedAt: new Date().toISOString().split('T')[0],
+    customThemeKey: customThemeKey || 'custom',
+    customBgColor: currentBg,
+    customCardBgColor: currentCardBg,
+    customTextColor: currentText,
+    customMutedColor: currentTextMuted,
+    customBorderColor: currentBorder,
+    customBtnBgColor: currentBtnBg,
+    customBtnTextColor: currentBtnText,
+    customBtnSecondaryBgColor: currentBtnSecondaryBg,
+    customBtnBorderColor: currentBtnBorder,
+    customTitleFont,
+    customSubtitleFont,
+    customChapterTitleFont,
+    customBodyFont,
+    customMutedFont,
+    customBtnFont,
+    titleFontSize,
+    bodyFontSize,
+    borderCornerAccent: activeBCorner,
+    borderThickness,
+    borderGlow,
+    borderStyle,
+    readingEffect,
+    readingEffectColor,
+    showCharacterWidget,
+    characterWidgetTitle,
+    characterAvatarShape,
+    characters,
+    showProgressWidget,
+    progressWidgetTitle,
+    totalPlannedChapters,
+    showCustomWidget,
+    customWidgetTitle,
+    customWidgetContent,
+    showGalleryWidget,
+    galleryWidgetTitle,
+    galleryMode,
+    gallerySingleImageUrl,
+    gallerySingleImageCaption,
+    galleryImages,
+    galleryImageSize,
+    galleryAutoScrollSpeed,
+    chapterListStyle,
+    storyLayoutSections,
+    storyElements,
+    editorPhoto,
+    editorName,
+    editorDisplayName: editorName,
+    editorAvatarUrl: editorPhoto,
+  };
+
+  const customPreviewStyles = {
+    container: { background: currentBg, color: currentText },
+    card: { background: currentCardBg, ...getStoryBorderStyle(currentBorderObj, currentBorder) },
+    border: { borderColor: currentBorder },
+    text: { color: currentText },
+    textMuted: { color: currentTextMuted },
+    buttonPrimary: {
+      background: currentBtnBg,
+      color: currentBtnText,
+      ...getStoryButtonBorderStyle(currentBorderObj, currentBtnBorder),
+    },
+    buttonSecondary: {
+      background: currentBtnSecondaryBg,
+      color: currentText,
+      ...getStoryButtonBorderStyle(currentBorderObj, currentBtnBorder),
+    },
+  };
+
   return (
     <div
       className="live-editor-root fixed inset-0 z-[100] overflow-y-auto w-full h-full min-h-screen transition-colors duration-200"
@@ -2335,16 +2437,51 @@ const [galleryAutoScrollSpeed, setGalleryAutoScrollSpeed] = useState<'slow' | 'n
             <span>Hủy / Quay lại</span>
           </button>
 
-          <span
-            className="text-xs font-bold uppercase tracking-wider hidden sm:inline-block px-2.5 py-1 rounded font-mono border"
-            style={{
-              background: currentBtnBg,
-              borderColor: currentBtnBorder,
-              color: currentBtnText,
-            }}
-          >
-            {initialStory ? 'Chế độ chỉnh sửa trực tiếp' : 'Chế độ tạo truyện trực tiếp'}
-          </span>
+          {/* Toggle Chế độ Soạn thảo vs Xem trước (1:1 Trang truyện thật & Đính Element) */}
+          <div className="flex items-center p-0.5 rounded border" style={{ background: currentBg, borderColor: currentBorder }}>
+            <button
+              type="button"
+              onClick={() => setEditorMainView('edit')}
+              className={`flex items-center gap-1.5 px-3 py-1 text-xs font-mono font-bold rounded transition cursor-pointer ${
+                editorMainView === 'edit'
+                  ? 'shadow-sm'
+                  : 'opacity-70 hover:opacity-100'
+              }`}
+              style={
+                editorMainView === 'edit'
+                  ? { background: currentBtnBg, color: currentBtnText }
+                  : { color: currentText }
+              }
+              title="Chuyển sang chế độ chỉnh sửa nội dung, thông tin truyện và các widget"
+            >
+              <Edit3 className="w-3.5 h-3.5" />
+              <span>Soạn thảo</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setEditorMainView('preview')}
+              className={`flex items-center gap-1.5 px-3 py-1 text-xs font-mono font-bold rounded transition cursor-pointer ${
+                editorMainView === 'preview'
+                  ? 'shadow-sm'
+                  : 'opacity-70 hover:opacity-100'
+              }`}
+              style={
+                editorMainView === 'preview'
+                  ? { background: currentBtnBg, color: currentBtnText }
+                  : { color: currentText }
+              }
+              title="Chuyển sang chế độ xem trước 1:1 y hệt trang truyện thật và đính Element"
+            >
+              <Eye className="w-3.5 h-3.5" />
+              <span>Xem trước</span>
+              {storyElements.length > 0 && (
+                <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-pink-500 text-white font-bold leading-none">
+                  {storyElements.length}
+                </span>
+              )}
+            </button>
+          </div>
         </div>
 
         {/* Quick Design Switchers */}
@@ -2414,9 +2551,16 @@ const [galleryAutoScrollSpeed, setGalleryAutoScrollSpeed] = useState<'slow' | 'n
           </button>
 
           <button
-            onClick={() => setActiveDrawerTab(activeDrawerTab === 'elements' ? null : 'elements')}
+            onClick={() => {
+              if (activeDrawerTab === 'elements') {
+                setActiveDrawerTab(null);
+              } else {
+                setActiveDrawerTab('elements');
+                setEditorMainView('preview');
+              }
+            }}
             className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-mono rounded border transition ${
-              activeDrawerTab === 'elements' ? 'ring-2 ring-white/50' : 'hover:opacity-90'
+              activeDrawerTab === 'elements' ? 'ring-2 ring-pink-500' : 'hover:opacity-90'
             }`}
             style={{
               background: currentBtnSecondaryBg,
@@ -5296,6 +5440,152 @@ const [galleryAutoScrollSpeed, setGalleryAutoScrollSpeed] = useState<'slow' | 'n
                 </button>
               </div>
             </div>
+          </div>
+        ) : editorMainView === 'preview' ? (
+          <div className="space-y-4">
+            {/* Banner hướng dẫn chế độ Xem trước & Đính Element */}
+            <div
+              className="p-3 rounded border flex items-center justify-between gap-3 text-xs font-mono shadow-sm"
+              style={{
+                background: currentBtnSecondaryBg,
+                borderColor: currentBtnBorder,
+                color: currentText,
+              }}
+            >
+              <div className="flex items-center gap-2">
+                <Eye className="w-4 h-4 text-pink-400 shrink-0" />
+                <span>
+                  <strong>Chế độ Xem trước 1:1:</strong> Trang truyện hiển thị chuẩn xác 100% như độc giả xem. Thêm hoặc kéo thả element tại đây sẽ giữ đúng vị trí tuyệt đối khi xuất bản!
+                </span>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setActiveDrawerTab('elements')}
+                  className="px-2.5 py-1 text-xs font-bold uppercase rounded border flex items-center gap-1.5 hover:opacity-90 transition cursor-pointer"
+                  style={{
+                    background: currentBtnBg,
+                    borderColor: currentBtnBorder,
+                    color: currentBtnText,
+                  }}
+                >
+                  <Sticker className="w-3.5 h-3.5" />
+                  <span>Bảng Element</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditorMainView('edit')}
+                  className="px-2.5 py-1 text-xs font-bold uppercase rounded border hover:opacity-80 transition cursor-pointer"
+                  style={{
+                    borderColor: currentBorder,
+                    color: currentText,
+                  }}
+                >
+                  ← Soạn thảo
+                </button>
+              </div>
+            </div>
+
+            {/* PREVIEW ARTICLE 1:1 - EXACTLY MATCHES StoryDetail.tsx */}
+            <article
+              ref={previewArticleRef as any}
+              id="live-editor-preview-story-article"
+              className={`p-6 space-y-6 relative overflow-visible transition-all duration-200 shadow-xl rounded ${customBodyFont}`}
+              style={{
+                background: currentCardBg,
+                ...getStoryBorderStyle(currentBorderObj, currentBorder),
+              }}
+            >
+              {/* Corner Accents */}
+              <StoryCornerAccents
+                accent={activeBCorner}
+                borderStyle={currentBorderObj?.borderStyle}
+                color={currentBorder}
+              />
+
+              {/* Story Decorative Elements Layer - Interactive in Preview Mode for Precise Placement! */}
+              <StoryElementsLayer
+                elements={storyElements}
+                isEditable={true}
+                onUpdateElements={setStoryElements}
+                selectedElementId={selectedStoryElementId}
+                onSelectElement={setSelectedStoryElementId}
+                containerRef={previewArticleRef}
+                themeColors={{
+                  bg: currentBg,
+                  cardBg: currentCardBg,
+                  border: currentBorder,
+                  btnBg: currentBtnBg,
+                  btnText: currentBtnText,
+                  btnSecondaryBg: currentBtnSecondaryBg,
+                  btnBorder: currentBtnBorder,
+                  text: currentText,
+                  textMuted: currentTextMuted,
+                  accentColor: currentBorder,
+                }}
+              />
+
+              {/* Story Layout Container - Exact Component as StoryDetail */}
+              <StoryLayoutContainer
+                story={previewStoryObject}
+                chapters={storyChapters}
+                lastReadChapter={null}
+                lastReadProgress={null}
+                firstChapter={storyChapters[0] || null}
+                isBookmarked={false}
+                onToggleBookmark={() => {}}
+                onSelectChapter={(chap) => {
+                  handleOpenEditChapterItem(chap);
+                }}
+                getChapterStatus={(chap) => ({
+                  isUnlocked: true,
+                  isPassUnlocked: true,
+                  isAuthorOrOwner: true,
+                  isReading: false,
+                })}
+                customStyles={customPreviewStyles}
+                isCustomTheme={true}
+                tone={{
+                  cardBg: '',
+                  text: '',
+                  textMuted: '',
+                  border: '',
+                  buttonBgPrimary: '',
+                  buttonBorderPrimary: '',
+                  inputBg: '',
+                }}
+                storyTitleFont={customTitleFont}
+                storySubtitleFont={customSubtitleFont}
+                storyBodyFont={customBodyFont}
+                storyMutedFont={customMutedFont}
+                storyBtnFont={customBtnFont}
+                activeBorderColor={currentBorder}
+                activeBtnBorderColor={currentBtnBorder}
+                activeBtnBgColor={currentBtnBg}
+                cardBgColor={currentCardBg}
+                storyBorderObj={currentBorderObj}
+                comments={[]}
+                commentText=""
+                setCommentText={() => {}}
+                handleCommentSubmit={(e) => e.preventDefault()}
+                setLightboxImages={setPreviewLightboxImages}
+                setLightboxCurrentIndex={setPreviewLightboxCurrentIndex}
+                isStripPaused={previewStripPaused}
+                setIsStripPaused={setPreviewStripPaused}
+                isSynopsisExpanded={previewSynopsisExpanded}
+                setIsSynopsisExpanded={setPreviewSynopsisExpanded}
+                searchChapterQuery={previewSearchChapterQuery}
+                setSearchChapterQuery={setPreviewSearchChapterQuery}
+                selectedVolumeFilter={previewSelectedVolumeFilter}
+                setSelectedVolumeFilter={setPreviewSelectedVolumeFilter}
+                expandedVolumes={previewExpandedVolumes}
+                toggleVolume={togglePreviewVolume}
+                editorAvatarUrl={editorPhoto}
+                editorDisplayName={editorName}
+                currentUserUid={currentUser?.uid}
+                isEditor={true}
+              />
+            </article>
           </div>
         ) : (
           <LiveStoryEditorView

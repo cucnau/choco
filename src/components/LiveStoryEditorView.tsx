@@ -1883,10 +1883,10 @@ export const LiveStoryEditorView: React.FC<LiveStoryEditorViewProps> = (props) =
               // 5. BOOK_CATALOG (Mục lục sách xuất bản)
               if (chapterListStyle === 'book_catalog') {
                 return (
-                  <div className="p-4 sm:p-6 rounded border space-y-2.5 font-serif" style={{ borderColor: currentBorder, background: currentBtnSecondaryBg }}>
+                  <div className={`p-4 sm:p-6 rounded border space-y-2.5 ${customBodyFont || ''}`} style={{ borderColor: currentBorder, background: currentBtnSecondaryBg }}>
                     <div className="text-center pb-2 border-b border-dashed mb-4" style={{ borderColor: currentBorder }}>
-                      <span className="text-xs font-bold uppercase tracking-widest" style={{ color: currentText }}>
-                        MỤC LỤC TÁC PHẨM
+                      <span className={`text-xs font-bold uppercase tracking-widest ${customSubtitleFont || customBodyFont || ''}`} style={{ color: currentText }}>
+                        MỤC LỤC
                       </span>
                     </div>
                     {storyChapters.map((chap, idx) => (
@@ -1896,7 +1896,7 @@ export const LiveStoryEditorView: React.FC<LiveStoryEditorViewProps> = (props) =
                         onClick={() => handleOpenEditChapterItem(chap)}
                       >
                         <div className="flex items-center gap-2 min-w-0 shrink-0 max-w-[70%]">
-                          <span className="font-bold text-xs" style={{ color: currentText }}>
+                          <span className={`font-bold text-xs ${customBodyFont || ''}`} style={{ color: currentText }}>
                             {chap.title || `Chương ${chap.chapterNumber}`}
                           </span>
                           {chap.isLocked && (
@@ -1906,7 +1906,7 @@ export const LiveStoryEditorView: React.FC<LiveStoryEditorViewProps> = (props) =
                           )}
                         </div>
                         <div className="flex-1 border-b border-dotted min-w-[20px] mx-1 opacity-50" style={{ borderColor: currentTextMuted }} />
-                        <div className="flex items-center gap-2 shrink-0 font-mono text-[10px] opacity-75" style={{ color: currentTextMuted }}>
+                        <div className={`flex items-center gap-2 shrink-0 font-mono text-[10px] opacity-75 ${customMutedFont || ''}`} style={{ color: currentTextMuted }}>
                           <span>{(chap.content || '').match(/\S+/g)?.length || 0} từ</span>
                           {renderChapterActions(chap, idx)}
                         </div>
@@ -2046,23 +2046,25 @@ export const LiveStoryEditorView: React.FC<LiveStoryEditorViewProps> = (props) =
               // 9. NUMBERS_ONLY (Chỉ hiện số chương)
               if (chapterListStyle === 'numbers_only') {
                 return (
-                  <div className="grid grid-cols-5 sm:grid-cols-8 md:grid-cols-10 gap-2">
+                  <div className="flex flex-wrap gap-2 sm:gap-2.5">
                     {storyChapters.map((chap, idx) => (
                       <div
                         key={chap.id}
-                        className="aspect-square rounded-lg border font-mono font-bold text-xs flex flex-col items-center justify-center relative hover:scale-105 transition cursor-pointer shadow-xs group"
+                        className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full border font-bold text-xs sm:text-sm flex items-center justify-center relative hover:scale-110 active:scale-95 transition-all cursor-pointer shadow-xs group ${customBodyFont || ''}`}
                         style={{ background: currentBtnSecondaryBg, borderColor: currentBorder, color: currentText }}
                         onClick={() => handleOpenEditChapterItem(chap)}
                         title={chap.title || `Chương ${chap.chapterNumber}`}
                       >
                         <span>{idx + 1}</span>
                         {chap.isLocked && (
-                          <Lock className="w-2.5 h-2.5 text-amber-400 absolute top-1 right-1" />
+                          <span className="absolute -top-1 -right-1 bg-amber-500/90 text-white rounded-full p-0.5 shadow-xs">
+                            <Lock className="w-2.5 h-2.5" />
+                          </span>
                         )}
                         <button
                           type="button"
                           onClick={(e) => { e.stopPropagation(); setChapterToDeleteItem(chap); }}
-                          className="opacity-0 group-hover:opacity-100 absolute bottom-1 right-1 text-rose-400 hover:text-rose-300 transition"
+                          className="opacity-0 group-hover:opacity-100 absolute -bottom-1 -right-1 bg-rose-500 text-white rounded-full p-0.5 shadow-xs hover:bg-rose-600 transition"
                           title="Xóa"
                         >
                           <Trash2 className="w-2.5 h-2.5" />
@@ -2137,59 +2139,14 @@ export const LiveStoryEditorView: React.FC<LiveStoryEditorViewProps> = (props) =
     <article
       ref={articleRef as any}
       id="live-editor-story-article"
-      className={`p-6 space-y-6 relative transition-all duration-200 overflow-visible ${isPlacingElements ? 'is-placing-elements' : ''}`}
+      className="p-6 space-y-6 relative transition-all duration-200 overflow-visible"
       style={{
         background: currentCardBg,
         ...getStoryBorderStyle(currentBorderObj, currentBorder),
       }}
     >
-      {/* Hide inline edit controls when placing elements to match StoryDetail height exactly */}
-      {isPlacingElements && (
-        <style>{`
-          .is-placing-elements button:not(.story-elements-layer button) {
-            display: none !important;
-          }
-          .is-placing-elements textarea {
-            display: none !important;
-          }
-          .is-placing-elements input:not([type="range"]) {
-            display: none !important;
-          }
-          .is-placing-elements .border-dashed {
-            border-color: transparent !important;
-          }
-          .is-placing-elements .p-3.rounded.border.border-dashed {
-             display: none !important;
-          }
-        `}</style>
-      )}
-
       {/* Corner Accents */}
       <StoryCornerAccents accent={activeBCorner} borderStyle={currentBorderObj?.borderStyle} color={currentBorder} />
-
-      {/* Story Decorative Elements Layer (Interactive in Editor) */}
-      {storyElements && setStoryElements && (
-        <StoryElementsLayer
-          elements={storyElements}
-          isEditable={true}
-          onUpdateElements={setStoryElements}
-          selectedElementId={selectedStoryElementId}
-          onSelectElement={setSelectedStoryElementId}
-          containerRef={articleRef}
-          themeColors={{
-            bg: currentCardBg,
-            cardBg: currentCardBg,
-            border: currentBorder,
-            btnBg: currentBtnBg,
-            btnText: currentBtnText,
-            btnSecondaryBg: currentBtnSecondaryBg,
-            btnBorder: currentBtnBorder,
-            text: currentText,
-            textMuted: currentTextMuted,
-            accentColor: currentBorder,
-          }}
-        />
-      )}
 
       {/* Dynamic Layout Rendering with Story Sections */}
       <div className="space-y-6 w-full">
