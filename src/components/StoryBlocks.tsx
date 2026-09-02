@@ -38,6 +38,7 @@ import {
   Hash,
 } from 'lucide-react';
 import { getStoryBorderStyle, getStoryButtonBorderStyle } from '../lib/borderStyles';
+import { ProtectedStoryText } from './ProtectedStoryText';
 
 export const DEFAULT_STORY_LAYOUT_SECTIONS: StoryLayoutSection[] = [
   {
@@ -1355,7 +1356,7 @@ export const StoryBlockRenderer: React.FC<StoryBlockRendererProps> = (props) => 
                       ...(story.bodyFontSize ? { fontSize: story.bodyFontSize } : {}),
                     }}
                   >
-                    {para}
+                    <ProtectedStoryText text={para} />
                   </p>
                 ))}
 

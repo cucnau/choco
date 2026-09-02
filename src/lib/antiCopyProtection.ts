@@ -131,16 +131,43 @@ export function isEditableElement(target: EventTarget | null): boolean {
   if (tagName === 'INPUT' || tagName === 'TEXTAREA' || target.isContentEditable) {
     return true;
   }
-  if (
-    target.classList.contains('allow-copy') ||
-    target.classList.contains('allow-select') ||
-    target.classList.contains('allow-paste')
-  ) {
-    return true;
-  }
-  // Kiểm tra cha gần nhất
-  const editableParent = target.closest('input, textarea, [contenteditable="true"], .allow-copy, .allow-select');
+  // Chỉ coi là editable nếu thực sự nằm trong input, textarea hoặc contenteditable
+  const editableParent = target.closest('input, textarea, [contenteditable="true"]');
   return !!editableParent;
+}
+
+/**
+ * Thực hiện ghi đè dữ liệu rác hỗn loạn vào Clipboard
+ */
+export function executeChaoticCopyScramble(e?: ClipboardEvent) {
+  let selectedText = '';
+  try {
+    if (window.getSelection) {
+      selectedText = window.getSelection()?.toString() || '';
+    } else if ((document as any).selection && (document as any).selection.type !== 'Control') {
+      selectedText = (document as any).selection.createRange().text || '';
+    }
+  } catch (err) {
+    // Ignore
+  }
+
+  const scrambled = generateChaoticScramble(selectedText || 'Nội dung truyện được bảo vệ bản quyền.');
+
+  if (e && e.clipboardData) {
+    try {
+      e.clipboardData.clearData();
+      e.clipboardData.setData('text/plain', scrambled);
+      e.clipboardData.setData('text/html', `<div style="font-family: monospace;">${scrambled}</div>`);
+    } catch (err) {
+      // Ignore
+    }
+  }
+
+  if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(scrambled).catch(() => {});
+  }
+
+  return scrambled;
 }
 
 /**
@@ -157,31 +184,11 @@ export function initAntiCopyProtection(): () => void {
     // Chặn triệt để hành vi mặc định và ngăn chặn các extension can thiệp
     e.preventDefault();
     e.stopPropagation();
-    e.stopImmediatePropagation();
-
-    // Lấy đoạn văn bản người dùng/extension đang cố sao chép
-    let selectedText = '';
-    if (window.getSelection) {
-      selectedText = window.getSelection()?.toString() || '';
-    } else if ((document as any).selection && (document as any).selection.type !== 'Control') {
-      selectedText = (document as any).selection.createRange().text || '';
+    if (e.stopImmediatePropagation) {
+      e.stopImmediatePropagation();
     }
 
-    // Tạo payload hỗn loạn ngẫu nhiên, không có quy luật
-    const scrambled = generateChaoticScramble(selectedText || 'Nội dung truyện được bảo vệ bản quyền.');
-
-    // Ghi đè trực tiếp vào clipboard của sự kiện
-    if (e.clipboardData) {
-      e.clipboardData.setData('text/plain', scrambled);
-      e.clipboardData.setData('text/html', `<div style="font-family: monospace;">${scrambled}</div>`);
-    }
-
-    // Ghi đè bổ sung qua Clipboard API (phòng trường hợp extension chặn clipboardData)
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(scrambled).catch(() => {
-        // Bỏ qua nếu trình duyệt yêu cầu user-gesture nghiêm ngặt
-      });
-    }
+    executeChaoticCopyScramble(e);
   };
 
   const handleCut = (e: ClipboardEvent) => {
@@ -190,17 +197,11 @@ export function initAntiCopyProtection(): () => void {
 
     e.preventDefault();
     e.stopPropagation();
-    e.stopImmediatePropagation();
-
-    const selectedText = window.getSelection()?.toString() || '';
-    const scrambled = generateChaoticScramble(selectedText || 'Protected Content');
-
-    if (e.clipboardData) {
-      e.clipboardData.setData('text/plain', scrambled);
+    if (e.stopImmediatePropagation) {
+      e.stopImmediatePropagation();
     }
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(scrambled).catch(() => {});
-    }
+
+    executeChaoticCopyScramble(e);
   };
 
   const handleDragStart = (e: DragEvent) => {
@@ -219,7 +220,7 @@ export function initAntiCopyProtection(): () => void {
     const isCtrlOrCmd = e.ctrlKey || e.metaKey;
     if (!isCtrlOrCmd) return;
 
-    const key = e.key.toLowerCase();
+    const key = e.key ? e.key.toLowerCase() : '';
     const target = e.target;
 
     // Chặn Ctrl+U (Xem mã nguồn), Ctrl+S (Lưu trang), Ctrl+P (In trang)
@@ -230,13 +231,9 @@ export function initAntiCopyProtection(): () => void {
 
     // Nếu người dùng bấm Ctrl+C hoặc Ctrl+X ngoài ô nhập liệu
     if (['c', 'x'].includes(key) && !isEditableElement(target)) {
-      const selectedText = window.getSelection()?.toString() || '';
-      if (selectedText) {
-        const scrambled = generateChaoticScramble(selectedText);
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(scrambled).catch(() => {});
-        }
-      }
+      setTimeout(() => {
+        executeChaoticCopyScramble();
+      }, 0);
     }
   };
 
