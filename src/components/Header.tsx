@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Users, BookOpen, Bookmark, PlusCircle, User, LogOut, LogIn, Settings, Flame, Calendar, Check, Loader2, Home, Gamepad2, Bell, MessageSquare } from 'lucide-react';
+import { Search, Users, BookOpen, Bookmark, PlusCircle, User, LogOut, LogIn, Settings, Flame, Calendar, Check, Loader2, Home, Gamepad2, Bell, MessageSquare, Sun, Moon } from 'lucide-react';
 import { User as FirebaseUser } from 'firebase/auth';
 import { Story, UserProfile, Notification } from '../types';
 import { checkInDaily, getLocalDateString } from '../lib/storage';
@@ -42,6 +42,45 @@ const HEADER_THEME_TONES: Record<string, {
     dropdownItemHover: 'hover:bg-[#1f1017]/80',
     dropdownActiveBg: 'bg-[#2b1620]/90',
     iconColor: 'text-[#d0a0b0]',
+  },
+  'choco-light': {
+    headerBg: 'bg-[#fcf8f5]/90 backdrop-blur-xl',
+    headerBorder: 'border-[#e8d5c8]',
+    brandText: 'text-[#3d2314]',
+    brandHoverText: 'hover:text-[#6e3e23]',
+    text: 'text-[#3d2314]',
+    textMuted: 'text-[#8c5e42]',
+    inputBg: 'bg-[#fffcf9]/90 backdrop-blur-md',
+    inputBorder: 'border-[#e8d5c8]',
+    inputFocusBorder: 'focus:border-[#cbb3a3]',
+    inputPlaceholder: 'placeholder-[#b08b73]',
+    buttonBg: 'bg-[#f0e2d8]/90 hover:bg-[#e4d1c3] backdrop-blur-md',
+    buttonBorder: 'border-[#cbb3a3]',
+    dropdownBg: 'bg-[#fffcf9]/95 backdrop-blur-xl',
+    dropdownBorder: 'border-[#e8d5c8]',
+    dropdownItemHover: 'hover:bg-[#f5ebe3]',
+    dropdownActiveBg: 'bg-[#ebdcd0]',
+    iconColor: 'text-[#8c5e42]',
+  },
+  'gradient-choco-light': {
+    headerBg: 'bg-[#fcf5ee]/90 backdrop-blur-xl',
+    gradientBg: 'linear-gradient(135deg, rgba(255, 252, 250, 0.95) 0%, rgba(247, 235, 225, 0.95) 50%, rgba(235, 215, 200, 0.95) 100%)',
+    headerBorder: 'border-[#d9beab]',
+    brandText: 'text-[#3d2314]',
+    brandHoverText: 'hover:text-[#6e3e23]',
+    text: 'text-[#3d2314]',
+    textMuted: 'text-[#8c5e42]',
+    inputBg: 'bg-[#ffffff]/90 backdrop-blur-md',
+    inputBorder: 'border-[#d9beab]',
+    inputFocusBorder: 'focus:border-[#cbb3a3]',
+    inputPlaceholder: 'placeholder-[#b08b73]',
+    buttonBg: 'bg-[#e8d3c3]/90 hover:bg-[#dbbfab] backdrop-blur-md',
+    buttonBorder: 'border-[#cbb3a3]',
+    dropdownBg: 'bg-[#ffffff]/95 backdrop-blur-xl',
+    dropdownBorder: 'border-[#d9beab]',
+    dropdownItemHover: 'hover:bg-[#f7ebe1]',
+    dropdownActiveBg: 'bg-[#e8d3c3]',
+    iconColor: 'text-[#8c5e42]',
   },
   'sepia': {
     headerBg: 'bg-[#f4ecd8]/85 backdrop-blur-xl',
@@ -259,6 +298,8 @@ interface HeaderProps {
   onMarkNotificationRead: (id: string) => void;
   onMarkAllNotificationsRead: () => void;
   onNavigateNotification: (notif: Notification) => void;
+  siteTheme?: 'choco-dark' | 'choco-light';
+  onToggleSiteTheme?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -279,6 +320,8 @@ export const Header: React.FC<HeaderProps> = ({
   onMarkNotificationRead,
   onMarkAllNotificationsRead,
   onNavigateNotification,
+  siteTheme = 'choco-dark',
+  onToggleSiteTheme,
 }) => {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showNotifMenu, setShowNotifMenu] = useState(false);
@@ -289,9 +332,11 @@ export const Header: React.FC<HeaderProps> = ({
   const hasCheckedInToday = userProfile?.lastCheckInDate === today;
 
   // Compute theme styles
-  const toneKey = currentStory?.themeTone || 'dark-rose';
+  const toneKey = currentStory?.themeTone 
+    ? currentStory.themeTone 
+    : (siteTheme === 'choco-light' ? 'choco-light' : 'dark-rose');
   const isCustomTheme = currentStory && toneKey === 'custom';
-  const tone = HEADER_THEME_TONES[toneKey] || HEADER_THEME_TONES['dark-rose'];
+  const tone = HEADER_THEME_TONES[toneKey] || HEADER_THEME_TONES[siteTheme === 'choco-light' ? 'choco-light' : 'dark-rose'];
 
   const customHeaderStyle = isCustomTheme ? {
     background: currentStory.customBgColor || '#080406',
@@ -535,6 +580,25 @@ export const Header: React.FC<HeaderProps> = ({
               </div>
             )}
           </div>
+
+          {/* Theme Mode Toggle (Choco Dark vs Choco Light) */}
+          {onToggleSiteTheme && (
+            <button
+              type="button"
+              onClick={onToggleSiteTheme}
+              className={`p-2 border relative transition flex items-center justify-center shrink-0 ${
+                isCustomTheme ? '' : `${tone.inputBg} ${tone.inputBorder} ${tone.text}`
+              }`}
+              style={customInputStyle}
+              title={siteTheme === 'choco-light' ? 'Chuyển sang Chế độ Tối (Choco Dark)' : 'Chuyển sang Chế độ Sáng (Choco Light)'}
+            >
+              {siteTheme === 'choco-light' ? (
+                <Moon className={`w-4 h-4 ${isCustomTheme ? '' : tone.iconColor}`} />
+              ) : (
+                <Sun className={`w-4 h-4 ${isCustomTheme ? '' : tone.iconColor}`} />
+              )}
+            </button>
+          )}
 
           {/* Notifications Dropdown */}
           {currentUser && (

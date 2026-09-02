@@ -89,6 +89,22 @@ export default function App() {
   const [loungeMessages, setLoungeMessages] = useState<LoungeMessage[]>(getLoungeMessagesLocal());
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
+  // Site Theme State ('choco-dark' | 'choco-light')
+  const [siteTheme, setSiteTheme] = useState<'choco-dark' | 'choco-light'>(() => {
+    return (localStorage.getItem('choco_site_theme') as 'choco-dark' | 'choco-light') || 'choco-dark';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('choco_site_theme', siteTheme);
+    if (siteTheme === 'choco-light') {
+      document.documentElement.classList.add('light-mode');
+      document.body.classList.add('light-mode');
+    } else {
+      document.documentElement.classList.remove('light-mode');
+      document.body.classList.remove('light-mode');
+    }
+  }, [siteTheme]);
+
   // Listen to Auth state
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -794,14 +810,21 @@ export default function App() {
   const bookmarkedSet = new Set((bookmarks || []).map(b => b && b.storyId));
 
   const getStoryThemeClass = (story: Story | null) => {
-    if (!story) return 'bg-[#080406] text-[#e0d0d5] selection:bg-[#3d1e2c] selection:text-white';
-    const tone = story.themeTone || 'dark-rose';
+    if (!story) {
+      return siteTheme === 'choco-light'
+        ? 'bg-[#fcf8f5] text-[#3d2314] selection:bg-[#f0e2d8] selection:text-[#3d2314]'
+        : 'bg-[#080406] text-[#e0d0d5] selection:bg-[#3d1e2c] selection:text-white';
+    }
+    const tone = story.themeTone || (siteTheme === 'choco-light' ? 'choco-light' : 'dark-rose');
     if (tone === 'custom' || tone.startsWith('gradient-')) return '';
+    if (tone === 'choco-light') return 'bg-[#fcf8f5] text-[#3d2314] selection:bg-[#f0e2d8] selection:text-[#3d2314]';
     if (tone === 'sepia') return 'bg-[#f4ecd8] text-[#4a3525] selection:bg-[#e2d5b6] selection:text-[#4a3525]';
     if (tone === 'emerald') return 'bg-[#06100c] text-[#d1e7dd] selection:bg-[#163f2d] selection:text-white';
     if (tone === 'slate') return 'bg-[#0f172a] text-[#f1f5f9] selection:bg-[#334155] selection:text-white';
     if (tone === 'classic-dark') return 'bg-[#0a0a0a] text-[#e5e5e5] selection:bg-[#262626] selection:text-white';
-    return 'bg-[#080406] text-[#e0d0d5] selection:bg-[#3d1e2c] selection:text-white';
+    return siteTheme === 'choco-light'
+      ? 'bg-[#fcf8f5] text-[#3d2314] selection:bg-[#f0e2d8] selection:text-[#3d2314]'
+      : 'bg-[#080406] text-[#e0d0d5] selection:bg-[#3d1e2c] selection:text-white';
   };
 
   const getStoryBgStyle = (story: Story | null) => {
@@ -810,6 +833,7 @@ export default function App() {
       return { background: story.customBgColor, color: story.customTextColor };
     }
     const presetGradients: Record<string, string> = {
+      'gradient-choco-light': 'linear-gradient(135deg, #fffcfa 0%, #f7ebe1 50%, #ebd7c8 100%)',
       'gradient-rose': 'linear-gradient(135deg, #4a1528 0%, #230b15 50%, #0c0408 100%)',
       'gradient-midnight': 'linear-gradient(135deg, #2e1065 0%, #160833 50%, #080314 100%)',
       'gradient-ocean': 'linear-gradient(135deg, #0c4a6e 0%, #07273c 50%, #030d17 100%)',
@@ -833,6 +857,8 @@ export default function App() {
       {/* Header */}
       {!selectedChapter && (
         <Header
+          siteTheme={siteTheme}
+          onToggleSiteTheme={() => setSiteTheme(prev => prev === 'choco-dark' ? 'choco-light' : 'choco-dark')}
           activeTab={activeTab}
           setActiveTab={(tab) => {
             setActiveTab(tab);

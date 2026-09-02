@@ -90,6 +90,53 @@ export interface StoryElement {
   animation?: 'none' | 'float' | 'spin' | 'pulse' | 'bounce' | 'wiggle'; // Hiệu ứng chuyển động của element
 }
 
+export interface StoryTheme {
+  id: string;
+  name: string; // Tên theme (ví dụ: "Theme Mặc Định", "Theme Mùa Hè", "Theme Giáng Sinh", "Theme U Tối")
+  description?: string; // Mô tả ngắn về theme
+  coverUrl?: string; // Bìa truyện riêng cho theme này
+  synopsis?: string; // Tóm tắt / Lời tựa riêng cho theme này
+  
+  // Màu sắc & Font
+  themeTone?: string;
+  defaultFont?: string;
+  customTitleFont?: string;
+  customChapterTitleFont?: string;
+  customSubtitleFont?: string;
+  customBodyFont?: string;
+  customMutedFont?: string;
+  customBtnFont?: string;
+  titleFontSize?: string;
+  bodyFontSize?: string;
+  customBgColor?: string;
+  customCardBgColor?: string;
+  customTextColor?: string;
+  customTextMutedColor?: string;
+  customBorderColor?: string;
+  customBtnBgColor?: string;
+  customBtnTextColor?: string;
+  customBtnSecondaryBgColor?: string;
+
+  // Viền & Hiệu ứng
+  borderStyle?: 'solid' | 'double' | 'dashed' | 'dotted' | 'dash-dot' | 'sketch' | 'stitched' | 'gradient' | 'stamp' | 'film' | 'groove' | 'ridge' | 'offset' | 'wavy' | 'scallop' | 'curly' | 'hand-dashed' | 'none';
+  borderWidth?: 'thin' | 'medium' | 'thick' | 'heavy' | 'bold' | 'frame';
+  borderRadius?: 'none' | 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'leaf' | 'chamfer' | 'ticket' | 'petal' | 'tab';
+  borderCornerAccent?: 'none' | 'brackets' | 'vintage' | 'rivets' | 'dots' | 'crosshairs' | 'washi' | 'sparkle' | 'heart' | 'botanical' | 'artdeco' | 'bow' | 'ribbon-corner' | 'ribbon-top-bow' | 'paperclip';
+  borderGlow?: 'none' | 'soft' | 'neon' | 'shadow' | 'soft-depth' | 'gradient-aura' | 'isometric';
+  customBorderGradientColor2?: string;
+  customBorderGlowColor1?: string;
+  customBorderGlowColor2?: string;
+
+  readingEffect?: 'none' | 'rain' | 'snow' | 'glitch' | 'star' | 'leaf' | 'cherry_blossom' | 'firefly' | 'soap_bubble' | 'ginkgo' | 'fireworks' | 'fire_sparks' | 'sci_fi_hud' | 'fruits' | 'ocean' | 'butterflies' | 'feathers' | 'lightning' | 'fog';
+  readingEffectColor?: string;
+
+  chapterListStyle?: 'standard' | 'grid' | 'accordion' | 'timeline' | 'minimal_table' | 'book_catalog' | 'scroll_strip' | 'cards_bento' | 'modern_compact' | 'numbers_only';
+  storyElements?: StoryElement[];
+
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface Story {
   id: string;
   title: string;
@@ -103,7 +150,12 @@ export interface Story {
   viewsCount: number;
   createdAt: string;
   updatedAt: string;
-  themeTone?: string; // Tông màu truyện ('dark-rose' | 'sepia' | 'emerald' | 'slate' | 'classic-dark' | 'gradient-rose' | 'gradient-midnight' | 'gradient-ocean' | 'gradient-emerald' | 'gradient-sunset' | 'gradient-cyber' | 'custom')
+  
+  // Đa dạng Theme tùy chỉnh cho bộ truyện
+  storyThemes?: StoryTheme[]; // Danh sách các Theme do Editor thiết kế riêng cho truyện
+  activeThemeId?: string; // ID của Theme chính được chọn hiển thị cho độc giả
+
+  themeTone?: string; // Tông màu truyện ('dark-rose' | 'choco-light' | 'gradient-choco-light' | 'sepia' | 'emerald' | 'slate' | 'classic-dark' | 'gradient-rose' | 'gradient-midnight' | 'gradient-ocean' | 'gradient-emerald' | 'gradient-sunset' | 'gradient-cyber' | 'custom')
   defaultFont?: string; // Font chữ mặc định của truyện
   customTitleFont?: string; // Font chữ cho tiêu đề truyện
   customChapterTitleFont?: string; // Font chữ cho tiêu đề chương
@@ -167,10 +219,10 @@ export interface Story {
 
   readingEffect?: 'none' | 'rain' | 'snow' | 'glitch' | 'star' | 'leaf' | 'cherry_blossom' | 'firefly' | 'soap_bubble' | 'ginkgo' | 'fireworks' | 'fire_sparks' | 'sci_fi_hud' | 'fruits' | 'ocean' | 'butterflies' | 'feathers' | 'lightning' | 'fog'; // Hiệu ứng đọc truyện
   readingEffectColor?: string; // Tùy chỉnh màu sắc cho hiệu ứng (đặc biệt là Sci-Fi HUD)
-  borderStyle?: 'solid' | 'double' | 'dashed' | 'dotted' | 'dash-dot' | 'sketch' | 'stitched' | 'gradient' | 'stamp' | 'film' | 'groove' | 'ridge' | 'offset' | 'none'; // Kiểu nét đường viền
+  borderStyle?: 'solid' | 'double' | 'dashed' | 'dotted' | 'dash-dot' | 'sketch' | 'stitched' | 'gradient' | 'stamp' | 'film' | 'groove' | 'ridge' | 'offset' | 'wavy' | 'scallop' | 'curly' | 'hand-dashed' | 'none'; // Kiểu nét đường viền
   borderWidth?: 'thin' | 'medium' | 'thick' | 'heavy' | 'bold' | 'frame'; // Độ dày đường viền
   borderRadius?: 'none' | 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'leaf' | 'chamfer' | 'ticket' | 'petal' | 'tab'; // Kiểu bo góc viền đa dạng
-  borderCornerAccent?: 'none' | 'brackets' | 'vintage' | 'rivets' | 'dots' | 'crosshairs' | 'washi' | 'sparkle' | 'heart' | 'botanical' | 'artdeco' | 'bow' | 'paperclip'; // Trang trí góc viền nghệ thuật
+  borderCornerAccent?: 'none' | 'brackets' | 'vintage' | 'rivets' | 'dots' | 'crosshairs' | 'washi' | 'sparkle' | 'heart' | 'botanical' | 'artdeco' | 'bow' | 'ribbon-corner' | 'ribbon-top-bow' | 'paperclip'; // Trang trí góc viền nghệ thuật
   borderGlow?: 'none' | 'soft' | 'neon' | 'shadow' | 'soft-depth' | 'gradient-aura' | 'isometric'; // Hiệu ứng phát sáng / đổ bóng viền
   customBorderGradientColor2?: string; // Màu thứ 2 cho Viền Gradient đa sắc
   customBorderGlowColor1?: string; // Màu thứ 1 cho Hào quang Gradient
@@ -188,10 +240,10 @@ export interface Story {
   chapterCustomBorderColor?: string;
   chapterCustomBtnBgColor?: string;
   chapterCustomBtnSecondaryBgColor?: string;
-  chapterBorderStyle?: 'solid' | 'double' | 'dashed' | 'dotted' | 'dash-dot' | 'sketch' | 'stitched' | 'gradient' | 'stamp' | 'film' | 'groove' | 'ridge' | 'offset' | 'none';
+  chapterBorderStyle?: 'solid' | 'double' | 'dashed' | 'dotted' | 'dash-dot' | 'sketch' | 'stitched' | 'gradient' | 'stamp' | 'film' | 'groove' | 'ridge' | 'offset' | 'wavy' | 'scallop' | 'curly' | 'hand-dashed' | 'none';
   chapterBorderWidth?: 'thin' | 'medium' | 'thick' | 'heavy' | 'bold' | 'frame';
   chapterBorderRadius?: 'none' | 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'leaf' | 'chamfer' | 'ticket' | 'petal' | 'tab';
-  chapterBorderCornerAccent?: 'none' | 'brackets' | 'vintage' | 'rivets' | 'dots' | 'crosshairs' | 'washi' | 'sparkle' | 'heart' | 'botanical' | 'artdeco' | 'bow' | 'paperclip';
+  chapterBorderCornerAccent?: 'none' | 'brackets' | 'vintage' | 'rivets' | 'dots' | 'crosshairs' | 'washi' | 'sparkle' | 'heart' | 'botanical' | 'artdeco' | 'bow' | 'ribbon-corner' | 'ribbon-top-bow' | 'paperclip';
   chapterBorderGlow?: 'none' | 'soft' | 'neon' | 'shadow' | 'soft-depth' | 'gradient-aura' | 'isometric';
   chapterCustomBorderGradientColor2?: string;
   chapterCustomBorderGlowColor1?: string;

@@ -4,7 +4,7 @@ import { User as FirebaseUser } from 'firebase/auth';
 import { db } from '../lib/firebase';
 import { Story, Chapter, Comment, UserProfile } from '../types';
 import { StoryLayoutContainer } from './StoryBlocks';
-import { ArrowLeft, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, X, ChevronLeft, ChevronRight, Layers, Palette, Check } from 'lucide-react';
 import { getReadingProgress } from '../lib/readingProgress';
 import { getUserUnlockedPasswordChaptersLocal } from '../lib/storage';
 import { ReadingEffects } from './ReadingEffects';
@@ -13,6 +13,8 @@ import {
   StoryCornerAccents,
 } from '../lib/borderStyles';
 import { StoryElementsLayer } from './StoryElementsLayer';
+import { getEffectiveStory } from '../lib/storyUtils';
+import { PRESET_THEME_COLORS } from '../lib/themeConstants';
 
 const THEME_TONES: Record<string, {
   containerBg: string;
@@ -54,6 +56,46 @@ const THEME_TONES: Record<string, {
     badgeFree: 'bg-[#12090c]',
     badgeFreeBorder: 'border-[#2d1822]',
     badgeFreeText: 'text-[#8a717a]'
+  },
+  'choco-light': {
+    containerBg: 'bg-[#fcf8f5]',
+    cardBg: 'bg-[#fffcf9]',
+    border: 'border-[#e8d5c8]',
+    text: 'text-[#3d2314]',
+    textMuted: 'text-[#8c5e42]',
+    inputBg: 'bg-[#f5ebe3]',
+    buttonBgPrimary: 'bg-[#f0e2d8] hover:bg-[#e4d1c3]',
+    buttonBgSecondary: 'bg-[#f8f2ec] hover:bg-[#f0e2d8]',
+    buttonBorderPrimary: 'border-[#cbb3a3]',
+    buttonBorderSecondary: 'border-[#e8d5c8]',
+    headerBorder: 'border-[#e8d5c8]',
+    badgeLocked: 'bg-[#f0e2d8]',
+    badgeLockedBorder: 'border-[#cbb3a3]',
+    badgeLockedText: 'text-[#3d2314]',
+    badgeLockedIcon: 'text-[#8c5e42]',
+    badgeFree: 'bg-[#f8f2ec]',
+    badgeFreeBorder: 'border-[#e8d5c8]',
+    badgeFreeText: 'text-[#8c5e42]'
+  },
+  'gradient-choco-light': {
+    containerBg: 'bg-[#fcf5ee]',
+    cardBg: 'bg-[#ffffff]',
+    border: 'border-[#d9beab]',
+    text: 'text-[#3d2314]',
+    textMuted: 'text-[#8c5e42]',
+    inputBg: 'bg-[#f7ebe1]',
+    buttonBgPrimary: 'bg-[#e8d3c3] hover:bg-[#dbbfab]',
+    buttonBgSecondary: 'bg-[#f7ebe1] hover:bg-[#e8d3c3]',
+    buttonBorderPrimary: 'border-[#cbb3a3]',
+    buttonBorderSecondary: 'border-[#d9beab]',
+    headerBorder: 'border-[#d9beab]',
+    badgeLocked: 'bg-[#e8d3c3]',
+    badgeLockedBorder: 'border-[#cbb3a3]',
+    badgeLockedText: 'text-[#3d2314]',
+    badgeLockedIcon: 'text-[#8c5e42]',
+    badgeFree: 'bg-[#f7ebe1]',
+    badgeFreeBorder: 'border-[#d9beab]',
+    badgeFreeText: 'text-[#8c5e42]'
   },
   'sepia': {
     containerBg: 'bg-[#f4ecd8]',
@@ -373,19 +415,29 @@ export const StoryDetail: React.FC<StoryDetailProps> = ({
     }));
   };
 
+  const [selectedThemeId, setSelectedThemeId] = useState<string>(story.activeThemeId || '');
+
+  useEffect(() => {
+    if (story.activeThemeId) {
+      setSelectedThemeId(story.activeThemeId);
+    }
+  }, [story.activeThemeId]);
+
+  const effectiveStory = getEffectiveStory(story, selectedThemeId);
+
   const [liveEditorProfile, setLiveEditorProfile] = useState<{ displayName?: string; photoURL?: string } | null>(null);
   const [lastReadProgress, setLastReadProgress] = useState<{ chapterId: string; chapterNumber: number; scrollPercentage: number; updatedAt: string } | null>(null);
 
   useEffect(() => {
-    if (story.id) {
-      const progress = getReadingProgress(story.id);
+    if (effectiveStory.id) {
+      const progress = getReadingProgress(effectiveStory.id);
       setLastReadProgress(progress as any);
     }
-  }, [story.id, currentUser]);
+  }, [effectiveStory.id, currentUser]);
 
   useEffect(() => {
-    if (story.authorUid) {
-      const unsub = onSnapshot(doc(db, 'users', story.authorUid), (docSnap) => {
+    if (effectiveStory.authorUid) {
+      const unsub = onSnapshot(doc(db, 'users', effectiveStory.authorUid), (docSnap) => {
         if (docSnap.exists()) {
           const data = docSnap.data();
           setLiveEditorProfile({
@@ -396,7 +448,7 @@ export const StoryDetail: React.FC<StoryDetailProps> = ({
       });
       return () => unsub();
     }
-  }, [story.authorUid]);
+  }, [effectiveStory.authorUid]);
 
   const lastReadChapter = (lastReadProgress && chapters.find(c => c.id === lastReadProgress.chapterId)) || null;
 
@@ -405,7 +457,7 @@ export const StoryDetail: React.FC<StoryDetailProps> = ({
     if (!commentText.trim()) return;
 
     onAddComment({
-      storyId: story.id,
+      storyId: effectiveStory.id,
       userId: currentUser?.uid || 'guest',
       userName: userProfile?.displayName || currentUser?.displayName || currentUser?.email?.split('@')[0] || 'Khách',
       userEmail: currentUser?.email || '',
@@ -414,84 +466,74 @@ export const StoryDetail: React.FC<StoryDetailProps> = ({
     setCommentText('');
   };
 
-  const toneKey = story.themeTone || 'dark-rose';
+  const toneKey = effectiveStory.themeTone || 'dark-rose';
   const isCustomTheme = toneKey === 'custom';
+  const activePreset = PRESET_THEME_COLORS[toneKey] || PRESET_THEME_COLORS['dark-rose'];
   const tone = THEME_TONES[toneKey] || THEME_TONES['dark-rose'];
 
-  const storyTitleFont = story.customTitleFont || story.defaultFont || 'font-mono';
-  const storySubtitleFont = story.customSubtitleFont || story.customTitleFont || story.defaultFont || 'font-mono';
-  const storyBodyFont = story.customBodyFont || story.defaultFont || 'font-mono';
-  const storyMutedFont = story.customMutedFont || story.defaultFont || 'font-mono';
-  const storyBtnFont = story.customBtnFont || story.defaultFont || 'font-mono';
+  const currentBg = isCustomTheme ? (effectiveStory.customBgColor || '#080406') : activePreset.bg;
+  const currentCardBg = isCustomTheme ? (effectiveStory.customCardBgColor || '#11090c') : activePreset.cardBg;
+  const currentText = isCustomTheme ? (effectiveStory.customTextColor || '#f2e6ea') : activePreset.text;
+  const currentTextMuted = isCustomTheme ? (effectiveStory.customTextMutedColor || '#d0a0b0') : activePreset.textMuted;
+  const currentBorder = isCustomTheme ? (effectiveStory.customBorderColor || '#2d1822') : activePreset.border;
+  const currentBtnBg = isCustomTheme ? (effectiveStory.customBtnBgColor || '#2b1620') : activePreset.btnBg;
+  const currentBtnSecondaryBg = isCustomTheme ? (effectiveStory.customBtnSecondaryBgColor || '#1c0f16') : (activePreset.btnSecondaryBg || activePreset.btnBg);
+  const currentBtnBorder = isCustomTheme ? currentBorder : activePreset.btnBorder;
+  const currentBtnText = isCustomTheme ? currentText : activePreset.btnText;
 
-  const activeBorderColor = isCustomTheme
-    ? (story.customBorderColor || '#ff6b9d')
-    : (tone.border.match(/#([0-9a-fA-F]{6}|[0-9a-fA-F]{3})/)?.[0] ? `#${tone.border.match(/#([0-9a-fA-F]{6}|[0-9a-fA-F]{3})/)![1]}` : '#ff6b9d');
+  const storyTitleFont = effectiveStory.customTitleFont || effectiveStory.defaultFont || 'font-mono';
+  const storySubtitleFont = effectiveStory.customSubtitleFont || effectiveStory.customTitleFont || effectiveStory.defaultFont || 'font-mono';
+  const storyBodyFont = effectiveStory.customBodyFont || effectiveStory.defaultFont || 'font-mono';
+  const storyMutedFont = effectiveStory.customMutedFont || effectiveStory.defaultFont || 'font-mono';
+  const storyBtnFont = effectiveStory.customBtnFont || effectiveStory.defaultFont || 'font-mono';
 
-  const activeBtnBorderColor = isCustomTheme
-    ? (story.customBorderColor || '#ff6b9d')
-    : (tone.buttonBorderPrimary.match(/#([0-9a-fA-F]{6}|[0-9a-fA-F]{3})/)?.[0] ? `#${tone.buttonBorderPrimary.match(/#([0-9a-fA-F]{6}|[0-9a-fA-F]{3})/)![1]}` : '#ff6b9d');
-
-  const activeBtnBgColor = isCustomTheme
-    ? (story.customBtnBgColor || '#f59e0b')
-    : (tone.buttonBgPrimary.match(/#([0-9a-fA-F]{6}|[0-9a-fA-F]{3})/)?.[0] ? `#${tone.buttonBgPrimary.match(/#([0-9a-fA-F]{6}|[0-9a-fA-F]{3})/)![1]}` : '#f59e0b');
-
-  const cardBgColor = isCustomTheme
-    ? (story.customCardBgColor || '#11090c')
-    : (tone.cardBg.match(/#([0-9a-fA-F]{6}|[0-9a-fA-F]{3})/)?.[0] ? `#${tone.cardBg.match(/#([0-9a-fA-F]{6}|[0-9a-fA-F]{3})/)![1]}` : '#11090c');
+  const activeBorderColor = currentBorder;
+  const activeBtnBorderColor = currentBtnBorder;
+  const activeBtnBgColor = currentBtnBg;
+  const cardBgColor = currentCardBg;
 
   const storyBorderObj = {
-    borderStyle: story.borderStyle || 'solid',
-    borderWidth: story.borderWidth || 'thin',
-    borderRadius: story.borderRadius || 'none',
-    borderCornerAccent: story.borderCornerAccent || 'none',
-    borderGlow: story.borderGlow || 'none',
-    customCardBgColor: story.customCardBgColor,
-    customBorderGradientColor2: story.customBorderGradientColor2,
-    customBorderGlowColor1: story.customBorderGlowColor1,
-    customBorderGlowColor2: story.customBorderGlowColor2,
+    borderStyle: effectiveStory.borderStyle || 'solid',
+    borderWidth: effectiveStory.borderWidth || 'thin',
+    borderRadius: effectiveStory.borderRadius || 'none',
+    borderCornerAccent: effectiveStory.borderCornerAccent || 'none',
+    borderGlow: effectiveStory.borderGlow || 'none',
+    customCardBgColor: effectiveStory.customCardBgColor,
+    customBorderGradientColor2: effectiveStory.customBorderGradientColor2,
+    customBorderGlowColor1: effectiveStory.customBorderGlowColor1,
+    customBorderGlowColor2: effectiveStory.customBorderGlowColor2,
   };
 
   const customStyles = {
-    container: isCustomTheme
-      ? { background: story.customBgColor || '#080406', color: story.customTextColor }
-      : (tone.gradientBg ? { background: tone.gradientBg } : {}),
-    card: isCustomTheme
-      ? { background: story.customCardBgColor, color: story.customTextColor, borderColor: story.customBorderColor }
-      : {},
-    textMuted: isCustomTheme ? { color: story.customTextMutedColor } : {},
-    text: isCustomTheme ? { color: story.customTextColor } : {},
-    border: isCustomTheme ? { borderColor: story.customBorderColor } : {},
-    input: isCustomTheme
-      ? { background: story.customBgColor, color: story.customTextColor, borderColor: story.customBorderColor }
-      : {},
-    btnPrimary: isCustomTheme
-      ? { background: story.customBtnBgColor, borderColor: story.customBorderColor, color: story.customTextColor }
-      : {},
-    btnSecondary: isCustomTheme
-      ? { background: story.customCardBgColor, borderColor: story.customBorderColor, color: story.customTextColor }
-      : {},
+    container: { background: currentBg, color: currentText },
+    card: { background: currentCardBg, color: currentText, borderColor: currentBorder },
+    textMuted: { color: currentTextMuted },
+    text: { color: currentText },
+    border: { borderColor: currentBorder },
+    input: { background: currentCardBg, color: currentText, borderColor: currentBorder },
+    btnPrimary: { background: currentBtnBg, borderColor: currentBtnBorder, color: currentBtnText },
+    btnSecondary: { background: currentBtnSecondaryBg, borderColor: currentBorder, color: currentText },
   };
 
   const editorDisplayName = 
-    story.editorName ||
+    effectiveStory.editorName ||
     liveEditorProfile?.displayName ||
-    (userProfile && story.authorUid && userProfile.uid === story.authorUid ? userProfile.displayName : undefined) ||
-    (currentUser && story.authorUid && currentUser.uid === story.authorUid ? currentUser.displayName || currentUser.email?.split('@')[0] : undefined) ||
+    (userProfile && effectiveStory.authorUid && userProfile.uid === effectiveStory.authorUid ? userProfile.displayName : undefined) ||
+    (currentUser && effectiveStory.authorUid && currentUser.uid === effectiveStory.authorUid ? currentUser.displayName || currentUser.email?.split('@')[0] : undefined) ||
     (userProfile?.displayName ? userProfile.displayName : undefined) ||
-    (story.authorEmail ? story.authorEmail.split('@')[0] : 'Cục Nâu');
+    (effectiveStory.authorEmail ? effectiveStory.authorEmail.split('@')[0] : 'Cục Nâu');
 
   const isCustomEditor = !!(
-    story.editorName && 
-    story.editorName !== (liveEditorProfile?.displayName || userProfile?.displayName || currentUser?.displayName)
+    effectiveStory.editorName && 
+    effectiveStory.editorName !== (liveEditorProfile?.displayName || userProfile?.displayName || currentUser?.displayName)
   );
 
   const editorAvatarUrl =
-    story.editorPhoto ||
+    effectiveStory.editorPhoto ||
     (isCustomEditor ? '' : (
       liveEditorProfile?.photoURL ||
-      (userProfile && story.authorUid && userProfile.uid === story.authorUid ? userProfile.photoURL : undefined) ||
-      (currentUser && story.authorUid && currentUser.uid === story.authorUid ? currentUser.photoURL : undefined) ||
+      (userProfile && effectiveStory.authorUid && userProfile.uid === effectiveStory.authorUid ? userProfile.photoURL : undefined) ||
+      (currentUser && effectiveStory.authorUid && currentUser.uid === effectiveStory.authorUid ? currentUser.photoURL : undefined) ||
       (userProfile?.photoURL ? userProfile.photoURL : undefined) ||
       ''
     ));
@@ -506,20 +548,20 @@ export const StoryDetail: React.FC<StoryDetailProps> = ({
       (userProfile?.unlockedPasswordChapters && userProfile.unlockedPasswordChapters.includes(chap.id))
     );
     const isAuthorOrOwner = 
-      (currentUser?.uid && story.authorUid && currentUser.uid === story.authorUid) ||
-      (currentUser?.email && story.authorEmail && currentUser.email.toLowerCase() === story.authorEmail.toLowerCase()) ||
+      (currentUser?.uid && effectiveStory.authorUid && currentUser.uid === effectiveStory.authorUid) ||
+      (currentUser?.email && effectiveStory.authorEmail && currentUser.email.toLowerCase() === effectiveStory.authorEmail.toLowerCase()) ||
       isAdmin;
     const isReading = lastReadProgress && lastReadProgress.chapterId === chap.id;
 
     return { isUnlocked, isPassUnlocked, isAuthorOrOwner, isReading };
   };
 
-  const currentBgVal = isCustomTheme ? (story.customBgColor || '#080406') : tone.containerBg;
+  const currentBgVal = currentBg;
   const isDarkTheme = !currentBgVal.toLowerCase().includes('#fff') && !currentBgVal.toLowerCase().includes('255, 255, 255');
 
   return (
     <div 
-      className={`story-detail-root max-w-4xl mx-auto px-4 py-6 space-y-6 relative ${storyBodyFont} ${isCustomTheme ? '' : tone.text}`}
+      className={`story-detail-root preserve-story-theme max-w-4xl mx-auto px-4 py-6 space-y-6 relative ${storyBodyFont}`}
       style={customStyles.container}
     >
       {/* Dynamic selection style based on story theme */}
@@ -531,53 +573,89 @@ export const StoryDetail: React.FC<StoryDetailProps> = ({
         }
       `}</style>
 
-      {story.readingEffect && story.readingEffect !== 'none' && (
-        <ReadingEffects effect={story.readingEffect} effectColor={story.readingEffectColor} isDarkTheme={isDarkTheme} />
+      {effectiveStory.readingEffect && effectiveStory.readingEffect !== 'none' && (
+        <ReadingEffects effect={effectiveStory.readingEffect} effectColor={effectiveStory.readingEffectColor} isDarkTheme={isDarkTheme} />
       )}
       
-      {/* Back Button */}
-      <button
-        onClick={onBack}
-        className="flex items-center gap-1.5 text-xs hover:opacity-85 transition cursor-pointer"
-        style={customStyles.textMuted}
-      >
-        <ArrowLeft className="w-4 h-4" />
-        <span>Quay lại trang chủ</span>
-      </button>
+      {/* Back Button & Theme Switcher Bar */}
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <button
+          onClick={onBack}
+          className="flex items-center gap-1.5 text-xs hover:opacity-85 transition cursor-pointer"
+          style={customStyles.textMuted}
+        >
+          <ArrowLeft className="w-4 h-4" />
+          <span>Quay lại trang chủ</span>
+        </button>
+
+        {/* Theme Switcher Bar */}
+        {story.storyThemes && story.storyThemes.length > 0 && (
+          <div className="flex items-center gap-1.5 p-1.5 rounded-lg border text-xs font-mono backdrop-blur-xs shadow-xs" style={{ background: cardBgColor, borderColor: activeBorderColor }}>
+            <span className="font-bold flex items-center gap-1 text-[11px] opacity-90 px-1" style={{ color: customStyles.card.color || activeBorderColor }}>
+              <Palette className="w-3.5 h-3.5 text-amber-500" />
+              <span className="hidden sm:inline">Theme:</span>
+            </span>
+            <div className="flex items-center gap-1 flex-wrap">
+              {story.storyThemes.map((t) => {
+                const isSel = (selectedThemeId || story.activeThemeId || story.storyThemes![0].id) === t.id;
+                const isMain = story.activeThemeId === t.id;
+                return (
+                  <button
+                    key={t.id}
+                    onClick={() => setSelectedThemeId(t.id)}
+                    className={`px-2 py-0.5 rounded text-[10px] font-bold border transition flex items-center gap-1 cursor-pointer ${
+                      isSel ? 'ring-2 ring-amber-400 scale-105 shadow-xs' : 'opacity-75 hover:opacity-100'
+                    }`}
+                    style={{
+                      background: isSel ? activeBtnBgColor : customStyles.card.background,
+                      borderColor: isSel ? activeBtnBorderColor : activeBorderColor,
+                      color: isSel ? '#ffffff' : customStyles.card.color,
+                    }}
+                    title={t.description || t.name}
+                  >
+                    <span>{t.name}</span>
+                    {isMain && <span className="text-[8px] bg-amber-500 text-black px-1 rounded font-black">Chính</span>}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Main Post Header */}
       <article 
         className={`${isCustomTheme ? '' : `${tone.cardBg}`} p-6 space-y-6 relative overflow-visible transition-all duration-200`}
         style={{
-          ...(isCustomTheme ? { background: story.customCardBgColor } : {}),
+          ...(isCustomTheme ? { background: effectiveStory.customCardBgColor } : {}),
           ...getStoryBorderStyle(storyBorderObj, activeBorderColor),
         }}
       >
         {/* Corner Accents */}
         <StoryCornerAccents
-          accent={story.borderCornerAccent}
+          accent={effectiveStory.borderCornerAccent}
           borderStyle={storyBorderObj.borderStyle}
           color={activeBorderColor}
         />
 
         {/* Story Decorative Elements */}
-        {story.storyElements && story.storyElements.length > 0 && (
+        {effectiveStory.storyElements && effectiveStory.storyElements.length > 0 && (
           <StoryElementsLayer
-            elements={story.storyElements}
+            elements={effectiveStory.storyElements}
             isEditable={false}
             themeColors={{
-              bg: isCustomTheme ? story.customBgColor : undefined,
-              cardBg: isCustomTheme ? story.customCardBgColor : undefined,
+              bg: isCustomTheme ? effectiveStory.customBgColor : undefined,
+              cardBg: isCustomTheme ? effectiveStory.customCardBgColor : undefined,
               border: activeBorderColor,
               accentColor: activeBorderColor,
-              text: isCustomTheme ? story.customTextColor : undefined,
-              textMuted: isCustomTheme ? story.customMutedColor : undefined,
+              text: isCustomTheme ? effectiveStory.customTextColor : undefined,
+              textMuted: isCustomTheme ? effectiveStory.customTextMutedColor : undefined,
             }}
           />
         )}
 
         <StoryLayoutContainer
-          story={story}
+          story={effectiveStory}
           chapters={chapters}
           lastReadChapter={lastReadChapter}
           lastReadProgress={lastReadProgress}

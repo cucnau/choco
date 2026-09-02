@@ -868,7 +868,7 @@ export const BulkChapterModal: React.FC<BulkChapterModalProps> = ({
                     ) : (
                       <>
                         <Check className="w-4 h-4" />
-                        <span>Xuất bản {selectedCount} chương</span>
+                        <span>Lưu {selectedCount} chương</span>
                       </>
                     )}
                   </button>

@@ -4,7 +4,8 @@ import { User as FirebaseUser } from 'firebase/auth';
 import { auth } from '../lib/firebase';
 import { saveUserFontToCloud, deleteUserFontFromCloud, getUserFontsFromCloud } from '../lib/storage';
 import { getIdbFonts, saveIdbFonts, deleteIdbFont, migrateLocalStorageFonts, StoredUserFont } from '../lib/idbStorage';
-import { Story, UserProfile, CharacterInfo, Chapter, StoryGalleryImage, StoryGalleryWidget, StoryLayoutBlockId, StoryLayoutSection, StoryLayoutSectionType, StoryLayoutColumnRatio, StoryElement } from '../types';
+import { Story, StoryTheme, UserProfile, CharacterInfo, Chapter, StoryGalleryImage, StoryGalleryWidget, StoryLayoutBlockId, StoryLayoutSection, StoryLayoutSectionType, StoryLayoutColumnRatio, StoryElement } from '../types';
+import { extractThemeFromStory } from '../lib/storyUtils';
 import { BulkChapterModal } from './BulkChapterModal';
 import {
   normalizeStorySections,
@@ -757,6 +758,223 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
   );
   const [readingEffectColor, setReadingEffectColor] = useState<string>(initialStory?.readingEffectColor || '#00f0ff');
 
+  // --- MULTI-THEMES STATE & HELPERS ---
+  const [storyThemes, setStoryThemes] = useState<StoryTheme[]>(() => {
+    if (initialStory?.storyThemes && initialStory.storyThemes.length > 0) {
+      return initialStory.storyThemes;
+    }
+    if (initialStory) {
+      return [extractThemeFromStory(initialStory, 'theme_main', 'Theme Mặc Định', 'Theme chính của truyện')];
+    }
+    return [
+      {
+        id: 'theme_default',
+        name: 'Theme Mặc Định (Choco Light)',
+        description: 'Giao diện chính tông Choco Light đồng bộ',
+        themeTone: 'choco-light',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+    ];
+  });
+
+  const [activeThemeId, setActiveThemeId] = useState<string>(() => {
+    return initialStory?.activeThemeId || (storyThemes[0]?.id || 'theme_default');
+  });
+
+  const [showThemeModal, setShowThemeModal] = useState<boolean>(false);
+  const [editingThemeItem, setEditingThemeItem] = useState<StoryTheme | null>(null);
+  const [themeModalName, setThemeModalName] = useState<string>('');
+  const [themeModalDesc, setThemeModalDesc] = useState<string>('');
+  const [themeModalCover, setThemeModalCover] = useState<string>('');
+  const [themeModalSynopsis, setThemeModalSynopsis] = useState<string>('');
+
+  const handleAddNewTheme = (presetTone?: string) => {
+    const newThemeId = `theme_${Date.now()}`;
+    const count = storyThemes.length + 1;
+    const toneToUse = presetTone || themeTone || 'choco-light';
+    const presetObj = PRESET_THEME_COLORS[toneToUse] || PRESET_THEME_COLORS['choco-light'];
+
+    const newTheme: StoryTheme = {
+      id: newThemeId,
+      name: `Theme ${count} (${presetObj?.name || toneToUse})`,
+      description: 'Giao diện chủ đề tùy biến riêng',
+      coverUrl: coverUrl.trim(),
+      synopsis: synopsis.trim(),
+      themeTone: toneToUse,
+      defaultFont: customBodyFont || 'font-mono',
+      customTitleFont,
+      customChapterTitleFont,
+      customSubtitleFont,
+      customBodyFont,
+      customMutedFont,
+      customBtnFont,
+      titleFontSize,
+      bodyFontSize,
+      customBgColor: toneToUse === 'custom' ? customBgColor : (presetObj?.bg || '#f8f3ee'),
+      customCardBgColor: toneToUse === 'custom' ? customCardBgColor : (presetObj?.cardBg || '#fffcf9'),
+      customTextColor: toneToUse === 'custom' ? customTextColor : (presetObj?.text || '#2c1810'),
+      customTextMutedColor: toneToUse === 'custom' ? customTextMutedColor : (presetObj?.textMuted || '#7a5230'),
+      customBorderColor: toneToUse === 'custom' ? customBorderColor : (presetObj?.border || '#e2d4c3'),
+      customBtnBgColor: toneToUse === 'custom' ? customBtnBgColor : (presetObj?.btnBg || '#613b22'),
+      customBtnSecondaryBgColor: toneToUse === 'custom' ? customBtnSecondaryBgColor : (presetObj?.btnSecondaryBg || presetObj?.btnBg || '#e8ddcc'),
+      borderStyle,
+      borderWidth,
+      borderRadius,
+      borderCornerAccent,
+      borderGlow,
+      customBorderGradientColor2,
+      customBorderGlowColor1,
+      customBorderGlowColor2,
+      readingEffect,
+      readingEffectColor,
+      chapterListStyle,
+      storyElements: [...storyElements],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    setStoryThemes((prev) => [...prev, newTheme]);
+    if (!activeThemeId) {
+      setActiveThemeId(newThemeId);
+    }
+  };
+
+  const handleApplyCurrentEditorToTheme = (themeId: string) => {
+    setStoryThemes((prev) =>
+      prev.map((t) => {
+        if (t.id === themeId) {
+          return {
+            ...t,
+            coverUrl: coverUrl.trim(),
+            synopsis: synopsis.trim(),
+            themeTone,
+            defaultFont: customBodyFont,
+            customTitleFont,
+            customChapterTitleFont,
+            customSubtitleFont,
+            customBodyFont,
+            customMutedFont,
+            customBtnFont,
+            titleFontSize,
+            bodyFontSize,
+            customBgColor,
+            customCardBgColor,
+            customTextColor,
+            customTextMutedColor,
+            customBorderColor,
+            customBtnBgColor,
+            customBtnSecondaryBgColor,
+            borderStyle,
+            borderWidth,
+            borderRadius,
+            borderCornerAccent,
+            borderGlow,
+            customBorderGradientColor2,
+            customBorderGlowColor1,
+            customBorderGlowColor2,
+            readingEffect,
+            readingEffectColor,
+            chapterListStyle,
+            storyElements: [...storyElements],
+            updatedAt: new Date().toISOString(),
+          };
+        }
+        return t;
+      })
+    );
+    alert('Đã lưu toàn bộ thiết kế hiện tại vào Theme!');
+  };
+
+  const handleLoadThemeIntoEditor = (theme: StoryTheme) => {
+    if (theme.coverUrl) setCoverUrl(theme.coverUrl);
+    if (theme.synopsis) setSynopsis(theme.synopsis);
+    if (theme.themeTone) setThemeTone(theme.themeTone);
+    if (theme.customBgColor) setCustomBgColor(theme.customBgColor);
+    if (theme.customCardBgColor) setCustomCardBgColor(theme.customCardBgColor);
+    if (theme.customTextColor) setCustomTextColor(theme.customTextColor);
+    if (theme.customTextMutedColor) setCustomTextMutedColor(theme.customTextMutedColor);
+    if (theme.customBorderColor) setCustomBorderColor(theme.customBorderColor);
+    if (theme.customBtnBgColor) setCustomBtnBgColor(theme.customBtnBgColor);
+    if (theme.customBtnSecondaryBgColor) setCustomBtnSecondaryBgColor(theme.customBtnSecondaryBgColor);
+    if (theme.customTitleFont !== undefined) setCustomTitleFont(theme.customTitleFont);
+    if (theme.customChapterTitleFont !== undefined) setCustomChapterTitleFont(theme.customChapterTitleFont);
+    if (theme.customSubtitleFont !== undefined) setCustomSubtitleFont(theme.customSubtitleFont);
+    if (theme.customBodyFont !== undefined) setCustomBodyFont(theme.customBodyFont);
+    if (theme.customMutedFont !== undefined) setCustomMutedFont(theme.customMutedFont);
+    if (theme.customBtnFont !== undefined) setCustomBtnFont(theme.customBtnFont);
+    if (theme.titleFontSize) setTitleFontSize(theme.titleFontSize);
+    if (theme.bodyFontSize) setBodyFontSize(theme.bodyFontSize);
+    if (theme.borderStyle) setBorderStyle(theme.borderStyle);
+    if (theme.borderWidth) setBorderWidth(theme.borderWidth);
+    if (theme.borderRadius) setBorderRadius(theme.borderRadius);
+    if (theme.borderCornerAccent) setBorderCornerAccent(theme.borderCornerAccent);
+    if (theme.borderGlow) setBorderGlow(theme.borderGlow);
+    if (theme.customBorderGradientColor2) setCustomBorderGradientColor2(theme.customBorderGradientColor2);
+    if (theme.customBorderGlowColor1) setCustomBorderGlowColor1(theme.customBorderGlowColor1);
+    if (theme.customBorderGlowColor2) setCustomBorderGlowColor2(theme.customBorderGlowColor2);
+    if (theme.readingEffect) setReadingEffect(theme.readingEffect);
+    if (theme.readingEffectColor) setReadingEffectColor(theme.readingEffectColor);
+    if (theme.chapterListStyle) setChapterListStyle(theme.chapterListStyle);
+    if (theme.storyElements) setStoryElements([...theme.storyElements]);
+  };
+
+  const handleDuplicateTheme = (theme: StoryTheme) => {
+    const dup: StoryTheme = {
+      ...theme,
+      id: `theme_${Date.now()}`,
+      name: `${theme.name} (Bản sao)`,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    setStoryThemes((prev) => [...prev, dup]);
+  };
+
+  const handleDeleteTheme = (themeId: string) => {
+    if (storyThemes.length <= 1) {
+      alert('Cần giữ lại ít nhất 1 Theme cho bộ truyện.');
+      return;
+    }
+    const updated = storyThemes.filter((t) => t.id !== themeId);
+    setStoryThemes(updated);
+    if (activeThemeId === themeId) {
+      setActiveThemeId(updated[0].id);
+    }
+  };
+
+  const handleOpenThemeModal = (theme: StoryTheme) => {
+    setEditingThemeItem(theme);
+    setThemeModalName(theme.name || '');
+    setThemeModalDesc(theme.description || '');
+    setThemeModalCover(theme.coverUrl || '');
+    setThemeModalSynopsis(theme.synopsis || '');
+    setShowThemeModal(true);
+  };
+
+  const handleSaveThemeModal = () => {
+    if (!editingThemeItem) return;
+    if (!themeModalName.trim()) {
+      alert('Vui lòng nhập tên Theme!');
+      return;
+    }
+    setStoryThemes((prev) =>
+      prev.map((t) =>
+        t.id === editingThemeItem.id
+          ? {
+              ...t,
+              name: themeModalName.trim(),
+              description: themeModalDesc.trim(),
+              coverUrl: themeModalCover.trim(),
+              synopsis: themeModalSynopsis.trim(),
+              updatedAt: new Date().toISOString(),
+            }
+          : t
+      )
+    );
+    setShowThemeModal(false);
+    setEditingThemeItem(null);
+  };
+
   // Working Story ID & Chapter Management States
   const [workingStoryId] = useState<string>(() => initialStory?.id || 'story-' + Date.now());
 
@@ -1086,7 +1304,7 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
   };
 
   // Floating Design Drawer Tabs
-  const [activeDrawerTab, setActiveDrawerTab] = useState<'theme' | 'fonts' | 'borders' | 'effects' | 'elements' | 'widgets' | 'layout' | null>(null);
+  const [activeDrawerTab, setActiveDrawerTab] = useState<'theme' | 'fonts' | 'borders' | 'effects' | 'elements' | 'widgets' | 'layout' | 'multi-themes' | null>(null);
 
   // Story Page Flexible Sections Layout State (từng đoạn 1 cột hoặc 2 cột linh hoạt)
   const [storyLayoutSections, setStoryLayoutSections] = useState<StoryLayoutSection[]>(() =>
@@ -2297,6 +2515,48 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
       return;
     }
 
+    // Cập nhật theme đang active với các thông số editor hiện tại
+    const finalThemes = storyThemes.map((t) => {
+      if (t.id === activeThemeId) {
+        return {
+          ...t,
+          coverUrl: coverUrl.trim(),
+          synopsis: synopsis.trim(),
+          themeTone,
+          defaultFont: customBodyFont,
+          customTitleFont,
+          customChapterTitleFont,
+          customSubtitleFont,
+          customBodyFont,
+          customMutedFont,
+          customBtnFont,
+          titleFontSize,
+          bodyFontSize,
+          customBgColor: themeTone === 'custom' ? customBgColor : undefined,
+          customCardBgColor: themeTone === 'custom' ? customCardBgColor : undefined,
+          customTextColor: themeTone === 'custom' ? customTextColor : undefined,
+          customTextMutedColor: themeTone === 'custom' ? customTextMutedColor : undefined,
+          customBorderColor: themeTone === 'custom' ? customBorderColor : undefined,
+          customBtnBgColor: themeTone === 'custom' ? customBtnBgColor : undefined,
+          customBtnSecondaryBgColor: themeTone === 'custom' ? customBtnSecondaryBgColor : undefined,
+          borderStyle,
+          borderWidth,
+          borderRadius,
+          borderCornerAccent,
+          borderGlow,
+          customBorderGradientColor2,
+          customBorderGlowColor1,
+          customBorderGlowColor2,
+          readingEffect,
+          readingEffectColor,
+          chapterListStyle,
+          storyElements: [...storyElements],
+          updatedAt: new Date().toISOString(),
+        };
+      }
+      return t;
+    });
+
     onSave({
       id: workingStoryId,
       title: title.trim(),
@@ -2306,6 +2566,10 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
       coverUrl: coverUrl.trim() || 'https://images.unsplash.com/photo-1457369804613-52c61a468e7d?w=600&auto=format&fit=crop&q=80',
       synopsis: synopsis.trim(),
       tags: tags.length > 0 ? tags : undefined,
+
+      // Đa dạng Theme bộ truyện
+      storyThemes: finalThemes.length > 0 ? finalThemes : undefined,
+      activeThemeId: activeThemeId || (finalThemes[0]?.id || undefined),
 
       // Widget thông tin nhân vật
       showCharacterWidget,
@@ -2479,7 +2743,7 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
 
   return (
     <div
-      className="live-editor-root fixed inset-0 z-[100] overflow-y-auto w-full h-full min-h-screen transition-colors duration-200"
+      className="live-editor-root preserve-story-theme fixed inset-0 z-[100] overflow-y-auto w-full h-full min-h-screen transition-colors duration-200"
       style={{
         background: currentBg,
         color: currentText,
@@ -2630,6 +2894,23 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
         {/* Quick Design Switchers */}
         <div className="flex items-center gap-1.5 sm:gap-2">
           <button
+            type="button"
+            onClick={() => setActiveDrawerTab(activeDrawerTab === 'multi-themes' ? null : 'multi-themes')}
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-mono rounded border transition cursor-pointer ${
+              activeDrawerTab === 'multi-themes' ? 'ring-2 ring-amber-400 font-bold' : 'hover:opacity-90'
+            }`}
+            style={{
+              background: activeDrawerTab === 'multi-themes' ? currentBtnBg : currentBtnSecondaryBg,
+              borderColor: currentBtnBorder,
+              color: activeDrawerTab === 'multi-themes' ? currentBtnText : currentText,
+            }}
+            title="Thêm và quản lý nhiều Theme thiết kế cho bộ truyện"
+          >
+            <Layers className="w-3.5 h-3.5 text-amber-400" />
+            <span className="hidden md:inline">Đa Theme ({storyThemes.length})</span>
+          </button>
+
+          <button
             onClick={() => setActiveDrawerTab(activeDrawerTab === 'theme' ? null : 'theme')}
             className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-mono rounded border transition ${
               activeDrawerTab === 'theme' ? 'ring-2 ring-white/50' : 'hover:opacity-90'
@@ -2766,6 +3047,7 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
         >
           <div className="flex items-center justify-between border-b pb-2" style={{ borderColor: currentBorder }}>
             <span className="text-xs font-bold uppercase tracking-wider flex items-center gap-2" style={{ color: currentText }}>
+              {activeDrawerTab === 'multi-themes' && <Layers className="w-4 h-4 text-amber-400" />}
               {activeDrawerTab === 'theme' && <Palette className="w-4 h-4" />}
               {activeDrawerTab === 'fonts' && <Type className="w-4 h-4" />}
               {activeDrawerTab === 'borders' && <Square className="w-4 h-4" />}
@@ -2774,6 +3056,7 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
               {activeDrawerTab === 'widgets' && <Users className="w-4 h-4" />}
               {activeDrawerTab === 'layout' && <MoveVertical className="w-4 h-4" />}
               <span>
+                {activeDrawerTab === 'multi-themes' && 'Đa dạng Theme bộ truyện'}
                 {activeDrawerTab === 'theme' && 'Cài đặt màu sắc & Tông nền'}
                 {activeDrawerTab === 'fonts' && 'Cài đặt Font chữ'}
                 {activeDrawerTab === 'borders' && 'Cài đặt Viền & Khung trang trí'}
@@ -2792,6 +3075,211 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
               <X className="w-4 h-4" />
             </button>
           </div>
+
+          {/* TAB 0: MULTI-THEMES (Đa dạng Theme) */}
+          {activeDrawerTab === 'multi-themes' && (
+            <div className="space-y-4 text-xs font-mono">
+              <div className="p-2.5 rounded border bg-black/20 space-y-1.5" style={{ borderColor: currentBorder }}>
+                <div className="flex items-center gap-2 font-bold text-amber-400">
+                  <Layers className="w-4 h-4" />
+                  <span>Quản lý Đa dạng Theme bộ truyện</span>
+                </div>
+                <p className="text-[11px] leading-relaxed opacity-80" style={{ color: currentTextMuted }}>
+                  Tạo nhiều giao diện khác nhau cho truyện. Mỗi Theme có thể có ảnh bìa riêng, lời tựa riêng, phối màu, font chữ, khung viền và hiệu ứng hạt riêng.
+                </p>
+              </div>
+
+              {/* Nút Tạo Theme Mới */}
+              <div className="flex items-center justify-between pt-1">
+                <span className="font-bold uppercase text-[10px]" style={{ color: currentText }}>
+                  Danh sách Theme ({storyThemes.length})
+                </span>
+                <button
+                  type="button"
+                  onClick={() => handleAddNewTheme()}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded text-[11px] font-bold border transition shadow-sm hover:scale-[1.02] active:scale-95 cursor-pointer"
+                  style={{
+                    background: currentBtnBg,
+                    borderColor: currentBtnBorder,
+                    color: currentBtnText,
+                  }}
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Tạo Theme Mới</span>
+                </button>
+              </div>
+
+              {/* Gợi ý khởi tạo nhanh theo Preset Tone */}
+              <div className="space-y-1.5 pt-2 border-t" style={{ borderColor: currentBorder }}>
+                <span className="text-[10px] opacity-75 font-mono block" style={{ color: currentTextMuted }}>
+                  Tạo nhanh Theme mới theo tông màu mẫu:
+                </span>
+                <div className="flex flex-wrap gap-1.5">
+                  {[
+                    { key: 'choco-light', label: 'Choco Light' },
+                    { key: 'sepia', label: 'Giấy Sepia' },
+                    { key: 'dark-rose', label: 'Dark Rose' },
+                    { key: 'gradient-rose', label: 'Hồng Đêm' },
+                    { key: 'gradient-ocean', label: 'Đại Dương' },
+                    { key: 'gradient-emerald', label: 'Ngọc Lục' },
+                    { key: 'gradient-gold', label: 'Hoàng Gia' },
+                    { key: 'classic-dark', label: 'Classic Dark' },
+                  ].map((preset) => (
+                    <button
+                      key={preset.key}
+                      type="button"
+                      onClick={() => handleAddNewTheme(preset.key)}
+                      className="px-2 py-1 rounded text-[10px] font-medium border transition hover:opacity-90 flex items-center gap-1 cursor-pointer"
+                      style={{
+                        background: currentBtnSecondaryBg,
+                        borderColor: currentBorder,
+                        color: currentText,
+                      }}
+                    >
+                      <Plus className="w-2.5 h-2.5 text-amber-400" />
+                      <span>{preset.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Danh sách các Theme đã tạo */}
+              <div className="space-y-3 max-h-[360px] overflow-y-auto pr-1">
+                {storyThemes.map((theme) => {
+                  const isActive = theme.id === activeThemeId;
+                  const displayCover = theme.coverUrl || coverUrl;
+
+                  return (
+                    <div
+                      key={theme.id}
+                      className={`p-3 rounded-lg border transition space-y-2.5 relative ${
+                        isActive ? 'ring-2 ring-amber-400 shadow-md' : 'hover:border-amber-500/50'
+                      }`}
+                      style={{
+                        background: isActive ? currentBtnSecondaryBg : currentCardBg,
+                        borderColor: isActive ? '#f59e0b' : currentBorder,
+                      }}
+                    >
+                      {/* Header theme */}
+                      <div className="flex items-start gap-2.5 justify-between">
+                        <div className="flex items-center gap-2.5">
+                          {displayCover ? (
+                            <img
+                              src={displayCover}
+                              alt={theme.name}
+                              className="w-10 h-14 object-cover rounded border border-white/20 shrink-0 shadow-xs"
+                            />
+                          ) : (
+                            <div className="w-10 h-14 bg-black/30 rounded border border-white/10 shrink-0 flex items-center justify-center text-[9px] text-center p-1">
+                              Bìa mẫu
+                            </div>
+                          )}
+
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="font-bold text-xs" style={{ color: currentText }}>
+                                {theme.name}
+                              </span>
+                              {isActive && (
+                                <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-500 text-black flex items-center gap-1 shadow-xs">
+                                  <Check className="w-2.5 h-2.5" />
+                                  <span>Theme Chính</span>
+                                </span>
+                              )}
+                            </div>
+                            {theme.description && (
+                              <p className="text-[10px] opacity-75 line-clamp-1" style={{ color: currentTextMuted }}>
+                                {theme.description}
+                              </p>
+                            )}
+                            <div className="flex items-center gap-2 text-[9px] font-mono opacity-70" style={{ color: currentTextMuted }}>
+                              <span>Tông: {theme.themeTone || 'Mặc định'}</span>
+                              {theme.readingEffect && theme.readingEffect !== 'none' && (
+                                <span>• Hiệu ứng: {theme.readingEffect}</span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => handleOpenThemeModal(theme)}
+                            className="p-1 rounded hover:bg-black/20 transition cursor-pointer"
+                            style={{ color: currentText }}
+                            title="Chỉnh sửa Tên, Bìa riêng & Lời tựa riêng của Theme"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDuplicateTheme(theme)}
+                            className="p-1 rounded hover:bg-black/20 transition cursor-pointer"
+                            style={{ color: currentText }}
+                            title="Sao chép Theme này"
+                          >
+                            <Copy className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteTheme(theme.id)}
+                            className="p-1 rounded hover:bg-red-500/20 text-red-400 transition cursor-pointer"
+                            title="Xóa Theme này"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Các thao tác chính cho theme */}
+                      <div className="grid grid-cols-2 gap-1.5 pt-2 border-t border-white/10">
+                        {!isActive ? (
+                          <button
+                            type="button"
+                            onClick={() => setActiveThemeId(theme.id)}
+                            className="w-full py-1.5 px-2 rounded text-[10px] font-bold border transition flex items-center justify-center gap-1 bg-amber-500/20 text-amber-300 border-amber-500/50 hover:bg-amber-500/30 cursor-pointer"
+                          >
+                            <Check className="w-3 h-3" />
+                            <span>Đặt làm Theme Chính</span>
+                          </button>
+                        ) : (
+                          <div className="w-full py-1.5 px-2 rounded text-[10px] font-bold text-center bg-amber-500/10 text-amber-400 border border-amber-500/30">
+                            ✓ Đang là Theme Chính
+                          </div>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={() => handleLoadThemeIntoEditor(theme)}
+                          className="w-full py-1.5 px-2 rounded text-[10px] font-bold border transition flex items-center justify-center gap-1 hover:opacity-90 cursor-pointer"
+                          style={{
+                            background: currentBtnBg,
+                            borderColor: currentBtnBorder,
+                            color: currentBtnText,
+                          }}
+                          title="Tải màu sắc, font chữ & cấu hình Theme này vào Editor để xem trước và chỉnh sửa"
+                        >
+                          <Eye className="w-3 h-3" />
+                          <span>Xem / Sửa trên Editor</span>
+                        </button>
+                      </div>
+
+                      <div className="pt-1">
+                        <button
+                          type="button"
+                          onClick={() => handleApplyCurrentEditorToTheme(theme.id)}
+                          className="w-full py-1 px-2 rounded text-[9px] font-mono border text-center transition opacity-80 hover:opacity-100 border-dashed cursor-pointer"
+                          style={{ borderColor: currentBorder, color: currentTextMuted }}
+                        >
+                          💾 Ghi đè thiết kế Editor hiện tại vào Theme này
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* TAB 1: THEME / COLORS */}
           {activeDrawerTab === 'theme' && (
@@ -2840,6 +3328,7 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                 >
                   <optgroup label="Đơn sắc & Trầm ấm" style={{ background: currentCardBg, color: currentText }}>
                     <option value="dark-rose" style={{ background: currentCardBg, color: currentText }}>Dark Rose (Hồng Đen)</option>
+                    <option value="choco-light" style={{ background: currentCardBg, color: currentText }}>Choco Light (Sô-cô-la Sữa)</option>
                     <option value="classic-black" style={{ background: currentCardBg, color: currentText }}>Classic Black (Đen Tuyến)</option>
                     <option value="dark-violet" style={{ background: currentCardBg, color: currentText }}>Dark Violet (Tím Đêm)</option>
                     <option value="navy-blue" style={{ background: currentCardBg, color: currentText }}>Navy Blue (Xanh Đêm)</option>
@@ -2851,6 +3340,7 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                     <option value="cyberpunk" style={{ background: currentCardBg, color: currentText }}>Cyberpunk (Neon Tím)</option>
                   </optgroup>
                   <optgroup label="Gradient (Chuyển sắc)" style={{ background: currentCardBg, color: currentText }}>
+                    <option value="gradient-choco-light" style={{ background: currentCardBg, color: currentText }}>Gradient Choco Light (Kem Ca Cao Sáng)</option>
                     <option value="gradient-rose" style={{ background: currentCardBg, color: currentText }}>Gradient Rose (Hồng Đen)</option>
                     <option value="gradient-midnight" style={{ background: currentCardBg, color: currentText }}>Gradient Midnight (Đêm Tím)</option>
                     <option value="gradient-ocean" style={{ background: currentCardBg, color: currentText }}>Gradient Ocean (Đại Dương)</option>
@@ -5247,28 +5737,30 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
 
       {/* MAIN INTERACTIVE STORY PAGE CONTAINER */}
       <main className={`max-w-4xl mx-auto px-4 py-6 space-y-6 ${customBodyFont}`}>
-        {/* Helper Banner */}
-        <div
-          className="p-3.5 rounded-lg border text-xs flex items-center justify-between gap-3 font-mono shadow-sm"
-          style={{
-            background: currentCardBg,
-            borderColor: currentBorder,
-            color: currentText,
-          }}
-        >
-          <span className="font-medium">Bạn có thể nhấp chuột trực tiếp vào Tên truyện, Tác giả, Ảnh bìa, Giới thiệu hoặc Tag bên dưới để chỉnh sửa ngay tại chỗ.</span>
-          <button
-            onClick={() => setActiveDrawerTab(activeDrawerTab ? null : 'theme')}
-            className="shrink-0 px-3 py-1.5 text-[11px] font-bold rounded border hover:opacity-90 transition shadow-xs"
+        {/* Helper Banner (Ẩn ở chế độ Xem trước) */}
+        {editorMainView !== 'preview' && (
+          <div
+            className="p-3.5 rounded-lg border text-xs flex items-center justify-between gap-3 font-mono shadow-sm"
             style={{
-              background: currentBtnBg,
-              borderColor: currentBtnBorder,
-              color: currentBtnText,
+              background: currentCardBg,
+              borderColor: currentBorder,
+              color: currentText,
             }}
           >
-            Mở bảng thiết kế
-          </button>
-        </div>
+            <span className="font-medium">Bạn có thể nhấp chuột trực tiếp vào Tên truyện, Tác giả, Ảnh bìa, Giới thiệu hoặc Tag bên dưới để chỉnh sửa ngay tại chỗ.</span>
+            <button
+              onClick={() => setActiveDrawerTab(activeDrawerTab ? null : 'theme')}
+              className="shrink-0 px-3 py-1.5 text-[11px] font-bold rounded border hover:opacity-90 transition shadow-xs"
+              style={{
+                background: currentBtnBg,
+                borderColor: currentBtnBorder,
+                color: currentBtnText,
+              }}
+            >
+              Mở bảng thiết kế
+            </button>
+          </div>
+        )}
 
         {/* CHAPTER EDITOR VIEW VS STORY PAGE VIEW */}
         {editingChapterItem !== null ? (
@@ -5731,7 +6223,7 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
               <div className="flex items-center gap-2">
                 <Eye className="w-4 h-4 text-pink-400 shrink-0" />
                 <span>
-                  <strong>Chế độ Xem trước 1:1:</strong> Trang truyện hiển thị chuẩn xác 100% như độc giả xem. Thêm hoặc kéo thả element tại đây sẽ giữ đúng vị trí tuyệt đối khi xuất bản!
+                  <strong>Chế độ Xem trước 1:1:</strong> Trang truyện hiển thị chuẩn xác 100% như độc giả xem. Thêm hoặc kéo thả element tại đây sẽ giữ đúng vị trí tuyệt đối khi lưu!
                 </span>
               </div>
               <div className="flex items-center gap-2 shrink-0">
@@ -6086,6 +6578,129 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
             accentColor: currentBtnBg,
           }}
         />
+      )}
+
+      {/* THEME DETAILS MODAL */}
+      {showThemeModal && editingThemeItem && (
+        <div className="fixed inset-0 z-[9999] bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div
+            className="w-full max-w-md p-5 rounded-xl border space-y-4 shadow-2xl font-mono text-xs max-h-[85vh] overflow-y-auto"
+            style={{ background: currentCardBg, borderColor: currentBorder, color: currentText }}
+          >
+            <div className="flex items-center justify-between border-b pb-2" style={{ borderColor: currentBorder }}>
+              <div className="flex items-center gap-2 font-bold text-amber-400 text-sm">
+                <Edit3 className="w-4 h-4" />
+                <span>Chỉnh sửa Thông tin Theme</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowThemeModal(false);
+                  setEditingThemeItem(null);
+                }}
+                className="p-1 hover:bg-black/20 rounded cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="block text-[10px] uppercase font-bold mb-1 opacity-80" style={{ color: currentTextMuted }}>
+                  Tên Theme *
+                </label>
+                <input
+                  type="text"
+                  value={themeModalName}
+                  onChange={(e) => setThemeModalName(e.target.value)}
+                  placeholder="Ví dụ: Theme Giáng Sinh, Theme Sepia Hoài Cổ..."
+                  className="w-full px-2.5 py-1.5 rounded border focus:ring-1 focus:ring-amber-400 text-xs"
+                  style={{ background: currentBg, borderColor: currentBorder, color: currentText }}
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] uppercase font-bold mb-1 opacity-80" style={{ color: currentTextMuted }}>
+                  Mô tả ngắn Theme
+                </label>
+                <input
+                  type="text"
+                  value={themeModalDesc}
+                  onChange={(e) => setThemeModalDesc(e.target.value)}
+                  placeholder="Ví dụ: Phong cách cổ điển với tone giấy vàng..."
+                  className="w-full px-2.5 py-1.5 rounded border focus:ring-1 focus:ring-amber-400 text-xs"
+                  style={{ background: currentBg, borderColor: currentBorder, color: currentText }}
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] uppercase font-bold mb-1 opacity-80" style={{ color: currentTextMuted }}>
+                  Ảnh bìa riêng cho Theme này
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={themeModalCover}
+                    onChange={(e) => setThemeModalCover(e.target.value)}
+                    placeholder="Dán URL ảnh bìa hoặc dùng bìa chính..."
+                    className="w-full px-2.5 py-1.5 rounded border text-xs"
+                    style={{ background: currentBg, borderColor: currentBorder, color: currentText }}
+                  />
+                  {themeModalCover && (
+                    <button
+                      type="button"
+                      onClick={() => setThemeModalCover('')}
+                      className="px-2 py-1 rounded bg-red-500/20 text-red-400 text-[10px] shrink-0 cursor-pointer"
+                    >
+                      Xóa
+                    </button>
+                  )}
+                </div>
+                {themeModalCover && (
+                  <div className="mt-2 w-16 h-24 rounded border overflow-hidden shrink-0">
+                    <img src={themeModalCover} alt="Cover Preview" className="w-full h-full object-cover" />
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-[10px] uppercase font-bold mb-1 opacity-80" style={{ color: currentTextMuted }}>
+                  Lời tựa / Tóm tắt riêng cho Theme này
+                </label>
+                <textarea
+                  rows={3}
+                  value={themeModalSynopsis}
+                  onChange={(e) => setThemeModalSynopsis(e.target.value)}
+                  placeholder="Nếu để trống sẽ sử dụng lời tựa mặc định của bộ truyện..."
+                  className="w-full px-2.5 py-1.5 rounded border text-xs"
+                  style={{ background: currentBg, borderColor: currentBorder, color: currentText }}
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2 border-t" style={{ borderColor: currentBorder }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowThemeModal(false);
+                  setEditingThemeItem(null);
+                }}
+                className="px-3 py-1.5 rounded border hover:opacity-80 cursor-pointer"
+                style={{ borderColor: currentBorder, color: currentTextMuted }}
+              >
+                Hủy
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveThemeModal}
+                className="px-4 py-1.5 rounded font-bold transition hover:scale-[1.02] active:scale-95 cursor-pointer"
+                style={{ background: currentBtnBg, borderColor: currentBtnBorder, color: currentBtnText }}
+              >
+                Lưu Thay Đổi Theme
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

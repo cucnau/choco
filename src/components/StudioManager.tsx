@@ -2261,12 +2261,14 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
                     >
                       <optgroup label="── Đơn sắc (Classic) ──">
                         <option value="dark-rose">Hồng Tối (Mặc định)</option>
+                        <option value="choco-light">Sô-cô-la Sữa Sáng (Choco Light)</option>
                         <option value="sepia">Cổ điển (Sepia)</option>
                         <option value="emerald">Lục Bảo (Emerald)</option>
                         <option value="slate">Xám Slate (Tối giản)</option>
                         <option value="classic-dark">Tối Thuần (Classic Dark)</option>
                       </optgroup>
                       <optgroup label="── Gradient (Chuyển sắc) ──">
+                        <option value="gradient-choco-light">Gradient Kem Ca Cao Sáng (Choco Light)</option>
                         <option value="gradient-rose">Gradient Hồng Rượu (Rose Velvet)</option>
                         <option value="gradient-midnight">Gradient Đêm Thần Thoại (Midnight)</option>
                         <option value="gradient-ocean">Gradient Biển Sâu (Deep Ocean)</option>

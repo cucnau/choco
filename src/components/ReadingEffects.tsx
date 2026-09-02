@@ -216,7 +216,7 @@ export const ReadingEffects: React.FC<ReadingEffectsProps> = ({ effect = 'none',
         }
       }
 
-      draw() {
+      draw(c?: CanvasRenderingContext2D, rgb?: { r: number; g: number; b: number }) {
         ctx.save();
         ctx.translate(this.x, this.y);
         ctx.rotate(this.angle);
@@ -258,7 +258,9 @@ export const ReadingEffects: React.FC<ReadingEffectsProps> = ({ effect = 'none',
         ctx.lineTo(-r * 0.22, -r * 0.65);
         ctx.closePath();
 
-        if (isDarkTheme) {
+        if (rgb) {
+          ctx.fillStyle = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${this.opacity + (isDarkTheme ? 0.25 : 0.4)})`;
+        } else if (isDarkTheme) {
           ctx.fillStyle = `rgba(239, 68, 68, ${this.opacity})`; // Soft maple red on dark
         } else {
           ctx.fillStyle = `rgba(185, 28, 28, ${this.opacity + 0.12})`; // Soft crimson maple on light
@@ -267,9 +269,13 @@ export const ReadingEffects: React.FC<ReadingEffectsProps> = ({ effect = 'none',
 
         // Main leaf veins
         ctx.beginPath();
-        ctx.strokeStyle = isDarkTheme 
-          ? `rgba(254, 202, 202, ${this.opacity * 0.5})` 
-          : `rgba(69, 10, 10, ${this.opacity * 0.6})`;
+        if (rgb) {
+          ctx.strokeStyle = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${this.opacity * 0.7})`;
+        } else {
+          ctx.strokeStyle = isDarkTheme 
+            ? `rgba(254, 202, 202, ${this.opacity * 0.5})` 
+            : `rgba(69, 10, 10, ${this.opacity * 0.6})`;
+        }
         ctx.lineWidth = 0.8;
         // Main stem
         ctx.moveTo(0, 0.45 * r);
@@ -313,7 +319,7 @@ export const ReadingEffects: React.FC<ReadingEffectsProps> = ({ effect = 'none',
         }
       }
 
-      draw() {
+      draw(c?: CanvasRenderingContext2D, rgb?: { r: number; g: number; b: number }) {
         ctx.save();
         ctx.translate(this.x, this.y);
         ctx.rotate(this.angle);
@@ -329,7 +335,9 @@ export const ReadingEffects: React.FC<ReadingEffectsProps> = ({ effect = 'none',
         ctx.bezierCurveTo(r * 1.2, -r * 0.4, r * 0.5, r * 0.1, 0, r * 0.3);
         ctx.closePath();
 
-        if (isDarkTheme) {
+        if (rgb) {
+          ctx.fillStyle = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${this.opacity + (isDarkTheme ? 0.25 : 0.4)})`;
+        } else if (isDarkTheme) {
           ctx.fillStyle = `rgba(250, 204, 21, ${this.opacity})`; // Soft golden ginkgo on dark
         } else {
           ctx.fillStyle = `rgba(217, 119, 6, ${this.opacity + 0.12})`; // Soft amber ginkgo on light
@@ -338,9 +346,13 @@ export const ReadingEffects: React.FC<ReadingEffectsProps> = ({ effect = 'none',
 
         // Radiating fan veins from base
         ctx.beginPath();
-        ctx.strokeStyle = isDarkTheme 
-          ? `rgba(254, 240, 138, ${this.opacity * 0.5})` 
-          : `rgba(120, 53, 15, ${this.opacity * 0.6})`;
+        if (rgb) {
+          ctx.strokeStyle = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${this.opacity * 0.7})`;
+        } else {
+          ctx.strokeStyle = isDarkTheme 
+            ? `rgba(254, 240, 138, ${this.opacity * 0.5})` 
+            : `rgba(120, 53, 15, ${this.opacity * 0.6})`;
+        }
         ctx.lineWidth = 0.7;
 
         ctx.moveTo(0, r * 0.3);
@@ -411,7 +423,7 @@ export const ReadingEffects: React.FC<ReadingEffectsProps> = ({ effect = 'none',
         }
       }
 
-      draw() {
+      draw(c?: CanvasRenderingContext2D, rgb?: { r: number; g: number; b: number }) {
         ctx.save();
         ctx.translate(this.x, this.y);
         ctx.rotate(this.angle);
@@ -425,7 +437,13 @@ export const ReadingEffects: React.FC<ReadingEffectsProps> = ({ effect = 'none',
         ctx.bezierCurveTo(-this.r * 1.2, -this.r * 0.4, -this.r * 0.7, this.r * 0.7, 0, this.r);
         ctx.bezierCurveTo(this.r * 0.7, this.r * 0.7, this.r * 1.2, -this.r * 0.4, 0, -this.r);
 
-        if (isDarkTheme) {
+        if (rgb) {
+          ctx.fillStyle = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${this.opacity + (isDarkTheme ? 0.25 : 0.4)})`;
+          ctx.fill();
+          ctx.strokeStyle = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.5)`;
+          ctx.lineWidth = 0.5;
+          ctx.stroke();
+        } else if (isDarkTheme) {
           ctx.fillStyle = `rgba(244, 143, 177, ${this.opacity})`;
           ctx.fill();
         } else {
@@ -488,7 +506,7 @@ export const ReadingEffects: React.FC<ReadingEffectsProps> = ({ effect = 'none',
         }
       }
 
-      draw() {
+      draw(c?: CanvasRenderingContext2D, rgb?: { r: number; g: number; b: number }) {
         if (this.alpha <= 0.01) return;
 
         ctx.save();
@@ -502,7 +520,11 @@ export const ReadingEffects: React.FC<ReadingEffectsProps> = ({ effect = 'none',
 
         const grad = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, glowRadius);
         
-        if (isDarkTheme) {
+        if (rgb) {
+          grad.addColorStop(0, `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${pulseAlpha * 0.95})`);
+          grad.addColorStop(0.3, `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${pulseAlpha * 0.5})`);
+          grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        } else if (isDarkTheme) {
           grad.addColorStop(0, `rgba(254, 240, 138, ${pulseAlpha * 0.95})`);
           grad.addColorStop(0.2, `rgba(245, 158, 11, ${pulseAlpha * 0.65})`);
           grad.addColorStop(0.5, `rgba(217, 119, 6, ${pulseAlpha * 0.2})`);
@@ -519,7 +541,9 @@ export const ReadingEffects: React.FC<ReadingEffectsProps> = ({ effect = 'none',
         ctx.fill();
 
         ctx.beginPath();
-        if (isDarkTheme) {
+        if (rgb) {
+          ctx.fillStyle = `rgba(${Math.min(255, rgb.r + 50)}, ${Math.min(255, rgb.g + 50)}, ${Math.min(255, rgb.b + 50)}, ${pulseAlpha * 0.95})`;
+        } else if (isDarkTheme) {
           ctx.fillStyle = `rgba(255, 255, 255, ${pulseAlpha * 0.95})`;
         } else {
           ctx.fillStyle = `rgba(120, 53, 15, ${pulseAlpha * 0.9})`; // Dark amber core on light
@@ -555,7 +579,7 @@ export const ReadingEffects: React.FC<ReadingEffectsProps> = ({ effect = 'none',
         }
       }
 
-      draw() {
+      draw(c?: CanvasRenderingContext2D, rgb?: { r: number; g: number; b: number }) {
         ctx.save();
         ctx.globalAlpha = this.opacity;
 
@@ -568,14 +592,21 @@ export const ReadingEffects: React.FC<ReadingEffectsProps> = ({ effect = 'none',
           this.r
         );
         
-        const hue1 = (this.hueOffset + this.y * 0.08) % 360;
-        const hue2 = (hue1 + 120) % 360;
-        const hue3 = (hue1 + 240) % 360;
+        if (rgb) {
+          bubbleGrad.addColorStop(0, `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.05)`);
+          bubbleGrad.addColorStop(0.7, `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.25)`);
+          bubbleGrad.addColorStop(0.9, `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.45)`);
+          bubbleGrad.addColorStop(1, `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.65)`);
+        } else {
+          const hue1 = (this.hueOffset + this.y * 0.08) % 360;
+          const hue2 = (hue1 + 120) % 360;
+          const hue3 = (hue1 + 240) % 360;
 
-        bubbleGrad.addColorStop(0, 'rgba(255, 255, 255, 0.05)');
-        bubbleGrad.addColorStop(0.7, `hsla(${hue1}, 80%, 70%, 0.2)`);
-        bubbleGrad.addColorStop(0.9, `hsla(${hue2}, 85%, 65%, 0.4)`);
-        bubbleGrad.addColorStop(1, `hsla(${hue3}, 90%, 60%, 0.65)`);
+          bubbleGrad.addColorStop(0, 'rgba(255, 255, 255, 0.05)');
+          bubbleGrad.addColorStop(0.7, `hsla(${hue1}, 80%, 70%, 0.2)`);
+          bubbleGrad.addColorStop(0.9, `hsla(${hue2}, 85%, 65%, 0.4)`);
+          bubbleGrad.addColorStop(1, `hsla(${hue3}, 90%, 60%, 0.65)`);
+        }
 
         ctx.beginPath();
         ctx.fillStyle = bubbleGrad;
@@ -583,9 +614,14 @@ export const ReadingEffects: React.FC<ReadingEffectsProps> = ({ effect = 'none',
         ctx.fill();
 
         ctx.beginPath();
-        ctx.strokeStyle = isDarkTheme 
-          ? `hsla(${hue1}, 80%, 70%, 0.6)` 
-          : `rgba(30, 27, 75, 0.5)`;
+        if (rgb) {
+          ctx.strokeStyle = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.7)`;
+        } else {
+          const hue1 = (this.hueOffset + this.y * 0.08) % 360;
+          ctx.strokeStyle = isDarkTheme 
+            ? `hsla(${hue1}, 80%, 70%, 0.6)` 
+            : `rgba(30, 27, 75, 0.5)`;
+        }
         ctx.lineWidth = 1.0;
         ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
         ctx.stroke();

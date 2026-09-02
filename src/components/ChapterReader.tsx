@@ -26,9 +26,12 @@ import { getStoryBorderStyle, StoryCornerAccents } from '../lib/borderStyles';
 import { PRESET_THEME_COLORS } from '../lib/themeConstants';
 import { parseChapterContentBlocks, SpecialBlockRenderer } from './ChapterSpecialBlocks';
 import { ProtectedStoryText } from './ProtectedStoryText';
+import { getEffectiveStory } from '../lib/storyUtils';
 
 const PRESET_PROGRESS_BAR_COLORS: Record<string, string> = {
   'dark-rose': '#ff99bb',
+  'choco-light': '#8c5e42',
+  'gradient-choco-light': '#8c5e42',
   'sepia': '#8c5e3c',
   'emerald': '#2a6b4e',
   'slate': '#60a5fa',
@@ -145,11 +148,13 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
     );
   }
 
-  const storyTitleFont = story.customTitleFont || story.defaultFont || 'font-mono';
-  const storyChapterTitleFont = story.customChapterTitleFont || story.customSubtitleFont || story.customTitleFont || story.defaultFont || 'font-mono';
-  const storySubtitleFont = story.customSubtitleFont || story.customTitleFont || story.defaultFont || 'font-mono';
-  const storyMutedFont = story.customMutedFont || story.defaultFont || 'font-mono';
-  const storyBtnFont = story.customBtnFont || story.defaultFont || 'font-mono';
+  const effectiveStory = getEffectiveStory(story);
+
+  const storyTitleFont = effectiveStory.customTitleFont || effectiveStory.defaultFont || 'font-mono';
+  const storyChapterTitleFont = effectiveStory.customChapterTitleFont || effectiveStory.customSubtitleFont || effectiveStory.customTitleFont || effectiveStory.defaultFont || 'font-mono';
+  const storySubtitleFont = effectiveStory.customSubtitleFont || effectiveStory.customTitleFont || effectiveStory.defaultFont || 'font-mono';
+  const storyMutedFont = effectiveStory.customMutedFont || effectiveStory.defaultFont || 'font-mono';
+  const storyBtnFont = effectiveStory.customBtnFont || effectiveStory.defaultFont || 'font-mono';
   const storyBodyFont = readerFont;
 
   const sortedChapters = [...(allChapters || [])].filter(Boolean).sort((a, b) => a.chapterNumber - b.chapterNumber);
@@ -412,7 +417,7 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
 
   return (
     <div 
-      className={`chapter-reader-root min-h-screen pb-20 transition-colors duration-300 relative ${readerFont}`}
+      className={`chapter-reader-root preserve-story-theme min-h-screen pb-20 transition-colors duration-300 relative ${readerFont}`}
       style={{
         background: currentBg,
         color: currentText,

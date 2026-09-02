@@ -246,6 +246,242 @@
     border-color: #9e466f;
     color: #e8d0d8;
   }
+
+  /* Chocolate Light Mode Theme Overrides */
+  .light-mode:not(.preserve-story-theme) {
+    color-scheme: light;
+    background-color: #f8f3ee !important;
+    color: #3d2314 !important;
+  }
+
+  /* Page & Base Canvas Backgrounds (Excludes Story Themes) */
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#080406]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#0d0608]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#0e070a]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#10050a]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#10060b]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#10070a]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#10080c]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#120307]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#12060b]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#12060c]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#12070d]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#12080d]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#12090c]"] {
+    background-color: #f8f3ee !important;
+  }
+
+  /* Main Card Containers & Headers (Ranking, Chat, Comments, Checkin, Library, News, Modals) */
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *).choco-box,
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#11090c]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#13070b]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#14080e]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#140a0f]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#140e0c]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#150a0f]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#150b10]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#150d15]"] {
+    background-color: #fffcf9 !important;
+    border-color: #e8d5c8 !important;
+    color: #3d2314 !important;
+    box-shadow: 0 1px 3px rgba(140, 94, 66, 0.04) !important;
+  }
+
+  /* Inner Item Rows & Sub-cards */
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#160a0f]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#160a10]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#160c10]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#170c12]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#170d12]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#170e17]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#180801]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#180a11]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#180a12]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#180b12]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#180c12]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#180e14]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#1a0e14]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#1a110e]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#1a111a]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#1a1219]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#1b0a12]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#1b0c15]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#1b1016]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#1c0a13]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#1c0c16]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#1c0f15]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#1e0e17]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#1f0f17]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#1f0f18]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#1f1017]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#1f131f]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#1f141f]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#1f1512]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#200b12]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#200d18]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#220e1b]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#221019]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#221622]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#230a0d]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#23121b]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#24080e]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#241018]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#241119]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#25101b]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#26101c]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#261220]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#261510]"] {
+    background-color: #f9f4ee !important;
+    border-color: #e8d5c8 !important;
+    color: #3d2314 !important;
+  }
+
+  /* Interactive Hover States for Item Cards */
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="hover:bg-[#1"]:hover,
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="hover:bg-[#2"]:hover,
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="hover:bg-[#3"]:hover,
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *).choco-box-hover:hover {
+    background-color: #f3e8dd !important;
+    border-color: #d9c4b5 !important;
+  }
+
+  /* Badges, Rank Numbers (#1, #2), Active Tabs & Small Pill Chips */
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#280c1b]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#281220]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#281622]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#2a1205]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#2a131f]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#2a1321]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#2a1621]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#2a1a0a]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#2b1620]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#2b1b10]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#2b1c2b]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#2b1e2a]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#2d1222]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#2d1822]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#2e1d17]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#30121b]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#30222a]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#321724]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#341525]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#380b15]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#3b1219]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#3b1226]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#3b172a]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#3d1828]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#3d1a04]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#3d1a30]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#3d1e2c]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#3e141a]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#3f192e]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#471b20]"] {
+    background-color: #ebdcd0 !important;
+    border-color: #d9c4b5 !important;
+    color: #3d2314 !important;
+  }
+
+  /* Specific Chat Bubbles */
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *).lounge-chat-bubble-me,
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *).lounge-chat-bubble-other {
+    color: #3d2314 !important;
+  }
+
+  /* Primary Accent Buttons & Highlights */
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *).choco-btn-primary {
+    background-color: #8c5332 !important;
+    border-color: #6e3e23 !important;
+    color: #ffffff !important;
+  }
+
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *).choco-btn-primary:hover,
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="hover:bg-[#57253d]"]:hover {
+    background-color: #6e3e23 !important;
+    border-color: #522d18 !important;
+    color: #ffffff !important;
+  }
+
+  /* General Borders across components */
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="border-[#1]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="border-[#2]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="border-[#3]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="border-[#4]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="border-[#5]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="border-[#6]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="border-[#7]"] {
+    border-color: #e8d5c8 !important;
+  }
+
+  /* Main / Heading / High-contrast Text */
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="text-[#e0d0d5]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="text-[#e0c0cc]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="text-[#e8dcd8]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="text-[#ffd6e2]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="text-[#fbcfe8]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="text-[#ffb5cd]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="text-[#ff99bb]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="text-[#ff99b0]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="text-[#c0a0aa]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="text-[#c0a0b0]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="text-[#d0a0b0]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="text-[#e0a8be]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="text-[#f2c0ce]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="text-[#f2e6e8]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="text-[#f5ebe6]"] {
+    color: #3d2314 !important;
+  }
+
+  /* Secondary / Muted / Subtitle Text */
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="text-[#8a717a]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="text-[#a1887f]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="text-[#6a555f]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="text-[#6c5866]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="text-[#6e5860]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="text-[#523d46]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="text-[#543b46]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="text-[#a08090]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="text-[#a88291]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="text-[#b3889b]"],
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="text-[#c492a5]"] {
+    color: #8c5e42 !important;
+  }
+
+  /* Hover Text Colors */
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="hover:text-[#e0c0cc]"]:hover,
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="hover:text-[#ffd6e2]"]:hover,
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="hover:text-white"]:hover,
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="group-hover:text-[#ffd6e2]"] {
+    color: #6e3e23 !important;
+  }
+
+  /* Form controls & Inputs outside story theme */
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)input,
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)textarea,
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)select,
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *).choco-input {
+    background-color: #fffcf9 !important;
+    color: #3d2314 !important;
+    border-color: #e8d5c8 !important;
+  }
+
+  /* Inputs within cards outside story theme */
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#12090c]"] input,
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#12090c]"] textarea {
+    background-color: #fffcf9 !important;
+    color: #3d2314 !important;
+  }
+
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)input::placeholder,
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)textarea::placeholder {
+    color: #b08b73 !important;
+  }
+
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)input:focus,
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)textarea:focus,
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)select:focus,
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *).choco-input:focus {
+    border-color: #a8836b !important;
+  }
 }
 
 /* Hide scrollbars globally while preserving scroll functionality */

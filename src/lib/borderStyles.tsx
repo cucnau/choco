@@ -40,6 +40,10 @@ export const BORDER_STYLE_OPTIONS: BorderStyleOption[] = [
   { value: 'dashed', label: 'Nét đứt', desc: 'Nét đứt khúc thủ công ấn tượng', category: 'classic' },
   { value: 'dotted', label: 'Chấm bi tròn', desc: 'Hàng chấm tròn nhỏ tinh tế', category: 'classic' },
   { value: 'dash-dot', label: 'Gạch chấm xen kẽ', desc: 'Gạch dài xen kẽ chấm tròn thanh lịch', category: 'creative' },
+  { value: 'wavy', label: 'Viền sóng dạt', desc: 'Đường sóng mềm mại uốn lượn tự nhiên', category: 'creative' },
+  { value: 'scallop', label: 'Viền sò nhún mây', desc: 'Viền uốn các vỏ sò mây nhún bèo tròn', category: 'creative' },
+  { value: 'curly', label: 'Viền xoắn ốc lò xo', desc: 'Đường nét cuộn tròn xoắn nối tiếp điệu đà', category: 'creative' },
+  { value: 'hand-dashed', label: 'Viền sọc gạch vẽ tay', desc: 'Hàng gạch sọc đứt ngắn thủ công mộc mạc', category: 'creative' },
   { value: 'sketch', label: 'Nét vẽ tay', desc: 'Nét phác thảo uốn lượn tự nhiên', category: 'creative' },
   { value: 'stitched', label: 'Đường may chỉ', desc: 'Đường chỉ thêu viền cách mép cổ điển', category: 'creative' },
   { value: 'gradient', label: 'Viền dải màu chuyển sắc', desc: 'Dải màu chuyển động theo đúng góc bo', category: 'creative' },
@@ -76,6 +80,9 @@ export const BORDER_RADIUS_OPTIONS: BorderRadiusOption[] = [
 
 export const BORDER_CORNER_ACCENT_OPTIONS: BorderCornerAccentOption[] = [
   { value: 'none', label: 'Không góc trang trí', desc: 'Viền thuần túy', category: 'tech' },
+  { value: 'bow', label: 'Nơ ruy-băng 4 góc', desc: '4 nơ ruy-băng nhỏ xinh ở các góc', category: 'cute' },
+  { value: 'ribbon-corner', label: 'Nơ ruy-băng uốn lượn góc', desc: 'Nơ góc kèm dải ruy-băng sóng rủ', category: 'cute' },
+  { value: 'ribbon-top-bow', label: 'Nơ thắt chính giữa mép trên', desc: 'Nơ ruy-băng xinh xắn đính ở đỉnh khung', category: 'cute' },
   { value: 'brackets', label: 'Khung góc thước L', desc: 'Khung ngắm chữ L sắc nét ở 4 góc', category: 'tech' },
   { value: 'artdeco', label: 'Họa tiết Art Deco', desc: 'Họa tiết góc xếp tầng sang trọng', category: 'vintage' },
   { value: 'rivets', label: 'Đinh tán kim loại', desc: '4 chốt đinh ốc kim loại ở 4 góc', category: 'tech' },
@@ -248,6 +255,11 @@ export function getStoryBorderStyle(
     style.borderStyle = 'solid';
     style.borderColor = borderColor;
     style.boxShadow = `4px 4px 0px 0px ${borderColor}88, 7px 7px 0px 0px ${borderColor}44`;
+  } else if (bStyle === 'wavy' || bStyle === 'scallop' || bStyle === 'curly' || bStyle === 'hand-dashed') {
+    // Với các kiểu viền đồ họa đặc biệt, viền nét chính được vẽ sắc nét bằng SVG Overlay trong StoryCornerAccents
+    style.borderWidth = strokeWidth;
+    style.borderStyle = 'solid';
+    style.borderColor = 'transparent';
   } else {
     style.borderStyle = bStyle;
     style.borderWidth = strokeWidth;
@@ -372,10 +384,14 @@ export const StoryCornerAccents: React.FC<{
 }> = ({ accent = 'none', borderStyle, borderColor, color, className = '' }) => {
   if (borderStyle === 'sketch') return null;
   const isFilm = borderStyle === 'film';
-  if ((!accent || accent === 'none' || accent === 'vintage' || accent === 'sparkle' || accent === 'heart' || accent === 'bow') && !isFilm) return null;
+  const isGraphicBorder = borderStyle === 'wavy' || borderStyle === 'scallop' || borderStyle === 'curly' || borderStyle === 'hand-dashed';
+  const hasAccent = accent && accent !== 'none';
+
+  if (!hasAccent && !isFilm && !isGraphicBorder) return null;
 
   const accentColor = color || borderColor || '#1a1a1a';
 
+  // 1. Film Sprockets Overlay
   const filmSprocketsOverlay = isFilm ? (
     <div 
       className="pointer-events-none z-10 overflow-hidden rounded-[inherit]"
@@ -388,7 +404,6 @@ export const StoryCornerAccents: React.FC<{
         pointerEvents: 'none',
       }}
     >
-      {/* Top Film Rail with Sprocket Holes - Nằm gọn sát mép trên thẻ */}
       <div 
         style={{
           position: 'absolute',
@@ -404,7 +419,6 @@ export const StoryCornerAccents: React.FC<{
           boxShadow: '0 2px 6px rgba(0,0,0,0.4)',
         }}
       />
-      {/* Bottom Film Rail with Sprocket Holes - Nằm gọn sát mép dưới thẻ */}
       <div 
         style={{
           position: 'absolute',
@@ -423,10 +437,149 @@ export const StoryCornerAccents: React.FC<{
     </div>
   ) : null;
 
+  // 2. Graphic Border Overlay (Viền đồ họa SVG)
+  let graphicBorderOverlay: React.ReactNode = null;
+  if (borderStyle === 'wavy') {
+    graphicBorderOverlay = (
+      <svg className="pointer-events-none absolute -inset-[2px] w-[calc(100%+4px)] h-[calc(100%+4px)] overflow-visible z-10" preserveAspectRatio="none" viewBox="0 0 100 100">
+        <path
+          d="M 4,4 Q 16,-2 28,4 T 52,4 T 76,4 T 96,4 Q 102,16 96,28 T 96,52 T 96,76 T 96,96 Q 84,102 72,96 T 48,96 T 24,96 T 4,96 Q -2,84 4,72 T 4,48 T 4,24 Z"
+          fill="none"
+          stroke={accentColor}
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          vectorEffect="non-scaling-stroke"
+        />
+      </svg>
+    );
+  } else if (borderStyle === 'scallop') {
+    graphicBorderOverlay = (
+      <svg className="pointer-events-none absolute -inset-[2px] w-[calc(100%+4px)] h-[calc(100%+4px)] overflow-visible z-10" preserveAspectRatio="none" viewBox="0 0 100 100">
+        <path
+          d="M 4,4 C 7,1 11,1 14,4 C 17,1 21,1 24,4 C 27,1 31,1 34,4 C 37,1 41,1 44,4 C 47,1 51,1 54,4 C 57,1 61,1 64,4 C 67,1 71,1 74,4 C 77,1 81,1 84,4 C 87,1 91,1 94,4 C 98,7 98,11 94,14 C 98,17 98,21 94,24 C 98,27 98,31 94,34 C 98,37 98,41 94,44 C 98,47 98,51 94,54 C 98,57 98,61 94,64 C 98,67 98,71 94,74 C 98,77 98,81 94,84 C 98,87 98,91 94,94 C 91,98 87,98 84,94 C 81,98 77,98 74,94 C 71,98 67,98 64,94 C 61,98 57,98 54,94 C 51,98 47,98 44,94 C 41,98 37,98 34,94 C 31,98 27,98 24,94 C 21,98 17,98 14,94 C 11,98 7,98 4,94 C 1,91 1,87 4,84 C 1,81 1,77 4,74 C 1,71 1,67 4,64 C 1,61 1,57 4,54 C 1,51 1,47 4,44 C 1,41 1,37 4,34 C 1,31 1,27 4,24 C 1,21 1,17 4,14 C 1,11 1,7 4,4 Z"
+          fill="none"
+          stroke={accentColor}
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          vectorEffect="non-scaling-stroke"
+        />
+      </svg>
+    );
+  } else if (borderStyle === 'curly') {
+    graphicBorderOverlay = (
+      <svg className="pointer-events-none absolute -inset-[2px] w-[calc(100%+4px)] h-[calc(100%+4px)] overflow-visible z-10" preserveAspectRatio="none" viewBox="0 0 100 100">
+        <path
+          d="M 5,5 C 10,-3 15,13 20,5 C 25,-3 30,13 35,5 C 40,-3 45,13 50,5 C 55,-3 60,13 65,5 C 70,-3 75,13 80,5 C 85,-3 90,13 95,5 C 103,10 87,15 95,20 C 103,25 87,30 95,35 C 103,40 87,45 95,50 C 103,55 87,60 95,65 C 103,70 87,75 95,80 C 103,85 87,90 95,95 C 90,103 85,87 80,95 C 75,103 70,87 65,95 C 60,103 55,87 50,95 C 45,103 40,87 35,95 C 30,103 25,87 20,95 C 15,103 10,87 5,95 C -3,90 13,85 5,80 C -3,75 13,70 5,65 C -3,60 13,55 5,50 C -3,45 13,40 5,35 C -3,30 13,25 5,20 C -3,15 13,10 5,5 Z"
+          fill="none"
+          stroke={accentColor}
+          strokeWidth="2.2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          vectorEffect="non-scaling-stroke"
+        />
+      </svg>
+    );
+  } else if (borderStyle === 'hand-dashed') {
+    graphicBorderOverlay = (
+      <svg className="pointer-events-none absolute -inset-[3px] w-[calc(100%+6px)] h-[calc(100%+6px)] overflow-visible z-10" preserveAspectRatio="none" viewBox="0 0 100 100">
+        <rect
+          x="3" y="3" width="94" height="94" rx="2"
+          fill="none"
+          stroke={accentColor}
+          strokeWidth="3.5"
+          strokeDasharray="1.5 3.5"
+          strokeLinecap="round"
+          vectorEffect="non-scaling-stroke"
+        />
+        <rect
+          x="4.5" y="4.5" width="91" height="91" rx="2"
+          fill="none"
+          stroke={accentColor}
+          strokeWidth="1"
+          opacity="0.5"
+          vectorEffect="non-scaling-stroke"
+        />
+      </svg>
+    );
+  }
+
+  // 3. Accent Content (Họa tiết trang trí góc / nơ)
   let accentContent: React.ReactNode = null;
 
-  // 1. Khung góc chữ L
-  if (accent === 'brackets') {
+  if (accent === 'bow') {
+    accentContent = (
+      <div className={`pointer-events-none absolute inset-0 z-20 ${className}`}>
+        <div className="absolute -top-3 -left-3 rotate-[-15deg] filter drop-shadow-sm">
+          <svg width="28" height="28" viewBox="0 0 32 32" fill="none" stroke={accentColor} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M 16 16 C 9 7 3 10 5 15 C 7 19 14 17 16 16 Z" fill={accentColor} fillOpacity="0.25" />
+            <path d="M 16 16 C 23 7 29 10 27 15 C 25 19 18 17 16 16 Z" fill={accentColor} fillOpacity="0.25" />
+            <circle cx="16" cy="16" r="2.5" fill={accentColor} />
+            <path d="M 15 17.5 C 11 23 13 27 8 30" strokeWidth="2" />
+            <path d="M 17 17.5 C 21 23 19 27 24 30" strokeWidth="2" />
+          </svg>
+        </div>
+        <div className="absolute -top-3 -right-3 rotate-[15deg] filter drop-shadow-sm">
+          <svg width="28" height="28" viewBox="0 0 32 32" fill="none" stroke={accentColor} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M 16 16 C 9 7 3 10 5 15 C 7 19 14 17 16 16 Z" fill={accentColor} fillOpacity="0.25" />
+            <path d="M 16 16 C 23 7 29 10 27 15 C 25 19 18 17 16 16 Z" fill={accentColor} fillOpacity="0.25" />
+            <circle cx="16" cy="16" r="2.5" fill={accentColor} />
+            <path d="M 15 17.5 C 11 23 13 27 8 30" strokeWidth="2" />
+            <path d="M 17 17.5 C 21 23 19 27 24 30" strokeWidth="2" />
+          </svg>
+        </div>
+        <div className="absolute -bottom-3 -left-3 rotate-[15deg] filter drop-shadow-sm">
+          <svg width="28" height="28" viewBox="0 0 32 32" fill="none" stroke={accentColor} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M 16 16 C 9 7 3 10 5 15 C 7 19 14 17 16 16 Z" fill={accentColor} fillOpacity="0.25" />
+            <path d="M 16 16 C 23 7 29 10 27 15 C 25 19 18 17 16 16 Z" fill={accentColor} fillOpacity="0.25" />
+            <circle cx="16" cy="16" r="2.5" fill={accentColor} />
+            <path d="M 15 17.5 C 11 23 13 27 8 30" strokeWidth="2" />
+            <path d="M 17 17.5 C 21 23 19 27 24 30" strokeWidth="2" />
+          </svg>
+        </div>
+        <div className="absolute -bottom-3 -right-3 rotate-[-15deg] filter drop-shadow-sm">
+          <svg width="28" height="28" viewBox="0 0 32 32" fill="none" stroke={accentColor} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M 16 16 C 9 7 3 10 5 15 C 7 19 14 17 16 16 Z" fill={accentColor} fillOpacity="0.25" />
+            <path d="M 16 16 C 23 7 29 10 27 15 C 25 19 18 17 16 16 Z" fill={accentColor} fillOpacity="0.25" />
+            <circle cx="16" cy="16" r="2.5" fill={accentColor} />
+            <path d="M 15 17.5 C 11 23 13 27 8 30" strokeWidth="2" />
+            <path d="M 17 17.5 C 21 23 19 27 24 30" strokeWidth="2" />
+          </svg>
+        </div>
+      </div>
+    );
+  } else if (accent === 'ribbon-corner') {
+    accentContent = (
+      <div className={`pointer-events-none absolute inset-0 z-20 ${className}`}>
+        <div className="absolute -top-2 -left-2 w-28 h-28 pointer-events-none filter drop-shadow-sm">
+          <svg width="110" height="110" viewBox="0 0 110 110" fill="none" stroke={accentColor} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M 32 18 Q 50 8, 68 18 T 105 18" strokeWidth="2.2" />
+            <path d="M 18 32 Q 8 50, 18 68 T 18 105" strokeWidth="2.2" />
+            <path d="M 22 22 C 12 11 5 17 9 26 C 13 32 20 26 22 22 Z" fill={accentColor} fillOpacity="0.25" />
+            <path d="M 22 22 C 32 11 39 17 35 26 C 31 32 24 26 22 22 Z" fill={accentColor} fillOpacity="0.25" />
+            <circle cx="22" cy="22" r="3.2" fill={accentColor} />
+            <path d="M 21 25 C 16 35 20 46 13 56" strokeWidth="2.2" />
+            <path d="M 25 21 C 35 16 46 20 56 13" strokeWidth="2.2" />
+          </svg>
+        </div>
+      </div>
+    );
+  } else if (accent === 'ribbon-top-bow') {
+    accentContent = (
+      <div className={`pointer-events-none absolute inset-0 z-20 ${className}`}>
+        <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 pointer-events-none filter drop-shadow-sm">
+          <svg width="56" height="36" viewBox="0 0 56 36" fill="none" stroke={accentColor} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M 28 16 C 18 5 8 9 11 18 C 14 25 23 20 28 16 Z" fill={accentColor} fillOpacity="0.25" />
+            <path d="M 28 16 C 38 5 48 9 45 18 C 42 25 33 20 28 16 Z" fill={accentColor} fillOpacity="0.25" />
+            <circle cx="28" cy="16" r="3" fill={accentColor} />
+            <path d="M 26 18 C 21 25 23 30 16 34" strokeWidth="2" />
+            <path d="M 30 18 C 35 25 33 30 40 34" strokeWidth="2" />
+          </svg>
+        </div>
+      </div>
+    );
+  } else if (accent === 'brackets') {
     accentContent = (
       <div className={`pointer-events-none absolute inset-0 overflow-hidden ${className}`}>
         <div className="absolute top-1.5 left-1.5 w-3.5 h-3.5" style={{ borderTop: `2px solid ${accentColor}`, borderLeft: `2px solid ${accentColor}` }} />
@@ -561,6 +714,7 @@ export const StoryCornerAccents: React.FC<{
   return (
     <>
       {filmSprocketsOverlay}
+      {graphicBorderOverlay}
       {accentContent}
     </>
   );
