@@ -53,6 +53,7 @@ import { Footer } from './components/Footer';
 import { AuthModal } from './components/AuthModal';
 import { UserSettingsModal } from './components/UserSettingsModal';
 import { GamesHub } from './components/GamesHub';
+import { initAntiCopyProtection } from './lib/antiCopyProtection';
 
 export default function App() {
   // Navigation & View States
@@ -165,72 +166,10 @@ export default function App() {
     });
   }, []);
 
-  // Global Anti-Copy Protection
+  // Global Anti-Enable-Copy & Chaotic Clipboard Scrambler Engine
   useEffect(() => {
-    const isEditableElement = (target: EventTarget | null) => {
-      if (!target || !(target instanceof HTMLElement)) return false;
-      const tagName = target.tagName.toUpperCase();
-      return (
-        tagName === 'INPUT' ||
-        tagName === 'TEXTAREA' ||
-        target.isContentEditable ||
-        target.classList.contains('allow-copy') ||
-        target.classList.contains('allow-select')
-      );
-    };
-
-    const handleCopy = (e: ClipboardEvent) => {
-      if (!isEditableElement(e.target)) {
-        e.preventDefault();
-      }
-    };
-
-    const handleCut = (e: ClipboardEvent) => {
-      if (!isEditableElement(e.target)) {
-        e.preventDefault();
-      }
-    };
-
-    const handleContextMenu = (e: MouseEvent) => {
-      if (!isEditableElement(e.target)) {
-        e.preventDefault();
-      }
-    };
-
-    const handleDragStart = (e: DragEvent) => {
-      if (!isEditableElement(e.target)) {
-        e.preventDefault();
-      }
-    };
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const isCtrlOrCmd = e.ctrlKey || e.metaKey;
-      if (!isCtrlOrCmd) return;
-
-      const key = e.key.toLowerCase();
-      // Block Ctrl+C, Ctrl+X, Ctrl+A if outside editable fields
-      if (['c', 'x', 'a'].includes(key) && !isEditableElement(e.target)) {
-        e.preventDefault();
-      }
-      // Block Ctrl+U (View source), Ctrl+S (Save), Ctrl+P (Print) everywhere
-      if (['u', 's', 'p'].includes(key)) {
-        e.preventDefault();
-      }
-    };
-
-    document.addEventListener('copy', handleCopy);
-    document.addEventListener('cut', handleCut);
-    document.addEventListener('contextmenu', handleContextMenu);
-    document.addEventListener('dragstart', handleDragStart);
-    document.addEventListener('keydown', handleKeyDown);
-
-    return () => {
-      document.removeEventListener('copy', handleCopy);
-      document.removeEventListener('cut', handleCut);
-      document.removeEventListener('contextmenu', handleContextMenu);
-      document.removeEventListener('dragstart', handleDragStart);
-      document.removeEventListener('keydown', handleKeyDown);
-    };
+    const cleanup = initAntiCopyProtection();
+    return cleanup;
   }, []);
 
   // Listen to User Profile changes in Firestore
