@@ -296,15 +296,3 @@
 .gallery-strip-paused {
   animation-play-state: paused !important;
 }
-
-.select-phantom-noise {
-  display: inline !important;
-  font-size: 0.001px !important;
-  line-height: 0 !important;
-  color: transparent !important;
-  letter-spacing: -2px !important;
-  opacity: 0 !important;
-  pointer-events: none !important;
-  user-select: text !important;
-  -webkit-user-select: text !important;
-}

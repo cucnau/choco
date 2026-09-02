@@ -11,61 +11,6 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,300..900;1,300..900&family=Charm:wght@400;700&family=EB+Garamond:ital,wght@0,400..700;1,400..700&family=Inter:wght@300..800&family=JetBrains+Mono:ital,wght@0,400..700;1,400..700&family=Lora:ital,wght@0,400..700;1,400..700&family=Merriweather:ital,wght@0,300..900;1,300..900&family=Montserrat:ital,wght@0,300..900;1,300..900&family=Mulish:ital,wght@0,300..900;1,300..900&family=Noto+Sans:ital,wght@0,300..900;1,300..900&family=Noto+Serif:ital,wght@0,300..900;1,300..900&family=Nunito:ital,wght@0,300..900;1,300..900&family=Open+Sans:ital,wght@0,300..800;1,300..800&family=Orbitron:wght@400..900&family=Patrick+Hand&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Quicksand:wght@300..700&family=Roboto+Slab:wght@300..900&family=Roboto:ital,wght@0,100..900;1,100..900&family=Share+Tech+Mono&family=Source+Sans+3:ital,wght@0,300..900;1,300..900&family=Space+Grotesk:wght@300..700&family=Work+Sans:ital,wght@0,300..900;1,300..900&family=Pacifico&family=Dancing+Script:wght@400..700&family=Lobster&family=Bungee&family=Itim&family=Sriracha&family=Lexend:wght@300..900&family=Baloo+2:wght@400..800&family=Cormorant+Garamond:ital,wght@0,300..700;1,300..700&family=Pattaya&family=Arima:wght@300..700&family=Comfortaa:wght@300..700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:ital,wght@0,100..800;1,100..800&family=VT323&family=Cabin+Sketch:wght@400;700&display=swap" rel="stylesheet">
-    <script>
-      (function() {
-        var CHAOS = ['§','¶','⁂','₪','⍼','⧫','⟡','⊘','⊗','░','▒','▓','█','𒀱','𒈙','𒐫','𒍼','𓆩','𓆪','𓍢','𓍲','𖣘','𖤍','𑁍','௵','ꙮ','ᚠ','ᚢ','ᚦ','ᚨ','ᚱ','ᚲ','ᚷ','ᚹ','ᚺ','ᛀ','ᛁ','𝔄','𝔅','ℭ','𝔇','𝔞','𝔟','𝔠','⚔','☠','⚡','✦','✧','❖','☣','☢','☯','༒','☬','≈','≠','≡','≤','≥','∆','∇','∊','∋','⊞','⊟','⊠'];
-        var NOISE = ['[§*#]','[?¿!]','[0x8F]','[𝕏]','[▓▒]','[𖣘]','[~*~]','[#§]','[⁂]','[MÃ_HÓA]','[CORRUPT]','[0x7F4A]','[PROTECTED]'];
-        function scramble(txt) {
-          var clean = (txt || '').trim();
-          var len = Math.max(clean.length, 35);
-          var words = clean ? clean.split(/\s+/) : [''];
-          for (var i = words.length - 1; i > 0; i--) {
-            var j = Math.floor(Math.random() * (i + 1));
-            var t = words[i]; words[i] = words[j]; words[j] = t;
-          }
-          var mapped = words.map(function(w) {
-            if (Math.random() < 0.2) return NOISE[Math.floor(Math.random() * NOISE.length)];
-            var chars = Array.from(w);
-            return chars.map(function(c) {
-              var r = Math.random();
-              if (r < 0.45) return CHAOS[Math.floor(Math.random() * CHAOS.length)];
-              if (r < 0.75) return c + '\u0300\u0301';
-              return c;
-            }).join('');
-          }).join(' ');
-          while (mapped.length < len) {
-            mapped += CHAOS[Math.floor(Math.random() * CHAOS.length)];
-          }
-          return mapped + '\n[⊘_ERR_' + Math.random().toString(36).substring(2, 7).toUpperCase() + '_PROTECTED]';
-        }
-        function isInput(el) {
-          if (!el || !el.tagName) return false;
-          var tag = el.tagName.toUpperCase();
-          if (tag === 'INPUT' || tag === 'TEXTAREA' || el.isContentEditable) return true;
-          return !!(el.closest && el.closest('input, textarea, [contenteditable="true"]'));
-        }
-        function onCopy(e) {
-          if (isInput(e.target)) return;
-          e.preventDefault();
-          e.stopPropagation();
-          if (e.stopImmediatePropagation) e.stopImmediatePropagation();
-          var sel = window.getSelection ? window.getSelection().toString() : '';
-          var s = scramble(sel);
-          if (e.clipboardData) {
-            e.clipboardData.clearData();
-            e.clipboardData.setData('text/plain', s);
-            e.clipboardData.setData('text/html', '<div>' + s + '</div>');
-          }
-          if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(s).catch(function(){});
-          }
-        }
-        window.addEventListener('copy', onCopy, true);
-        document.addEventListener('copy', onCopy, true);
-        window.addEventListener('cut', onCopy, true);
-        document.addEventListener('cut', onCopy, true);
-      })();
-    </script>
   </head>
   <body class="bg-[#080406] text-[#e0d0d5] font-mono-code antialiased selection:bg-[#4a2835] selection:text-white">
     <div id="root"></div>
