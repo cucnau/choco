@@ -842,7 +842,7 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
                         <div className="flex-1 min-w-0">
                           {block.type === 'paragraph' ? (
                             <p className={`leading-relaxed whitespace-pre-line transition-opacity ${isActive ? 'opacity-100 font-medium' : ''}`}>
-                              {block.rawText}
+                              <ProtectedStoryText text={block.rawText} />
                             </p>
                           ) : (
                             <SpecialBlockRenderer
