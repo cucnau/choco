@@ -63,6 +63,18 @@ export interface StoryGalleryImage {
   caption?: string; // Chú thích cho từng ảnh
 }
 
+export interface StoryGalleryWidget {
+  id: string; // ID duy nhất của widget (ví dụ: 'gw_1', 'gallery_widget', ...)
+  title?: string; // Tiêu đề ô Widget ảnh/album (ví dụ: "Bìa đặc biệt", "Album Fanart", "Ảnh minh họa")
+  mode: 'single' | 'album'; // 'single' (Ảnh lẻ) | 'album' (Album dải ảnh di chuyển)
+  singleImageUrl?: string; // Đường dẫn ảnh lẻ / GIF
+  singleImageCaption?: string; // Chú thích cho ảnh lẻ
+  images?: StoryGalleryImage[]; // Danh sách các ảnh trong album
+  autoScrollSpeed?: 'slow' | 'normal' | 'fast'; // Tốc độ di chuyển dải album
+  imageSize?: number; // Kích thước hiển thị widget ảnh (%) từ 20 đến 100
+  enabled?: boolean; // Bật/tắt riêng từng widget (mặc định true)
+}
+
 export interface StoryElement {
   id: string;
   imageUrl: string;
@@ -107,6 +119,7 @@ export interface Story {
   customTextMutedColor?: string; // Màu chữ phụ/nhỏ
   customBorderColor?: string; // Màu đường viền khung
   customBtnBgColor?: string; // Màu nền nút bấm chính (Màu đơn hoặc Gradient CSS)
+  customBtnTextColor?: string; // Màu chữ trên nút bấm chính
   customBtnSecondaryBgColor?: string; // Màu nền nút phụ / ô editor / danh sách chương (Màu đơn hoặc Gradient CSS)
   tags?: string[]; // Danh sách các tag thể loại của truyện
 
@@ -132,9 +145,11 @@ export interface Story {
   galleryMode?: 'single' | 'album'; // Kiểu: 'single' (Ảnh lẻ) | 'album' (Album dải ảnh di chuyển)
   gallerySingleImageUrl?: string; // Đường dẫn ảnh lẻ
   gallerySingleImageCaption?: string; // Chú thích cho ảnh lẻ
+  images?: StoryGalleryImage[]; // Dữ liệu phụ
   galleryImages?: StoryGalleryImage[]; // Danh sách các ảnh trong album
   galleryAutoScrollSpeed?: 'slow' | 'normal' | 'fast';
   galleryImageSize?: number; // Kích thước hiển thị widget ảnh (%) 
+  galleryWidgets?: StoryGalleryWidget[]; // Danh sách nhiều Widget ảnh / Album độc lập do Editor tạo thêm tùy ý
 
   // Các Element / Sticker / Họa tiết trang trí tự do trên trang truyện
   storyElements?: StoryElement[];
@@ -267,7 +282,8 @@ export type StoryLayoutBlockId =
   | 'custom_widget'
   | 'gallery_widget'
   | 'chapter_list'
-  | 'comments';
+  | 'comments'
+  | (string & {});
 
 export type StoryLayoutSectionType = '1_column' | '2_columns';
 export type StoryLayoutColumnRatio = 'left_fixed' | 'equal' | 'right_fixed';

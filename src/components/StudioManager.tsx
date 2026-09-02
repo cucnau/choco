@@ -782,6 +782,7 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
       galleryImages: storyData.galleryImages,
       galleryAutoScrollSpeed: storyData.galleryAutoScrollSpeed,
       galleryImageSize: storyData.galleryImageSize,
+      galleryWidgets: storyData.galleryWidgets,
 
       // Element / Sticker / Họa tiết trang trí tự do trên trang truyện
       storyElements: storyData.storyElements,

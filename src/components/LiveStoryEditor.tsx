@@ -4,7 +4,7 @@ import { User as FirebaseUser } from 'firebase/auth';
 import { auth } from '../lib/firebase';
 import { saveUserFontToCloud, deleteUserFontFromCloud, getUserFontsFromCloud } from '../lib/storage';
 import { getIdbFonts, saveIdbFonts, deleteIdbFont, migrateLocalStorageFonts, StoredUserFont } from '../lib/idbStorage';
-import { Story, UserProfile, CharacterInfo, Chapter, StoryGalleryImage, StoryLayoutBlockId, StoryLayoutSection, StoryLayoutSectionType, StoryLayoutColumnRatio, StoryElement } from '../types';
+import { Story, UserProfile, CharacterInfo, Chapter, StoryGalleryImage, StoryGalleryWidget, StoryLayoutBlockId, StoryLayoutSection, StoryLayoutSectionType, StoryLayoutColumnRatio, StoryElement } from '../types';
 import { BulkChapterModal } from './BulkChapterModal';
 import {
   normalizeStorySections,
@@ -967,30 +967,71 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
     initialStory?.customWidgetContent || ''
   );
 
-  // Widget ảnh lẻ / album di chuyển (Single Image / Moving Album Widget)
+  // Widget ảnh lẻ / album di chuyển (Single Image / Moving Album Widget - Hỗ trợ nhiều widget)
+  const [galleryWidgets, setGalleryWidgets] = useState<StoryGalleryWidget[]>(() => {
+    if (initialStory?.galleryWidgets && initialStory.galleryWidgets.length > 0) {
+      return initialStory.galleryWidgets;
+    }
+    if (
+      initialStory?.showGalleryWidget ||
+      initialStory?.gallerySingleImageUrl ||
+      (initialStory?.galleryImages && initialStory.galleryImages.length > 0)
+    ) {
+      return [
+        {
+          id: 'gw_1',
+          title: initialStory.galleryWidgetTitle || 'Album',
+          mode: initialStory.galleryMode || 'single',
+          singleImageUrl: initialStory.gallerySingleImageUrl || '',
+          singleImageCaption: initialStory.gallerySingleImageCaption || '',
+          images: initialStory.galleryImages || [],
+          autoScrollSpeed: initialStory.galleryAutoScrollSpeed || 'normal',
+          imageSize: initialStory.galleryImageSize || 100,
+          enabled: initialStory.showGalleryWidget ?? true,
+        },
+      ];
+    }
+    return [
+      {
+        id: `gw_${Date.now()}`,
+        title: 'Ảnh / Album',
+        mode: 'single',
+        singleImageUrl: '',
+        singleImageCaption: '',
+        images: [],
+        autoScrollSpeed: 'normal',
+        imageSize: 100,
+        enabled: initialStory?.showGalleryWidget ?? false,
+      },
+    ];
+  });
+
+  const [expandedWidgetIds, setExpandedWidgetIds] = useState<Record<string, boolean>>({});
+  const targetUploadWidgetIdRef = useRef<string | null>(null);
+
   const [showGalleryWidget, setShowGalleryWidget] = useState<boolean>(
-    initialStory?.showGalleryWidget ?? false
+    initialStory?.showGalleryWidget ?? (galleryWidgets.some(w => w.enabled !== false))
   );
   const [galleryWidgetTitle, setGalleryWidgetTitle] = useState<string>(
-    initialStory?.galleryWidgetTitle || 'Album'
+    initialStory?.galleryWidgetTitle || galleryWidgets[0]?.title || 'Album'
   );
   const [galleryMode, setGalleryMode] = useState<'single' | 'album'>(
-    initialStory?.galleryMode || 'single'
+    initialStory?.galleryMode || galleryWidgets[0]?.mode || 'single'
   );
   const [gallerySingleImageUrl, setGallerySingleImageUrl] = useState<string>(
-    initialStory?.gallerySingleImageUrl || ''
+    initialStory?.gallerySingleImageUrl || galleryWidgets[0]?.singleImageUrl || ''
   );
   const [gallerySingleImageCaption, setGallerySingleImageCaption] = useState<string>(
-    initialStory?.gallerySingleImageCaption || ''
+    initialStory?.gallerySingleImageCaption || galleryWidgets[0]?.singleImageCaption || ''
   );
   const [galleryImages, setGalleryImages] = useState<StoryGalleryImage[]>(
-    initialStory?.galleryImages || []
+    initialStory?.galleryImages || galleryWidgets[0]?.images || []
   );
-const [galleryAutoScrollSpeed, setGalleryAutoScrollSpeed] = useState<'slow' | 'normal' | 'fast'>(
-    initialStory?.galleryAutoScrollSpeed || 'normal'
+  const [galleryAutoScrollSpeed, setGalleryAutoScrollSpeed] = useState<'slow' | 'normal' | 'fast'>(
+    initialStory?.galleryAutoScrollSpeed || galleryWidgets[0]?.autoScrollSpeed || 'normal'
   );
   const [galleryImageSize, setGalleryImageSize] = useState<number>(
-    initialStory?.galleryImageSize || 100
+    initialStory?.galleryImageSize || galleryWidgets[0]?.imageSize || 100
   );
 
   // Input & nén ảnh cho Gallery
@@ -1755,8 +1796,100 @@ const [galleryAutoScrollSpeed, setGalleryAutoScrollSpeed] = useState<'slow' | 'n
     reader.readAsDataURL(file);
   };
 
-  // Nén ảnh đơn cho Gallery Widget
-  const handleCompressGallerySingle = (file: File) => {
+  // Multi-Gallery Widget Helpers
+  const handleAddGalleryWidget = () => {
+    const newId = `gw_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const newWidget: StoryGalleryWidget = {
+      id: newId,
+      title: `Widget Ảnh ${galleryWidgets.length + 1}`,
+      mode: 'single',
+      singleImageUrl: '',
+      singleImageCaption: '',
+      images: [],
+      autoScrollSpeed: 'normal',
+      imageSize: 100,
+      enabled: true,
+    };
+    setGalleryWidgets((prev) => [...prev, newWidget]);
+    setExpandedWidgetIds((prev) => ({ ...prev, [newId]: true }));
+    setShowGalleryWidget(true);
+  };
+
+  const handleUpdateGalleryWidget = (id: string, updates: Partial<StoryGalleryWidget>) => {
+    setGalleryWidgets((prev) =>
+      prev.map((w) => {
+        if (w.id === id) {
+          const updated = { ...w, ...updates };
+          // Đồng bộ nếu là widget đầu tiên
+          if (prev[0]?.id === id) {
+            if (updates.title !== undefined) setGalleryWidgetTitle(updates.title);
+            if (updates.mode !== undefined) setGalleryMode(updates.mode);
+            if (updates.singleImageUrl !== undefined) setGallerySingleImageUrl(updates.singleImageUrl);
+            if (updates.singleImageCaption !== undefined) setGallerySingleImageCaption(updates.singleImageCaption);
+            if (updates.images !== undefined) setGalleryImages(updates.images);
+            if (updates.autoScrollSpeed !== undefined) setGalleryAutoScrollSpeed(updates.autoScrollSpeed);
+            if (updates.imageSize !== undefined) setGalleryImageSize(updates.imageSize);
+            if (updates.enabled !== undefined) setShowGalleryWidget(updates.enabled);
+          }
+          return updated;
+        }
+        return w;
+      })
+    );
+  };
+
+  const handleDeleteGalleryWidget = (id: string) => {
+    if (galleryWidgets.length <= 1) {
+      if (confirm('Xóa widget này và đặt lại trạng thái trống?')) {
+        const emptyWidget: StoryGalleryWidget = {
+          id: `gw_${Date.now()}`,
+          title: 'Ảnh / Album',
+          mode: 'single',
+          singleImageUrl: '',
+          singleImageCaption: '',
+          images: [],
+          autoScrollSpeed: 'normal',
+          imageSize: 100,
+          enabled: false,
+        };
+        setGalleryWidgets([emptyWidget]);
+        setShowGalleryWidget(false);
+        setGallerySingleImageUrl('');
+        setGalleryImages([]);
+      }
+      return;
+    }
+    if (confirm('Bạn có chắc muốn xóa Widget ảnh này?')) {
+      setGalleryWidgets((prev) => prev.filter((w) => w.id !== id));
+      // Xóa block tương ứng trong storyLayoutSections nếu có
+      const blockToRemove1 = `gallery_widget:${id}`;
+      const blockToRemove2 = `gallery_widget_${id}`;
+      setStoryLayoutSections((prev) =>
+        prev.map((sec) => ({
+          ...sec,
+          blocks: sec.blocks?.filter((b) => b !== blockToRemove1 && b !== blockToRemove2),
+          leftBlocks: sec.leftBlocks?.filter((b) => b !== blockToRemove1 && b !== blockToRemove2),
+          rightBlocks: sec.rightBlocks?.filter((b) => b !== blockToRemove1 && b !== blockToRemove2),
+        }))
+      );
+    }
+  };
+
+  const handleMoveGalleryWidget = (index: number, direction: 'up' | 'down') => {
+    setGalleryWidgets((prev) => {
+      const next = [...prev];
+      const targetIdx = direction === 'up' ? index - 1 : index + 1;
+      if (targetIdx < 0 || targetIdx >= next.length) return prev;
+      const temp = next[index];
+      next[index] = next[targetIdx];
+      next[targetIdx] = temp;
+      return next;
+    });
+  };
+
+  // Nén ảnh đơn cho Gallery Widget (hỗ trợ target widget cụ thể)
+  const handleCompressGallerySingle = (file: File, targetWidgetId?: string) => {
+    const targetId = targetWidgetId || targetUploadWidgetIdRef.current || galleryWidgets[0]?.id;
     if (file.type === 'image/gif' && file.size > 500 * 1024) {
       alert(`Kích thước ảnh GIF quá lớn (${(file.size / 1024).toFixed(1)} KB). Vui lòng chọn ảnh GIF dưới 500 KB để tránh lỗi lưu trữ.`);
       return;
@@ -1767,6 +1900,9 @@ const [galleryAutoScrollSpeed, setGalleryAutoScrollSpeed] = useState<'slow' | 'n
       const result = e.target?.result as string;
       // Giữ nguyên file GIF để không mất hoạt ảnh
       if (file.type === 'image/gif') {
+        if (targetId) {
+          handleUpdateGalleryWidget(targetId, { singleImageUrl: result });
+        }
         setGallerySingleImageUrl(result);
         setIsCompressingGalleryImg(false);
         return;
@@ -1792,9 +1928,11 @@ const [galleryAutoScrollSpeed, setGalleryAutoScrollSpeed] = useState<'slow' | 'n
         const ctx = canvas.getContext('2d');
         if (ctx) {
           ctx.drawImage(img, 0, 0, width, height);
-          // Dùng webp hoặc png để giữ nền trong suốt nếu là PNG/WebP
           const outputType = (file.type === 'image/png' || file.type === 'image/webp') ? 'image/webp' : 'image/jpeg';
           const dataUrl = canvas.toDataURL(outputType, 0.85);
+          if (targetId) {
+            handleUpdateGalleryWidget(targetId, { singleImageUrl: dataUrl });
+          }
           setGallerySingleImageUrl(dataUrl);
           setIsCompressingGalleryImg(false);
         }
@@ -1805,7 +1943,8 @@ const [galleryAutoScrollSpeed, setGalleryAutoScrollSpeed] = useState<'slow' | 'n
   };
 
   // Nén và thêm nhiều ảnh album cho Gallery Widget
-  const handleCompressGalleryAlbum = (files: FileList | File[]) => {
+  const handleCompressGalleryAlbum = (files: FileList | File[], targetWidgetId?: string) => {
+    const targetId = targetWidgetId || targetUploadWidgetIdRef.current || galleryWidgets[0]?.id;
     const validFiles = Array.from(files).filter(file => {
       if (file.type === 'image/gif' && file.size > 500 * 1024) {
         alert(`Ảnh "${file.name}" là GIF quá lớn (${(file.size / 1024).toFixed(1)} KB). Vui lòng chọn GIF dưới 500 KB.`);
@@ -1823,14 +1962,17 @@ const [galleryAutoScrollSpeed, setGalleryAutoScrollSpeed] = useState<'slow' | 'n
         const result = e.target?.result as string;
         // Giữ nguyên GIF để giữ hoạt ảnh
         if (file.type === 'image/gif') {
-          setGalleryImages((prev) => [
-            ...prev,
-            {
-              id: `img_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
-              url: result,
-              caption: file.name.replace(/\.[^/.]+$/, ''),
-            },
-          ]);
+          const newImg = {
+            id: `img_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+            url: result,
+            caption: file.name.replace(/\.[^/.]+$/, ''),
+          };
+          if (targetId) {
+            setGalleryWidgets((prev) =>
+              prev.map((w) => (w.id === targetId ? { ...w, images: [...(w.images || []), newImg] } : w))
+            );
+          }
+          setGalleryImages((prev) => [...prev, newImg]);
           setIsCompressingGalleryImg(false);
           return;
         }
@@ -1857,14 +1999,17 @@ const [galleryAutoScrollSpeed, setGalleryAutoScrollSpeed] = useState<'slow' | 'n
             ctx.drawImage(img, 0, 0, width, height);
             const outputType = (file.type === 'image/png' || file.type === 'image/webp') ? 'image/webp' : 'image/jpeg';
             const dataUrl = canvas.toDataURL(outputType, 0.82);
-            setGalleryImages((prev) => [
-              ...prev,
-              {
-                id: `img_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
-                url: dataUrl,
-                caption: file.name.replace(/\.[^/.]+$/, ''),
-              },
-            ]);
+            const newImg = {
+              id: `img_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+              url: dataUrl,
+              caption: file.name.replace(/\.[^/.]+$/, ''),
+            };
+            if (targetId) {
+              setGalleryWidgets((prev) =>
+                prev.map((w) => (w.id === targetId ? { ...w, images: [...(w.images || []), newImg] } : w))
+              );
+            }
+            setGalleryImages((prev) => [...prev, newImg]);
             setIsCompressingGalleryImg(false);
           }
         };
@@ -2178,7 +2323,8 @@ const [galleryAutoScrollSpeed, setGalleryAutoScrollSpeed] = useState<'slow' | 'n
       customWidgetTitle: customWidgetTitle.trim() || 'Thông báo',
       customWidgetContent: customWidgetContent.trim(),
 
-      // Widget ảnh lẻ / album di chuyển
+      // Widget ảnh lẻ / album di chuyển (Đơn & Nhiều widgets)
+      galleryWidgets: galleryWidgets.length > 0 ? galleryWidgets : undefined,
       showGalleryWidget,
       galleryWidgetTitle: galleryWidgetTitle.trim() || 'Album',
       galleryMode,
@@ -2298,6 +2444,7 @@ const [galleryAutoScrollSpeed, setGalleryAutoScrollSpeed] = useState<'slow' | 'n
     customWidgetTitle,
     customWidgetContent,
     showGalleryWidget,
+    galleryWidgets,
     galleryWidgetTitle,
     galleryMode,
     gallerySingleImageUrl,
@@ -4015,331 +4162,438 @@ const [galleryAutoScrollSpeed, setGalleryAutoScrollSpeed] = useState<'slow' | 'n
                 )}
               </div>
 
-              {/* PHẦN 2.6: WIDGET ẢNH LẺ / ALBUM ẢNH DI CHUYỂN */}
+              {/* PHẦN 2.6: QUẢN LÝ NHIỀU WIDGET ẢNH LẺ / ALBUM ẢNH DI CHUYỂN */}
               <div className="pt-3 border-t space-y-3" style={{ borderColor: currentBorder }}>
-                <div className="p-3 rounded border border-dashed flex items-center justify-between" style={{ borderColor: currentBorder, background: currentBg }}>
-                  <div className="pr-2">
-                    <span className="font-bold block text-xs" style={{ color: currentText }}>Bật Widget Ảnh lẻ / Album</span>
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <div>
+                    <span className="font-bold block text-xs" style={{ color: currentText }}>
+                      Widget Ảnh / Album ({galleryWidgets.length})
+                    </span>
                     <span className="text-[10px] block opacity-70" style={{ color: currentTextMuted }}>
-                      {galleryMode === 'single' ? 'Hiển thị một ảnh nghệ thuật' : 'Hiển thị album'}
+                      Thêm nhiều album hoặc ảnh nghệ thuật tùy ý
                     </span>
                   </div>
                   <button
                     type="button"
-                    onClick={() => setShowGalleryWidget(!showGalleryWidget)}
-                    className="w-10 h-6 flex items-center rounded-full p-1 cursor-pointer transition-all duration-300 shrink-0"
+                    onClick={handleAddGalleryWidget}
+                    className="px-2.5 py-1 text-[11px] font-bold rounded border flex items-center gap-1 hover:opacity-90 transition cursor-pointer"
                     style={{
-                      backgroundColor: showGalleryWidget ? currentBtnBg : 'rgb(75, 85, 99)'
+                      background: currentBtnBg,
+                      borderColor: currentBtnBorder,
+                      color: currentBtnText,
                     }}
                   >
-                    <div
-                      className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-all duration-300 ${
-                        showGalleryWidget ? 'translate-x-4' : 'translate-x-0'
-                      }`}
-                    />
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Thêm Widget Ảnh mới</span>
                   </button>
                 </div>
 
-                {showGalleryWidget && (
-                  <div className="space-y-3.5 p-3 rounded border" style={{ borderColor: currentBorder, background: currentBg }}>
-                    {/* Tiêu đề Widget */}
-                    <div className="space-y-1">
-                      <label className="text-[11px] font-semibold block" style={{ color: currentText }}>
-                        Tiêu đề Widget:
-                      </label>
-                      <input
-                        type="text"
-                        value={galleryWidgetTitle}
-                        onChange={(e) => setGalleryWidgetTitle(e.target.value)}
-                        placeholder="Ví dụ: Album, Fanart, Minh họa..."
-                        className="w-full p-2 rounded border text-xs focus:outline-none"
-                        style={{ background: currentCardBg, borderColor: currentBorder, color: currentText }}
-                      />
-                    </div>
+                {/* Danh sách các Widget Ảnh/Album */}
+                <div className="space-y-3">
+                  {galleryWidgets.map((gw, gwIdx) => {
+                    const isExpanded = expandedWidgetIds[gw.id] ?? (gwIdx === 0);
+                    const isEnabled = gw.enabled !== false;
+                    const widgetMode = gw.mode || 'single';
+                    const widgetSize = gw.imageSize || 100;
+                    const widgetSpeed = gw.autoScrollSpeed || 'normal';
+                    const widgetImgs = gw.images || [];
 
-                    {/* Chọn chế độ: Ảnh lẻ vs Album */}
-                    <div className="space-y-1.5">
-                      <label className="text-[11px] font-semibold block" style={{ color: currentText }}>
-                        Kiểu hiển thị:
-                      </label>
-                      <div className="grid grid-cols-2 gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setGalleryMode('single')}
-                          className={`p-2 rounded border text-center text-xs flex flex-col items-center gap-1 transition cursor-pointer ${
-                            galleryMode === 'single' ? 'ring-2 font-bold' : 'opacity-70 hover:opacity-100'
-                          }`}
-                          style={{
-                            background: galleryMode === 'single' ? currentBtnSecondaryBg : currentCardBg,
-                            borderColor: galleryMode === 'single' ? currentBtnBg : currentBorder,
-                            color: currentText,
-                          }}
+                    return (
+                      <div
+                        key={gw.id}
+                        className="rounded border transition"
+                        style={{ background: currentBg, borderColor: isEnabled ? currentBorder : 'rgba(128,128,128,0.3)' }}
+                      >
+                        {/* Header của từng Widget */}
+                        <div
+                          className="p-2.5 flex items-center justify-between gap-2 border-b select-none"
+                          style={{ borderColor: currentBorder, background: currentCardBg }}
                         >
-                          <ImageIcon className="w-4 h-4" />
-                          <span>Ảnh lẻ (Đơn)</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setGalleryMode('album')}
-                          className={`p-2 rounded border text-center text-xs flex flex-col items-center gap-1 transition cursor-pointer ${
-                            galleryMode === 'album' ? 'ring-2 font-bold' : 'opacity-70 hover:opacity-100'
-                          }`}
-                          style={{
-                            background: galleryMode === 'album' ? currentBtnSecondaryBg : currentCardBg,
-                            borderColor: galleryMode === 'album' ? currentBtnBg : currentBorder,
-                            color: currentText,
-                          }}
-                        >
-                          <Images className="w-4 h-4" />
-                          <span>Album di chuyển</span>
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Kích thước widget dùng chung cho cả Ảnh đơn & Album */}
-                    <div className="space-y-1 p-2 rounded border bg-black/10" style={{ borderColor: currentBorder }}>
-                      <label className="text-[11px] font-semibold flex justify-between items-center" style={{ color: currentText }}>
-                        <span className="flex items-center gap-1">
-                          <Sliders className="w-3 h-3 text-[#e879f9]" /> Kích thước ảnh / Album:
-                        </span>
-                        <span className="font-mono font-bold text-xs" style={{ color: currentBtnBg }}>{galleryImageSize}%</span>
-                      </label>
-                      <input
-                        type="range"
-                        min="20"
-                        max="100"
-                        step="1"
-                        value={galleryImageSize}
-                        onChange={(e) => setGalleryImageSize(Number(e.target.value))}
-                        className="w-full h-1.5 rounded-lg appearance-none cursor-pointer accent-[#e879f9]"
-                        style={{ background: currentBtnBg }}
-                      />
-                      <div className="flex justify-between text-[9px] opacity-60 font-mono" style={{ color: currentTextMuted }}>
-                        <span>20% (Nhỏ)</span>
-                        <span>50% (Vừa)</span>
-                        <span>100% (Gốc)</span>
-                      </div>
-                    </div>
-
-                    {/* Cấu hình Chế độ 1: Ảnh Lẻ */}
-                    {galleryMode === 'single' && (
-                      <div className="space-y-2.5 pt-2 border-t border-dashed" style={{ borderColor: currentBorder }}>
-                        <div className="space-y-1">
-                          <label className="text-[11px] font-semibold block" style={{ color: currentText }}>
-                            Hình ảnh / GIF lẻ:
-                          </label>
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="text"
-                              value={gallerySingleImageUrl}
-                              onChange={(e) => setGallerySingleImageUrl(e.target.value)}
-                              placeholder="Dán URL ảnh/GIF hoặc tải từ máy..."
-                              className="flex-1 p-2 rounded border text-xs focus:outline-none"
-                              style={{ background: currentCardBg, borderColor: currentBorder, color: currentText }}
-                            />
-                            <button
-                              type="button"
-                              onClick={() => gallerySingleFileInputRef.current?.click()}
-                              disabled={isCompressingGalleryImg}
-                              className="px-2.5 py-2 rounded border text-xs flex items-center gap-1 transition shrink-0 cursor-pointer disabled:opacity-50"
-                              style={{ background: currentBtnBg, borderColor: currentBtnBorder, color: currentBtnText }}
-                            >
-                              <Upload className="w-3.5 h-3.5" />
-                              <span>{isCompressingGalleryImg ? 'Đang nén...' : 'Tải lên'}</span>
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* Preview ảnh lẻ nếu có */}
-                        {gallerySingleImageUrl && (
-                          <div className="relative rounded overflow-hidden border p-2 flex flex-col items-center justify-center bg-black/20" style={{ borderColor: currentBorder }}>
-                            <img
-                              src={gallerySingleImageUrl}
-                              alt="Gallery Preview"
-                              className="h-auto max-h-48 object-contain rounded transition-all duration-200"
-                              style={{ width: `${galleryImageSize}%`, maxWidth: '100%' }}
-                            />
-                            <button
-                              type="button"
-                              onClick={() => setGallerySingleImageUrl('')}
-                              className="absolute top-1.5 right-1.5 p-1 rounded-full bg-black/70 hover:bg-red-900 text-white transition cursor-pointer"
-                              title="Xóa ảnh"
-                            >
-                              <X className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        )}
-
-                        {/* Chú thích ảnh lẻ */}
-                        <div className="space-y-1">
-                          <label className="text-[11px] font-semibold block" style={{ color: currentText }}>
-                            Chú thích ảnh (tùy chọn):
-                          </label>
-                          <input
-                            type="text"
-                            value={gallerySingleImageCaption}
-                            onChange={(e) => setGallerySingleImageCaption(e.target.value)}
-                            placeholder="Ví dụ: Bìa đặc biệt, Fanart kỷ niệm..."
-                            className="w-full p-2 rounded border text-xs focus:outline-none"
-                            style={{ background: currentCardBg, borderColor: currentBorder, color: currentText }}
-                          />
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Cấu hình Chế độ 2: Album Di Chuyển */}
-                    {galleryMode === 'album' && (
-                      <div className="space-y-3 pt-2 border-t border-dashed" style={{ borderColor: currentBorder }}>
-                        {/* Tốc độ tự động di chuyển */}
-                        <div className="space-y-1">
-                          <label className="text-[11px] font-semibold block" style={{ color: currentText }}>
-                            Tốc độ di chuyển dải album:
-                          </label>
-                          <div className="grid grid-cols-3 gap-1.5">
-                            {[
-                              { id: 'slow', name: 'Chậm' },
-                              { id: 'normal', name: 'Vừa' },
-                              { id: 'fast', name: 'Nhanh' },
-                            ].map((spd) => (
+                          <div className="flex items-center gap-2 min-w-0 flex-1">
+                            {/* Reorder up/down */}
+                            <div className="flex items-center gap-0.5">
                               <button
-                                key={spd.id}
                                 type="button"
-                                onClick={() => setGalleryAutoScrollSpeed(spd.id as any)}
-                                className={`py-1.5 px-2 rounded border text-center text-xs transition cursor-pointer ${
-                                  galleryAutoScrollSpeed === spd.id ? 'font-bold ring-1' : 'opacity-70 hover:opacity-100'
-                                }`}
-                                style={{
-                                  background: galleryAutoScrollSpeed === spd.id ? currentBtnBg : currentCardBg,
-                                  borderColor: galleryAutoScrollSpeed === spd.id ? currentBtnBorder : currentBorder,
-                                  color: galleryAutoScrollSpeed === spd.id ? currentBtnText : currentText,
-                                }}
+                                disabled={gwIdx === 0}
+                                onClick={() => handleMoveGalleryWidget(gwIdx, 'up')}
+                                className="p-1 rounded hover:bg-white/10 disabled:opacity-20 transition cursor-pointer"
+                                title="Lên trên"
                               >
-                                {spd.name}
+                                <ArrowUp className="w-3 h-3" />
                               </button>
-                            ))}
-                          </div>
-                        </div>
+                              <button
+                                type="button"
+                                disabled={gwIdx === galleryWidgets.length - 1}
+                                onClick={() => handleMoveGalleryWidget(gwIdx, 'down')}
+                                className="p-1 rounded hover:bg-white/10 disabled:opacity-20 transition cursor-pointer"
+                                title="Xuống dưới"
+                              >
+                                <ArrowDown className="w-3 h-3" />
+                              </button>
+                            </div>
 
-                        {/* Form thêm ảnh vào album */}
-                        <div className="p-2.5 rounded border space-y-2" style={{ background: currentCardBg, borderColor: currentBorder }}>
-                          <span className="text-[11px] font-bold block" style={{ color: currentText }}>
-                            Thêm ảnh vào Album:
-                          </span>
-                          <div className="flex items-center gap-1.5">
+                            {/* Tiêu đề widget */}
                             <input
                               type="text"
-                              value={newAlbumImgUrl}
-                              onChange={(e) => setNewAlbumImgUrl(e.target.value)}
-                              placeholder="Dán link ảnh trực tiếp..."
-                              className="flex-1 p-1.5 rounded border text-xs focus:outline-none"
-                              style={{ background: currentBg, borderColor: currentBorder, color: currentText }}
+                              value={gw.title}
+                              onChange={(e) => handleUpdateGalleryWidget(gw.id, { title: e.target.value })}
+                              placeholder="Tiêu đề widget..."
+                              className="font-bold text-xs bg-transparent border-b border-dashed border-transparent hover:border-white/30 focus:border-white focus:outline-none px-1 py-0.5 min-w-0 flex-1 truncate"
+                              style={{ color: currentText }}
                             />
-                            <button
-                              type="button"
-                              onClick={() => galleryAlbumFileInputRef.current?.click()}
-                              disabled={isCompressingGalleryImg}
-                              className="px-2 py-1.5 rounded border text-[11px] font-bold flex items-center gap-1 transition shrink-0 cursor-pointer disabled:opacity-50"
-                              style={{ background: currentBtnSecondaryBg, borderColor: currentBorder, color: currentText }}
-                              title="Tải một hoặc nhiều ảnh từ máy"
-                            >
-                              <Upload className="w-3 h-3" />
-                              <span>{isCompressingGalleryImg ? 'Đang nén...' : 'Tải file'}</span>
-                            </button>
-                          </div>
-                          <div className="flex items-center gap-1.5">
-                            <input
-                              type="text"
-                              value={newAlbumImgCaption}
-                              onChange={(e) => setNewAlbumImgCaption(e.target.value)}
-                              placeholder="Chú thích ảnh (tùy chọn)..."
-                              className="flex-1 p-1.5 rounded border text-xs focus:outline-none"
-                              style={{ background: currentBg, borderColor: currentBorder, color: currentText }}
-                            />
-                            <button
-                              type="button"
-                              onClick={() => {
-                                if (!newAlbumImgUrl.trim()) {
-                                  alert('Vui lòng nhập link ảnh!');
-                                  return;
-                                }
-                                setGalleryImages((prev) => [
-                                  ...prev,
-                                  {
-                                    id: `img_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
-                                    url: newAlbumImgUrl.trim(),
-                                    caption: newAlbumImgCaption.trim() || undefined,
-                                  },
-                                ]);
-                                setNewAlbumImgUrl('');
-                                setNewAlbumImgCaption('');
+
+                            {/* Badge loại widget */}
+                            <span
+                              className="px-1.5 py-0.5 text-[9px] rounded font-semibold shrink-0"
+                              style={{
+                                background: currentBtnSecondaryBg,
+                                color: currentText,
                               }}
-                              className="px-3 py-1.5 rounded border text-xs font-bold flex items-center gap-1 transition shrink-0 cursor-pointer"
-                              style={{ background: currentBtnBg, borderColor: currentBtnBorder, color: currentBtnText }}
                             >
-                              <Plus className="w-3.5 h-3.5" />
-                              <span>Thêm</span>
+                              {widgetMode === 'single' ? 'Ảnh đơn' : `Album (${widgetImgs.length})`}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            {/* Switch bật/tắt widget */}
+                            <button
+                              type="button"
+                              onClick={() => handleUpdateGalleryWidget(gw.id, { enabled: !isEnabled })}
+                              className="w-8 h-4.5 flex items-center rounded-full p-0.5 cursor-pointer transition-all duration-300 shrink-0"
+                              style={{
+                                backgroundColor: isEnabled ? currentBtnBg : 'rgb(75, 85, 99)',
+                              }}
+                              title={isEnabled ? 'Đang bật widget' : 'Đang tắt widget'}
+                            >
+                              <div
+                                className={`bg-white w-3.5 h-3.5 rounded-full shadow-md transform transition-all duration-300 ${
+                                  isEnabled ? 'translate-x-3.5' : 'translate-x-0'
+                                }`}
+                              />
+                            </button>
+
+                            {/* Xóa widget */}
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteGalleryWidget(gw.id)}
+                              className="p-1 rounded hover:bg-rose-500/20 text-rose-400 transition cursor-pointer"
+                              title="Xóa widget này"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+
+                            {/* Thu gọn / Mở rộng */}
+                            <button
+                              type="button"
+                              onClick={() => setExpandedWidgetIds((prev) => ({ ...prev, [gw.id]: !isExpanded }))}
+                              className="p-1 rounded hover:bg-white/10 transition cursor-pointer"
+                              title={isExpanded ? 'Thu gọn' : 'Mở rộng'}
+                            >
+                              {isExpanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
                             </button>
                           </div>
                         </div>
 
-                        {/* Danh sách các ảnh đã thêm */}
-                        <div className="space-y-1.5">
-                          <div className="flex items-center justify-between text-[11px] font-semibold" style={{ color: currentText }}>
-                            <span>Danh sách ảnh ({galleryImages.length}):</span>
-                            {galleryImages.length > 0 && (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  if (confirm('Bạn có chắc muốn xóa tất cả ảnh trong album?')) {
-                                    setGalleryImages([]);
-                                  }
-                                }}
-                                className="text-[10px] text-rose-400 hover:underline cursor-pointer"
-                              >
-                                Xóa tất cả
-                              </button>
-                            )}
-                          </div>
-
-                          {galleryImages.length === 0 ? (
-                            <p className="text-[11px] italic opacity-60 text-center py-2" style={{ color: currentTextMuted }}>
-                              Chưa có ảnh nào trong album. Hãy dán link hoặc tải ảnh lên.
-                            </p>
-                          ) : (
-                            <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1">
-                              {galleryImages.map((img, idx) => (
-                                <div
-                                  key={img.id}
-                                  className="relative group rounded border overflow-hidden bg-black/30"
-                                  style={{ borderColor: currentBorder }}
+                        {/* Thân Widget khi mở rộng */}
+                        {isExpanded && (
+                          <div className="p-3 space-y-3">
+                            {/* Chọn kiểu hiển thị: Ảnh đơn vs Album */}
+                            <div className="space-y-1">
+                              <label className="text-[11px] font-semibold block" style={{ color: currentText }}>
+                                Kiểu hiển thị:
+                              </label>
+                              <div className="grid grid-cols-2 gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => handleUpdateGalleryWidget(gw.id, { mode: 'single' })}
+                                  className={`p-2 rounded border text-center text-xs flex flex-col items-center gap-1 transition cursor-pointer ${
+                                    widgetMode === 'single' ? 'ring-2 font-bold' : 'opacity-70 hover:opacity-100'
+                                  }`}
+                                  style={{
+                                    background: widgetMode === 'single' ? currentBtnSecondaryBg : currentCardBg,
+                                    borderColor: widgetMode === 'single' ? currentBtnBg : currentBorder,
+                                    color: currentText,
+                                  }}
                                 >
-                                  <img
-                                    src={img.url}
-                                    alt={img.caption || `Ảnh ${idx + 1}`}
-                                    className="w-full h-20 object-cover"
+                                  <ImageIcon className="w-4 h-4" />
+                                  <span>Ảnh lẻ (Đơn)</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleUpdateGalleryWidget(gw.id, { mode: 'album' })}
+                                  className={`p-2 rounded border text-center text-xs flex flex-col items-center gap-1 transition cursor-pointer ${
+                                    widgetMode === 'album' ? 'ring-2 font-bold' : 'opacity-70 hover:opacity-100'
+                                  }`}
+                                  style={{
+                                    background: widgetMode === 'album' ? currentBtnSecondaryBg : currentCardBg,
+                                    borderColor: widgetMode === 'album' ? currentBtnBg : currentBorder,
+                                    color: currentText,
+                                  }}
+                                >
+                                  <Images className="w-4 h-4" />
+                                  <span>Album di chuyển</span>
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* Kích thước ảnh / Album */}
+                            <div className="space-y-1 p-2 rounded border bg-black/10" style={{ borderColor: currentBorder }}>
+                              <label className="text-[11px] font-semibold flex justify-between items-center" style={{ color: currentText }}>
+                                <span className="flex items-center gap-1">
+                                  <Sliders className="w-3 h-3 text-[#e879f9]" /> Kích thước ảnh / Album:
+                                </span>
+                                <span className="font-mono font-bold text-xs" style={{ color: currentBtnBg }}>{widgetSize}%</span>
+                              </label>
+                              <input
+                                type="range"
+                                min="20"
+                                max="100"
+                                step="1"
+                                value={widgetSize}
+                                onChange={(e) => handleUpdateGalleryWidget(gw.id, { imageSize: Number(e.target.value) })}
+                                className="w-full h-1.5 rounded-lg appearance-none cursor-pointer accent-[#e879f9]"
+                                style={{ background: currentBtnBg }}
+                              />
+                              <div className="flex justify-between text-[9px] opacity-60 font-mono" style={{ color: currentTextMuted }}>
+                                <span>20% (Nhỏ)</span>
+                                <span>50% (Vừa)</span>
+                                <span>100% (Gốc)</span>
+                              </div>
+                            </div>
+
+                            {/* Cấu hình Chế độ 1: Ảnh Lẻ */}
+                            {widgetMode === 'single' && (
+                              <div className="space-y-2.5 pt-2 border-t border-dashed" style={{ borderColor: currentBorder }}>
+                                <div className="space-y-1">
+                                  <label className="text-[11px] font-semibold block" style={{ color: currentText }}>
+                                    Hình ảnh / GIF lẻ:
+                                  </label>
+                                  <div className="flex items-center gap-2">
+                                    <input
+                                      type="text"
+                                      value={gw.singleImageUrl || ''}
+                                      onChange={(e) => handleUpdateGalleryWidget(gw.id, { singleImageUrl: e.target.value })}
+                                      placeholder="Dán URL ảnh/GIF hoặc tải từ máy..."
+                                      className="flex-1 p-2 rounded border text-xs focus:outline-none"
+                                      style={{ background: currentCardBg, borderColor: currentBorder, color: currentText }}
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        targetUploadWidgetIdRef.current = gw.id;
+                                        gallerySingleFileInputRef.current?.click();
+                                      }}
+                                      disabled={isCompressingGalleryImg}
+                                      className="px-2.5 py-2 rounded border text-xs flex items-center gap-1 transition shrink-0 cursor-pointer disabled:opacity-50"
+                                      style={{ background: currentBtnBg, borderColor: currentBtnBorder, color: currentBtnText }}
+                                    >
+                                      <Upload className="w-3.5 h-3.5" />
+                                      <span>{isCompressingGalleryImg ? 'Đang nén...' : 'Tải lên'}</span>
+                                    </button>
+                                  </div>
+                                </div>
+
+                                {/* Preview ảnh lẻ nếu có */}
+                                {gw.singleImageUrl && (
+                                  <div className="relative rounded overflow-hidden border p-2 flex flex-col items-center justify-center bg-black/20" style={{ borderColor: currentBorder }}>
+                                    <img
+                                      src={gw.singleImageUrl}
+                                      alt="Gallery Preview"
+                                      className="h-auto max-h-48 object-contain rounded transition-all duration-200"
+                                      style={{ width: `${widgetSize}%`, maxWidth: '100%' }}
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() => handleUpdateGalleryWidget(gw.id, { singleImageUrl: '' })}
+                                      className="absolute top-1.5 right-1.5 p-1 rounded-full bg-black/70 hover:bg-red-900 text-white transition cursor-pointer"
+                                      title="Xóa ảnh"
+                                    >
+                                      <X className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
+                                )}
+
+                                {/* Chú thích ảnh lẻ */}
+                                <div className="space-y-1">
+                                  <label className="text-[11px] font-semibold block" style={{ color: currentText }}>
+                                    Chú thích ảnh (tùy chọn):
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={gw.singleImageCaption || ''}
+                                    onChange={(e) => handleUpdateGalleryWidget(gw.id, { singleImageCaption: e.target.value })}
+                                    placeholder="Ví dụ: Bìa đặc biệt, Fanart kỷ niệm..."
+                                    className="w-full p-2 rounded border text-xs focus:outline-none"
+                                    style={{ background: currentCardBg, borderColor: currentBorder, color: currentText }}
                                   />
-                                  <button
-                                    type="button"
-                                    onClick={() => setGalleryImages((prev) => prev.filter((item) => item.id !== img.id))}
-                                    className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/80 hover:bg-rose-700 text-white flex items-center justify-center transition cursor-pointer"
-                                    title="Xóa ảnh"
-                                  >
-                                    <Trash2 className="w-3 h-3" />
-                                  </button>
-                                  {img.caption && (
-                                    <div className="p-1 text-[9px] truncate bg-black/60 text-white text-center">
-                                      {img.caption}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Cấu hình Chế độ 2: Album Di Chuyển */}
+                            {widgetMode === 'album' && (
+                              <div className="space-y-3 pt-2 border-t border-dashed" style={{ borderColor: currentBorder }}>
+                                {/* Tốc độ tự động di chuyển */}
+                                <div className="space-y-1">
+                                  <label className="text-[11px] font-semibold block" style={{ color: currentText }}>
+                                    Tốc độ di chuyển dải album:
+                                  </label>
+                                  <div className="grid grid-cols-3 gap-1.5">
+                                    {[
+                                      { id: 'slow', name: 'Chậm' },
+                                      { id: 'normal', name: 'Vừa' },
+                                      { id: 'fast', name: 'Nhanh' },
+                                    ].map((spd) => (
+                                      <button
+                                        key={spd.id}
+                                        type="button"
+                                        onClick={() => handleUpdateGalleryWidget(gw.id, { autoScrollSpeed: spd.id as any })}
+                                        className={`py-1.5 px-2 rounded border text-center text-xs transition cursor-pointer ${
+                                          widgetSpeed === spd.id ? 'font-bold ring-1' : 'opacity-70 hover:opacity-100'
+                                        }`}
+                                        style={{
+                                          background: widgetSpeed === spd.id ? currentBtnBg : currentCardBg,
+                                          borderColor: widgetSpeed === spd.id ? currentBtnBorder : currentBorder,
+                                          color: widgetSpeed === spd.id ? currentBtnText : currentText,
+                                        }}
+                                      >
+                                        {spd.name}
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+
+                                {/* Form thêm ảnh vào album */}
+                                <div className="p-2.5 rounded border space-y-2" style={{ background: currentCardBg, borderColor: currentBorder }}>
+                                  <span className="text-[11px] font-bold block" style={{ color: currentText }}>
+                                    Thêm ảnh vào Album này:
+                                  </span>
+                                  <div className="flex items-center gap-1.5">
+                                    <input
+                                      type="text"
+                                      value={newAlbumImgUrl}
+                                      onChange={(e) => setNewAlbumImgUrl(e.target.value)}
+                                      placeholder="Dán link ảnh trực tiếp..."
+                                      className="flex-1 p-1.5 rounded border text-xs focus:outline-none"
+                                      style={{ background: currentBg, borderColor: currentBorder, color: currentText }}
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        targetUploadWidgetIdRef.current = gw.id;
+                                        galleryAlbumFileInputRef.current?.click();
+                                      }}
+                                      disabled={isCompressingGalleryImg}
+                                      className="px-2 py-1.5 rounded border text-[11px] font-bold flex items-center gap-1 transition shrink-0 cursor-pointer disabled:opacity-50"
+                                      style={{ background: currentBtnSecondaryBg, borderColor: currentBorder, color: currentText }}
+                                      title="Tải một hoặc nhiều ảnh từ máy"
+                                    >
+                                      <Upload className="w-3 h-3" />
+                                      <span>{isCompressingGalleryImg ? 'Đang nén...' : 'Tải file'}</span>
+                                    </button>
+                                  </div>
+                                  <div className="flex items-center gap-1.5">
+                                    <input
+                                      type="text"
+                                      value={newAlbumImgCaption}
+                                      onChange={(e) => setNewAlbumImgCaption(e.target.value)}
+                                      placeholder="Chú thích ảnh (tùy chọn)..."
+                                      className="flex-1 p-1.5 rounded border text-xs focus:outline-none"
+                                      style={{ background: currentBg, borderColor: currentBorder, color: currentText }}
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        if (!newAlbumImgUrl.trim()) {
+                                          alert('Vui lòng nhập link ảnh!');
+                                          return;
+                                        }
+                                        const newImg = {
+                                          id: `img_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+                                          url: newAlbumImgUrl.trim(),
+                                          caption: newAlbumImgCaption.trim() || undefined,
+                                        };
+                                        handleUpdateGalleryWidget(gw.id, {
+                                          images: [...widgetImgs, newImg],
+                                        });
+                                        setNewAlbumImgUrl('');
+                                        setNewAlbumImgCaption('');
+                                      }}
+                                      className="px-3 py-1.5 rounded border text-xs font-bold flex items-center gap-1 transition shrink-0 cursor-pointer"
+                                      style={{ background: currentBtnBg, borderColor: currentBtnBorder, color: currentBtnText }}
+                                    >
+                                      <Plus className="w-3.5 h-3.5" />
+                                      <span>Thêm</span>
+                                    </button>
+                                  </div>
+                                </div>
+
+                                {/* Danh sách các ảnh đã thêm trong album */}
+                                <div className="space-y-1.5">
+                                  <div className="flex items-center justify-between text-[11px] font-semibold" style={{ color: currentText }}>
+                                    <span>Danh sách ảnh ({widgetImgs.length}):</span>
+                                    {widgetImgs.length > 0 && (
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          if (confirm('Bạn có chắc muốn xóa tất cả ảnh trong album này?')) {
+                                            handleUpdateGalleryWidget(gw.id, { images: [] });
+                                          }
+                                        }}
+                                        className="text-[10px] text-rose-400 hover:underline cursor-pointer"
+                                      >
+                                        Xóa tất cả
+                                      </button>
+                                    )}
+                                  </div>
+
+                                  {widgetImgs.length === 0 ? (
+                                    <p className="text-[11px] italic opacity-60 text-center py-2" style={{ color: currentTextMuted }}>
+                                      Chưa có ảnh nào trong album này. Hãy dán link hoặc tải ảnh lên.
+                                    </p>
+                                  ) : (
+                                    <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1">
+                                      {widgetImgs.map((img, idx) => (
+                                        <div
+                                          key={img.id}
+                                          className="relative group rounded border overflow-hidden bg-black/30"
+                                          style={{ borderColor: currentBorder }}
+                                        >
+                                          <img
+                                            src={img.url}
+                                            alt={img.caption || `Ảnh ${idx + 1}`}
+                                            className="w-full h-20 object-cover"
+                                          />
+                                          <button
+                                            type="button"
+                                            onClick={() =>
+                                              handleUpdateGalleryWidget(gw.id, {
+                                                images: widgetImgs.filter((item) => item.id !== img.id),
+                                              })
+                                            }
+                                            className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/80 hover:bg-rose-700 text-white flex items-center justify-center transition cursor-pointer"
+                                            title="Xóa ảnh"
+                                          >
+                                            <Trash2 className="w-3 h-3" />
+                                          </button>
+                                          {img.caption && (
+                                            <div className="p-1 text-[9px] truncate bg-black/60 text-white text-center">
+                                              {img.caption}
+                                            </div>
+                                          )}
+                                        </div>
+                                      ))}
                                     </div>
                                   )}
                                 </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                )}
+                    );
+                  })}
+                </div>
               </div>
 
               {/* PHẦN 3: KIỂU TRÌNH BÀY DANH SÁCH CHƯƠNG */}
@@ -4404,6 +4658,25 @@ const [galleryAutoScrollSpeed, setGalleryAutoScrollSpeed] = useState<'slow' | 'n
 
           {/* TAB 6: BỐ CỤC & SẮP XẾP VỊ TRÍ PHÂN ĐOẠN */}
           {activeDrawerTab === 'layout' && (() => {
+            const getBlockMeta = (blockId: string): { name: string; icon: any } => {
+              if (blockId === 'gallery_widget') {
+                const title = galleryWidgets[0]?.title;
+                return {
+                  name: title ? `Widget Ảnh: ${title}` : 'Widget Ảnh / Album',
+                  icon: Images,
+                };
+              }
+              if (blockId.startsWith('gallery_widget:') || blockId.startsWith('gallery_widget_')) {
+                const wId = blockId.replace('gallery_widget:', '').replace('gallery_widget_', '');
+                const gw = galleryWidgets.find((w) => w.id === wId);
+                return {
+                  name: gw?.title ? `Widget Ảnh: ${gw.title}` : 'Widget Ảnh / Album',
+                  icon: Images,
+                };
+              }
+              return BLOCK_META_MAP[blockId] || { name: blockId, icon: Move };
+            };
+
             const usedBlockIds = new Set<StoryLayoutBlockId>();
             storyLayoutSections.forEach((sec) => {
               if (sec.type === '1_column') {
@@ -4413,7 +4686,14 @@ const [galleryAutoScrollSpeed, setGalleryAutoScrollSpeed] = useState<'slow' | 'n
                 sec.rightBlocks?.forEach((id) => usedBlockIds.add(id));
               }
             });
-            const unusedBlockIds = ALL_STORY_BLOCK_IDS.filter((id) => !usedBlockIds.has(id));
+
+            const allAvailableBlockIds: StoryLayoutBlockId[] = [
+              ...ALL_STORY_BLOCK_IDS.filter((id) => id !== 'gallery_widget'),
+              ...(galleryWidgets.length === 1
+                ? ['gallery_widget']
+                : galleryWidgets.map((gw, idx) => (idx === 0 ? 'gallery_widget' : `gallery_widget:${gw.id}`))),
+            ];
+            const unusedBlockIds = allAvailableBlockIds.filter((id) => !usedBlockIds.has(id));
 
             return (
               <div className="space-y-4 text-xs font-mono">
@@ -4549,7 +4829,7 @@ const [galleryAutoScrollSpeed, setGalleryAutoScrollSpeed] = useState<'slow' | 'n
                               <p className="text-[10px] italic opacity-60 text-center py-1">Kéo thả hoặc thêm khối vào đây</p>
                             ) : (
                               (sec.blocks || []).map((blockId, bIdx) => {
-                                const meta = BLOCK_META_MAP[blockId] || { name: blockId, icon: Move };
+                                const meta = getBlockMeta(blockId);
                                 const IconComp = meta.icon;
                                 return (
                                   <div
@@ -4612,7 +4892,7 @@ const [galleryAutoScrollSpeed, setGalleryAutoScrollSpeed] = useState<'slow' | 'n
                                   <p className="text-[9px] italic opacity-60 text-center py-2">Cột Trái trống</p>
                                 ) : (
                                   (sec.leftBlocks || []).map((blockId, bIdx) => {
-                                    const meta = BLOCK_META_MAP[blockId] || { name: blockId, icon: Move };
+                                    const meta = getBlockMeta(blockId);
                                     const IconComp = meta.icon;
                                     return (
                                       <div
@@ -4665,7 +4945,7 @@ const [galleryAutoScrollSpeed, setGalleryAutoScrollSpeed] = useState<'slow' | 'n
                                   <p className="text-[9px] italic opacity-60 text-center py-2">Cột Phải trống</p>
                                 ) : (
                                   (sec.rightBlocks || []).map((blockId, bIdx) => {
-                                    const meta = BLOCK_META_MAP[blockId] || { name: blockId, icon: Move };
+                                    const meta = getBlockMeta(blockId);
                                     const IconComp = meta.icon;
                                     return (
                                       <div
@@ -4711,7 +4991,7 @@ const [galleryAutoScrollSpeed, setGalleryAutoScrollSpeed] = useState<'slow' | 'n
                     </span>
                     <div className="flex flex-wrap gap-1.5">
                       {unusedBlockIds.map((blockId) => {
-                        const meta = BLOCK_META_MAP[blockId] || { name: blockId, icon: Move };
+                        const meta = getBlockMeta(blockId);
                         return (
                           <div
                             key={blockId}

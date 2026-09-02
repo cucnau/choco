@@ -153,6 +153,9 @@ export interface StoryBlockRendererProps {
 const AutoScrollAlbum = ({
   albumImages,
   story,
+  widgetTitle,
+  autoScrollSpeed,
+  imageSize,
   isCustomTheme,
   tone,
   activeBorderColor,
@@ -165,6 +168,10 @@ const AutoScrollAlbum = ({
   const [isHovered, setIsHovered] = React.useState(false);
   const length = albumImages.length;
 
+  const activeSpeed = autoScrollSpeed || story?.galleryAutoScrollSpeed || 'normal';
+  const activeSize = imageSize !== undefined ? imageSize : (story?.galleryImageSize || 100);
+  const activeTitle = widgetTitle !== undefined ? widgetTitle : story?.galleryWidgetTitle;
+
   React.useEffect(() => {
     if (length > 0 && currentIndex >= length) {
       setCurrentIndex(0);
@@ -175,15 +182,15 @@ const AutoScrollAlbum = ({
     if (length <= 1 || isHovered) return;
 
     let delay = 3000;
-    if (story.galleryAutoScrollSpeed === 'slow') delay = 5000;
-    if (story.galleryAutoScrollSpeed === 'fast') delay = 1500;
+    if (activeSpeed === 'slow') delay = 5000;
+    if (activeSpeed === 'fast') delay = 1500;
 
     const interval = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % length);
     }, delay);
 
     return () => clearInterval(interval);
-  }, [length, isHovered, story.galleryAutoScrollSpeed]);
+  }, [length, isHovered, activeSpeed]);
 
   const handlePrev = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -195,7 +202,7 @@ const AutoScrollAlbum = ({
     setCurrentIndex((prev) => (prev + 1) % length);
   };
 
-  const currentHeight = story.galleryImageSize ? (story.galleryImageSize * 1.9) : 192;
+  const currentHeight = activeSize ? (activeSize * 1.9) : 192;
 
   if (length === 0) return null;
 
@@ -205,12 +212,12 @@ const AutoScrollAlbum = ({
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {story.galleryWidgetTitle && story.galleryWidgetTitle !== 'Album' && story.galleryWidgetTitle !== 'Hình ảnh & Album' && (
+      {activeTitle && activeTitle !== 'Album' && activeTitle !== 'Hình ảnh & Album' && (
         <div className="flex items-center justify-between opacity-90 mb-1">
           <div className="flex items-center gap-1.5">
             <Images className="w-3.5 h-3.5 shrink-0" style={customStyles.text} />
             <span className={`text-xs font-bold uppercase tracking-wider ${storyBodyFont}`} style={customStyles.text}>
-              {story.galleryWidgetTitle}
+              {activeTitle}
             </span>
           </div>
           {length > 1 && (
@@ -1493,8 +1500,96 @@ export const StoryBlockRenderer: React.FC<StoryBlockRendererProps> = (props) => 
     );
   }
 
-  // 11. GALLERY WIDGET BLOCK
-  if (blockId === 'gallery_widget') {
+  // 11. GALLERY WIDGET BLOCK (Hỗ trợ thêm nhiều widget ảnh / album tùy ý)
+  if (blockId === 'gallery_widget' || blockId.startsWith('gallery_widget:') || blockId.startsWith('gallery_widget_')) {
+    const renderGalleryItem = (widget: any, widgetKey: string) => {
+      if (widget.enabled === false) return null;
+      const isSingle = widget.mode === 'single' || (!widget.images || widget.images.length === 0);
+      const singleUrl = widget.singleImageUrl || (widget.images && widget.images[0]?.url);
+      const albumImages = (widget.images && widget.images.length > 0)
+        ? widget.images
+        : (singleUrl ? [{ id: `${widget.id || 'single'}_img_0`, url: singleUrl, caption: widget.singleImageCaption }] : []);
+
+      if (isSingle && !singleUrl) return null;
+      if (!isSingle && albumImages.length === 0) return null;
+
+      if (isSingle) {
+        return (
+          <div key={widgetKey} className="w-full flex flex-col items-center justify-center my-3">
+            {widget.title && widget.title !== 'Album' && widget.title !== 'Hình ảnh & Album' && (
+              <div className="w-full flex items-center justify-between opacity-90 mb-2">
+                <div className="flex items-center gap-1.5">
+                  <Images className="w-3.5 h-3.5 shrink-0" style={customStyles.text} />
+                  <span className={`text-xs font-bold uppercase tracking-wider ${storyBodyFont}`} style={customStyles.text}>
+                    {widget.title}
+                  </span>
+                </div>
+              </div>
+            )}
+            <div
+              className="group relative cursor-pointer flex items-center justify-center w-full"
+              onClick={() => {
+                setLightboxImages([{ url: singleUrl!, caption: widget.singleImageCaption }]);
+                setLightboxCurrentIndex(0);
+              }}
+            >
+              <img
+                src={singleUrl}
+                alt={widget.singleImageCaption || widget.title || 'Story image'}
+                className="h-auto object-contain transition duration-300 group-hover:opacity-90 rounded"
+                style={{ width: `${widget.imageSize || 100}%`, maxWidth: '100%' }}
+                loading="lazy"
+              />
+            </div>
+            {widget.singleImageCaption && (
+              <p className={`mt-2 text-[11px] italic text-center opacity-85 ${storyMutedFont}`} style={customStyles.textMuted}>
+                {widget.singleImageCaption}
+              </p>
+            )}
+          </div>
+        );
+      }
+
+      return (
+        <AutoScrollAlbum
+          key={widgetKey}
+          albumImages={albumImages}
+          story={story}
+          widgetTitle={widget.title}
+          autoScrollSpeed={widget.autoScrollSpeed}
+          imageSize={widget.imageSize}
+          isCustomTheme={isCustomTheme}
+          tone={tone}
+          activeBorderColor={activeBorderColor}
+          storyBodyFont={storyBodyFont}
+          customStyles={customStyles}
+          setLightboxImages={setLightboxImages}
+          setLightboxCurrentIndex={setLightboxCurrentIndex}
+        />
+      );
+    };
+
+    // Nếu câu chuyện có danh sách nhiều galleryWidgets
+    if (story?.galleryWidgets && story.galleryWidgets.length > 0) {
+      if (blockId.startsWith('gallery_widget:') || blockId.startsWith('gallery_widget_')) {
+        const targetId = blockId.replace('gallery_widget:', '').replace('gallery_widget_', '');
+        const targetWidget = story.galleryWidgets.find(
+          (w: any) => w.id === targetId || `gallery_widget:${w.id}` === blockId || `gallery_widget_${w.id}` === blockId
+        );
+        if (targetWidget) {
+          return renderGalleryItem(targetWidget, blockId);
+        }
+      }
+
+      // Nếu là block chung 'gallery_widget'
+      return (
+        <React.Fragment key={blockId}>
+          {story.galleryWidgets.map((w: any, idx: number) => renderGalleryItem(w, `gw_${w.id || idx}`))}
+        </React.Fragment>
+      );
+    }
+
+    // Tương thích ngược với cấu hình widget đơn trước đây
     if (!story?.showGalleryWidget) return null;
     const isSingle = story.galleryMode === 'single' || (!story.galleryImages || story.galleryImages.length === 0);
     const singleUrl = story.gallerySingleImageUrl || (story.galleryImages && story.galleryImages[0]?.url);
@@ -1505,46 +1600,19 @@ export const StoryBlockRenderer: React.FC<StoryBlockRendererProps> = (props) => 
     if (isSingle && !singleUrl) return null;
     if (!isSingle && albumImages.length === 0) return null;
 
-    if (isSingle) {
-      return (
-        <div key="gallery_widget" className="w-full flex flex-col items-center justify-center my-3">
-          <div
-            className="group relative cursor-pointer flex items-center justify-center w-full"
-            onClick={() => {
-              setLightboxImages([{ url: singleUrl, caption: story.gallerySingleImageCaption }]);
-              setLightboxCurrentIndex(0);
-            }}
-          >
-            <img
-              src={singleUrl}
-              alt={story.gallerySingleImageCaption || 'Story image'}
-              className="h-auto object-contain transition duration-300 group-hover:opacity-90"
-              style={{ width: `${story.galleryImageSize || 100}%`, maxWidth: '100%' }}
-              loading="lazy"
-            />
-          </div>
-          {story.gallerySingleImageCaption && (
-            <p className={`mt-2 text-[11px] italic text-center opacity-85 ${storyMutedFont}`} style={customStyles.textMuted}>
-              {story.gallerySingleImageCaption}
-            </p>
-          )}
-        </div>
-      );
-    }
-
-    return (
-      <AutoScrollAlbum
-        key="gallery_widget"
-        albumImages={albumImages}
-        story={story}
-        isCustomTheme={isCustomTheme}
-        tone={tone}
-        activeBorderColor={activeBorderColor}
-        storyBodyFont={storyBodyFont}
-        customStyles={customStyles}
-        setLightboxImages={setLightboxImages}
-        setLightboxCurrentIndex={setLightboxCurrentIndex}
-      />
+    return renderGalleryItem(
+      {
+        id: 'legacy_gallery',
+        title: story.galleryWidgetTitle,
+        mode: story.galleryMode || 'single',
+        singleImageUrl: singleUrl,
+        singleImageCaption: story.gallerySingleImageCaption,
+        images: albumImages,
+        autoScrollSpeed: story.galleryAutoScrollSpeed,
+        imageSize: story.galleryImageSize,
+        enabled: story.showGalleryWidget,
+      },
+      'gallery_widget'
     );
   }
 
