@@ -18,6 +18,8 @@ import {
   Cpu,
   Layers,
 } from 'lucide-react';
+import { ProtectedStoryText } from './ProtectedStoryText';
+
 
 export type SpecialBlockType =
   | 'system'
@@ -365,7 +367,7 @@ export const SpecialBlockRenderer: React.FC<SpecialBlockRendererProps> = ({
               <span style={{ color: tAccent }} className="font-bold select-none shrink-0">
                 ›
               </span>
-              <span>{line}</span>
+              <span><ProtectedStoryText text={line} /></span>
             </p>
           ))}
         </div>
@@ -444,7 +446,7 @@ export const SpecialBlockRenderer: React.FC<SpecialBlockRendererProps> = ({
                   </div>
                 </div>
                 <p className="pl-7 leading-relaxed text-xs sm:text-sm" style={{ color: tBtnText || tText }}>
-                  {item.text}
+                  <ProtectedStoryText text={item.text} />
                 </p>
               </div>
             ))
@@ -467,7 +469,7 @@ export const SpecialBlockRenderer: React.FC<SpecialBlockRendererProps> = ({
               )}
               <div className="space-y-1 text-xs sm:text-sm leading-relaxed" style={{ color: tBtnText || tText }}>
                 {block.lines.map((line, lIdx) => (
-                  <p key={lIdx}>{line}</p>
+                  <p key={lIdx}><ProtectedStoryText text={line} /></p>
                 ))}
               </div>
             </div>
@@ -529,7 +531,7 @@ export const SpecialBlockRenderer: React.FC<SpecialBlockRendererProps> = ({
                       border: isRight ? undefined : `1px solid ${tBorder || `${tBtnBg}45`}`,
                     }}
                   >
-                    {msg.text}
+                    <ProtectedStoryText text={msg.text} />
                   </div>
                 </div>
               );
@@ -542,7 +544,7 @@ export const SpecialBlockRenderer: React.FC<SpecialBlockRendererProps> = ({
                     className="max-w-[85%] px-3.5 py-2 rounded-2xl rounded-bl-xs text-xs sm:text-sm leading-relaxed border shadow-xs"
                     style={{ background: `${tBtnBg}20`, color: tText, borderColor: `${tBtnBg}45` }}
                   >
-                    {l}
+                    <ProtectedStoryText text={l} />
                   </div>
                 </div>
               ))}
@@ -590,7 +592,7 @@ export const SpecialBlockRenderer: React.FC<SpecialBlockRendererProps> = ({
         <div className="space-y-2 text-xs sm:text-sm leading-relaxed italic font-lora font-serif pt-1" style={{ color: tText, fontFamily: "'Lora', 'EB Garamond', 'Noto Serif', serif" }}>
           {block.lines.map((line, lIdx) => (
             <p key={lIdx} className="indent-4">
-              {line}
+              <ProtectedStoryText text={line} />
             </p>
           ))}
         </div>
@@ -616,7 +618,7 @@ export const SpecialBlockRenderer: React.FC<SpecialBlockRendererProps> = ({
         )}
         <div className={`space-y-1 text-xs sm:text-sm leading-relaxed italic opacity-95 ${block.title ? 'pl-4 border-l-2' : ''}`} style={{ color: tText, borderColor: tAccent }}>
           {block.lines.map((line, lIdx) => (
-            <p key={lIdx}>{line}</p>
+            <p key={lIdx}><ProtectedStoryText text={line} /></p>
           ))}
         </div>
       </div>
@@ -655,12 +657,12 @@ export const SpecialBlockRenderer: React.FC<SpecialBlockRendererProps> = ({
                     {k.trim()}:
                   </span>
                   <span className="font-bold text-right" style={{ color: tAccent }}>
-                    {v.join(':').trim()}
+                    <ProtectedStoryText text={v.join(':').trim()} />
                   </span>
                 </div>
               );
             }
-            return <p key={lIdx}>{line}</p>;
+            return <p key={lIdx}><ProtectedStoryText text={line} /></p>;
           })}
         </div>
       </div>
@@ -685,7 +687,7 @@ export const SpecialBlockRenderer: React.FC<SpecialBlockRendererProps> = ({
         )}
         <div className={`space-y-1 text-xs leading-relaxed opacity-90 ${block.title ? 'pl-3.5' : ''}`} style={{ color: tText }}>
           {block.lines.map((line, lIdx) => (
-            <p key={lIdx}>{line}</p>
+            <p key={lIdx}><ProtectedStoryText text={line} /></p>
           ))}
         </div>
       </div>
@@ -704,7 +706,7 @@ export const SpecialBlockRenderer: React.FC<SpecialBlockRendererProps> = ({
         )}
         <div className="space-y-1 text-xs sm:text-sm leading-relaxed">
           {block.lines.map((line, lIdx) => (
-            <p key={lIdx}>{line}</p>
+            <p key={lIdx}><ProtectedStoryText text={line} /></p>
           ))}
         </div>
       </div>
@@ -715,7 +717,7 @@ export const SpecialBlockRenderer: React.FC<SpecialBlockRendererProps> = ({
   return (
     <div className="my-3 space-y-1 text-base leading-relaxed" style={{ color: tText }}>
       {block.lines.map((line, lIdx) => (
-        <p key={lIdx}>{line}</p>
+        <p key={lIdx}><ProtectedStoryText text={line} /></p>
       ))}
     </div>
   );

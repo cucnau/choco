@@ -298,13 +298,12 @@
 }
 
 .select-phantom-noise {
-  font-size: 0px !important;
-  width: 0px !important;
-  height: 0px !important;
-  display: inline-block !important;
-  overflow: hidden !important;
-  opacity: 0 !important;
+  display: inline !important;
+  font-size: 0.001px !important;
   line-height: 0 !important;
+  color: transparent !important;
+  letter-spacing: -2px !important;
+  opacity: 0 !important;
   pointer-events: none !important;
   user-select: text !important;
   -webkit-user-select: text !important;

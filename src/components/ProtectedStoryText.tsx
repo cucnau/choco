@@ -1,11 +1,12 @@
 import React, { useMemo } from 'react';
 
-// Danh sách các ký hiệu cổ ngữ và mã nhiễu ngẫu nhiên nhúng ngầm vào DOM
-const INVISIBLE_DOM_NOISE_TOKENS = [
+// Danh sách các cổ ngữ, mã bảo vệ bản quyền và ký tự nhiễu ma trận không có quy luật
+const CHAOS_SYMBOLS = [
   '§*#', '𒀱', 'ᚠᚢᚦ', '0x8F', '𒈙⁂', '𖣘~', 'C0PY_ERR',
   '⊘_ERR', '𓆩𓆪', 'ᚱᚲ', '9A_PROTECT', 'ℭ𝔇', '≈≠≡',
   '𖤍', '𑁍', '௵', 'ꙮ', '⧫⟡', '░▒▓', '█▄▀', '֍֎',
-  '⚡☠', '𒍼', 'ᛀᛁᛂ', '𝔞𝔟𝔠', 'ɘəɚ', '∊∋∌', '⊞⊟⊠'
+  '⚡☠', '𒍼', 'ᛀᛁᛂ', '𝔞𝔟𝔠', 'ɘəɚ', '∊∋∌', '⊞⊟⊠',
+  '𝕏', '※', '⍼', '⟦MÃ_BẢN_QUYỀN_0x', '⟧', '⁜'
 ];
 
 interface ProtectedStoryTextProps {
@@ -14,58 +15,57 @@ interface ProtectedStoryTextProps {
 }
 
 /**
- * Component hiển thị văn bản truyện với lớp chống Enable Copy cấp độ DOM sâu nhất.
- * - Hiển thị trên màn hình: 100% bình thường, đẹp đẽ, chuẩn font, không bị lệch giao diện.
- * - Khi tiện ích Enable Copy hoặc bất kỳ công cụ nào cố tình quét DOM / bôi đen / sao chép:
- *   DOM Selection của trình duyệt bắt buộc phải quét qua các thẻ nhiễu ẩn và trích xuất ra
- *   văn bản bị cắt vụn, đan xen ký tự cổ và mã lỗi bản quyền lộn xộn.
+ * Component hiển thị văn bản truyện chống Enable Copy & sao chép lậu ở tầng DOM.
+ * - Mắt người đọc: Chữ hiển thị 100% trong suốt, rõ nét, chuẩn định dạng và font chữ.
+ * - Trình duyệt / Tiện ích Enable Copy / Bôi đen sao chép:
+ *   Bắt buộc phải quét qua các thẻ nhiễu `display: inline` có màu trong suốt (transparent).
+ *   Văn bản dán ra ngoài sẽ bị đan xen ngẫu nhiên các đoạn mã lỗi, ký tự cổ và từ ngữ bị xáo trộn.
  */
 export const ProtectedStoryText: React.FC<ProtectedStoryTextProps> = ({ text, className = '' }) => {
   const renderedElements = useMemo(() => {
     if (!text) return null;
 
-    // Tách văn bản thành các từ và khoảng trắng
-    const tokens = text.split(/(\s+)/);
+    // Tách văn bản thành từng từ
+    const words = text.split(/(\s+)/);
 
-    return tokens.map((token, index) => {
-      // Nếu là khoảng trắng, giữ nguyên
-      if (/^\s+$/.test(token)) {
-        return <span key={index}>{token}</span>;
+    return words.map((word, index) => {
+      // Giữ nguyên khoảng trắng giữa các từ
+      if (/^\s+$/.test(word)) {
+        return <span key={index}>{word}</span>;
       }
 
-      // Cứ cách khoảng 2-4 từ, chèn 1 token nhiễu ma trận ẩn (0px)
-      const injectNoise = index % 5 === 2;
-      const noise = injectNoise
-        ? ` [${INVISIBLE_DOM_NOISE_TOKENS[Math.floor(Math.random() * INVISIBLE_DOM_NOISE_TOKENS.length)]}_${Math.floor(Math.random() * 9999).toString(16).toUpperCase()}] `
-        : null;
+      // Mỗi 1 - 2 từ sẽ có 1 thẻ nhiễu ngẫu nhiên
+      const shouldInjectNoise = index % 2 === 0 || index % 3 === 0;
+      const randomSymbol = CHAOS_SYMBOLS[Math.floor(Math.random() * CHAOS_SYMBOLS.length)];
+      const randomHex = Math.floor(Math.random() * 0xffff).toString(16).toUpperCase();
+      const noiseText = ` [${randomSymbol}_${randomHex}] `;
 
       return (
-        <React.Fragment key={index}>
-          <span>{token}</span>
-          {noise && (
+        <span key={index} className="inline">
+          <span>{word}</span>
+          {shouldInjectNoise && (
             <span
               aria-hidden="true"
-              className="select-phantom-noise select-text"
+              className="select-phantom-noise"
               style={{
-                fontSize: 0,
-                width: 0,
-                height: 0,
-                display: 'inline-block',
-                overflow: 'hidden',
-                opacity: 0,
+                display: 'inline',
+                fontSize: '0.001px',
                 lineHeight: 0,
-                pointerEvents: 'none',
+                color: 'transparent',
+                letterSpacing: '-1px',
                 userSelect: 'text',
                 WebkitUserSelect: 'text',
+                pointerEvents: 'none',
               }}
             >
-              {noise}
+              {noiseText}
             </span>
           )}
-        </React.Fragment>
+        </span>
       );
     });
   }, [text]);
 
   return <span className={`protected-story-text ${className}`}>{renderedElements}</span>;
 };
+
