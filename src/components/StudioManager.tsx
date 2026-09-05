@@ -591,6 +591,7 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
   const [isChapterPasswordProtected, setIsChapterPasswordProtected] = useState(false);
   const [chapterPassword, setChapterPassword] = useState('');
   const [chapterPasswordHint, setChapterPasswordHint] = useState('');
+  const [chapterUnlockMode, setChapterUnlockMode] = useState<'and' | 'or'>('and');
   const [showSpecialFrameModal, setShowSpecialFrameModal] = useState(false);
   const [modalInitialContent, setModalInitialContent] = useState('');
   const [modalInitialType, setModalInitialType] = useState<SpecialBlockType>('system');
@@ -1018,6 +1019,7 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
     setIsChapterPasswordProtected(false);
     setChapterPassword('');
     setChapterPasswordHint('');
+    setChapterUnlockMode('and');
     setIsCreatingChapter(true);
   };
 
@@ -1032,6 +1034,7 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
     setIsChapterPasswordProtected(!!chap.isPasswordProtected || !!chap.password);
     setChapterPassword(chap.password || '');
     setChapterPasswordHint(chap.passwordHint || '');
+    setChapterUnlockMode(chap.unlockMode || 'and');
     setIsCreatingChapter(true);
   };
 
@@ -1063,6 +1066,7 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
       isPasswordProtected: isChapterPasswordProtected,
       password: isChapterPasswordProtected ? chapterPassword.trim() : undefined,
       passwordHint: isChapterPasswordProtected ? (chapterPasswordHint.trim() || undefined) : undefined,
+      unlockMode: (isChapterLocked && isChapterPasswordProtected) ? chapterUnlockMode : undefined,
     };
 
     onSaveChapter(newChapter);
@@ -1074,6 +1078,7 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
     setIsChapterPasswordProtected(false);
     setChapterPassword('');
     setChapterPasswordHint('');
+    setChapterUnlockMode('and');
     setEditingChapter(null);
     setIsCreatingChapter(false);
   };
@@ -1509,6 +1514,15 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
                                     <span>Pass: {chap.password || '(Chưa đặt)'}</span>
                                   </span>
                                 )}
+                                {chap.isLocked && chap.isPasswordProtected && (
+                                  <span 
+                                    className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-[#2d1222] border border-[#ff80a6]/60 text-[10px] text-[#ffc2d4] font-semibold"
+                                    title={chap.unlockMode === 'or' ? 'Độc giả hoàn thành Chucu HOẶC Pass là đọc được' : 'Bắt buộc độc giả hoàn thành CẢ Chucu VÀ Pass mới đọc được'}
+                                  >
+                                    <Shield className="w-2.5 h-2.5 text-[#ff80a6]" />
+                                    <span>{chap.unlockMode === 'or' ? 'Mở: Chucu OR Pass' : 'Mở: Chucu AND Pass'}</span>
+                                  </span>
+                                )}
                               </div>
                               <span className="text-xs text-[#8a717a]">Cập nhật: {chap.createdAt}</span>
                             </div>
@@ -1686,6 +1700,51 @@ export const StudioManager: React.FC<StudioManagerProps> = ({
                   </div>
                 )}
               </div>
+
+              {/* Lựa chọn Quy tắc mở khóa khi đặt CẢ Chucu VÀ Mật khẩu */}
+              {isChapterLocked && isChapterPasswordProtected && (
+                <div className="p-3 bg-[#1e0f18] border border-[#ff6699]/60 space-y-2.5">
+                  <label className="text-xs font-bold text-[#ffd6e2] block font-mono-code flex items-center gap-1.5">
+                    <Shield className="w-4 h-4 text-[#ff80a6]" />
+                    <span>Cấu hình điều kiện mở khóa (Do đặt CẢ Chucu VÀ Mật khẩu):</span>
+                  </label>
+                  <div className="space-y-2 pl-2 font-mono-code">
+                    <label className="flex items-start gap-2.5 cursor-pointer select-none">
+                      <input
+                        type="radio"
+                        name="unlockMode"
+                        value="and"
+                        checked={chapterUnlockMode === 'and'}
+                        onChange={() => setChapterUnlockMode('and')}
+                        className="mt-0.5 cursor-pointer accent-[#ff6699]"
+                      />
+                      <div className="text-xs">
+                        <span className="font-bold text-[#ffd6e2] block">1. Bắt buộc mở CẢ 2 (Chucu AND Pass)</span>
+                        <span className="text-[11px] text-[#8a717a] block leading-tight">
+                          Độc giả vừa phải trả Chucu VÀ vừa phải nhập đúng Pass mới mở được chương.
+                        </span>
+                      </div>
+                    </label>
+
+                    <label className="flex items-start gap-2.5 cursor-pointer select-none">
+                      <input
+                        type="radio"
+                        name="unlockMode"
+                        value="or"
+                        checked={chapterUnlockMode === 'or'}
+                        onChange={() => setChapterUnlockMode('or')}
+                        className="mt-0.5 cursor-pointer accent-[#ff6699]"
+                      />
+                      <div className="text-xs">
+                        <span className="font-bold text-[#ffd6e2] block">2. Chỉ cần mở 1 TRONG 2 (Chucu HOẶC Pass)</span>
+                        <span className="text-[11px] text-[#8a717a] block leading-tight">
+                          Độc giả trả Chucu HOẶC nhập đúng Pass (chỉ cần làm 1 trong 2 cách) là mở được chương ngay.
+                        </span>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+              )}
 
               <div className="space-y-2">
                 <div className="flex flex-wrap items-center justify-between gap-2">

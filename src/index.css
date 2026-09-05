@@ -482,6 +482,42 @@
   .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *).choco-input:focus {
     border-color: #a8836b !important;
   }
+
+  /* Forum, Lounge Chat & Comment Links Color Styling */
+  .forum-link,
+  .lounge-link,
+  .comment-link {
+    color: #e879f9 !important;
+    font-weight: 700 !important;
+    text-decoration: underline !important;
+    text-underline-offset: 2px !important;
+    word-break: break-all !important;
+    transition: color 0.15s ease !important;
+  }
+  .forum-link:hover,
+  .lounge-link:hover,
+  .comment-link:hover {
+    color: #fbcfe8 !important;
+  }
+
+  .light-mode .forum-link,
+  .light-mode .lounge-link,
+  .light-mode .comment-link,
+  .light-mode:not(.preserve-story-theme) a.forum-link,
+  .light-mode:not(.preserve-story-theme) a.lounge-link,
+  .light-mode:not(.preserve-story-theme) a.comment-link {
+    color: #c026d3 !important; /* Màu hồng tím sẫm nổi bật rõ ràng trên nền sáng */
+    font-weight: 700 !important;
+    text-decoration: underline !important;
+  }
+  .light-mode .forum-link:hover,
+  .light-mode .lounge-link:hover,
+  .light-mode .comment-link:hover,
+  .light-mode:not(.preserve-story-theme) a.forum-link:hover,
+  .light-mode:not(.preserve-story-theme) a.lounge-link:hover,
+  .light-mode:not(.preserve-story-theme) a.comment-link:hover {
+    color: #9333ea !important;
+  }
 }
 
 /* Hide scrollbars globally while preserving scroll functionality */

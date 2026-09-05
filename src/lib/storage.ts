@@ -314,17 +314,12 @@ export async function saveStory(story: Story): Promise<Story[]> {
   let updated: Story[];
   const today = new Date().toISOString().split('T')[0];
 
-  // Auto compress cover if it's a huge base64
-  let compressedCover = story.coverUrl;
-  if (story.coverUrl && story.coverUrl.startsWith('data:image') && story.coverUrl.length > 150000) {
-    try {
-      compressedCover = await compressBase64(story.coverUrl);
-    } catch {}
+  // Quét và nén tất cả ảnh base64 trong truyện + dọn dẹp thuộc tính dư thừa
+  const finalStory = await sanitizeAndCompressStory(story);
+  finalStory.updatedAt = today;
+  if (index < 0) {
+    finalStory.createdAt = finalStory.createdAt || today;
   }
-
-  const finalStory: Story = index >= 0
-    ? { ...story, coverUrl: compressedCover, updatedAt: today }
-    : { ...story, coverUrl: compressedCover, createdAt: story.createdAt || today, updatedAt: today };
 
   if (index >= 0) {
     updated = [...stories];
@@ -397,8 +392,9 @@ export async function incrementStoryViews(storyId: string): Promise<void> {
   const stories = getStoriesLocal();
   const updated = stories.map((s) => {
     if (s.id === storyId) {
-      const newStory = { ...s, viewsCount: (s.viewsCount || 0) + 1 };
-      setDoc(doc(db, 'stories', storyId), cleanForFirestore(newStory)).catch(() => {});
+      const newViews = (s.viewsCount || 0) + 1;
+      const newStory = { ...s, viewsCount: newViews };
+      setDoc(doc(db, 'stories', storyId), { viewsCount: newViews }, { merge: true }).catch(() => {});
       return newStory;
     }
     return s;
@@ -1102,23 +1098,17 @@ export async function syncLocalToCloud(): Promise<void> {
       const story = syncedLocalStories[i];
       if (deletedIds.has(story.id)) continue;
       if (!cloudStoryIds.has(story.id)) {
-        let finalStory = { ...story };
-        // Nếu ảnh bìa quá lớn (> 150KB), nén lại để vượt qua giới hạn 1MB của Firestore document
-        if (story.coverUrl && story.coverUrl.startsWith('data:image') && story.coverUrl.length > 150000) {
-          try {
-            console.log(`[Sync] Phát hiện ảnh bìa lớn (${Math.round(story.coverUrl.length / 1024)} KB) của truyện: ${story.title}. Tiến hành nén...`);
-            const compressed = await compressBase64(story.coverUrl);
-            finalStory.coverUrl = compressed;
-            syncedLocalStories[i] = finalStory;
-            localStoriesUpdated = true;
-            console.log(`[Sync] Đã nén ảnh bìa xuống còn: ${Math.round(compressed.length / 1024)} KB`);
-          } catch (compressErr) {
-            console.warn('[Sync] Không thể nén ảnh bìa:', compressErr);
-          }
+        try {
+          console.log(`[Sync] Đang xử lý làm sạch và nén dữ liệu cho truyện: ${story.title}...`);
+          const finalStory = await sanitizeAndCompressStory(story);
+          syncedLocalStories[i] = finalStory;
+          localStoriesUpdated = true;
+          
+          await setDoc(doc(db, 'stories', finalStory.id), cleanForFirestore(finalStory));
+          console.log(`[Sync] Đã đồng bộ truyện: ${finalStory.title} (${finalStory.id}) lên Firestore thành công!`);
+        } catch (syncErr) {
+          console.warn(`[Sync] Lỗi khi đồng bộ truyện ${story.id}:`, syncErr);
         }
-        
-        await setDoc(doc(db, 'stories', finalStory.id), cleanForFirestore(finalStory));
-        console.log(`[Sync] Đã đồng bộ truyện: ${finalStory.title} (${finalStory.id}) lên Firestore`);
       }
     }
 
@@ -1156,11 +1146,19 @@ export async function syncLocalToCloud(): Promise<void> {
   }
 }
 
-// Hàm bổ trợ nén ảnh Base64 gọn nhẹ dưới 100KB để vượt qua giới hạn 1MB tài liệu của Firestore
-async function compressBase64(base64: string, maxWidth = 600, maxHeight = 800, quality = 0.85): Promise<string> {
-  if (!base64 || !base64.startsWith('data:image')) return base64;
+// Hàm bổ trợ nén ảnh Base64 gọn nhẹ dưới 50KB để vượt qua giới hạn 1MB tài liệu của Firestore
+export async function compressBase64(
+  base64: string, 
+  maxWidth = 500, 
+  maxHeight = 700, 
+  quality = 0.75
+): Promise<string> {
+  if (!base64 || typeof base64 !== 'string' || !base64.startsWith('data:image')) return base64;
+  if (base64.length < 35000) return base64;
+
   return new Promise((resolve) => {
     const img = new Image();
+    img.crossOrigin = 'anonymous';
     img.src = base64;
     img.onload = () => {
       const canvas = document.createElement('canvas');
@@ -1179,14 +1177,14 @@ async function compressBase64(base64: string, maxWidth = 600, maxHeight = 800, q
         }
       }
 
-      canvas.width = width;
-      canvas.height = height;
+      canvas.width = Math.max(10, width);
+      canvas.height = Math.max(10, height);
       const ctx = canvas.getContext('2d');
       if (!ctx) {
         resolve(base64);
         return;
       }
-      ctx.drawImage(img, 0, 0, width, height);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
       const dataUrl = canvas.toDataURL('image/jpeg', quality);
       resolve(dataUrl);
     };
@@ -1194,6 +1192,121 @@ async function compressBase64(base64: string, maxWidth = 600, maxHeight = 800, q
       resolve(base64);
     };
   });
+}
+
+/**
+ * Tự động quét và nén TOÀN BỘ ảnh Base64 bên trong đối tượng Story
+ * (bìa truyện, ảnh nhân vật, gallery widget, sticker element, theme...)
+ * và loại bỏ các mảng thừa như chapters/comments nếu lỡ dính vào,
+ * đảm bảo document truyện KHÔNG BAO GIỜ vượt quá giới hạn 1MB (1,048,576 bytes) của Firestore.
+ */
+export async function sanitizeAndCompressStory(story: Story): Promise<Story> {
+  if (!story) return story;
+  const cloned: Story = JSON.parse(JSON.stringify(story));
+
+  // 1. Loại bỏ các mảng không thuộc document story
+  delete (cloned as any).chapters;
+  delete (cloned as any).comments;
+
+  // 2. Nén bìa truyện chính
+  if (cloned.coverUrl && cloned.coverUrl.startsWith('data:image')) {
+    cloned.coverUrl = await compressBase64(cloned.coverUrl, 500, 700, 0.75);
+  }
+
+  // 3. Nén ảnh đại diện Editor
+  if (cloned.editorPhoto && cloned.editorPhoto.startsWith('data:image')) {
+    cloned.editorPhoto = await compressBase64(cloned.editorPhoto, 200, 200, 0.75);
+  }
+
+  // 4. Nén ảnh Nhân vật
+  if (Array.isArray(cloned.characters)) {
+    for (let i = 0; i < cloned.characters.length; i++) {
+      if (cloned.characters[i]?.avatarUrl?.startsWith('data:image')) {
+        cloned.characters[i].avatarUrl = await compressBase64(cloned.characters[i].avatarUrl, 300, 400, 0.75);
+      }
+    }
+  }
+
+  // 5. Nén ảnh Gallery Widgets
+  if (Array.isArray(cloned.galleryWidgets)) {
+    for (let i = 0; i < cloned.galleryWidgets.length; i++) {
+      const widget = cloned.galleryWidgets[i];
+      if (widget) {
+        if (widget.singleImageUrl?.startsWith('data:image')) {
+          widget.singleImageUrl = await compressBase64(widget.singleImageUrl, 500, 700, 0.75);
+        }
+        if (Array.isArray(widget.images)) {
+          for (let j = 0; j < widget.images.length; j++) {
+            if (widget.images[j]?.url?.startsWith('data:image')) {
+              widget.images[j].url = await compressBase64(widget.images[j].url, 500, 700, 0.75);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // 6. Nén ảnh Story Themes
+  if (Array.isArray(cloned.storyThemes)) {
+    for (let i = 0; i < cloned.storyThemes.length; i++) {
+      const theme = cloned.storyThemes[i];
+      if (theme) {
+        if (theme.coverUrl?.startsWith('data:image')) {
+          theme.coverUrl = await compressBase64(theme.coverUrl, 500, 700, 0.75);
+        }
+        if (Array.isArray(theme.storyElements)) {
+          for (let j = 0; j < theme.storyElements.length; j++) {
+            if (theme.storyElements[j]?.imageUrl?.startsWith('data:image')) {
+              theme.storyElements[j].imageUrl = await compressBase64(theme.storyElements[j].imageUrl, 350, 350, 0.75);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // 7. Nén ảnh Story Elements
+  if (Array.isArray(cloned.storyElements)) {
+    for (let i = 0; i < cloned.storyElements.length; i++) {
+      if (cloned.storyElements[i]?.imageUrl?.startsWith('data:image')) {
+        cloned.storyElements[i].imageUrl = await compressBase64(cloned.storyElements[i].imageUrl, 350, 350, 0.75);
+      }
+    }
+  }
+
+  // Kiểm tra kích thước chuỗi JSON và nén cường độ cao hơn nếu vẫn > 750KB
+  let jsonString = JSON.stringify(cleanForFirestore(cloned));
+  if (jsonString.length > 750000) {
+    if (cloned.coverUrl?.startsWith('data:image')) {
+      cloned.coverUrl = await compressBase64(cloned.coverUrl, 300, 400, 0.6);
+    }
+    if (Array.isArray(cloned.characters)) {
+      for (let i = 0; i < cloned.characters.length; i++) {
+        if (cloned.characters[i]?.avatarUrl?.startsWith('data:image')) {
+          cloned.characters[i].avatarUrl = await compressBase64(cloned.characters[i].avatarUrl, 200, 250, 0.6);
+        }
+      }
+    }
+    if (Array.isArray(cloned.galleryWidgets)) {
+      for (let i = 0; i < cloned.galleryWidgets.length; i++) {
+        const widget = cloned.galleryWidgets[i];
+        if (widget) {
+          if (widget.singleImageUrl?.startsWith('data:image')) {
+            widget.singleImageUrl = await compressBase64(widget.singleImageUrl, 300, 400, 0.6);
+          }
+          if (Array.isArray(widget.images)) {
+            for (let j = 0; j < widget.images.length; j++) {
+              if (widget.images[j]?.url?.startsWith('data:image')) {
+                widget.images[j].url = await compressBase64(widget.images[j].url, 300, 400, 0.6);
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return cloned;
 }
 
 // ------------------- TÍNH NĂNG ĐỒNG TIỀN ẢO CHUCU & ĐIỂM DANH THEO STREAK -------------------
@@ -1519,13 +1632,13 @@ export async function claimStoryOwnership(
   if (index === -1) return stories;
 
   const targetStory = stories[index];
-  const updatedStory: Story = {
+  const updatedStory = await sanitizeAndCompressStory({
     ...targetStory,
     authorUid: userUid,
     authorEmail: userEmail,
     author: targetStory.author || displayName || userEmail.split('@')[0] || 'Tác giả',
     updatedAt: new Date().toISOString().split('T')[0],
-  };
+  });
 
   const updated = [...stories];
   updated[index] = updatedStory;
@@ -1586,7 +1699,6 @@ export async function updateUserDataEverywhere(
         await setDoc(
           doc(db, 'stories', storyData.id),
           cleanForFirestore({
-            ...storyData,
             editorName: trimmedName,
             editorPhoto: newPhotoURL !== undefined ? newPhotoURL : storyData.editorPhoto,
             authorUid: uid,

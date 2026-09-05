@@ -27,7 +27,7 @@ const renderContentWithLinks = (text: string) => {
           href={href}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-[#e879f9] hover:underline hover:text-[#fbcfe8] transition duration-150 break-all inline"
+          className="forum-link text-[#c026d3] dark:text-[#e879f9] hover:underline hover:text-[#9333ea] dark:hover:text-[#fbcfe8] transition duration-150 break-all inline font-bold"
         >
           {part}
         </a>

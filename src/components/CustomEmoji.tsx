@@ -71,14 +71,31 @@ interface FormattedCommentContentProps {
 }
 
 export const FormattedCommentContent: React.FC<FormattedCommentContentProps> = ({ content, className = '' }) => {
-  const parts = content.split(/(:[a-zA-Z0-9_-]+:)/g);
+  if (!content) return null;
+
+  // Regex phát hiện cả link (http/https/www) lẫn cú pháp emoji (:emoji_id:)
+  const urlAndEmojiRegex = /(https?:\/\/[^\s]+|www\.[^\s]+|:[a-zA-Z0-9_-]+:)/g;
+  const parts = content.split(urlAndEmojiRegex);
 
   return (
     <span className={className}>
       {parts.map((part, index) => {
-        if (part.startsWith(':') && part.endsWith(':')) {
+        if (part.match(/^(https?:\/\/[^\s]+|www\.[^\s]+)$/)) {
+          const href = part.startsWith('www.') ? `https://${part}` : part;
+          return (
+            <a
+              key={index}
+              href={href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="comment-link forum-link text-[#c026d3] dark:text-[#e879f9] font-bold underline underline-offset-2 hover:text-[#9333ea] dark:hover:text-[#fbcfe8] transition duration-150 break-all inline"
+            >
+              {part}
+            </a>
+          );
+        } else if (part.startsWith(':') && part.endsWith(':')) {
           const emojiId = part.slice(1, -1);
-          return <EmojiImage key={index} id={emojiId} className="mx-0.5" />;
+          return <EmojiImage key={index} id={emojiId} className="mx-0.5 inline-block align-middle" />;
         }
         return <span key={index}>{part}</span>;
       })}

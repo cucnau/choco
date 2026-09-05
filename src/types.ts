@@ -12,6 +12,7 @@ export interface Chapter {
   isPasswordProtected?: boolean; // Chương có đặt mật khẩu (Pass) không
   password?: string; // Mật khẩu đọc chương
   passwordHint?: string; // Gợi ý câu hỏi / pass
+  unlockMode?: 'and' | 'or'; // 'and': Bắt buộc mở cả 2 (Chucu + Pass), 'or': Chỉ cần mở 1 trong 2 (Chucu HOẶC Pass)
   volumeTitle?: string; // Tên phần / quyển / ngắt phần (ví dụ: "Quyển 1: Đêm đông sống lại")
 }
 
