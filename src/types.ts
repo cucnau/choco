@@ -117,6 +117,7 @@ export interface StoryTheme {
   customBtnBgColor?: string;
   customBtnTextColor?: string;
   customBtnSecondaryBgColor?: string;
+  chapterCustomBtnTextColor?: string;
 
   // Viền & Hiệu ứng
   borderStyle?: 'solid' | 'double' | 'dashed' | 'dotted' | 'dash-dot' | 'sketch' | 'stitched' | 'gradient' | 'stamp' | 'film' | 'groove' | 'ridge' | 'offset' | 'wavy' | 'scallop' | 'curly' | 'hand-dashed' | 'none';
@@ -240,6 +241,7 @@ export interface Story {
   chapterCustomTextMutedColor?: string;
   chapterCustomBorderColor?: string;
   chapterCustomBtnBgColor?: string;
+  chapterCustomBtnTextColor?: string;
   chapterCustomBtnSecondaryBgColor?: string;
   chapterBorderStyle?: 'solid' | 'double' | 'dashed' | 'dotted' | 'dash-dot' | 'sketch' | 'stitched' | 'gradient' | 'stamp' | 'film' | 'groove' | 'ridge' | 'offset' | 'wavy' | 'scallop' | 'curly' | 'hand-dashed' | 'none';
   chapterBorderWidth?: 'thin' | 'medium' | 'thick' | 'heavy' | 'bold' | 'frame';

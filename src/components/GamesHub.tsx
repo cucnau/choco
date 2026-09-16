@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
-import { Gamepad2, Play, Trophy, LayoutGrid, Grid3X3, Bomb } from 'lucide-react';
+import { Gamepad2, Play, Trophy, LayoutGrid, Grid3X3, Bomb, Blocks, ArrowLeftRight } from 'lucide-react';
 import { UserProfile } from '../types';
 import { User as FirebaseUser } from 'firebase/auth';
 import { BlockBlastGame } from './BlockBlastGame';
 import { Game2048 } from './Game2048';
 import { NonogramGame } from './NonogramGame';
 import { MinesweeperGame } from './MinesweeperGame';
+import { SudokuGame } from './SudokuGame';
+import { TetrisGame } from './TetrisGame';
+import { SlidingBlockGame } from './SlidingBlockGame';
 
 interface GamesHubProps {
   currentUser?: FirebaseUser | null;
@@ -81,6 +84,40 @@ export const GamesHub: React.FC<GamesHubProps> = ({
     }
   })();
 
+  // Lấy kỷ lục điểm Tetris đã lưu trong localStorage
+  const tetrisHighScore = (() => {
+    try {
+      const saved = localStorage.getItem('tetris_high_score');
+      return saved ? parseInt(saved, 10) : 0;
+    } catch {
+      return 0;
+    }
+  })();
+
+  // Lấy thời gian giải Sudoku nhanh nhất
+  const sudokuBestTime = (() => {
+    try {
+      const saved = localStorage.getItem('sudoku_best_times');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return parsed.medium || parsed.easy || parsed.hard || null;
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  })();
+
+  // Lấy kỷ lục game Trượt Khối
+  const slideBlockHighScore = (() => {
+    try {
+      const saved = localStorage.getItem('slide_block_high_score');
+      return saved ? parseInt(saved, 10) : 0;
+    } catch {
+      return 0;
+    }
+  })();
+
   // Nếu đang chơi game Block
   if (activeGameId === 'block' || activeGameId === 'block_blast') {
     return (
@@ -125,6 +162,39 @@ export const GamesHub: React.FC<GamesHubProps> = ({
     );
   }
 
+  // Nếu đang chơi game Sudoku
+  if (activeGameId === 'sudoku') {
+    return (
+      <SudokuGame
+        onBack={() => setActiveGameId(null)}
+        currentUser={currentUser}
+        userProfile={userProfile}
+      />
+    );
+  }
+
+  // Nếu đang chơi game Tetris
+  if (activeGameId === 'tetris') {
+    return (
+      <TetrisGame
+        onBack={() => setActiveGameId(null)}
+        currentUser={currentUser}
+        userProfile={userProfile}
+      />
+    );
+  }
+
+  // Nếu đang chơi game Trượt Khối (Sliding Block Puzzle)
+  if (activeGameId === 'sliding_block' || activeGameId === 'sliding_puzzle' || activeGameId === 'truot_khoi') {
+    return (
+      <SlidingBlockGame
+        onBack={() => setActiveGameId(null)}
+        currentUser={currentUser}
+        userProfile={userProfile}
+      />
+    );
+  }
+
   return (
     <div className="space-y-6 max-w-6xl mx-auto py-2">
       {/* Banner / Header */}
@@ -143,18 +213,18 @@ export const GamesHub: React.FC<GamesHubProps> = ({
 
       {/* Danh sách các trò chơi sẵn có */}
       <div className="space-y-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {/* Card Game Block */}
-          <div className="bg-[#1c0c16] border border-[#3b1f2d] hover:border-[#ff4d79] rounded-xs p-5 flex flex-col justify-between space-y-4 transition group shadow-sm">
+          <div className="bg-[#1c0c16] border border-[#3b1f2d] hover:border-[#f472b6] rounded-xs p-5 flex flex-col justify-between space-y-4 transition group shadow-sm">
             <div className="space-y-3">
               {/* Game Icon & Title */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-xs bg-[#25101b] border border-[#ff4d79]/40 flex items-center justify-center text-[#ff4d79] group-hover:scale-105 transition shadow-xs">
+                  <div className="w-12 h-12 rounded-xs bg-gradient-to-br from-[#f472b6]/20 via-[#ec4899]/20 to-[#fda4af]/20 border border-[#f472b6]/50 flex items-center justify-center text-[#f472b6] group-hover:scale-105 transition shadow-xs">
                     <LayoutGrid className="w-6 h-6" />
                   </div>
                   <div>
-                    <h3 className="text-base font-bold font-mono-code text-[#ffc2d4] group-hover:text-white transition">
+                    <h3 className="game-card-title text-base font-bold font-mono-code text-[#ffc2d4] group-hover:text-white transition">
                       Block
                     </h3>
                   </div>
@@ -173,7 +243,7 @@ export const GamesHub: React.FC<GamesHubProps> = ({
             {/* Nút vào chơi */}
             <button
               onClick={() => setActiveGameId('block')}
-              className="w-full py-2.5 bg-[#881337] hover:bg-[#9f1239] text-white font-mono-code font-bold text-xs rounded-xs border border-[#ff4d79] transition flex items-center justify-center gap-2 cursor-pointer shadow-md"
+              className="w-full py-2.5 bg-[#be185d] hover:bg-[#db2777] text-white font-mono-code font-bold text-xs rounded-xs border border-[#f472b6] transition flex items-center justify-center gap-2 cursor-pointer shadow-md"
             >
               <Play className="w-3.5 h-3.5 fill-current" />
               <span>CHƠI NGAY</span>
@@ -186,13 +256,13 @@ export const GamesHub: React.FC<GamesHubProps> = ({
               {/* Game Icon & Title */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-xs bg-gradient-to-br from-[#ffd166]/20 via-[#f72585]/20 to-[#ffd166]/10 border border-[#ffd166]/50 flex items-center justify-center text-[#ffd166] group-hover:scale-105 transition shadow-xs">
-                    <span className="font-mono-code font-black text-sm tracking-tighter text-transparent bg-clip-text bg-gradient-to-br from-[#ffd166] to-[#f72585]">
+                  <div className="w-12 h-12 rounded-xs bg-gradient-to-br from-[#ffd166]/20 via-[#f59e0b]/20 to-[#d97706]/10 border border-[#ffd166]/50 flex items-center justify-center text-[#ffd166] group-hover:scale-105 transition shadow-xs">
+                    <span className="font-mono-code font-black text-sm tracking-tighter text-transparent bg-clip-text bg-gradient-to-br from-[#ffd166] to-[#f59e0b]">
                       2048
                     </span>
                   </div>
                   <div>
-                    <h3 className="text-base font-bold font-mono-code text-[#ffc2d4] group-hover:text-white transition">
+                    <h3 className="game-card-title text-base font-bold font-mono-code text-[#ffc2d4] group-hover:text-white transition">
                       2048
                     </h3>
                   </div>
@@ -211,25 +281,25 @@ export const GamesHub: React.FC<GamesHubProps> = ({
             {/* Nút vào chơi */}
             <button
               onClick={() => setActiveGameId('2048')}
-              className="w-full py-2.5 bg-[#854d0e] hover:bg-[#a16207] text-white font-mono-code font-bold text-xs rounded-xs border border-[#ffd166] transition flex items-center justify-center gap-2 cursor-pointer shadow-md"
+              className="w-full py-2.5 bg-[#b45309] hover:bg-[#d97706] text-white font-mono-code font-bold text-xs rounded-xs border border-[#ffd166] transition flex items-center justify-center gap-2 cursor-pointer shadow-md"
             >
               <Play className="w-3.5 h-3.5 fill-current" />
               <span>CHƠI NGAY</span>
             </button>
           </div>
 
-          {/* Card Game Nonogram (Picross) */}
-          <div className="bg-[#1c0c16] border border-[#3b1f2d] hover:border-[#ff4d79] rounded-xs p-5 flex flex-col justify-between space-y-4 transition group shadow-sm">
+          {/* Card Game Picross */}
+          <div className="bg-[#1c0c16] border border-[#3b1f2d] hover:border-[#10b981] rounded-xs p-5 flex flex-col justify-between space-y-4 transition group shadow-sm">
             <div className="space-y-3">
               {/* Game Icon & Title */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-xs bg-gradient-to-br from-[#ff4d79]/20 via-[#c084fc]/20 to-[#38bdf8]/20 border border-[#ff4d79]/50 flex items-center justify-center text-[#ff4d79] group-hover:scale-105 transition shadow-xs">
+                  <div className="w-12 h-12 rounded-xs bg-gradient-to-br from-[#10b981]/20 via-[#059669]/20 to-[#6ee7b7]/20 border border-[#10b981]/50 flex items-center justify-center text-[#10b981] group-hover:scale-105 transition shadow-xs">
                     <Grid3X3 className="w-6 h-6" />
                   </div>
                   <div>
-                    <h3 className="text-base font-bold font-mono-code text-[#ffc2d4] group-hover:text-white transition">
-                      Nonogram
+                    <h3 className="game-card-title text-base font-bold font-mono-code text-[#ffc2d4] group-hover:text-white transition">
+                      Picross
                     </h3>
                   </div>
                 </div>
@@ -243,15 +313,15 @@ export const GamesHub: React.FC<GamesHubProps> = ({
                 </div>
               ) : (
                 <div className="flex items-center gap-1.5 text-xs font-mono-code text-[#8a717a] bg-[#14080e] p-2 rounded-xs border border-[#2d1822]">
-                  <span>Tranh số logic (Picross)</span>
+                  <span>Tranh số logic</span>
                 </div>
               )}
             </div>
 
             {/* Nút vào chơi */}
             <button
-              onClick={() => setActiveGameId('nonogram')}
-              className="w-full py-2.5 bg-[#881337] hover:bg-[#9f1239] text-white font-mono-code font-bold text-xs rounded-xs border border-[#ff4d79] transition flex items-center justify-center gap-2 cursor-pointer shadow-md"
+              onClick={() => setActiveGameId('picross')}
+              className="w-full py-2.5 bg-[#059669] hover:bg-[#10b981] text-white font-mono-code font-bold text-xs rounded-xs border border-[#34d399] transition flex items-center justify-center gap-2 cursor-pointer shadow-md"
             >
               <Play className="w-3.5 h-3.5 fill-current" />
               <span>CHƠI NGAY</span>
@@ -259,16 +329,16 @@ export const GamesHub: React.FC<GamesHubProps> = ({
           </div>
 
           {/* Card Game Dò Mìn (Minesweeper) */}
-          <div className="bg-[#1c0c16] border border-[#3b1f2d] hover:border-[#f43f5e] rounded-xs p-5 flex flex-col justify-between space-y-4 transition group shadow-sm">
+          <div className="bg-[#1c0c16] border border-[#3b1f2d] hover:border-[#ef4444] rounded-xs p-5 flex flex-col justify-between space-y-4 transition group shadow-sm">
             <div className="space-y-3">
               {/* Game Icon & Title */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-xs bg-gradient-to-br from-[#f43f5e]/20 via-[#be123c]/20 to-[#fb7185]/20 border border-[#f43f5e]/50 flex items-center justify-center text-[#ff4d79] group-hover:scale-105 transition shadow-xs">
+                  <div className="w-12 h-12 rounded-xs bg-gradient-to-br from-[#ef4444]/20 via-[#dc2626]/20 to-[#f87171]/20 border border-[#ef4444]/50 flex items-center justify-center text-[#ef4444] group-hover:scale-105 transition shadow-xs">
                     <Bomb className="w-6 h-6" />
                   </div>
                   <div>
-                    <h3 className="text-base font-bold font-mono-code text-[#ffc2d4] group-hover:text-white transition">
+                    <h3 className="game-card-title text-base font-bold font-mono-code text-[#ffc2d4] group-hover:text-white transition">
                       Dò Mìn
                     </h3>
                   </div>
@@ -281,17 +351,123 @@ export const GamesHub: React.FC<GamesHubProps> = ({
                   <Trophy className="w-3.5 h-3.5" />
                   <span>Kỷ lục: <strong>{minesweeperStats.bestEasy}s</strong> {minesweeperStats.totalWins > 0 && `(${minesweeperStats.totalWins} thắng)`}</span>
                 </div>
-              ) : (
-                <div className="flex items-center gap-1.5 text-xs font-mono-code text-[#8a717a] bg-[#14080e] p-2 rounded-xs border border-[#2d1822]">
-                  <span>Minesweeper kinh điển</span>
-                </div>
-              )}
+              ) : null}
             </div>
 
             {/* Nút vào chơi */}
             <button
               onClick={() => setActiveGameId('minesweeper')}
-              className="w-full py-2.5 bg-[#881337] hover:bg-[#9f1239] text-white font-mono-code font-bold text-xs rounded-xs border border-[#ff4d79] transition flex items-center justify-center gap-2 cursor-pointer shadow-md"
+              className="w-full py-2.5 bg-[#dc2626] hover:bg-[#ef4444] text-white font-mono-code font-bold text-xs rounded-xs border border-[#f87171] transition flex items-center justify-center gap-2 cursor-pointer shadow-md"
+            >
+              <Play className="w-3.5 h-3.5 fill-current" />
+              <span>CHƠI NGAY</span>
+            </button>
+          </div>
+
+          {/* Card Game Sudoku */}
+          <div className="bg-[#1c0c16] border border-[#3b1f2d] hover:border-[#38bdf8] rounded-xs p-5 flex flex-col justify-between space-y-4 transition group shadow-sm">
+            <div className="space-y-3">
+              {/* Game Icon & Title */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-xs bg-gradient-to-br from-[#38bdf8]/20 via-[#0284c7]/20 to-[#818cf8]/20 border border-[#38bdf8]/50 flex items-center justify-center text-[#38bdf8] group-hover:scale-105 transition shadow-xs">
+                    <span className="font-mono-code font-black text-base tracking-tight text-transparent bg-clip-text bg-gradient-to-br from-[#38bdf8] via-[#60a5fa] to-[#818cf8]">
+                      123
+                    </span>
+                  </div>
+                  <div>
+                    <h3 className="game-card-title text-base font-bold font-mono-code text-[#ffc2d4] group-hover:text-white transition">
+                      Sudoku
+                    </h3>
+                  </div>
+                </div>
+              </div>
+
+              {/* Tiến độ hoặc Kỷ lục */}
+              {sudokuBestTime ? (
+                <div className="flex items-center gap-1.5 text-xs font-mono-code text-[#fbbf24] bg-[#14080e] p-2 rounded-xs border border-[#2d1822]">
+                  <Trophy className="w-3.5 h-3.5" />
+                  <span>Kỷ lục: <strong>{Math.floor(sudokuBestTime / 60)}m {sudokuBestTime % 60}s</strong></span>
+                </div>
+              ) : null}
+            </div>
+
+            {/* Nút vào chơi */}
+            <button
+              onClick={() => setActiveGameId('sudoku')}
+              className="w-full py-2.5 bg-[#0284c7] hover:bg-[#0369a1] text-white font-mono-code font-bold text-xs rounded-xs border border-[#38bdf8] transition flex items-center justify-center gap-2 cursor-pointer shadow-md"
+            >
+              <Play className="w-3.5 h-3.5 fill-current" />
+              <span>CHƠI NGAY</span>
+            </button>
+          </div>
+
+          {/* Card Game Tetris */}
+          <div className="bg-[#1c0c16] border border-[#3b1f2d] hover:border-[#a855f7] rounded-xs p-5 flex flex-col justify-between space-y-4 transition group shadow-sm">
+            <div className="space-y-3">
+              {/* Game Icon & Title */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-xs bg-gradient-to-br from-[#a855f7]/20 via-[#7c3aed]/20 to-[#c084fc]/20 border border-[#a855f7]/50 flex items-center justify-center text-[#a855f7] group-hover:scale-105 transition shadow-xs">
+                    <Blocks className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h3 className="game-card-title text-base font-bold font-mono-code text-[#ffc2d4] group-hover:text-white transition">
+                      Tetris
+                    </h3>
+                  </div>
+                </div>
+              </div>
+
+              {/* Kỷ lục */}
+              {tetrisHighScore > 0 ? (
+                <div className="flex items-center gap-1.5 text-xs font-mono-code text-[#fbbf24] bg-[#14080e] p-2 rounded-xs border border-[#2d1822]">
+                  <Trophy className="w-3.5 h-3.5" />
+                  <span>Kỷ lục của bạn: <strong>{tetrisHighScore.toLocaleString()}</strong> điểm</span>
+                </div>
+              ) : null}
+            </div>
+
+            {/* Nút vào chơi */}
+            <button
+              onClick={() => setActiveGameId('tetris')}
+              className="w-full py-2.5 bg-[#7c3aed] hover:bg-[#8b5cf6] text-white font-mono-code font-bold text-xs rounded-xs border border-[#c084fc] transition flex items-center justify-center gap-2 cursor-pointer shadow-md"
+            >
+              <Play className="w-3.5 h-3.5 fill-current" />
+              <span>CHƠI NGAY</span>
+            </button>
+          </div>
+
+          {/* Card Game Trượt Khối */}
+          <div className="bg-[#1c0c16] border border-[#3b1f2d] hover:border-[#f59e0b] rounded-xs p-5 flex flex-col justify-between space-y-4 transition group shadow-sm">
+            <div className="space-y-3">
+              {/* Game Icon & Title */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-xs bg-gradient-to-br from-[#f59e0b]/20 via-[#d97706]/20 to-[#b45309]/20 border border-[#f59e0b]/50 flex items-center justify-center text-[#f59e0b] group-hover:scale-105 transition shadow-xs">
+                    <ArrowLeftRight className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h3 className="game-card-title text-base font-bold font-mono-code text-[#ffc2d4] group-hover:text-white transition">
+                      Trượt Khối
+                    </h3>
+                  </div>
+                </div>
+              </div>
+
+              {/* Kỷ lục */}
+              {slideBlockHighScore > 0 ? (
+                <div className="flex items-center gap-1.5 text-xs font-mono-code text-[#fbbf24] bg-[#14080e] p-2 rounded-xs border border-[#2d1822]">
+                  <Trophy className="w-3.5 h-3.5" />
+                  <span>Kỷ lục: <strong>{slideBlockHighScore.toLocaleString()}</strong> điểm</span>
+                </div>
+              ) : null}
+            </div>
+
+            {/* Nút vào chơi */}
+            <button
+              onClick={() => setActiveGameId('sliding_block')}
+              className="w-full py-2.5 bg-[#d97706] hover:bg-[#b45309] text-white font-mono-code font-bold text-xs rounded-xs border border-[#f59e0b] transition flex items-center justify-center gap-2 cursor-pointer shadow-md"
             >
               <Play className="w-3.5 h-3.5 fill-current" />
               <span>CHƠI NGAY</span>

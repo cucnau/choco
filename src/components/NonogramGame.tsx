@@ -1394,13 +1394,8 @@ export const NonogramGame: React.FC<NonogramGameProps> = ({ onBack }) => {
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold px-2 py-0.5 rounded-xs bg-[#881337] border border-[#ff4d79] text-white uppercase tracking-wider">
-                Logic Puzzle
-              </span>
-            </div>
             <h1 className="text-xl md:text-2xl font-bold text-[#ffc2d4] tracking-tight mt-1">
-              NONOGRAM (PICROSS)
+              PICROSS
             </h1>
           </div>
         </div>

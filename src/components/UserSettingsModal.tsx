@@ -122,7 +122,7 @@ export const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
         {/* Sticky Header with Close Button */}
         <div className="flex items-center justify-between p-4 sm:p-5 border-b border-[#2d1822] bg-[#150a0f] shrink-0">
           <div>
-            <h2 className="text-sm font-bold font-mono-code uppercase tracking-[0.15em] text-white">
+            <h2 className="text-sm font-bold font-mono-code uppercase tracking-[0.15em] text-[#ffd6e2]">
               Cài đặt tài khoản
             </h2>
             <p className="text-[11px] text-[#8a717a] mt-0.5 font-mono-code">
@@ -219,7 +219,7 @@ export const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
                 placeholder="Nhập tên hiển thị mới..."
-                className="w-full bg-[#170d12] border border-[#2d1822] p-2 text-xs text-white focus:outline-none focus:border-[#522d3d] font-mono-code"
+                className="w-full bg-[#170d12] border border-[#2d1822] p-2 text-xs text-[#f2e6ea] focus:outline-none focus:border-[#522d3d] font-mono-code choco-input"
                 required
               />
             </div>
@@ -237,7 +237,7 @@ export const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full bg-[#170d12] border border-[#2d1822] p-2 text-xs text-white focus:outline-none focus:border-[#522d3d] font-mono-code"
+                  className="w-full bg-[#170d12] border border-[#2d1822] p-2 text-xs text-[#f2e6ea] focus:outline-none focus:border-[#522d3d] font-mono-code choco-input"
                 />
               </div>
               <div className="space-y-1">
@@ -247,7 +247,7 @@ export const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full bg-[#170d12] border border-[#2d1822] p-2 text-xs text-white focus:outline-none focus:border-[#522d3d] font-mono-code"
+                  className="w-full bg-[#170d12] border border-[#2d1822] p-2 text-xs text-[#f2e6ea] focus:outline-none focus:border-[#522d3d] font-mono-code choco-input"
                 />
               </div>
             </div>

@@ -412,75 +412,50 @@
     border-color: #e8d5c8 !important;
   }
 
-  /* Main / Heading / High-contrast Text */
-  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="text-[#e0d0d5]"],
-  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="text-[#e0c0cc]"],
-  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="text-[#e8dcd8]"],
-  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="text-[#ffd6e2]"],
-  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="text-[#fbcfe8]"],
-  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="text-[#ffb5cd]"],
-  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="text-[#ff99bb]"],
-  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="text-[#ff99b0]"],
-  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="text-[#c0a0aa]"],
-  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="text-[#c0a0b0]"],
-  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="text-[#d0a0b0]"],
-  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="text-[#e0a8be]"],
-  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="text-[#f2c0ce]"],
-  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="text-[#f2e6e8]"],
-  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="text-[#f5ebe6]"] {
-    color: #3d2314 !important;
+  /* Main / Heading / High-contrast Text inside light mode containers */
+  .light-mode:not(.preserve-story-theme) .choco-box,
+  .light-mode:not(.preserve-story-theme) .choco-box h1,
+  .light-mode:not(.preserve-story-theme) .choco-box h2,
+  .light-mode:not(.preserve-story-theme) .choco-box h3,
+  .light-mode:not(.preserve-story-theme) .choco-box h4,
+  .light-mode:not(.preserve-story-theme) .choco-box p:not([class*="text-"]),
+  .light-mode:not(.preserve-story-theme) .choco-card {
+    color: #2b141e;
   }
 
-  /* Secondary / Muted / Subtitle Text */
-  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="text-[#8a717a]"],
-  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="text-[#a1887f]"],
-  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="text-[#6a555f]"],
-  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="text-[#6c5866]"],
-  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="text-[#6e5860]"],
-  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="text-[#523d46]"],
-  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="text-[#543b46]"],
-  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="text-[#a08090]"],
-  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="text-[#a88291]"],
-  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="text-[#b3889b]"],
-  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="text-[#c492a5]"] {
-    color: #8c5e42 !important;
-  }
-
-  /* Hover Text Colors */
-  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="hover:text-[#e0c0cc]"]:hover,
-  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="hover:text-[#ffd6e2]"]:hover,
-  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="hover:text-white"]:hover,
-  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="group-hover:text-[#ffd6e2]"] {
-    color: #6e3e23 !important;
-  }
-
-  /* Form controls & Inputs outside story theme */
-  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)input,
-  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)textarea,
-  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)select,
-  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *).choco-input {
+  /* Form controls & Inputs in light mode */
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *).choco-input,
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *) input.choco-input,
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *) textarea.choco-input {
     background-color: #fffcf9 !important;
-    color: #3d2314 !important;
+    color: #2b141e !important;
     border-color: #e8d5c8 !important;
   }
 
-  /* Inputs within cards outside story theme */
-  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#12090c]"] input,
-  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)[class*="bg-[#12090c]"] textarea {
-    background-color: #fffcf9 !important;
-    color: #3d2314 !important;
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *) .choco-input::placeholder,
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *) input.choco-input::placeholder,
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *) textarea.choco-input::placeholder {
+    color: #8c5e42 !important;
+    opacity: 0.85;
   }
 
-  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)input::placeholder,
-  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)textarea::placeholder {
-    color: #b08b73 !important;
-  }
-
-  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)input:focus,
-  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)textarea:focus,
-  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *)select:focus,
-  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *).choco-input:focus {
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *) .choco-input:focus,
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *) input.choco-input:focus,
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *) textarea.choco-input:focus,
+  .light-mode :not(.preserve-story-theme):not(.preserve-story-theme *) select.choco-input:focus {
     border-color: #a8836b !important;
+  }
+
+  /* Story Themes: Preserve theme colors for inputs and placeholders */
+  .preserve-story-theme input::placeholder,
+  .preserve-story-theme textarea::placeholder,
+  .preserve-story-theme ::placeholder,
+  [data-story-theme] input::placeholder,
+  [data-story-theme] textarea::placeholder,
+  .story-theme-container input::placeholder,
+  .story-theme-container textarea::placeholder {
+    color: inherit !important;
+    opacity: 0.55 !important;
   }
 
   /* Forum, Lounge Chat & Comment Links Color Styling */
@@ -568,3 +543,241 @@
 .gallery-strip-paused {
   animation-play-state: paused !important;
 }
+
+/* Minesweeper Theme Harmonization in Light Mode */
+.light-mode .minesweeper-machine {
+  background-color: #fcf8f5 !important;
+  border-color: #e8d5c8 !important;
+}
+
+.light-mode .minesweeper-dashboard {
+  background-color: #f3e8dd !important;
+  border-color: #d9c4b5 !important;
+}
+
+.light-mode .minesweeper-led {
+  background-color: #1a0a12 !important;
+  border-color: #5e283c !important;
+  color: #ff4d79 !important;
+}
+
+.light-mode .minesweeper-reset-btn {
+  background-color: #f8f3ee !important;
+  border-color: #d9c4b5 !important;
+  color: #8c5332 !important;
+}
+
+.light-mode .minesweeper-reset-btn:hover {
+  background-color: #eddcd2 !important;
+  border-color: #8c5332 !important;
+}
+
+.light-mode .minesweeper-board-wrapper {
+  background-color: #eddcd2 !important;
+  border-color: #cbb4a4 !important;
+}
+
+.light-mode .minesweeper-grid {
+  background-color: #cbb4a4 !important;
+}
+
+.light-mode .minesweeper-cell-unrevealed {
+  background-color: #ebdcd0 !important;
+  border-top-color: #ffffff !important;
+  border-left-color: #ffffff !important;
+  border-bottom-color: #bfa796 !important;
+  border-right-color: #bfa796 !important;
+}
+
+.light-mode .minesweeper-cell-unrevealed-alt {
+  background-color: #e6d4c6 !important;
+  border-top-color: #ffffff !important;
+  border-left-color: #ffffff !important;
+  border-bottom-color: #bfa796 !important;
+  border-right-color: #bfa796 !important;
+}
+
+.light-mode .minesweeper-cell-unrevealed:hover,
+.light-mode .minesweeper-cell-unrevealed-alt:hover {
+  background-color: #f3e8dd !important;
+}
+
+.light-mode .minesweeper-cell-revealed-even {
+  background-color: #fffcf9 !important;
+}
+
+.light-mode .minesweeper-cell-revealed-odd {
+  background-color: #f7efe7 !important;
+}
+
+.light-mode .minesweeper-cell-flagged {
+  background-color: #f7efe7 !important;
+  border-color: #f472b6 !important;
+}
+
+.light-mode .minesweeper-cell-mine-unexploded {
+  background-color: #fce7f3 !important;
+  color: #db2777 !important;
+}
+
+.light-mode .minesweeper-cell-mine-wrong {
+  background-color: #fee2e2 !important;
+  color: #ef4444 !important;
+}
+
+.light-mode .minesweeper-num-1 { color: #1d4ed8 !important; }
+.light-mode .minesweeper-num-2 { color: #15803d !important; }
+.light-mode .minesweeper-num-3 { color: #dc2626 !important; }
+.light-mode .minesweeper-num-4 { color: #7c3aed !important; }
+.light-mode .minesweeper-num-5 { color: #c2410c !important; }
+.light-mode .minesweeper-num-6 { color: #0d9488 !important; }
+.light-mode .minesweeper-num-7 { color: #be185d !important; }
+.light-mode .minesweeper-num-8 { color: #475569 !important; }
+
+/* Sudoku Light Mode */
+.light-mode .sudoku-board-box {
+  background-color: #94a3b8 !important;
+  border-color: #64748b !important;
+}
+
+.light-mode .sudoku-cell-default {
+  background-color: #ffffff !important;
+}
+
+.light-mode .sudoku-cell-selected {
+  background-color: #fbcfe8 !important;
+}
+
+.light-mode .sudoku-cell-same-number {
+  background-color: #e0f2fe !important;
+}
+
+.light-mode .sudoku-cell-same-group {
+  background-color: #f8fafc !important;
+}
+
+.light-mode .sudoku-cell-wrong {
+  background-color: #fee2e2 !important;
+}
+
+.light-mode .sudoku-text-initial {
+  color: #0f172a !important;
+}
+
+.light-mode .sudoku-text-user {
+  color: #0284c7 !important;
+}
+
+.light-mode .sudoku-text-wrong {
+  color: #dc2626 !important;
+}
+
+/* Tetris Light Mode Overrides */
+.light-mode .tetris-panel {
+  background-color: #fffcf9 !important;
+  border-color: #e8d5c8 !important;
+  box-shadow: 0 1px 4px rgba(140, 94, 66, 0.08) !important;
+}
+
+.light-mode .tetris-board-frame {
+  background-color: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08) !important;
+}
+
+.light-mode .tetris-board-grid {
+  background-color: #f1f5f9 !important;
+  border-color: #e2e8f0 !important;
+}
+
+.light-mode .tetris-cell-empty {
+  background-color: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+}
+
+.light-mode .tetris-dot {
+  background-color: #cbd5e1 !important;
+}
+
+.light-mode .tetris-cell-ghost {
+  border-color: rgba(168, 85, 247, 0.5) !important;
+  background-color: rgba(168, 85, 247, 0.12) !important;
+}
+
+.light-mode .tetris-btn {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  color: #334155 !important;
+}
+
+.light-mode .tetris-btn:hover {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+
+.light-mode .tetris-text-main {
+  color: #1e293b !important;
+}
+
+.light-mode .tetris-text-muted {
+  color: #64748b !important;
+}
+
+/* Sliding Block Game Light Mode Overrides */
+.light-mode .slideblock-panel {
+  background-color: #fffcf9 !important;
+  border-color: #e8d5c8 !important;
+  box-shadow: 0 1px 4px rgba(140, 94, 66, 0.08) !important;
+}
+
+.light-mode .slideblock-board-frame {
+  background-color: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08) !important;
+}
+
+.light-mode .slideblock-board-grid {
+  background-color: #f1f5f9 !important;
+  border-color: #e2e8f0 !important;
+}
+
+.light-mode .slideblock-cell-empty {
+  background-color: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+}
+
+.light-mode .slideblock-btn {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  color: #334155 !important;
+}
+
+.light-mode .slideblock-btn:hover {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+
+.light-mode .slideblock-text-main {
+  color: #1e293b !important;
+}
+
+.light-mode .slideblock-text-muted {
+  color: #64748b !important;
+}
+
+.light-mode .slideblock-gameover-modal {
+  background-color: rgba(255, 252, 249, 0.96) !important;
+  border-color: #f59e0b !important;
+}
+
+.light-mode .slideblock-gameover-card {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+
+.light-mode .slideblock-gameover-val {
+  color: #0f172a !important;
+}
+

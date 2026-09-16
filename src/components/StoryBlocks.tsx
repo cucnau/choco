@@ -392,6 +392,8 @@ const StoryChapterListRenderer: React.FC<StoryChapterListRendererProps> = ({
   const [collapsedVolumes, setCollapsedVolumes] = useState<Record<string, boolean>>({});
   const sorted = [...chapters].sort((a, b) => a.chapterNumber - b.chapterNumber);
   const style = story.chapterListStyle || 'standard';
+  const cardBgColor = isCustomTheme ? (story.customCardBgColor || story.customBgColor) : (customStyles.card?.background || tone.cardBg || '#ffffff');
+  const activeBtnBorderColor = isCustomTheme ? story.customBorderColor : (tone.buttonBorderPrimary || activeBorderColor);
 
   if (chapters.length === 0) {
     return (
@@ -421,18 +423,26 @@ const StoryChapterListRenderer: React.FC<StoryChapterListRendererProps> = ({
         {chap.isLocked && (
           isUnlocked && !isAuthorOrOwner ? (
             <span
-              className={`inline-flex items-center gap-1 px-1.5 py-0.2 border text-[10px] font-semibold ${storyBtnFont} ${isCustomTheme ? '' : `${tone.badgeFree} ${tone.badgeFreeBorder} ${tone.badgeFreeText}`}`}
-              style={isCustomTheme ? { backgroundColor: story.customCardBgColor, borderColor: story.customBorderColor, color: story.customTextColor } : {}}
+              className={`inline-flex items-center gap-1 px-1.5 py-0.2 border text-[10px] font-semibold ${storyBtnFont}`}
+              style={{
+                backgroundColor: isCustomTheme ? story.customCardBgColor : cardBgColor,
+                borderColor: activeBorderColor,
+                color: customStyles.text.color,
+              }}
             >
               <CheckCircle2 className="w-3 h-3 opacity-80" />
               <span>Đã mở</span>
             </span>
           ) : (
             <span
-              className={`inline-flex items-center gap-1 px-1.5 py-0.2 border text-[10px] font-semibold shadow-xs ${storyBtnFont} ${isCustomTheme ? '' : `${tone.badgeLocked} ${tone.badgeLockedBorder} ${tone.badgeLockedText}`}`}
-              style={isCustomTheme ? { backgroundColor: story.customBtnBgColor || story.customCardBgColor, borderColor: story.customBorderColor, color: story.customTextColor } : {}}
+              className={`inline-flex items-center gap-1 px-1.5 py-0.2 border text-[10px] font-semibold shadow-xs ${storyBtnFont}`}
+              style={{
+                backgroundColor: isCustomTheme ? (story.customBtnBgColor || story.customCardBgColor) : activeBtnBgColor,
+                borderColor: isCustomTheme ? story.customBorderColor : activeBtnBorderColor,
+                color: isCustomTheme ? (story.customBtnTextColor || story.customTextColor) : customStyles.btnPrimary.color,
+              }}
             >
-              <Lock className={`w-3 h-3 ${isCustomTheme ? '' : tone.badgeLockedIcon}`} style={isCustomTheme ? { color: story.customTextColor } : {}} />
+              <Lock className="w-3 h-3" style={{ color: isCustomTheme ? (story.customBtnTextColor || story.customTextColor) : customStyles.btnPrimary.color }} />
               <span>{chap.unlockPrice || 1} C</span>
             </span>
           )
@@ -440,18 +450,26 @@ const StoryChapterListRenderer: React.FC<StoryChapterListRendererProps> = ({
         {chap.isPasswordProtected && (
           isPassUnlocked && !isAuthorOrOwner ? (
             <span
-              className={`inline-flex items-center gap-1 px-1.5 py-0.2 border text-[10px] font-semibold ${storyBtnFont} ${isCustomTheme ? '' : `${tone.badgeFree} ${tone.badgeFreeBorder} ${tone.badgeFreeText}`}`}
-              style={isCustomTheme ? { backgroundColor: story.customCardBgColor, borderColor: story.customBorderColor, color: story.customTextColor } : {}}
+              className={`inline-flex items-center gap-1 px-1.5 py-0.2 border text-[10px] font-semibold ${storyBtnFont}`}
+              style={{
+                backgroundColor: isCustomTheme ? story.customCardBgColor : cardBgColor,
+                borderColor: activeBorderColor,
+                color: customStyles.text.color,
+              }}
             >
               <CheckCircle2 className="w-3 h-3 opacity-80" />
               <span>Mở Pass</span>
             </span>
           ) : (
             <span
-              className={`inline-flex items-center gap-1 px-1.5 py-0.2 border text-[10px] font-semibold shadow-xs ${storyBtnFont} ${isCustomTheme ? '' : `${tone.badgeLocked} ${tone.badgeLockedBorder} ${tone.badgeLockedText}`}`}
-              style={isCustomTheme ? { backgroundColor: story.customBtnBgColor || story.customCardBgColor, borderColor: story.customBorderColor, color: story.customTextColor } : {}}
+              className={`inline-flex items-center gap-1 px-1.5 py-0.2 border text-[10px] font-semibold shadow-xs ${storyBtnFont}`}
+              style={{
+                backgroundColor: isCustomTheme ? (story.customBtnBgColor || story.customCardBgColor) : activeBtnBgColor,
+                borderColor: isCustomTheme ? story.customBorderColor : activeBtnBorderColor,
+                color: isCustomTheme ? (story.customBtnTextColor || story.customTextColor) : customStyles.btnPrimary.color,
+              }}
             >
-              <Key className={`w-3 h-3 ${isCustomTheme ? '' : tone.badgeLockedIcon}`} style={isCustomTheme ? { color: story.customTextColor } : {}} />
+              <Key className="w-3 h-3" style={{ color: isCustomTheme ? (story.customBtnTextColor || story.customTextColor) : customStyles.btnPrimary.color }} />
               <span>Pass</span>
             </span>
           )
@@ -540,7 +558,7 @@ const StoryChapterListRenderer: React.FC<StoryChapterListRendererProps> = ({
                 className="w-full px-3.5 py-2.5 flex items-center justify-between gap-2 text-left font-bold text-xs transition cursor-pointer select-none"
                 style={{
                   background: isCustomTheme ? (story.customBtnBgColor || story.customCardBgColor) : activeBtnBgColor,
-                  color: isCustomTheme ? (story.customBtnTextColor || story.customTextColor) : '#ffffff',
+                  color: isCustomTheme ? (story.customBtnTextColor || story.customTextColor) : customStyles.btnPrimary.color,
                 }}
               >
                 <div className="flex items-center gap-2 min-w-0">
@@ -598,7 +616,7 @@ const StoryChapterListRenderer: React.FC<StoryChapterListRendererProps> = ({
               className="absolute -left-6 sm:-left-8 top-3 w-3 h-3 rounded-full border-2 transform -translate-x-1/2 transition-transform group-hover:scale-125 shadow-xs"
               style={{
                 background: isCustomTheme ? (story.customBtnBgColor || activeBorderColor) : activeBtnBgColor,
-                borderColor: isCustomTheme ? story.customCardBgColor : '#ffffff',
+                borderColor: isCustomTheme ? story.customCardBgColor : cardBgColor,
               }}
             />
             <div
@@ -772,7 +790,7 @@ const StoryChapterListRenderer: React.FC<StoryChapterListRendererProps> = ({
                     className="text-[10px] font-mono font-bold uppercase tracking-wider px-1.5 py-0.5 rounded"
                     style={{
                       background: isCustomTheme ? (story.customBtnBgColor || activeBtnBgColor) : activeBtnBgColor,
-                      color: isCustomTheme ? (story.customBtnTextColor || '#ffffff') : '#ffffff',
+                      color: isCustomTheme ? (story.customBtnTextColor || story.customTextColor) : customStyles.btnPrimary.color,
                     }}
                   >
                     #{idx + 1}
@@ -1019,9 +1037,9 @@ export const StoryBlockRenderer: React.FC<StoryBlockRendererProps> = (props) => 
         key="cover"
         className="w-full aspect-[3/4] max-w-[220px] mx-auto overflow-hidden flex justify-center items-center relative shrink-0"
         style={{
-          ...(isCustomTheme
-            ? { background: story.customBtnSecondaryBgColor || story.customBgColor }
-            : { backgroundColor: tone.inputBg }),
+          background: isCustomTheme
+            ? (story.customBtnSecondaryBgColor || story.customBgColor)
+            : (customStyles.btnSecondary.background || cardBgColor),
           ...getStoryBorderStyle(
             {
               borderStyle: 'solid',
@@ -1065,8 +1083,8 @@ export const StoryBlockRenderer: React.FC<StoryBlockRendererProps> = (props) => 
         }}
       >
         <div
-          className={`w-8 h-8 rounded-full border overflow-hidden shrink-0 flex items-center justify-center ${isCustomTheme ? '' : tone.border}`}
-          style={isCustomTheme ? { background: story.customCardBgColor, borderColor: story.customBorderColor } : { backgroundColor: tone.cardBg, borderColor: tone.border }}
+          className="w-8 h-8 rounded-full border overflow-hidden shrink-0 flex items-center justify-center"
+          style={{ background: cardBgColor, borderColor: activeBorderColor }}
         >
           {editorAvatarUrl ? (
             <img
@@ -1099,11 +1117,10 @@ export const StoryBlockRenderer: React.FC<StoryBlockRendererProps> = (props) => 
           <>
             <button
               onClick={() => onSelectChapter(lastReadChapter)}
-              className={`w-full py-2.5 px-3 text-xs font-bold uppercase tracking-wider transition flex items-center justify-center gap-2 shadow-xs ${storyBtnFont} ${isCustomTheme ? '' : `${tone.buttonBgPrimary} ${tone.text}`}`}
+              className={`w-full py-2.5 px-3 text-xs font-bold uppercase tracking-wider transition flex items-center justify-center gap-2 shadow-xs ${storyBtnFont} ${isCustomTheme ? '' : `${tone.buttonBgPrimary}`}`}
               style={{
-                ...(isCustomTheme
-                  ? { background: story.customBtnBgColor, color: story.customTextColor }
-                  : {}),
+                background: activeBtnBgColor,
+                color: customStyles.btnPrimary.color,
                 ...getStoryButtonBorderStyle(
                   {
                     borderStyle: story.borderStyle,
@@ -1120,11 +1137,12 @@ export const StoryBlockRenderer: React.FC<StoryBlockRendererProps> = (props) => 
             {firstChapter && firstChapter.id !== lastReadChapter.id && (
               <button
                 onClick={() => onSelectChapter(firstChapter)}
-                className={`w-full py-1.5 px-3 text-[11px] uppercase tracking-wider transition flex items-center justify-center gap-1.5 opacity-80 hover:opacity-100 ${storyBtnFont} ${isCustomTheme ? '' : `${tone.buttonBgSecondary} ${tone.text}`}`}
+                className={`w-full py-1.5 px-3 text-[11px] uppercase tracking-wider transition flex items-center justify-center gap-1.5 opacity-80 hover:opacity-100 ${storyBtnFont} ${isCustomTheme ? '' : `${tone.buttonBgSecondary}`}`}
                 style={{
-                  ...(isCustomTheme
-                    ? { background: story.customBtnSecondaryBgColor || story.customCardBgColor, color: story.customTextColor }
-                    : {}),
+                  background: isCustomTheme
+                    ? (story.customBtnSecondaryBgColor || story.customCardBgColor)
+                    : customStyles.btnSecondary.background,
+                  color: customStyles.btnSecondary.color,
                   ...getStoryButtonBorderStyle(
                     {
                       borderStyle: story.borderStyle,
@@ -1143,11 +1161,10 @@ export const StoryBlockRenderer: React.FC<StoryBlockRendererProps> = (props) => 
           firstChapter && (
             <button
               onClick={() => onSelectChapter(firstChapter)}
-              className={`w-full py-2.5 px-3 text-xs font-bold uppercase tracking-wider transition flex items-center justify-center gap-2 shadow-xs ${storyBtnFont} ${isCustomTheme ? '' : `${tone.buttonBgPrimary} ${tone.text}`}`}
+              className={`w-full py-2.5 px-3 text-xs font-bold uppercase tracking-wider transition flex items-center justify-center gap-2 shadow-xs ${storyBtnFont} ${isCustomTheme ? '' : `${tone.buttonBgPrimary}`}`}
               style={{
-                ...(isCustomTheme
-                  ? { background: story.customBtnBgColor, color: story.customTextColor }
-                  : {}),
+                background: activeBtnBgColor,
+                color: customStyles.btnPrimary.color,
                 ...getStoryButtonBorderStyle(
                   {
                     borderStyle: story.borderStyle,
@@ -1168,15 +1185,13 @@ export const StoryBlockRenderer: React.FC<StoryBlockRendererProps> = (props) => 
           className={`w-full py-2 px-3 text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition ${storyBtnFont} ${
             isCustomTheme
               ? ''
-              : `${tone.buttonBgSecondary} ${isBookmarked && tone.badgeLockedIcon ? tone.badgeLockedIcon : tone.text}`
+              : `${tone.buttonBgSecondary}`
           }`}
           style={{
-            ...(isCustomTheme
-              ? {
-                  background: story.customBtnSecondaryBgColor || story.customCardBgColor,
-                  color: isBookmarked ? (story.customBorderColor || story.customTextColor) : story.customTextColor,
-                }
-              : {}),
+            background: isCustomTheme
+              ? (story.customBtnSecondaryBgColor || story.customCardBgColor)
+              : customStyles.btnSecondary.background,
+            color: isBookmarked ? (story.customBorderColor || activeBorderColor) : customStyles.btnSecondary.color,
             ...getStoryButtonBorderStyle(
               {
                 borderStyle: story.borderStyle,
@@ -1201,11 +1216,12 @@ export const StoryBlockRenderer: React.FC<StoryBlockRendererProps> = (props) => 
         {story.tags.map((tag, idx) => (
           <span
             key={idx}
-            className={`text-[10px] px-2 py-0.5 leading-tight ${storyBtnFont} ${isCustomTheme ? '' : `${tone.inputBg}`}`}
+            className={`text-[10px] px-2 py-0.5 leading-tight ${storyBtnFont}`}
             style={{
-              ...(isCustomTheme
-                ? { background: story.customBtnSecondaryBgColor || story.customBgColor, color: story.customTextMutedColor || story.customTextColor }
-                : { color: tone.textMuted }),
+              background: isCustomTheme
+                ? (story.customBtnSecondaryBgColor || story.customBgColor)
+                : (customStyles.btnSecondary.background || cardBgColor),
+              color: customStyles.textMuted.color,
               ...getStoryBorderStyle(
                 {
                   borderStyle: 'solid',
@@ -1247,7 +1263,7 @@ export const StoryBlockRenderer: React.FC<StoryBlockRendererProps> = (props) => 
           ),
         }}
       >
-        <div className="flex items-center gap-1.5 border-b pb-1.5 opacity-90" style={{ borderColor: isCustomTheme ? story.customBorderColor : tone.border }}>
+        <div className="flex items-center gap-1.5 border-b pb-1.5 opacity-90" style={{ borderColor: activeBorderColor }}>
           <Users className="w-3.5 h-3.5 shrink-0" style={customStyles.text} />
           <span className={`text-xs font-bold uppercase tracking-wider ${storySubtitleFont}`} style={customStyles.text}>
             {story.characterWidgetTitle || 'Thông tin nhân vật'}
@@ -1268,7 +1284,7 @@ export const StoryBlockRenderer: React.FC<StoryBlockRendererProps> = (props) => 
               <div key={char.id} className="flex items-start gap-2 text-xs">
                 <div
                   className={`${shapeClass} border shrink-0 overflow-hidden flex items-center justify-center bg-black/20`}
-                  style={{ borderColor: isCustomTheme ? story.customBorderColor : tone.border }}
+                  style={{ borderColor: activeBorderColor }}
                 >
                   {char.avatarUrl ? (
                     <img src={char.avatarUrl} alt={char.name} className="w-full h-full object-cover" />
@@ -1283,10 +1299,10 @@ export const StoryBlockRenderer: React.FC<StoryBlockRendererProps> = (props) => 
                     </span>
                     {char.role && (
                       <span
-                        className={`text-[9px] px-1.5 py-0.2 rounded font-mono ${storyBtnFont} ${isCustomTheme ? '' : `${tone.buttonBgSecondary} ${tone.text}`}`}
+                        className={`text-[9px] px-1.5 py-0.2 rounded font-mono ${storyBtnFont}`}
                         style={{
-                          background: isCustomTheme ? (story.customBtnSecondaryBgColor || story.customBorderColor || 'rgba(0,0,0,0.2)') : undefined,
-                          color: isCustomTheme ? story.customTextColor : undefined,
+                          background: isCustomTheme ? (story.customBtnSecondaryBgColor || story.customBorderColor || 'rgba(0,0,0,0.2)') : `${activeBorderColor}30`,
+                          color: customStyles.text.color,
                         }}
                       >
                         {char.role}
@@ -1329,7 +1345,7 @@ export const StoryBlockRenderer: React.FC<StoryBlockRendererProps> = (props) => 
       <div
         key="meta"
         className={`text-xs space-y-1 border-b pb-3 ${storyMutedFont}`}
-        style={isCustomTheme ? { borderColor: story.customBorderColor, color: story.customTextMutedColor } : { borderColor: tone.border, color: tone.textMuted }}
+        style={{ borderColor: activeBorderColor, color: customStyles.textMuted.color }}
       >
         <p>Tác giả: <span className="font-semibold" style={customStyles.text}>{story.author}</span></p>
         <p>Ngày đăng: <span>{story.createdAt}</span></p>
@@ -1434,15 +1450,15 @@ export const StoryBlockRenderer: React.FC<StoryBlockRendererProps> = (props) => 
 
         <div
           className="w-full h-2.5 rounded-full overflow-hidden bg-black/20 border"
-          style={{ borderColor: isCustomTheme ? story.customBorderColor : tone.border }}
+          style={{ borderColor: activeBorderColor }}
         >
           <div
-            className={`h-full transition-all duration-500 rounded-full ${isCustomTheme ? '' : tone.buttonBgSecondary}`}
+            className="h-full transition-all duration-500 rounded-full"
             style={{
               width: `${story.totalPlannedChapters && story.totalPlannedChapters > 0
                 ? Math.min(100, Math.round((chapters.length / story.totalPlannedChapters) * 100))
                 : 0}%`,
-              background: isCustomTheme ? (story.customBtnSecondaryBgColor || story.customBorderColor) : undefined,
+              background: isCustomTheme ? (story.customBtnSecondaryBgColor || story.customBorderColor) : activeBtnBgColor,
             }}
           />
         </div>
@@ -1481,7 +1497,7 @@ export const StoryBlockRenderer: React.FC<StoryBlockRendererProps> = (props) => 
         }}
       >
         {story.customWidgetTitle && (
-          <div className="flex items-center gap-1.5 opacity-90 border-b pb-1.5" style={{ borderColor: isCustomTheme ? story.customBorderColor : tone.border }}>
+          <div className="flex items-center gap-1.5 opacity-90 border-b pb-1.5" style={{ borderColor: activeBorderColor }}>
             <FileText className="w-3.5 h-3.5 shrink-0" style={customStyles.text} />
             <span className={`text-xs font-bold uppercase tracking-wider ${storySubtitleFont}`} style={customStyles.text}>
               {story.customWidgetTitle}
@@ -1680,14 +1696,22 @@ export const StoryBlockRenderer: React.FC<StoryBlockRendererProps> = (props) => 
             value={commentText}
             onChange={(e) => setCommentText(e.target.value)}
             placeholder="Viết bình luận của bạn..."
-            className={`flex-1 border p-2 text-xs focus:outline-none ${storyBodyFont} ${isCustomTheme ? '' : `${tone.inputBg} ${tone.border} ${tone.text}`}`}
-            style={isCustomTheme ? { background: story.customBtnSecondaryBgColor || story.customCardBgColor || story.customBgColor, borderColor: story.customBorderColor, color: story.customTextColor } : {}}
+            className={`flex-1 border p-2 text-xs focus:outline-none placeholder:text-current placeholder:opacity-50 ${storyBodyFont}`}
+            style={{
+              background: customStyles.btnSecondary.background || cardBgColor,
+              borderColor: activeBorderColor,
+              color: customStyles.text.color,
+            }}
           />
           <button
             type="submit"
             disabled={!commentText.trim()}
-            className={`px-4 py-2 border disabled:opacity-40 text-xs font-bold uppercase tracking-wider transition flex items-center gap-1 ${storyBtnFont} ${isCustomTheme ? '' : `${tone.buttonBgPrimary} ${tone.buttonBorderPrimary} ${tone.text}`}`}
-            style={isCustomTheme ? { background: story.customBtnBgColor, borderColor: story.customBorderColor, color: story.customTextColor } : {}}
+            className={`px-4 py-2 border disabled:opacity-40 text-xs font-bold uppercase tracking-wider transition flex items-center gap-1 cursor-pointer ${storyBtnFont}`}
+            style={{
+              background: activeBtnBgColor,
+              borderColor: activeBtnBorderColor,
+              color: customStyles.btnPrimary.color,
+            }}
           >
             <Send className="w-3.5 h-3.5" />
             <span>Gửi</span>
@@ -1698,8 +1722,11 @@ export const StoryBlockRenderer: React.FC<StoryBlockRendererProps> = (props) => 
           {storyComments.map((cm) => (
             <div
               key={cm.id}
-              className={`border p-3 space-y-1 ${isCustomTheme ? '' : `${tone.inputBg} ${tone.border}`}`}
-              style={isCustomTheme ? { background: story.customBtnSecondaryBgColor || story.customCardBgColor || story.customBgColor, borderColor: story.customBorderColor } : {}}
+              className="border p-3 space-y-1"
+              style={{
+                background: customStyles.btnSecondary.background || cardBgColor,
+                borderColor: activeBorderColor,
+              }}
             >
               <div className="flex items-center justify-between text-xs">
                 <div className="flex items-center gap-2">

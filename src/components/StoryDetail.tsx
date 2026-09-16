@@ -14,7 +14,7 @@ import {
 } from '../lib/borderStyles';
 import { StoryElementsLayer } from './StoryElementsLayer';
 import { getEffectiveStory } from '../lib/storyUtils';
-import { PRESET_THEME_COLORS } from '../lib/themeConstants';
+import { PRESET_THEME_COLORS, resolveStoryColors } from '../lib/themeConstants';
 
 const THEME_TONES: Record<string, {
   containerBg: string;
@@ -96,6 +96,46 @@ const THEME_TONES: Record<string, {
     badgeFree: 'bg-[#f7ebe1]',
     badgeFreeBorder: 'border-[#d9beab]',
     badgeFreeText: 'text-[#8c5e42]'
+  },
+  'classic-black': {
+    containerBg: 'bg-[#0a0a0a]',
+    cardBg: 'bg-[#141414]',
+    border: 'border-[#262626]',
+    text: 'text-[#f5f5f5]',
+    textMuted: 'text-[#a3a3a3]',
+    inputBg: 'bg-[#171717]',
+    buttonBgPrimary: 'bg-[#1f1f1f] hover:bg-[#2e2e2e]',
+    buttonBgSecondary: 'bg-[#171717] hover:bg-[#262626]',
+    buttonBorderPrimary: 'border-[#404040]',
+    buttonBorderSecondary: 'border-[#262626]',
+    headerBorder: 'border-[#262626]',
+    badgeLocked: 'bg-[#1f1f1f]',
+    badgeLockedBorder: 'border-[#404040]',
+    badgeLockedText: 'text-[#ffffff]',
+    badgeLockedIcon: 'text-[#a3a3a3]',
+    badgeFree: 'bg-[#141414]',
+    badgeFreeBorder: 'border-[#262626]',
+    badgeFreeText: 'text-[#a3a3a3]'
+  },
+  'classic-white': {
+    containerBg: 'bg-[#ffffff]',
+    cardBg: 'bg-[#f8fafc]',
+    border: 'border-[#e2e8f0]',
+    text: 'text-[#0f172a]',
+    textMuted: 'text-[#64748b]',
+    inputBg: 'bg-[#f1f5f9]',
+    buttonBgPrimary: 'bg-[#0f172a] hover:bg-[#1e293b]',
+    buttonBgSecondary: 'bg-[#f1f5f9] hover:bg-[#e2e8f0]',
+    buttonBorderPrimary: 'border-[#0f172a]',
+    buttonBorderSecondary: 'border-[#cbd5e1]',
+    headerBorder: 'border-[#e2e8f0]',
+    badgeLocked: 'bg-[#f1f5f9]',
+    badgeLockedBorder: 'border-[#cbd5e1]',
+    badgeLockedText: 'text-[#0f172a]',
+    badgeLockedIcon: 'text-[#64748b]',
+    badgeFree: 'bg-[#f8fafc]',
+    badgeFreeBorder: 'border-[#e2e8f0]',
+    badgeFreeText: 'text-[#64748b]'
   },
   'sepia': {
     containerBg: 'bg-[#f4ecd8]',
@@ -468,18 +508,18 @@ export const StoryDetail: React.FC<StoryDetailProps> = ({
 
   const toneKey = effectiveStory.themeTone || 'dark-rose';
   const isCustomTheme = toneKey === 'custom';
-  const activePreset = PRESET_THEME_COLORS[toneKey] || PRESET_THEME_COLORS['dark-rose'];
   const tone = THEME_TONES[toneKey] || THEME_TONES['dark-rose'];
+  const resolvedColors = resolveStoryColors(effectiveStory);
 
-  const currentBg = isCustomTheme ? (effectiveStory.customBgColor || '#080406') : activePreset.bg;
-  const currentCardBg = isCustomTheme ? (effectiveStory.customCardBgColor || '#11090c') : activePreset.cardBg;
-  const currentText = isCustomTheme ? (effectiveStory.customTextColor || '#f2e6ea') : activePreset.text;
-  const currentTextMuted = isCustomTheme ? (effectiveStory.customTextMutedColor || '#d0a0b0') : activePreset.textMuted;
-  const currentBorder = isCustomTheme ? (effectiveStory.customBorderColor || '#2d1822') : activePreset.border;
-  const currentBtnBg = isCustomTheme ? (effectiveStory.customBtnBgColor || '#2b1620') : activePreset.btnBg;
-  const currentBtnSecondaryBg = isCustomTheme ? (effectiveStory.customBtnSecondaryBgColor || '#1c0f16') : (activePreset.btnSecondaryBg || activePreset.btnBg);
-  const currentBtnBorder = isCustomTheme ? currentBorder : activePreset.btnBorder;
-  const currentBtnText = isCustomTheme ? currentText : activePreset.btnText;
+  const currentBg = resolvedColors.bg;
+  const currentCardBg = resolvedColors.cardBg;
+  const currentText = resolvedColors.text;
+  const currentTextMuted = resolvedColors.textMuted;
+  const currentBorder = resolvedColors.border;
+  const currentBtnBg = resolvedColors.btnBg;
+  const currentBtnSecondaryBg = resolvedColors.btnSecondaryBg;
+  const currentBtnBorder = resolvedColors.btnBorder;
+  const currentBtnText = resolvedColors.btnText;
 
   const storyTitleFont = effectiveStory.customTitleFont || effectiveStory.defaultFont || 'font-mono';
   const storySubtitleFont = effectiveStory.customSubtitleFont || effectiveStory.customTitleFont || effectiveStory.defaultFont || 'font-mono';

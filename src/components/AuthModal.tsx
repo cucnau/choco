@@ -133,7 +133,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
           <>
             {/* Password Setup View for Google First-time login */}
             <div className="border-b border-[#2d1822] pb-3">
-              <div className="flex items-center gap-2 text-white">
+              <div className="flex items-center gap-2 text-[#ffd6e2]">
                 <Lock className="w-4 h-4 text-[#ffd6e2]" />
                 <h2 className="text-sm font-bold font-mono-code uppercase tracking-[0.15em]">
                   Thiết lập mật khẩu
@@ -159,7 +159,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                   value={googlePassword}
                   onChange={(e) => setGooglePassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full bg-[#170d12] border border-[#2d1822] p-2 text-xs text-white focus:outline-none focus:border-[#522d3d] font-mono-code"
+                  className="w-full bg-[#170d12] border border-[#2d1822] p-2 text-xs text-[#f2e6ea] focus:outline-none focus:border-[#522d3d] font-mono-code choco-input"
                   required
                 />
               </div>
@@ -171,7 +171,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                   value={googleConfirmPassword}
                   onChange={(e) => setGoogleConfirmPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full bg-[#170d12] border border-[#2d1822] p-2 text-xs text-white focus:outline-none focus:border-[#522d3d] font-mono-code"
+                  className="w-full bg-[#170d12] border border-[#2d1822] p-2 text-xs text-[#f2e6ea] focus:outline-none focus:border-[#522d3d] font-mono-code choco-input"
                   required
                 />
               </div>
@@ -203,7 +203,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
           <>
             {/* Modal Title */}
             <div className="border-b border-[#2d1822] pb-3">
-              <h2 className="text-sm font-bold font-mono-code uppercase tracking-[0.15em] text-white">
+              <h2 className="text-sm font-bold font-mono-code uppercase tracking-[0.15em] text-[#ffd6e2]">
                 {isRegister ? 'Đăng ký tài khoản' : 'Đăng nhập vào CHOCO HOUSE'}
               </h2>
               <p className="text-xs text-[#8a717a] mt-0.5 font-mono-code">
@@ -247,7 +247,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                     value={displayName}
                     onChange={(e) => setDisplayName(e.target.value)}
                     placeholder="Ví dụ: Hoàng Nam..."
-                    className="w-full bg-[#170d12] border border-[#2d1822] p-2 text-xs text-white focus:outline-none focus:border-[#522d3d] font-mono-code"
+                    className="w-full bg-[#170d12] border border-[#2d1822] p-2 text-xs text-[#f2e6ea] focus:outline-none focus:border-[#522d3d] font-mono-code choco-input"
                   />
                 </div>
               )}
@@ -259,7 +259,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="email@example.com"
-                  className="w-full bg-[#170d12] border border-[#2d1822] p-2 text-xs text-white focus:outline-none focus:border-[#522d3d] font-mono-code"
+                  className="w-full bg-[#170d12] border border-[#2d1822] p-2 text-xs text-[#f2e6ea] focus:outline-none focus:border-[#522d3d] font-mono-code choco-input"
                   required
                 />
               </div>
@@ -271,7 +271,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full bg-[#170d12] border border-[#2d1822] p-2 text-xs text-white focus:outline-none focus:border-[#522d3d] font-mono-code"
+                  className="w-full bg-[#170d12] border border-[#2d1822] p-2 text-xs text-[#f2e6ea] focus:outline-none focus:border-[#522d3d] font-mono-code choco-input"
                   required
                 />
               </div>

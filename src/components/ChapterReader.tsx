@@ -25,7 +25,7 @@ import { saveReadingProgress, getReadingProgress } from '../lib/readingProgress'
 import { getUserUnlockedPasswordChaptersLocal, unlockChapterWithPassword } from '../lib/storage';
 import { ReadingEffects } from './ReadingEffects';
 import { getStoryBorderStyle, StoryCornerAccents } from '../lib/borderStyles';
-import { PRESET_THEME_COLORS } from '../lib/themeConstants';
+import { PRESET_THEME_COLORS, resolveChapterColors } from '../lib/themeConstants';
 import { parseChapterContentBlocks, SpecialBlockRenderer } from './ChapterSpecialBlocks';
 import { ProtectedStoryText } from './ProtectedStoryText';
 import { getEffectiveStory } from '../lib/storyUtils';
@@ -86,26 +86,27 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
   onUnlockChapter,
   onOpenRechargeModal,
 }) => {
+  const effectiveStory = getEffectiveStory(story);
   const [fontSize, setFontSize] = useState<number>(16);
-  const [readerFont, setReaderFont] = useState<string>(story?.customBodyFont || story?.defaultFont || 'font-bevietnam');
+  const [readerFont, setReaderFont] = useState<string>(effectiveStory?.customBodyFont || effectiveStory?.defaultFont || 'font-bevietnam');
   const [isUnlocking, setIsUnlocking] = useState(false);
   const [unlockError, setUnlockError] = useState<string | null>(null);
   const [readingProgressPercent, setReadingProgressPercent] = useState<number>(0);
   const [autoResumeNotice, setAutoResumeNotice] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!story) return;
-    const currentBodyFont = story.customBodyFont || story.defaultFont;
+    if (!effectiveStory) return;
+    const currentBodyFont = effectiveStory.customBodyFont || effectiveStory.defaultFont;
     if (currentBodyFont) {
       setReaderFont(currentBodyFont);
     }
-    if (story.bodyFontSize) {
-      const parsed = parseInt(story.bodyFontSize);
+    if (effectiveStory.bodyFontSize) {
+      const parsed = parseInt(effectiveStory.bodyFontSize);
       if (!isNaN(parsed) && parsed > 0) {
         setFontSize(parsed);
       }
     }
-  }, [story?.id, story?.customBodyFont, story?.defaultFont, story?.bodyFontSize]);
+  }, [effectiveStory?.id, effectiveStory?.customBodyFont, effectiveStory?.defaultFont, effectiveStory?.bodyFontSize]);
 
   const [generalCommentText, setGeneralCommentText] = useState('');
   const [activeParagraphIndex, setActiveParagraphIndex] = useState<number | null>(null);
@@ -149,8 +150,6 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
       </div>
     );
   }
-
-  const effectiveStory = getEffectiveStory(story);
 
   const storyTitleFont = effectiveStory.customTitleFont || effectiveStory.defaultFont || 'font-mono';
   const storyChapterTitleFont = effectiveStory.customChapterTitleFont || effectiveStory.customSubtitleFont || effectiveStory.customTitleFont || effectiveStory.defaultFont || 'font-mono';
@@ -340,59 +339,45 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
   };
 
   // Đồng bộ hệ thống màu sắc theo chuẩn LiveStoryEditor
-  const hasSeparateTheme = story.useSeparateChapterTheme;
-  const toneKey = hasSeparateTheme ? (story.chapterThemeTone || 'dark-rose') : (story.themeTone || 'dark-rose');
+  const hasSeparateTheme = effectiveStory.useSeparateChapterTheme;
+  const toneKey = hasSeparateTheme ? (effectiveStory.chapterThemeTone || 'dark-rose') : (effectiveStory.themeTone || 'dark-rose');
   const isCustomTheme = toneKey === 'custom';
-  const activePreset = PRESET_THEME_COLORS[toneKey] || PRESET_THEME_COLORS['dark-rose'];
+  const resolvedColors = resolveChapterColors(effectiveStory);
 
-  const currentBg = isCustomTheme
-    ? (hasSeparateTheme ? (story.chapterCustomBgColor || '#080406') : (story.customBgColor || '#080406'))
-    : activePreset.bg;
-  const currentCardBg = isCustomTheme
-    ? (hasSeparateTheme ? (story.chapterCustomCardBgColor || '#11090c') : (story.customCardBgColor || '#11090c'))
-    : activePreset.cardBg;
-  const currentText = isCustomTheme
-    ? (hasSeparateTheme ? (story.chapterCustomTextColor || '#f2e6ea') : (story.customTextColor || '#f2e6ea'))
-    : activePreset.text;
-  const currentTextMuted = isCustomTheme
-    ? (hasSeparateTheme ? (story.chapterCustomTextMutedColor || '#d0a0b0') : (story.customTextMutedColor || '#d0a0b0'))
-    : activePreset.textMuted;
-  const currentBorder = isCustomTheme
-    ? (hasSeparateTheme ? (story.chapterCustomBorderColor || '#2d1822') : (story.customBorderColor || '#2d1822'))
-    : activePreset.border;
-  const currentBtnBg = isCustomTheme
-    ? (hasSeparateTheme ? (story.chapterCustomBtnBgColor || '#2b1620') : (story.customBtnBgColor || '#2b1620'))
-    : activePreset.btnBg;
-  const currentBtnSecondaryBg = isCustomTheme
-    ? (hasSeparateTheme ? (story.chapterCustomBtnSecondaryBgColor || '#1c0f16') : (story.customBtnSecondaryBgColor || '#1c0f16'))
-    : (activePreset.btnSecondaryBg || activePreset.btnBg);
-  const currentBtnBorder = isCustomTheme ? currentBorder : activePreset.btnBorder;
-  const currentBtnText = isCustomTheme ? currentText : activePreset.btnText;
+  const currentBg = resolvedColors.bg;
+  const currentCardBg = resolvedColors.cardBg;
+  const currentText = resolvedColors.text;
+  const currentTextMuted = resolvedColors.textMuted;
+  const currentBorder = resolvedColors.border;
+  const currentBtnBg = resolvedColors.btnBg;
+  const currentBtnSecondaryBg = resolvedColors.btnSecondaryBg;
+  const currentBtnBorder = resolvedColors.btnBorder;
+  const currentBtnText = resolvedColors.btnText;
 
   const progressBarColor = isCustomTheme
     ? (currentBtnBg && currentBtnBg !== currentBg ? currentBtnBg : currentText || '#ff99bb')
     : (PRESET_PROGRESS_BAR_COLORS[toneKey] || '#ff99bb');
 
   // Viền, góc trang trí và phát sáng
-  const activeBorderStyle = hasSeparateTheme ? (story.chapterBorderStyle || 'solid') : (story.borderStyle || 'solid');
-  const activeBorderWidth = hasSeparateTheme ? (story.chapterBorderWidth || 'thin') : (story.borderWidth || 'thin');
-  const activeBorderRadius = hasSeparateTheme ? (story.chapterBorderRadius || 'none') : (story.borderRadius || 'none');
-  const activeBorderCornerAccent = hasSeparateTheme ? (story.chapterBorderCornerAccent || 'none') : (story.borderCornerAccent || 'none');
-  const activeBorderGlow = hasSeparateTheme ? (story.chapterBorderGlow || 'none') : (story.borderGlow || 'none');
+  const activeBorderStyle = hasSeparateTheme ? (effectiveStory.chapterBorderStyle || 'solid') : (effectiveStory.borderStyle || 'solid');
+  const activeBorderWidth = hasSeparateTheme ? (effectiveStory.chapterBorderWidth || 'thin') : (effectiveStory.borderWidth || 'thin');
+  const activeBorderRadius = hasSeparateTheme ? (effectiveStory.chapterBorderRadius || 'none') : (effectiveStory.borderRadius || 'none');
+  const activeBorderCornerAccent = hasSeparateTheme ? (effectiveStory.chapterBorderCornerAccent || 'none') : (effectiveStory.borderCornerAccent || 'none');
+  const activeBorderGlow = hasSeparateTheme ? (effectiveStory.chapterBorderGlow || 'none') : (effectiveStory.borderGlow || 'none');
 
-  const hasSeparateEffect = story.useSeparateChapterEffect || story.useSeparateChapterTheme;
-  const activeReadingEffect = hasSeparateEffect ? (story.chapterReadingEffect || 'none') : (story.readingEffect || 'none');
-  const activeReadingEffectColor = hasSeparateEffect ? (story.chapterReadingEffectColor || story.readingEffectColor) : story.readingEffectColor;
+  const hasSeparateEffect = effectiveStory.useSeparateChapterEffect || effectiveStory.useSeparateChapterTheme;
+  const activeReadingEffect = hasSeparateEffect ? (effectiveStory.chapterReadingEffect || 'none') : (effectiveStory.readingEffect || 'none');
+  const activeReadingEffectColor = hasSeparateEffect ? (effectiveStory.chapterReadingEffectColor || effectiveStory.readingEffectColor) : effectiveStory.readingEffectColor;
 
   const activeBorderGradientColor2 = hasSeparateTheme
-    ? (story.chapterCustomBorderGradientColor2 || story.customBorderGradientColor2)
-    : story.customBorderGradientColor2;
+    ? (effectiveStory.chapterCustomBorderGradientColor2 || effectiveStory.customBorderGradientColor2)
+    : effectiveStory.customBorderGradientColor2;
   const activeBorderGlowColor1 = hasSeparateTheme
-    ? (story.chapterCustomBorderGlowColor1 || story.customBorderGlowColor1)
-    : story.customBorderGlowColor1;
+    ? (effectiveStory.chapterCustomBorderGlowColor1 || effectiveStory.customBorderGlowColor1)
+    : effectiveStory.customBorderGlowColor1;
   const activeBorderGlowColor2 = hasSeparateTheme
-    ? (story.chapterCustomBorderGlowColor2 || story.customBorderGlowColor2)
-    : story.customBorderGlowColor2;
+    ? (effectiveStory.chapterCustomBorderGlowColor2 || effectiveStory.customBorderGlowColor2)
+    : effectiveStory.customBorderGlowColor2;
 
   const borderObj = {
     borderStyle: activeBorderStyle,
@@ -438,12 +423,18 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
         color: currentText,
       }}
     >
-      {/* Dynamic selection style based on chapter theme */}
+      {/* Dynamic selection & placeholder style based on chapter theme */}
       <style>{`
         .chapter-reader-root ::selection,
         .chapter-reader-root *::selection {
           background-color: ${currentBtnBg} !important;
           color: ${currentBtnText} !important;
+        }
+        .chapter-reader-root input::placeholder,
+        .chapter-reader-root textarea::placeholder,
+        .chapter-reader-root ::placeholder {
+          color: ${currentText} !important;
+          opacity: 0.55 !important;
         }
       `}</style>
 
@@ -501,34 +492,34 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
               onChange={(e) => setReaderFont(e.target.value)}
               className="border px-2 py-1 text-[11px] rounded outline-none cursor-pointer"
               style={{
-                background: currentBg,
+                background: currentCardBg,
                 borderColor: currentBorder,
                 color: currentText,
               }}
             >
-              <option value="font-bevietnam">Be Vietnam Pro</option>
-              <option value="font-inter">Inter</option>
-              <option value="font-merriweather">Merriweather</option>
-              <option value="font-lora">Lora</option>
-              <option value="font-cormorant">Cormorant Garamond</option>
-              <option value="font-roboto">Roboto</option>
-              <option value="font-montserrat">Montserrat</option>
-              <option value="font-nunito">Nunito</option>
-              <option value="font-quicksand">Quicksand</option>
-              <option value="font-mulish">Mulish</option>
-              <option value="font-notosans">Noto Sans</option>
-              <option value="font-lexend">Lexend</option>
-              <option value="font-charm">Charm</option>
-              <option value="font-dancing">Dancing Script</option>
-              <option value="font-pacifico">Pacifico</option>
-              <option value="font-mono">JetBrains Mono</option>
+              <option style={{ background: currentCardBg, color: currentText }} value="font-bevietnam">Be Vietnam Pro</option>
+              <option style={{ background: currentCardBg, color: currentText }} value="font-inter">Inter</option>
+              <option style={{ background: currentCardBg, color: currentText }} value="font-merriweather">Merriweather</option>
+              <option style={{ background: currentCardBg, color: currentText }} value="font-lora">Lora</option>
+              <option style={{ background: currentCardBg, color: currentText }} value="font-cormorant">Cormorant Garamond</option>
+              <option style={{ background: currentCardBg, color: currentText }} value="font-roboto">Roboto</option>
+              <option style={{ background: currentCardBg, color: currentText }} value="font-montserrat">Montserrat</option>
+              <option style={{ background: currentCardBg, color: currentText }} value="font-nunito">Nunito</option>
+              <option style={{ background: currentCardBg, color: currentText }} value="font-quicksand">Quicksand</option>
+              <option style={{ background: currentCardBg, color: currentText }} value="font-mulish">Mulish</option>
+              <option style={{ background: currentCardBg, color: currentText }} value="font-notosans">Noto Sans</option>
+              <option style={{ background: currentCardBg, color: currentText }} value="font-lexend">Lexend</option>
+              <option style={{ background: currentCardBg, color: currentText }} value="font-charm">Charm</option>
+              <option style={{ background: currentCardBg, color: currentText }} value="font-dancing">Dancing Script</option>
+              <option style={{ background: currentCardBg, color: currentText }} value="font-pacifico">Pacifico</option>
+              <option style={{ background: currentCardBg, color: currentText }} value="font-mono">JetBrains Mono</option>
             </select>
 
             {/* Font Size Adjusters */}
             <div 
               className="flex items-center gap-1 border px-2 py-0.5 rounded text-xs"
               style={{
-                background: currentBg,
+                background: currentCardBg,
                 borderColor: currentBorder,
               }}
             >
@@ -808,7 +799,7 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
                                   if (passwordError) setPasswordError(null);
                                 }}
                                 placeholder="Nhập Pass..."
-                                className="w-full px-2.5 py-1.5 pr-8 text-xs border rounded focus:outline-none transition font-mono"
+                                className="w-full px-2.5 py-1.5 pr-8 text-xs border rounded focus:outline-none transition font-mono placeholder:text-current placeholder:opacity-50"
                                 style={{
                                   background: currentBg,
                                   borderColor: currentBorder,
@@ -1013,7 +1004,7 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
                         if (passwordError) setPasswordError(null);
                       }}
                       placeholder="Nhập mật khẩu (pass) để đọc..."
-                      className="w-full px-3.5 py-2.5 pr-10 text-xs border rounded focus:outline-none transition font-mono"
+                      className="w-full px-3.5 py-2.5 pr-10 text-xs border rounded focus:outline-none transition font-mono placeholder:text-current placeholder:opacity-50"
                       style={{
                         background: currentCardBg,
                         borderColor: currentBorder,
@@ -1082,23 +1073,26 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
                       <div className="relative flex items-start gap-2">
                         <div className="flex-1 min-w-0">
                           {block.type === 'paragraph' ? (
-                            <p className={`leading-relaxed whitespace-pre-line transition-opacity ${isActive ? 'opacity-100 font-medium' : ''}`}>
+                            <p
+                              className={`leading-relaxed whitespace-pre-line transition-opacity ${isActive ? 'opacity-100 font-medium' : ''}`}
+                              style={{ color: currentText }}
+                            >
                               <ProtectedStoryText text={block.rawText} />
                             </p>
                           ) : (
                             <SpecialBlockRenderer
                               block={block}
                               themeColors={{
-                                bg: isCustomTheme ? story.customBgColor : currentBg,
-                                cardBg: isCustomTheme ? story.customCardBgColor : currentCardBg,
+                                bg: currentBg,
+                                cardBg: currentCardBg,
                                 border: currentBorder,
                                 btnBg: currentBtnBg,
                                 btnText: currentBtnText,
                                 btnSecondaryBg: currentBtnSecondaryBg,
                                 btnBorder: currentBtnBorder,
-                                text: isCustomTheme ? story.customTextColor : currentText,
-                                textMuted: isCustomTheme ? story.customMutedColor : currentTextMuted,
-                                accentColor: currentBtnBg,
+                                text: currentText,
+                                textMuted: currentTextMuted,
+                                accentColor: resolvedColors.accentColor || currentText,
                               }}
                               fontFamily={storyBodyFont}
                             />
@@ -1224,7 +1218,7 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
                               value={paraCommentText}
                               onChange={(e) => setParaCommentText(e.target.value)}
                               placeholder={`Ý kiến của bạn về đoạn #${idx + 1}...`}
-                              className="flex-1 border p-2 text-xs focus:outline-none rounded transition"
+                              className="flex-1 border p-2 text-xs focus:outline-none rounded transition placeholder:text-current placeholder:opacity-50"
                               style={{
                                 background: currentCardBg,
                                 borderColor: currentBorder,
@@ -1323,11 +1317,11 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
             <div className={`flex items-center gap-1 text-[11px] ${storyBtnFont}`}>
               <button
                 onClick={() => setCommentFilter('all')}
-                className="px-2 py-0.5 border rounded transition"
+                className="px-2 py-0.5 border rounded transition cursor-pointer"
                 style={{
-                  backgroundColor: commentFilter === 'all' ? currentBtnBg : currentBg,
-                  borderColor: currentBorder,
-                  color: commentFilter === 'all' ? currentBtnText : currentTextMuted,
+                  backgroundColor: commentFilter === 'all' ? currentBtnBg : currentBtnSecondaryBg,
+                  borderColor: commentFilter === 'all' ? currentBtnBorder : currentBorder,
+                  color: commentFilter === 'all' ? currentBtnText : currentText,
                   fontWeight: commentFilter === 'all' ? 'bold' : 'normal',
                 }}
               >
@@ -1335,11 +1329,11 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
               </button>
               <button
                 onClick={() => setCommentFilter('general')}
-                className="px-2 py-0.5 border rounded transition"
+                className="px-2 py-0.5 border rounded transition cursor-pointer"
                 style={{
-                  backgroundColor: commentFilter === 'general' ? currentBtnBg : currentBg,
-                  borderColor: currentBorder,
-                  color: commentFilter === 'general' ? currentBtnText : currentTextMuted,
+                  backgroundColor: commentFilter === 'general' ? currentBtnBg : currentBtnSecondaryBg,
+                  borderColor: commentFilter === 'general' ? currentBtnBorder : currentBorder,
+                  color: commentFilter === 'general' ? currentBtnText : currentText,
                   fontWeight: commentFilter === 'general' ? 'bold' : 'normal',
                 }}
               >
@@ -1347,11 +1341,11 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
               </button>
               <button
                 onClick={() => setCommentFilter('paragraph')}
-                className="px-2 py-0.5 border rounded transition"
+                className="px-2 py-0.5 border rounded transition cursor-pointer"
                 style={{
-                  backgroundColor: commentFilter === 'paragraph' ? currentBtnBg : currentBg,
-                  borderColor: currentBorder,
-                  color: commentFilter === 'paragraph' ? currentBtnText : currentTextMuted,
+                  backgroundColor: commentFilter === 'paragraph' ? currentBtnBg : currentBtnSecondaryBg,
+                  borderColor: commentFilter === 'paragraph' ? currentBtnBorder : currentBorder,
+                  color: commentFilter === 'paragraph' ? currentBtnText : currentText,
                   fontWeight: commentFilter === 'paragraph' ? 'bold' : 'normal',
                 }}
               >
@@ -1367,9 +1361,9 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
               value={generalCommentText}
               onChange={(e) => setGeneralCommentText(e.target.value)}
               placeholder="Nhập nhận xét chung về chương này..."
-              className={`flex-1 border p-2 text-xs focus:outline-none rounded transition ${storyBodyFont}`}
+              className={`flex-1 border p-2 text-xs focus:outline-none rounded transition placeholder:text-current placeholder:opacity-50 ${storyBodyFont}`}
               style={{
-                backgroundColor: currentBg,
+                backgroundColor: currentBtnSecondaryBg,
                 borderColor: currentBorder,
                 color: currentText,
               }}
@@ -1377,7 +1371,7 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
             <button
               type="submit"
               disabled={!generalCommentText.trim()}
-              className={`px-4 py-1.5 border disabled:opacity-40 text-xs font-bold uppercase tracking-wider flex items-center gap-1 rounded ${storyBtnFont}`}
+              className={`px-4 py-2 border disabled:opacity-40 text-xs font-bold uppercase tracking-wider flex items-center gap-1 rounded transition cursor-pointer ${storyBtnFont}`}
               style={{
                 backgroundColor: currentBtnBg,
                 borderColor: currentBtnBorder,
@@ -1405,7 +1399,7 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
                     key={cm.id} 
                     className="border p-3.5 text-xs space-y-2 transition-colors duration-300 rounded"
                     style={{
-                      backgroundColor: currentBg,
+                      backgroundColor: currentBtnSecondaryBg,
                       borderColor: currentBorder,
                     }}
                   >
@@ -1504,7 +1498,7 @@ export const ChapterReader: React.FC<ChapterReaderProps> = ({
                           value={replyText}
                           onChange={(e) => setReplyText(e.target.value)}
                           placeholder={`Phản hồi bình luận của ${cm.userName}...`}
-                          className="flex-1 border p-1.5 text-xs focus:outline-none rounded"
+                          className="flex-1 border p-1.5 text-xs focus:outline-none rounded placeholder:text-current placeholder:opacity-50"
                           style={{
                             backgroundColor: currentCardBg,
                             borderColor: currentBorder,

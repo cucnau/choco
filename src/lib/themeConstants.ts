@@ -9,6 +9,7 @@ export interface ThemeToken {
   btnSecondaryBg?: string;
   btnBorder: string;
   btnText: string;
+  accentColor?: string;
 }
 
 export const PRESET_THEME_COLORS: Record<string, ThemeToken> = {
@@ -23,6 +24,7 @@ export const PRESET_THEME_COLORS: Record<string, ThemeToken> = {
     btnSecondaryBg: '#1c0f16',
     btnBorder: '#5e2f46',
     btnText: '#ffd6e2',
+    accentColor: '#f472b6',
   },
   'choco-light': {
     name: 'Choco Light (Sô-cô-la Sữa)',
@@ -35,6 +37,7 @@ export const PRESET_THEME_COLORS: Record<string, ThemeToken> = {
     btnSecondaryBg: '#f8f2ec',
     btnBorder: '#cbb3a3',
     btnText: '#3d2314',
+    accentColor: '#7c3f1d',
   },
   'gradient-choco-light': {
     name: 'Gradient Choco Light (Kem Ca Cao Sáng)',
@@ -47,6 +50,7 @@ export const PRESET_THEME_COLORS: Record<string, ThemeToken> = {
     btnSecondaryBg: '#f7ebe1',
     btnBorder: '#cbb3a3',
     btnText: '#3d2314',
+    accentColor: '#7c3f1d',
   },
   'classic-black': {
     name: 'Classic Black (Đen Tuyến)',
@@ -59,6 +63,20 @@ export const PRESET_THEME_COLORS: Record<string, ThemeToken> = {
     btnSecondaryBg: '#171717',
     btnBorder: '#404040',
     btnText: '#ffffff',
+    accentColor: '#f5f5f5',
+  },
+  'classic-white': {
+    name: 'Classic White (Trắng Tinh Khôi)',
+    bg: '#ffffff',
+    cardBg: '#f8fafc',
+    text: '#0f172a',
+    textMuted: '#64748b',
+    border: '#e2e8f0',
+    btnBg: '#f1f5f9',
+    btnSecondaryBg: '#ffffff',
+    btnBorder: '#cbd5e1',
+    btnText: '#0f172a',
+    accentColor: '#0284c7',
   },
   'dark-violet': {
     name: 'Dark Violet (Tím Đêm)',
@@ -71,6 +89,7 @@ export const PRESET_THEME_COLORS: Record<string, ThemeToken> = {
     btnSecondaryBg: '#1a0c27',
     btnBorder: '#562c7e',
     btnText: '#ebd6fb',
+    accentColor: '#c084fc',
   },
   'navy-blue': {
     name: 'Navy Blue (Xanh Đêm)',
@@ -83,6 +102,7 @@ export const PRESET_THEME_COLORS: Record<string, ThemeToken> = {
     btnSecondaryBg: '#0c1b2c',
     btnBorder: '#295480',
     btnText: '#cce2f8',
+    accentColor: '#38bdf8',
   },
   'sepia': {
     name: 'Sepia (Giấy Cổ Điển)',
@@ -95,6 +115,7 @@ export const PRESET_THEME_COLORS: Record<string, ThemeToken> = {
     btnSecondaryBg: '#faf6eb',
     btnBorder: '#bca883',
     btnText: '#4a3525',
+    accentColor: '#6d4c41',
   },
   'emerald': {
     name: 'Emerald (Xanh Ngọc Lục)',
@@ -107,6 +128,7 @@ export const PRESET_THEME_COLORS: Record<string, ThemeToken> = {
     btnSecondaryBg: '#0e251c',
     btnBorder: '#2a6b4e',
     btnText: '#d1e7dd',
+    accentColor: '#34d399',
   },
   'slate': {
     name: 'Slate (Xanh Đá Xám)',
@@ -119,6 +141,7 @@ export const PRESET_THEME_COLORS: Record<string, ThemeToken> = {
     btnSecondaryBg: '#1e293b',
     btnBorder: '#475569',
     btnText: '#f1f5f9',
+    accentColor: '#60a5fa',
   },
   'classic-dark': {
     name: 'Classic Dark (Đen Nhám)',
@@ -131,6 +154,7 @@ export const PRESET_THEME_COLORS: Record<string, ThemeToken> = {
     btnSecondaryBg: '#171717',
     btnBorder: '#404040',
     btnText: '#e5e5e5',
+    accentColor: '#f5f5f5',
   },
   'cyberpunk': {
     name: 'Cyberpunk (Neon Tím)',
@@ -143,6 +167,7 @@ export const PRESET_THEME_COLORS: Record<string, ThemeToken> = {
     btnSecondaryBg: '#120021',
     btnBorder: '#00ffff',
     btnText: '#00ffff',
+    accentColor: '#00ffff',
   },
   'forest-dark': {
     name: 'Forest Dark (Rừng Đêm)',
@@ -155,6 +180,7 @@ export const PRESET_THEME_COLORS: Record<string, ThemeToken> = {
     btnSecondaryBg: '#0d2113',
     btnBorder: '#2d633c',
     btnText: '#c9e8d1',
+    accentColor: '#4ade80',
   },
   'warm-coffee': {
     name: 'Warm Coffee (Cà Phê Ấm)',
@@ -167,6 +193,7 @@ export const PRESET_THEME_COLORS: Record<string, ThemeToken> = {
     btnSecondaryBg: '#21160d',
     btnBorder: '#5c4129',
     btnText: '#fceee1',
+    accentColor: '#d97706',
   },
   'gradient-rose': {
     name: 'Gradient Rose (Hồng Đen)',
@@ -179,6 +206,7 @@ export const PRESET_THEME_COLORS: Record<string, ThemeToken> = {
     btnSecondaryBg: '#280c1b',
     btnBorder: '#832e55',
     btnText: '#ffc2d4',
+    accentColor: '#f472b6',
   },
   'gradient-midnight': {
     name: 'Gradient Midnight (Đêm Tím)',
@@ -191,6 +219,7 @@ export const PRESET_THEME_COLORS: Record<string, ThemeToken> = {
     btnSecondaryBg: '#210f47',
     btnBorder: '#7e22ce',
     btnText: '#e9d5ff',
+    accentColor: '#c084fc',
   },
   'gradient-ocean': {
     name: 'Gradient Ocean (Đại Dương)',
@@ -203,6 +232,7 @@ export const PRESET_THEME_COLORS: Record<string, ThemeToken> = {
     btnSecondaryBg: '#0c273a',
     btnBorder: '#38bdf8',
     btnText: '#bae6fd',
+    accentColor: '#38bdf8',
   },
   'gradient-emerald': {
     name: 'Gradient Emerald (Ngọc Lục Bảo)',
@@ -215,6 +245,7 @@ export const PRESET_THEME_COLORS: Record<string, ThemeToken> = {
     btnSecondaryBg: '#0d3327',
     btnBorder: '#10b981',
     btnText: '#a7f3d0',
+    accentColor: '#34d399',
   },
   'gradient-sunset': {
     name: 'Gradient Sunset (Hoàng Hôn)',
@@ -227,6 +258,7 @@ export const PRESET_THEME_COLORS: Record<string, ThemeToken> = {
     btnSecondaryBg: '#380b15',
     btnBorder: '#e11d48',
     btnText: '#fecdd3',
+    accentColor: '#fb7185',
   },
   'gradient-cyber': {
     name: 'Gradient Cyber (Viễn Tưởng)',
@@ -239,6 +271,7 @@ export const PRESET_THEME_COLORS: Record<string, ThemeToken> = {
     btnSecondaryBg: '#320a52',
     btnBorder: '#c084fc',
     btnText: '#f5d0fe',
+    accentColor: '#e879f9',
   },
   'gradient-gold': {
     name: 'Gradient Gold (Hoàng Gia Vàng)',
@@ -251,17 +284,145 @@ export const PRESET_THEME_COLORS: Record<string, ThemeToken> = {
     btnSecondaryBg: '#3d1703',
     btnBorder: '#d97706',
     btnText: '#fef3c7',
+    accentColor: '#fbbf24',
   },
   'gradient-cherry': {
     name: 'Gradient Cherry (Hoa Đào)',
     bg: 'linear-gradient(135deg, #831843 0%, #500724 50%, #1f020d 100%)',
     cardBg: 'linear-gradient(135deg, #42081f 0%, #2e0516 100%)',
     text: '#fce7f0',
-    textMuted: '#f472b6',
+    textMuted: '#f4a6c1',
     border: '#be185d',
     btnBg: '#9d174d',
     btnSecondaryBg: '#42081f',
     btnBorder: '#e11d48',
     btnText: '#ffe4e6',
+    accentColor: '#f472b6',
   },
 };
+
+export interface ResolvedThemeColors {
+  bg: string;
+  cardBg: string;
+  text: string;
+  textMuted: string;
+  border: string;
+  btnBg: string;
+  btnSecondaryBg: string;
+  btnBorder: string;
+  btnText: string;
+  accentColor?: string;
+  isDark: boolean;
+}
+
+export function resolveStoryColors(story?: {
+  themeTone?: string;
+  customBgColor?: string;
+  customCardBgColor?: string;
+  customTextColor?: string;
+  customTextMutedColor?: string;
+  customBorderColor?: string;
+  customBtnBgColor?: string;
+  customBtnSecondaryBgColor?: string;
+  customBtnTextColor?: string;
+}): ResolvedThemeColors {
+  if (!story) {
+    const preset = PRESET_THEME_COLORS['dark-rose'];
+    return {
+      bg: preset.bg,
+      cardBg: preset.cardBg,
+      text: preset.text,
+      textMuted: preset.textMuted,
+      border: preset.border,
+      btnBg: preset.btnBg,
+      btnSecondaryBg: preset.btnSecondaryBg || preset.btnBg,
+      btnBorder: preset.btnBorder,
+      btnText: preset.btnText,
+      accentColor: preset.accentColor,
+      isDark: true,
+    };
+  }
+
+  const toneKey = story.themeTone || 'dark-rose';
+  const isCustom = toneKey === 'custom';
+  const preset = PRESET_THEME_COLORS[toneKey] || PRESET_THEME_COLORS['dark-rose'];
+
+  if (!isCustom) {
+    return {
+      bg: preset.bg,
+      cardBg: preset.cardBg,
+      text: preset.text,
+      textMuted: preset.textMuted,
+      border: preset.border,
+      btnBg: preset.btnBg,
+      btnSecondaryBg: preset.btnSecondaryBg || preset.btnBg,
+      btnBorder: preset.btnBorder,
+      btnText: preset.btnText,
+      accentColor: preset.accentColor,
+      isDark: !preset.bg.toLowerCase().includes('#fff') && !preset.bg.toLowerCase().includes('255, 255, 255') && !['classic-white', 'choco-light', 'sepia'].includes(toneKey),
+    };
+  }
+
+  const bg = story.customBgColor || preset.bg;
+  const cardBg = story.customCardBgColor || story.customBgColor || preset.cardBg;
+  const text = story.customTextColor || preset.text;
+  const textMuted = story.customTextMutedColor || story.customTextColor || preset.textMuted;
+  const border = story.customBorderColor || preset.border;
+  const btnBg = story.customBtnBgColor || story.customCardBgColor || story.customBgColor || preset.btnBg;
+  const btnSecondaryBg = story.customBtnSecondaryBgColor || story.customCardBgColor || story.customBgColor || preset.btnSecondaryBg || preset.btnBg;
+  const btnBorder = story.customBorderColor || border;
+  const btnText = story.customBtnTextColor || story.customTextColor || text;
+
+  return {
+    bg,
+    cardBg,
+    text,
+    textMuted,
+    border,
+    btnBg,
+    btnSecondaryBg,
+    btnBorder,
+    btnText,
+    accentColor: story.customTextColor || story.customBtnTextColor || text,
+    isDark: !bg.toLowerCase().includes('#fff') && !bg.toLowerCase().includes('255, 255, 255') && !bg.toLowerCase().includes('#fcf') && !bg.toLowerCase().includes('#f8f') && !bg.toLowerCase().includes('#f4e'),
+  };
+}
+
+export function resolveChapterColors(story?: {
+  useSeparateChapterTheme?: boolean;
+  themeTone?: string;
+  customBgColor?: string;
+  customCardBgColor?: string;
+  customTextColor?: string;
+  customTextMutedColor?: string;
+  customBorderColor?: string;
+  customBtnBgColor?: string;
+  customBtnSecondaryBgColor?: string;
+  customBtnTextColor?: string;
+  chapterThemeTone?: string;
+  chapterCustomBgColor?: string;
+  chapterCustomCardBgColor?: string;
+  chapterCustomTextColor?: string;
+  chapterCustomTextMutedColor?: string;
+  chapterCustomBorderColor?: string;
+  chapterCustomBtnBgColor?: string;
+  chapterCustomBtnSecondaryBgColor?: string;
+  chapterCustomBtnTextColor?: string;
+}): ResolvedThemeColors {
+  if (!story) return resolveStoryColors();
+  const hasSeparate = !!story.useSeparateChapterTheme;
+  if (hasSeparate) {
+    return resolveStoryColors({
+      themeTone: story.chapterThemeTone || story.themeTone,
+      customBgColor: story.chapterCustomBgColor || story.customBgColor,
+      customCardBgColor: story.chapterCustomCardBgColor || story.customCardBgColor || story.chapterCustomBgColor || story.customBgColor,
+      customTextColor: story.chapterCustomTextColor || story.customTextColor,
+      customTextMutedColor: story.chapterCustomTextMutedColor || story.customTextMutedColor || story.chapterCustomTextColor || story.customTextColor,
+      customBorderColor: story.chapterCustomBorderColor || story.customBorderColor,
+      customBtnBgColor: story.chapterCustomBtnBgColor || story.customBtnBgColor,
+      customBtnSecondaryBgColor: story.chapterCustomBtnSecondaryBgColor || story.customBtnSecondaryBgColor,
+      customBtnTextColor: story.chapterCustomBtnTextColor || story.customBtnTextColor,
+    });
+  }
+  return resolveStoryColors(story);
+}

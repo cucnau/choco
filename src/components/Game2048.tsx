@@ -17,34 +17,34 @@ const GRID_SIZE = 4;
 const LOCAL_STORAGE_HIGH_SCORE_KEY = 'game_2048_high_score';
 const LOCAL_STORAGE_SAVED_STATE_KEY = 'game_2048_saved_state';
 
-// Màu sắc dạng Pastel Neon tương ứng từng số (hỗ trợ đến vô tận)
+// Màu sắc dạng Pastel dịu nhẹ đồng bộ theo các minigame khác
 const TILE_STYLES: Record<number, { bg: string; text: string; shadow: string; border?: string; glow?: string }> = {
-  2: { bg: 'bg-[#ffc8dd]', text: 'text-[#590d22]', shadow: 'shadow-sm shadow-[#ffc8dd]/40' },
-  4: { bg: 'bg-[#ffafcc]', text: 'text-[#590d22]', shadow: 'shadow-sm shadow-[#ffafcc]/40' },
-  8: { bg: 'bg-[#bde0fe]', text: 'text-[#03045e]', shadow: 'shadow-md shadow-[#bde0fe]/40' },
-  16: { bg: 'bg-[#a2d2ff]', text: 'text-[#03045e]', shadow: 'shadow-md shadow-[#a2d2ff]/40' },
-  32: { bg: 'bg-[#caffbf]', text: 'text-[#1b4332]', shadow: 'shadow-md shadow-[#caffbf]/40' },
-  64: { bg: 'bg-[#fdffb6]', text: 'text-[#744210]', shadow: 'shadow-md shadow-[#fdffb6]/40' },
-  128: { bg: 'bg-[#ffd6a5]', text: 'text-[#7c2d12]', shadow: 'shadow-lg shadow-[#ffd6a5]/50' },
-  256: { bg: 'bg-[#ffadad]', text: 'text-[#4a0404]', shadow: 'shadow-lg shadow-[#ffadad]/50' },
-  518: { bg: 'bg-[#e8b4b8]', text: 'text-[#3d0814]', shadow: 'shadow-lg shadow-[#e8b4b8]/50' },
-  1024: { bg: 'bg-[#d8b4e2]', text: 'text-[#3c096c]', shadow: 'shadow-xl shadow-[#d8b4e2]/60', glow: 'ring-2 ring-[#d8b4e2]/60' },
-  2048: { bg: 'bg-gradient-to-br from-[#ffd166] to-[#f72585]', text: 'text-white', shadow: 'shadow-xl shadow-[#ffd166]/60', glow: 'ring-2 ring-[#ffd166]' },
-  4096: { bg: 'bg-gradient-to-br from-[#7209b7] to-[#4361ee]', text: 'text-white', shadow: 'shadow-2xl shadow-[#7209b7]/70', glow: 'ring-2 ring-[#4361ee]' },
-  8192: { bg: 'bg-gradient-to-br from-[#4cc9f0] to-[#06d6a0]', text: 'text-[#051923]', shadow: 'shadow-2xl shadow-[#4cc9f0]/70', glow: 'ring-2 ring-[#06d6a0]' },
-  16384: { bg: 'bg-gradient-to-br from-[#ff007f] to-[#ffb703]', text: 'text-white', shadow: 'shadow-2xl shadow-[#ff007f]/80', glow: 'ring-2 ring-[#ffb703]' },
-  32768: { bg: 'bg-gradient-to-br from-[#00f5d4] to-[#7b2cbf]', text: 'text-white', shadow: 'shadow-2xl shadow-[#00f5d4]/80', glow: 'ring-2 ring-[#00f5d4]' },
-  65536: { bg: 'bg-gradient-to-br from-[#e0aaff] to-[#3a0ca3]', text: 'text-white', shadow: 'shadow-2xl shadow-[#e0aaff]/90', glow: 'ring-2 ring-[#e0aaff]' },
+  2: { bg: 'bg-[#fce7f3]', text: 'text-[#831843]', shadow: 'shadow-xs', border: 'border border-[#fbcfe8]' },
+  4: { bg: 'bg-[#fbcfe8]', text: 'text-[#831843]', shadow: 'shadow-xs', border: 'border border-[#f472b6]' },
+  8: { bg: 'bg-[#e0f2fe]', text: 'text-[#0369a1]', shadow: 'shadow-sm', border: 'border border-[#7dd3fc]' },
+  16: { bg: 'bg-[#bae6fd]', text: 'text-[#0369a1]', shadow: 'shadow-sm', border: 'border border-[#38bdf8]' },
+  32: { bg: 'bg-[#dcfce7]', text: 'text-[#166534]', shadow: 'shadow-sm', border: 'border border-[#86efac]' },
+  64: { bg: 'bg-[#bbf7d0]', text: 'text-[#166534]', shadow: 'shadow-sm', border: 'border border-[#4ade80]' },
+  128: { bg: 'bg-[#fef9c3]', text: 'text-[#854d0e]', shadow: 'shadow-md', border: 'border border-[#fde047]' },
+  256: { bg: 'bg-[#ffedd5]', text: 'text-[#9a3412]', shadow: 'shadow-md', border: 'border border-[#fdba74]' },
+  512: { bg: 'bg-[#fed7aa]', text: 'text-[#9a3412]', shadow: 'shadow-md', border: 'border border-[#fb923c]' },
+  1024: { bg: 'bg-[#ede9fe]', text: 'text-[#581c87]', shadow: 'shadow-lg', border: 'border border-[#c084fc]', glow: 'ring-1 ring-[#c084fc]/50' },
+  2048: { bg: 'bg-[#e0e7ff]', text: 'text-[#3730a3]', shadow: 'shadow-lg', border: 'border border-[#818cf8]', glow: 'ring-2 ring-[#818cf8]' },
+  4096: { bg: 'bg-[#fdf4ff]', text: 'text-[#701a75]', shadow: 'shadow-lg', border: 'border border-[#f0abfc]', glow: 'ring-2 ring-[#f0abfc]' },
+  8192: { bg: 'bg-[#ccfbf1]', text: 'text-[#115e59]', shadow: 'shadow-lg', border: 'border border-[#5eead4]', glow: 'ring-2 ring-[#5eead4]' },
+  16384: { bg: 'bg-[#fae8ff]', text: 'text-[#86198f]', shadow: 'shadow-lg', border: 'border border-[#e879f9]', glow: 'ring-2 ring-[#e879f9]' },
+  32768: { bg: 'bg-[#fee2e2]', text: 'text-[#991b1b]', shadow: 'shadow-lg', border: 'border border-[#fca5a5]', glow: 'ring-2 ring-[#fca5a5]' },
+  65536: { bg: 'bg-[#f1f5f9]', text: 'text-[#0f172a]', shadow: 'shadow-lg', border: 'border border-[#cbd5e1]', glow: 'ring-2 ring-[#94a3b8]' },
 };
 
 function getTileStyle(val: number) {
   if (TILE_STYLES[val]) return TILE_STYLES[val];
-  // Màu siêu cấp cho các số lớn hơn 65536
   return {
-    bg: 'bg-gradient-to-r from-[#ff007f] via-[#7928ca] to-[#00dfd8]',
-    text: 'text-white font-black',
-    shadow: 'shadow-2xl shadow-[#ff007f]/90 animate-pulse',
-    glow: 'ring-3 ring-[#00dfd8]'
+    bg: 'bg-[#e2e8f0]',
+    text: 'text-[#0f172a] font-black',
+    shadow: 'shadow-lg',
+    border: 'border-2 border-[#94a3b8]',
+    glow: 'ring-2 ring-[#64748b]'
   };
 }
 

@@ -290,6 +290,41 @@ interface SpecialBlockRendererProps {
   fontFamily?: string;
 }
 
+export function getSolidColor(colorOrGradient?: string, fallback = '#141414'): string {
+  if (!colorOrGradient || typeof colorOrGradient !== 'string') return fallback;
+  if (!colorOrGradient.toLowerCase().includes('gradient')) return colorOrGradient;
+  const hexMatch = colorOrGradient.match(/#[0-9a-fA-F]{6}|#[0-9a-fA-F]{3}/);
+  if (hexMatch) return hexMatch[0];
+  const rgbMatch = colorOrGradient.match(/rgba?\([^)]+\)/);
+  if (rgbMatch) return rgbMatch[0];
+  return fallback;
+}
+
+const getLuminance = (colorStr: string): number => {
+  if (!colorStr || typeof colorStr !== 'string') return 0.5;
+  const rgbMatch = colorStr.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/i);
+  if (rgbMatch) {
+    const r = parseInt(rgbMatch[1], 10);
+    const g = parseInt(rgbMatch[2], 10);
+    const b = parseInt(rgbMatch[3], 10);
+    return (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  }
+  const cleanHex = colorStr.replace(/[^0-9a-fA-F]/g, '');
+  if (cleanHex.length < 3) return 0.5;
+  let r = 0, g = 0, b = 0;
+  if (cleanHex.length === 3) {
+    r = parseInt(cleanHex[0] + cleanHex[0], 16);
+    g = parseInt(cleanHex[1] + cleanHex[1], 16);
+    b = parseInt(cleanHex[2] + cleanHex[2], 16);
+  } else if (cleanHex.length >= 6) {
+    r = parseInt(cleanHex.substring(0, 2), 16);
+    g = parseInt(cleanHex.substring(2, 4), 16);
+    b = parseInt(cleanHex.substring(4, 6), 16);
+  }
+  if (isNaN(r) || isNaN(g) || isNaN(b)) return 0.5;
+  return (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+};
+
 /**
  * Hiển thị khối khung đặc biệt theo từng phong cách chuyên biệt
  */
@@ -298,50 +333,77 @@ export const SpecialBlockRenderer: React.FC<SpecialBlockRendererProps> = ({
   themeColors,
   fontFamily = '',
 }) => {
-  const tBg = themeColors?.bg || '#1a0b12';
-  const tCardBg = themeColors?.cardBg || '#22111a';
-  const tBorder = themeColors?.border || '#30222a';
-  const tBtnBg = themeColors?.btnBg || '#e879f9';
-  const tBtnText = themeColors?.btnText || '#000000';
-  const tBtnSecBg = themeColors?.btnSecondaryBg || '#2a1622';
-  const tText = themeColors?.text || '#fbcfe8';
-  const tTextMuted = themeColors?.textMuted || '#fbcfe8aa';
-  const tAccent = themeColors?.accentColor || themeColors?.btnBg || '#e879f9';
+  const tBg = themeColors?.bg || '#18181b';
+  const tCardBg = themeColors?.cardBg || '#27272a';
+  const tBorder = themeColors?.border || '#3f3f46';
+  const tBtnBg = themeColors?.btnBg || '#3f3f46';
+  const tBtnText = themeColors?.btnText || '#f4f4f5';
+  const tBtnSecBg = themeColors?.btnSecondaryBg || '#27272a';
+  const tText = themeColors?.text || '#f4f4f5';
+  const tTextMuted = themeColors?.textMuted || '#a1a1aa';
+  const rawAccent = themeColors?.accentColor || themeColors?.text || themeColors?.btnText || '#f4f4f5';
 
-  // 1. THÔNG BÁO HỆ THỐNG (System Alert / Game Hologram Panel)
+  const cardLum = getLuminance(tCardBg);
+  const isDark = cardLum < 0.5;
+
+  // Đảm bảo chữ nội dung có độ tương phản cao với màu nền thẻ (tránh theme đen/trắng bị lỗi không đọc được)
+  const safeText = isDark
+    ? (getLuminance(tText) < 0.4 ? '#f8fafc' : tText)
+    : (getLuminance(tText) > 0.6 ? '#0f172a' : tText);
+
+  const safeTextMuted = isDark
+    ? (getLuminance(tTextMuted) < 0.35 ? '#cbd5e1' : tTextMuted)
+    : (getLuminance(tTextMuted) > 0.65 ? '#475569' : tTextMuted);
+
+  // Đảm bảo safeAccent có độ tương phản cao với tCardBg (tránh theme đen/trắng bị chìm chữ)
+  let safeAccent = rawAccent;
+  const accentLum = getLuminance(safeAccent);
+  if (Math.abs(cardLum - accentLum) < 0.28) {
+    safeAccent = isDark ? (safeText || '#f8fafc') : (safeText || '#0f172a');
+  }
+
+  // Đảm bảo chữ/icon trên nền tBtnBg có độ tương phản rõ ràng
+  const btnBgLum = getLuminance(tBtnBg);
+  const safeBtnText = Math.abs(btnBgLum - getLuminance(tBtnText)) >= 0.3
+    ? tBtnText
+    : (btnBgLum > 0.5 ? '#0f172a' : '#ffffff');
+
+  // 1. THÔNG BÁO HỆ THỐNG (System Alert / Game Panel)
   if (block.type === 'system') {
     const hasHeader = Boolean(block.title || block.meta);
+    // Luôn bảo đảm là màu đơn sắc phẳng (Solid), TUYỆT ĐỐI không dùng gradient
+    const solidCardBg = getSolidColor(tCardBg, isDark ? '#141414' : '#f8fafc');
+    const solidBorder = getSolidColor(tBorder, isDark ? '#262626' : '#e2e8f0');
+    const solidBtnBg = getSolidColor(tBtnBg, isDark ? '#1f1f1f' : '#f1f5f9');
+    const systemText = isDark
+      ? (getLuminance(safeText) < 0.4 ? '#f8fafc' : safeText)
+      : (getLuminance(safeText) > 0.6 ? '#0f172a' : safeText);
+
     return (
       <div
-        className="my-5 p-4 sm:p-5 rounded-lg border-2 shadow-lg relative overflow-hidden transition-all duration-200 backdrop-blur-xs font-mono"
+        className="my-5 p-4 sm:p-5 rounded-lg border-2 shadow-sm relative overflow-hidden transition-all duration-200 font-mono"
         style={{
-          background: `linear-gradient(135deg, ${tCardBg}ee, ${tBg}f2)`,
-          borderColor: tAccent,
-          boxShadow: `0 0 16px ${tAccent}33`,
+          backgroundColor: solidCardBg,
+          borderColor: solidBorder,
+          boxShadow: isDark ? '0 4px 14px rgba(0,0,0,0.45)' : '0 2px 8px rgba(0,0,0,0.06)',
         }}
       >
-        {/* Hologram top scan line */}
-        <div
-          className="absolute top-0 left-0 right-0 h-[2px] opacity-80"
-          style={{ background: `linear-gradient(90deg, transparent, ${tAccent}, transparent)` }}
-        />
-
         {/* Header hệ thống */}
         {hasHeader && (
           <div
             className="flex items-center justify-between gap-2 border-b pb-2.5 mb-3"
-            style={{ borderColor: `${tAccent}40` }}
+            style={{ borderColor: `${solidBorder}80` }}
           >
             {block.title ? (
               <div className="flex items-center gap-2">
                 <div
-                  className="p-1.5 rounded-md shadow-xs flex items-center justify-center animate-pulse"
-                  style={{ background: tBtnBg, color: tBtnText }}
+                  className="p-1.5 rounded-md shadow-xs flex items-center justify-center"
+                  style={{ backgroundColor: solidBtnBg, color: safeBtnText, border: `1px solid ${solidBorder}` }}
                 >
                   <Cpu className="w-4 h-4" />
                 </div>
                 <div>
-                  <span className="text-xs font-black uppercase tracking-wider block" style={{ color: tAccent }}>
+                  <span className="text-xs font-black uppercase tracking-wider block" style={{ color: safeAccent }}>
                     {block.title}
                   </span>
                 </div>
@@ -352,7 +414,7 @@ export const SpecialBlockRenderer: React.FC<SpecialBlockRendererProps> = ({
             {block.meta && (
               <span
                 className="text-[9px] px-2 py-0.5 rounded font-bold uppercase tracking-wider border shadow-xs"
-                style={{ borderColor: tAccent, color: tBtnText, background: tBtnBg }}
+                style={{ borderColor: solidBorder, color: safeBtnText, backgroundColor: solidBtnBg }}
               >
                 {block.meta}
               </span>
@@ -361,10 +423,10 @@ export const SpecialBlockRenderer: React.FC<SpecialBlockRendererProps> = ({
         )}
 
         {/* Nội dung thông báo */}
-        <div className="space-y-1.5 text-xs sm:text-sm leading-relaxed" style={{ color: tText }}>
+        <div className="space-y-1.5 text-xs sm:text-sm leading-relaxed" style={{ color: systemText }}>
           {block.lines.map((line, lIdx) => (
             <p key={lIdx} className="flex items-start gap-2">
-              <span style={{ color: tAccent }} className="font-bold select-none shrink-0">
+              <span style={{ color: safeAccent }} className="font-bold select-none shrink-0">
                 ›
               </span>
               <span><ProtectedStoryText text={line} /></span>
@@ -383,24 +445,24 @@ export const SpecialBlockRenderer: React.FC<SpecialBlockRendererProps> = ({
         className="my-5 p-4 sm:p-5 rounded-xl border shadow-md relative space-y-3 transition-all"
         style={{
           background: tCardBg,
-          borderColor: `${tAccent}50`,
+          borderColor: tBorder,
         }}
       >
         {/* Header diễn đàn */}
         {hasHeader && (
           <div
             className="flex items-center justify-between border-b pb-2"
-            style={{ borderColor: `${tAccent}30` }}
+            style={{ borderColor: `${tBorder}60` }}
           >
             {block.title ? (
               <div className="flex items-center gap-2">
                 <div
                   className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shadow-xs"
-                  style={{ background: tBtnBg, color: tBtnText }}
+                  style={{ background: tBtnBg, color: safeBtnText }}
                 >
                   <MessageSquare className="w-3.5 h-3.5" />
                 </div>
-                <span className="text-xs font-bold uppercase tracking-wider" style={{ color: tAccent }}>
+                <span className="text-xs font-bold uppercase tracking-wider" style={{ color: safeAccent }}>
                   {block.title}
                 </span>
               </div>
@@ -408,7 +470,7 @@ export const SpecialBlockRenderer: React.FC<SpecialBlockRendererProps> = ({
               <div />
             )}
             {block.meta && (
-              <span className="text-[10px] opacity-80 font-mono font-medium" style={{ color: tTextMuted }}>
+              <span className="text-[10px] opacity-80 font-mono font-medium" style={{ color: safeTextMuted }}>
                 {block.meta}
               </span>
             )}
@@ -424,7 +486,7 @@ export const SpecialBlockRenderer: React.FC<SpecialBlockRendererProps> = ({
                 className="p-3.5 rounded-lg text-xs space-y-1.5 transition-all shadow-xs"
                 style={{
                   background: tBtnBg,
-                  color: tBtnText || tText,
+                  color: safeBtnText,
                   border: `1px solid ${tBorder || 'transparent'}`,
                 }}
               >
@@ -432,20 +494,20 @@ export const SpecialBlockRenderer: React.FC<SpecialBlockRendererProps> = ({
                   <div className="flex items-center gap-2">
                     <div
                       className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 shadow-xs"
-                      style={{ background: tCardBg, color: tText || tAccent }}
+                      style={{ background: tCardBg, color: safeAccent }}
                     >
                       {item.sender ? item.sender.charAt(0).toUpperCase() : 'C'}
                     </div>
-                    <span className="font-bold text-[11px]" style={{ color: tBtnText || tText }}>
+                    <span className="font-bold text-[11px]" style={{ color: safeBtnText }}>
                       {item.sender || 'Cư dân mạng'}
                     </span>
                   </div>
-                  <div className="flex items-center gap-2 text-[10px] opacity-80 font-mono" style={{ color: tBtnText || tTextMuted }}>
+                  <div className="flex items-center gap-2 text-[10px] opacity-80 font-mono" style={{ color: safeBtnText }}>
                     {item.time && <span>{item.time}</span>}
                     {item.likes && <span>♥ {item.likes}</span>}
                   </div>
                 </div>
-                <p className="pl-7 leading-relaxed text-xs sm:text-sm" style={{ color: tBtnText || tText }}>
+                <p className="pl-7 leading-relaxed text-xs sm:text-sm" style={{ color: safeBtnText }}>
                   <ProtectedStoryText text={item.text} />
                 </p>
               </div>
@@ -453,21 +515,21 @@ export const SpecialBlockRenderer: React.FC<SpecialBlockRendererProps> = ({
           ) : (
             <div
               className="p-3.5 rounded-lg text-xs space-y-1.5 shadow-xs"
-              style={{ background: tBtnBg, color: tBtnText || tText, border: `1px solid ${tBorder || 'transparent'}` }}
+              style={{ background: tBtnBg, color: safeBtnText, border: `1px solid ${tBorder || 'transparent'}` }}
             >
               {block.title && (
                 <div className="flex items-center justify-between text-[11px]">
-                  <span className="font-bold" style={{ color: tBtnText || tAccent }}>
+                  <span className="font-bold" style={{ color: safeBtnText }}>
                     {block.title}
                   </span>
                   {block.meta && (
-                    <span className="text-[10px] opacity-75 font-mono" style={{ color: tBtnText || tTextMuted }}>
+                    <span className="text-[10px] opacity-75 font-mono" style={{ color: safeBtnText }}>
                       {block.meta}
                     </span>
                   )}
                 </div>
               )}
-              <div className="space-y-1 text-xs sm:text-sm leading-relaxed" style={{ color: tBtnText || tText }}>
+              <div className="space-y-1 text-xs sm:text-sm leading-relaxed" style={{ color: safeBtnText }}>
                 {block.lines.map((line, lIdx) => (
                   <p key={lIdx}><ProtectedStoryText text={line} /></p>
                 ))}
@@ -486,25 +548,25 @@ export const SpecialBlockRenderer: React.FC<SpecialBlockRendererProps> = ({
         className="my-5 p-3 sm:p-4 rounded-2xl border shadow-lg max-w-xl mx-auto space-y-3"
         style={{
           background: tCardBg,
-          borderColor: `${tAccent}40`,
+          borderColor: tBorder,
         }}
       >
         {/* Header khung chat */}
         {block.title && (
           <div
             className="flex items-center justify-between border-b pb-2 px-1"
-            style={{ borderColor: `${tAccent}25` }}
+            style={{ borderColor: `${tBorder}60` }}
           >
             <div className="flex items-center gap-2">
               <div
                 className="w-2.5 h-2.5 rounded-full animate-pulse"
-                style={{ background: tBtnBg }}
+                style={{ background: safeAccent }}
               />
-              <span className="text-xs font-bold" style={{ color: tAccent }}>
+              <span className="text-xs font-bold" style={{ color: safeAccent }}>
                 {block.title}
               </span>
             </div>
-            <Smartphone className="w-4 h-4 opacity-70" style={{ color: tAccent }} />
+            <Smartphone className="w-4 h-4 opacity-70" style={{ color: safeAccent }} />
           </div>
         )}
 
@@ -518,7 +580,7 @@ export const SpecialBlockRenderer: React.FC<SpecialBlockRendererProps> = ({
                   key={mIdx}
                   className={`flex flex-col ${isRight ? 'items-end' : 'items-start'} space-y-1`}
                 >
-                  <span className="text-[10px] px-1 font-semibold opacity-80 font-mono" style={{ color: tTextMuted }}>
+                  <span className="text-[10px] px-1 font-semibold opacity-80 font-mono" style={{ color: safeTextMuted }}>
                     {msg.sender}
                   </span>
                   <div
@@ -526,9 +588,9 @@ export const SpecialBlockRenderer: React.FC<SpecialBlockRendererProps> = ({
                       isRight ? 'rounded-br-xs' : 'rounded-bl-xs'
                     }`}
                     style={{
-                      background: isRight ? tBtnBg : (tBtnSecBg || `${tBtnBg}20`),
-                      color: isRight ? tBtnText : tText,
-                      border: isRight ? undefined : `1px solid ${tBorder || `${tBtnBg}45`}`,
+                      background: isRight ? tBtnBg : (tBtnSecBg || (isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)')),
+                      color: isRight ? safeBtnText : safeText,
+                      border: isRight ? `1px solid ${tBorder}` : `1px solid ${tBorder}`,
                     }}
                   >
                     <ProtectedStoryText text={msg.text} />
@@ -542,7 +604,7 @@ export const SpecialBlockRenderer: React.FC<SpecialBlockRendererProps> = ({
                 <div key={lIdx} className="flex flex-col items-start space-y-1">
                   <div
                     className="max-w-[85%] px-3.5 py-2 rounded-2xl rounded-bl-xs text-xs sm:text-sm leading-relaxed border shadow-xs"
-                    style={{ background: `${tBtnBg}20`, color: tText, borderColor: `${tBtnBg}45` }}
+                    style={{ background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)', color: safeText, borderColor: tBorder }}
                   >
                     <ProtectedStoryText text={l} />
                   </div>
@@ -563,17 +625,17 @@ export const SpecialBlockRenderer: React.FC<SpecialBlockRendererProps> = ({
         className="my-5 p-5 sm:p-7 rounded-lg border-2 shadow-md relative space-y-3 transition-all"
         style={{
           background: tCardBg,
-          borderColor: `${tAccent}50`,
-          boxShadow: 'inset 0 0 15px rgba(0,0,0,0.05)',
+          borderColor: tBorder,
+          boxShadow: isDark ? 'inset 0 0 15px rgba(0,0,0,0.3)' : 'inset 0 0 15px rgba(0,0,0,0.03)',
         }}
       >
         {/* Con dấu thư / Icon phong bì góc */}
         {hasHeader && (
-          <div className="flex items-center justify-between border-b pb-2 border-dashed" style={{ borderColor: `${tAccent}40` }}>
+          <div className="flex items-center justify-between border-b pb-2 border-dashed" style={{ borderColor: `${tBorder}80` }}>
             {block.title ? (
               <div className="flex items-center gap-2">
-                <Mail className="w-4 h-4 opacity-80" style={{ color: tAccent }} />
-                <span className="text-xs font-lora font-serif font-bold italic tracking-wide" style={{ color: tAccent, fontFamily: "'Lora', 'EB Garamond', 'Noto Serif', serif" }}>
+                <Mail className="w-4 h-4 opacity-80" style={{ color: safeAccent }} />
+                <span className="text-xs font-lora font-serif font-bold italic tracking-wide" style={{ color: safeAccent, fontFamily: "'Lora', 'EB Garamond', 'Noto Serif', serif" }}>
                   {block.title}
                 </span>
               </div>
@@ -581,7 +643,7 @@ export const SpecialBlockRenderer: React.FC<SpecialBlockRendererProps> = ({
               <div />
             )}
             {block.meta && (
-              <span className="text-[10px] italic font-lora font-serif opacity-80" style={{ color: tTextMuted, fontFamily: "'Lora', 'EB Garamond', 'Noto Serif', serif" }}>
+              <span className="text-[10px] italic font-lora font-serif opacity-80" style={{ color: safeTextMuted, fontFamily: "'Lora', 'EB Garamond', 'Noto Serif', serif" }}>
                 {block.meta}
               </span>
             )}
@@ -589,7 +651,7 @@ export const SpecialBlockRenderer: React.FC<SpecialBlockRendererProps> = ({
         )}
 
         {/* Nội dung thư dạng chữ nghiêng trang nhã */}
-        <div className="space-y-2 text-xs sm:text-sm leading-relaxed italic font-lora font-serif pt-1" style={{ color: tText, fontFamily: "'Lora', 'EB Garamond', 'Noto Serif', serif" }}>
+        <div className="space-y-2 text-xs sm:text-sm leading-relaxed italic font-lora font-serif pt-1" style={{ color: safeText, fontFamily: "'Lora', 'EB Garamond', 'Noto Serif', serif" }}>
           {block.lines.map((line, lIdx) => (
             <p key={lIdx} className="indent-4">
               <ProtectedStoryText text={line} />
@@ -606,17 +668,17 @@ export const SpecialBlockRenderer: React.FC<SpecialBlockRendererProps> = ({
       <div
         className="my-4 p-3.5 sm:p-4 rounded-xl border border-dashed shadow-xs relative space-y-1.5"
         style={{
-          background: `${tBtnBg}15`,
-          borderColor: `${tAccent}70`,
+          background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
+          borderColor: tBorder,
         }}
       >
         {block.title && (
-          <div className="flex items-center gap-1.5 text-[11px] font-semibold" style={{ color: tAccent }}>
+          <div className="flex items-center gap-1.5 text-[11px] font-semibold" style={{ color: safeAccent }}>
             <Cloud className="w-3.5 h-3.5" />
             <span>{block.title}</span>
           </div>
         )}
-        <div className={`space-y-1 text-xs sm:text-sm leading-relaxed italic opacity-95 ${block.title ? 'pl-4 border-l-2' : ''}`} style={{ color: tText, borderColor: tAccent }}>
+        <div className={`space-y-1 text-xs sm:text-sm leading-relaxed italic opacity-95 ${block.title ? 'pl-4 border-l-2' : ''}`} style={{ color: safeText, borderColor: safeAccent }}>
           {block.lines.map((line, lIdx) => (
             <p key={lIdx}><ProtectedStoryText text={line} /></p>
           ))}
@@ -629,34 +691,34 @@ export const SpecialBlockRenderer: React.FC<SpecialBlockRendererProps> = ({
   if (block.type === 'status') {
     return (
       <div
-        className="my-5 p-4 sm:p-5 rounded-lg border-2 shadow-xl space-y-3 font-mono"
+        className="my-5 p-4 sm:p-5 rounded-lg border-2 shadow-lg space-y-3 font-mono"
         style={{
           background: tCardBg,
-          borderColor: tAccent,
+          borderColor: tBorder,
         }}
       >
         {block.title && (
-          <div className="flex items-center justify-between border-b pb-2" style={{ borderColor: `${tAccent}50` }}>
+          <div className="flex items-center justify-between border-b pb-2" style={{ borderColor: `${tBorder}80` }}>
             <div className="flex items-center gap-2">
-              <Shield className="w-4 h-4" style={{ color: tAccent }} />
-              <span className="text-xs font-bold uppercase tracking-wider" style={{ color: tAccent }}>
+              <Shield className="w-4 h-4" style={{ color: safeAccent }} />
+              <span className="text-xs font-bold uppercase tracking-wider" style={{ color: safeAccent }}>
                 {block.title}
               </span>
             </div>
           </div>
         )}
 
-        <div className="space-y-1.5 text-xs sm:text-sm leading-relaxed" style={{ color: tText }}>
+        <div className="space-y-1.5 text-xs sm:text-sm leading-relaxed" style={{ color: safeText }}>
           {block.lines.map((line, lIdx) => {
             const hasColon = line.includes(':');
             if (hasColon) {
               const [k, ...v] = line.split(':');
               return (
                 <div key={lIdx} className="flex items-start justify-between gap-2 border-b border-dashed pb-1" style={{ borderColor: `${tBorder}60` }}>
-                  <span className="font-semibold opacity-80 shrink-0" style={{ color: tTextMuted }}>
+                  <span className="font-semibold opacity-80 shrink-0" style={{ color: safeTextMuted }}>
                     {k.trim()}:
                   </span>
-                  <span className="font-bold text-right" style={{ color: tAccent }}>
+                  <span className="font-bold text-right" style={{ color: safeAccent }}>
                     <ProtectedStoryText text={v.join(':').trim()} />
                   </span>
                 </div>
@@ -675,17 +737,17 @@ export const SpecialBlockRenderer: React.FC<SpecialBlockRendererProps> = ({
       <div
         className="my-4 p-3.5 rounded-lg border border-dashed text-xs space-y-1.5"
         style={{
-          background: `${tBtnBg}15`,
-          borderColor: `${tAccent}60`,
+          background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
+          borderColor: tBorder,
         }}
       >
         {block.title && (
-          <div className="flex items-center gap-1.5 text-[11px] font-bold" style={{ color: tAccent }}>
+          <div className="flex items-center gap-1.5 text-[11px] font-bold" style={{ color: safeAccent }}>
             <StickyNote className="w-3.5 h-3.5" />
             <span>{block.title}</span>
           </div>
         )}
-        <div className={`space-y-1 text-xs leading-relaxed opacity-90 ${block.title ? 'pl-3.5' : ''}`} style={{ color: tText }}>
+        <div className={`space-y-1 text-xs leading-relaxed opacity-90 ${block.title ? 'pl-3.5' : ''}`} style={{ color: safeText }}>
           {block.lines.map((line, lIdx) => (
             <p key={lIdx}><ProtectedStoryText text={line} /></p>
           ))}
@@ -715,7 +777,7 @@ export const SpecialBlockRenderer: React.FC<SpecialBlockRendererProps> = ({
 
   // Fallback text
   return (
-    <div className="my-3 space-y-1 text-base leading-relaxed" style={{ color: tText }}>
+    <div className="my-3 space-y-1 text-base leading-relaxed" style={{ color: safeText }}>
       {block.lines.map((line, lIdx) => (
         <p key={lIdx}><ProtectedStoryText text={line} /></p>
       ))}

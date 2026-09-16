@@ -43,6 +43,8 @@ import {
 import { Header } from './components/Header';
 import { NewsHub } from './components/NewsHub';
 import { migrateLocalStorageFonts, getIdbFonts, saveIdbFonts, StoredUserFont } from './lib/idbStorage';
+import { PRESET_THEME_COLORS } from './lib/themeConstants';
+import { getEffectiveStory } from './lib/storyUtils';
 import { StoryCard } from './components/StoryCard';
 import { StoryDetail } from './components/StoryDetail';
 import { ChapterReader } from './components/ChapterReader';
@@ -815,23 +817,24 @@ export default function App() {
         ? 'bg-[#fcf8f5] text-[#3d2314] selection:bg-[#f0e2d8] selection:text-[#3d2314]'
         : 'bg-[#080406] text-[#e0d0d5] selection:bg-[#3d1e2c] selection:text-white';
     }
-    const tone = story.themeTone || (siteTheme === 'choco-light' ? 'choco-light' : 'dark-rose');
-    if (tone === 'custom' || tone.startsWith('gradient-')) return '';
-    if (tone === 'choco-light') return 'bg-[#fcf8f5] text-[#3d2314] selection:bg-[#f0e2d8] selection:text-[#3d2314]';
-    if (tone === 'sepia') return 'bg-[#f4ecd8] text-[#4a3525] selection:bg-[#e2d5b6] selection:text-[#4a3525]';
-    if (tone === 'emerald') return 'bg-[#06100c] text-[#d1e7dd] selection:bg-[#163f2d] selection:text-white';
-    if (tone === 'slate') return 'bg-[#0f172a] text-[#f1f5f9] selection:bg-[#334155] selection:text-white';
-    if (tone === 'classic-dark') return 'bg-[#0a0a0a] text-[#e5e5e5] selection:bg-[#262626] selection:text-white';
-    return siteTheme === 'choco-light'
-      ? 'bg-[#fcf8f5] text-[#3d2314] selection:bg-[#f0e2d8] selection:text-[#3d2314]'
-      : 'bg-[#080406] text-[#e0d0d5] selection:bg-[#3d1e2c] selection:text-white';
+    // Khi đang xem hoặc đọc truyện, màu nền và màu chữ được quản lý tuyệt đối theo theme của truyện qua style
+    return '';
   };
 
   const getStoryBgStyle = (story: Story | null) => {
     if (!story) return undefined;
-    if (story.themeTone === 'custom' && story.customBgColor) {
-      return { background: story.customBgColor, color: story.customTextColor };
+    const effective = getEffectiveStory(story);
+    const hasSeparateTheme = !!(effective.useSeparateChapterTheme && selectedChapter);
+    const toneKey = hasSeparateTheme
+      ? (effective.chapterThemeTone || 'dark-rose')
+      : (effective.themeTone || 'dark-rose');
+
+    if (toneKey === 'custom') {
+      const bg = hasSeparateTheme ? (effective.chapterCustomBgColor || '#080406') : (effective.customBgColor || '#080406');
+      const text = hasSeparateTheme ? (effective.chapterCustomTextColor || '#f2e6ea') : (effective.customTextColor || '#f2e6ea');
+      return { background: bg, color: text };
     }
+
     const presetGradients: Record<string, string> = {
       'gradient-choco-light': 'linear-gradient(135deg, #fffcfa 0%, #f7ebe1 50%, #ebd7c8 100%)',
       'gradient-rose': 'linear-gradient(135deg, #4a1528 0%, #230b15 50%, #0c0408 100%)',
@@ -843,15 +846,16 @@ export default function App() {
       'gradient-gold': 'linear-gradient(135deg, #78350f 0%, #451a03 50%, #180801 100%)',
       'gradient-cherry': 'linear-gradient(135deg, #831843 0%, #500724 50%, #1f020d 100%)',
     };
-    if (story.themeTone && presetGradients[story.themeTone]) {
-      return { background: presetGradients[story.themeTone] };
-    }
-    return undefined;
+
+    const activePreset = PRESET_THEME_COLORS[toneKey] || PRESET_THEME_COLORS['dark-rose'];
+    const bg = presetGradients[toneKey] || activePreset?.bg || '#080406';
+    const text = activePreset?.text || '#f2e6ea';
+    return { background: bg, color: text };
   };
 
   return (
     <div 
-      className={`min-h-screen font-['Alegreya',serif] text-base flex flex-col transition-colors duration-300 ${getStoryThemeClass(selectedStory)}`}
+      className={`min-h-screen font-['Alegreya',serif] text-base flex flex-col transition-colors duration-300 ${selectedStory ? 'preserve-story-theme' : ''} ${getStoryThemeClass(selectedStory)}`}
       style={getStoryBgStyle(selectedStory)}
     >
       {/* Header */}
@@ -924,7 +928,7 @@ export default function App() {
         {selectedChapter && selectedStory ? (
           /* Chapter Reader View */
           <ChapterReader
-            story={selectedStory}
+            story={getEffectiveStory(selectedStory)}
             chapter={selectedChapter}
             allChapters={(chapters || []).filter(c => c && c.storyId === selectedStory.id)}
             comments={(comments || []).filter(c => c && c.chapterId === selectedChapter.id)}
@@ -1220,7 +1224,7 @@ export default function App() {
                               value={requestContact}
                               onChange={(e) => setRequestContact(e.target.value)}
                               placeholder="Nhập link Facebook hoặc ID Discord của bạn..."
-                              className="w-full bg-[#170d12] border border-[#2d1822] p-2 text-xs text-white focus:outline-none focus:border-[#522d3d] font-mono-code"
+                              className="w-full bg-[#170d12] border border-[#2d1822] p-2 text-xs text-[#f2e6ea] focus:outline-none focus:border-[#522d3d] font-mono-code choco-input"
                               required
                             />
                           </div>

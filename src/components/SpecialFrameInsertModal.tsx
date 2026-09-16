@@ -49,15 +49,15 @@ export const SpecialFrameInsertModal: React.FC<SpecialFrameInsertModalProps> = (
 }) => {
   if (!isOpen) return null;
 
-  const tBg = themeColors?.bg || '#1a0b12';
-  const tCardBg = themeColors?.cardBg || '#22111a';
-  const tBorder = themeColors?.border || '#30222a';
-  const tBtnBg = themeColors?.btnBg || '#e879f9';
-  const tBtnText = themeColors?.btnText || '#000000';
-  const tBtnSecBg = themeColors?.btnSecondaryBg || '#2a1622';
-  const tText = themeColors?.text || '#fbcfe8';
-  const tTextMuted = themeColors?.textMuted || '#fbcfe8aa';
-  const tAccent = themeColors?.accentColor || themeColors?.btnBg || '#e879f9';
+  const tBg = themeColors?.bg || '#18181b';
+  const tCardBg = themeColors?.cardBg || '#27272a';
+  const tBorder = themeColors?.border || '#3f3f46';
+  const tBtnBg = themeColors?.btnBg || '#3f3f46';
+  const tBtnText = themeColors?.btnText || '#f4f4f5';
+  const tBtnSecBg = themeColors?.btnSecondaryBg || '#27272a';
+  const tText = themeColors?.text || '#f4f4f5';
+  const tTextMuted = themeColors?.textMuted || '#a1a1aa';
+  const tAccent = themeColors?.accentColor || themeColors?.text || themeColors?.btnText || '#f4f4f5';
 
   const [selectedType, setSelectedType] = useState<SpecialBlockType>(initialType);
   const [titleInput, setTitleInput] = useState(() => {

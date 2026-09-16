@@ -190,6 +190,7 @@ const PRESET_THEME_COLORS: Record<string, {
   btnSecondaryBg?: string;
   btnBorder: string;
   btnText: string;
+  accentColor?: string;
 }> = {
   'dark-rose': {
     name: 'Dark Rose (Hồng Đen)',
@@ -214,6 +215,18 @@ const PRESET_THEME_COLORS: Record<string, {
     btnSecondaryBg: '#171717',
     btnBorder: '#404040',
     btnText: '#ffffff',
+  },
+  'classic-white': {
+    name: 'Classic White (Trắng Tinh Khôi)',
+    bg: '#ffffff',
+    cardBg: '#f8fafc',
+    text: '#0f172a',
+    textMuted: '#64748b',
+    border: '#e2e8f0',
+    btnBg: '#f1f5f9',
+    btnSecondaryBg: '#ffffff',
+    btnBorder: '#cbd5e1',
+    btnText: '#0f172a',
   },
   'dark-violet': {
     name: 'Dark Violet (Tím Đêm)',
@@ -3330,6 +3343,7 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                     <option value="dark-rose" style={{ background: currentCardBg, color: currentText }}>Dark Rose (Hồng Đen)</option>
                     <option value="choco-light" style={{ background: currentCardBg, color: currentText }}>Choco Light (Sô-cô-la Sữa)</option>
                     <option value="classic-black" style={{ background: currentCardBg, color: currentText }}>Classic Black (Đen Tuyến)</option>
+                    <option value="classic-white" style={{ background: currentCardBg, color: currentText }}>Classic White (Trắng Tinh Khôi)</option>
                     <option value="dark-violet" style={{ background: currentCardBg, color: currentText }}>Dark Violet (Tím Đêm)</option>
                     <option value="navy-blue" style={{ background: currentCardBg, color: currentText }}>Navy Blue (Xanh Đêm)</option>
                     <option value="forest-dark" style={{ background: currentCardBg, color: currentText }}>Forest Dark (Rừng Đêm)</option>
@@ -6070,7 +6084,7 @@ export const LiveStoryEditor: React.FC<LiveStoryEditorProps> = ({
                               btnBorder: currentBtnBorder,
                               text: currentText,
                               textMuted: currentTextMuted,
-                              accentColor: currentBtnBg,
+                              accentColor: activePreset?.accentColor || currentText,
                             }}
                             fontFamily={customBodyFont}
                           />

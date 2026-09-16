@@ -40,14 +40,14 @@ interface CellState {
 }
 
 const NUMBER_COLORS: Record<number, string> = {
-  1: 'text-[#60a5fa]', // Xanh lam
-  2: 'text-[#4ade80]', // Xanh lục
-  3: 'text-[#f87171]', // Đỏ
-  4: 'text-[#c084fc]', // Tím
-  5: 'text-[#fb923c]', // Cam
-  6: 'text-[#2dd4bf]', // Xanh ngọc
-  7: 'text-[#f472b6]', // Hồng
-  8: 'text-[#e2e8f0]', // Trắng xám
+  1: 'minesweeper-num-1 text-[#60a5fa]', // Xanh lam
+  2: 'minesweeper-num-2 text-[#4ade80]', // Xanh lục
+  3: 'minesweeper-num-3 text-[#f87171]', // Đỏ
+  4: 'minesweeper-num-4 text-[#c084fc]', // Tím
+  5: 'minesweeper-num-5 text-[#fb923c]', // Cam
+  6: 'minesweeper-num-6 text-[#2dd4bf]', // Xanh ngọc
+  7: 'minesweeper-num-7 text-[#f472b6]', // Hồng
+  8: 'minesweeper-num-8 text-[#e2e8f0]', // Trắng xám
 };
 
 export const MinesweeperGame: React.FC<MinesweeperGameProps> = ({ 
@@ -782,25 +782,25 @@ export const MinesweeperGame: React.FC<MinesweeperGameProps> = ({
       )}
 
       {/* KHUNG MÁY CHƠI DÒ MÌN CHÍNH (RETRO CLASSIC CHẤT LƯỢNG CAO) */}
-      <div className="bg-[#14080e] border-2 border-[#4d2138] rounded-xs p-3 sm:p-5 shadow-2xl flex flex-col items-center">
-        {/* Bảng điều khiển cổ điển: Đếm mìn | Nút mặt cười | Đồng hồ bấm giờ */}
-        <div className="w-full max-w-2xl bg-[#1c0c16] border-2 border-[#3b1f2d] p-2.5 sm:p-3 rounded-xs flex items-center justify-between mb-4 shadow-inner">
+      <div className="minesweeper-machine bg-[#14080e] border-2 border-[#4d2138] rounded-xs p-3 sm:p-5 shadow-2xl flex flex-col items-center">
+        {/* Bảng điều khiển cổ điển: Đếm mìn | Nút reset | Đồng hồ bấm giờ */}
+        <div className="minesweeper-dashboard w-full max-w-2xl bg-[#1c0c16] border-2 border-[#3b1f2d] p-2.5 sm:p-3 rounded-xs flex items-center justify-between mb-4 shadow-inner">
           {/* Màn hình hiển thị số mìn còn lại dạng LED kỹ thuật số */}
-          <div className="bg-[#0c0408] border border-[#4d2138] px-3 py-1 rounded-2xs text-[#ff4d79] font-black text-xl sm:text-2xl tracking-widest min-w-[72px] text-center shadow-inner">
+          <div className="minesweeper-led bg-[#0c0408] border border-[#4d2138] px-3 py-1 rounded-2xs text-[#ff4d79] font-black text-xl sm:text-2xl tracking-widest min-w-[72px] text-center shadow-inner">
             {String(remainingMines).padStart(3, '0')}
           </div>
 
           {/* Nút reset game */}
           <button
             onClick={resetGame}
-            className="w-11 h-11 bg-[#25101b] hover:bg-[#341525] border-2 border-[#ff4d79]/60 active:border-[#ff4d79] rounded-xs flex items-center justify-center shadow-md active:translate-y-0.5 transition cursor-pointer"
+            className="minesweeper-reset-btn w-11 h-11 bg-[#25101b] hover:bg-[#341525] border-2 border-[#ff4d79]/60 active:border-[#ff4d79] rounded-xs flex items-center justify-center shadow-md active:translate-y-0.5 transition cursor-pointer"
             title="Chơi ván mới"
           >
             {renderResetButtonIcon()}
           </button>
 
           {/* Màn hình hiển thị thời gian trôi qua */}
-          <div className="bg-[#0c0408] border border-[#4d2138] px-3 py-1 rounded-2xs text-[#ff4d79] font-black text-xl sm:text-2xl tracking-widest min-w-[72px] text-center shadow-inner">
+          <div className="minesweeper-led bg-[#0c0408] border border-[#4d2138] px-3 py-1 rounded-2xs text-[#ff4d79] font-black text-xl sm:text-2xl tracking-widest min-w-[72px] text-center shadow-inner">
             {String(timer).padStart(3, '0')}
           </div>
         </div>
@@ -840,13 +840,13 @@ export const MinesweeperGame: React.FC<MinesweeperGameProps> = ({
 
         {/* Vùng bàn cờ lưới mìn */}
         <div 
-          className="max-w-full overflow-auto p-2 sm:p-3 bg-[#0c0408] border-2 border-[#3b1f2d] rounded-xs shadow-inner flex justify-center"
+          className="minesweeper-board-wrapper max-w-full overflow-auto p-2 sm:p-3 bg-[#0c0408] border-2 border-[#3b1f2d] rounded-xs shadow-inner flex justify-center"
           onMouseDown={() => setIsPressing(true)}
           onMouseUp={() => setIsPressing(false)}
           onMouseLeave={() => setIsPressing(false)}
         >
           <div 
-            className="grid gap-[1px] bg-[#3b1f2d] p-[2px] rounded-xs select-none w-max mx-auto shadow-md"
+            className="minesweeper-grid grid gap-[1px] bg-[#3b1f2d] p-[2px] rounded-xs select-none w-max mx-auto shadow-md"
             style={{
               gridTemplateColumns: `repeat(${cols}, ${finalCellPx}px)`,
               gridTemplateRows: `repeat(${rows}, ${finalCellPx}px)`,
@@ -866,7 +866,7 @@ export const MinesweeperGame: React.FC<MinesweeperGameProps> = ({
                         className={`shrink-0 flex items-center justify-center font-bold select-none ${
                           cell.exploded 
                             ? 'bg-[#ef4444] text-white animate-pulse' 
-                            : 'bg-[#2b101e] text-[#ff4d79]'
+                            : 'minesweeper-cell-mine-unexploded bg-[#2b101e] text-[#ff4d79]'
                         }`}
                       >
                         <Bomb className={`${iconSizeClass} fill-current animate-bounce`} />
@@ -880,7 +880,7 @@ export const MinesweeperGame: React.FC<MinesweeperGameProps> = ({
                       onClick={() => handleCellClick(r, c)}
                       style={{ width: `${finalCellPx}px`, height: `${finalCellPx}px` }}
                       className={`shrink-0 flex items-center justify-center font-black select-none transition-colors duration-75 cursor-default ${
-                        isEven ? 'bg-[#180a13]' : 'bg-[#12070d]'
+                        isEven ? 'minesweeper-cell-revealed-even bg-[#180a13]' : 'minesweeper-cell-revealed-odd bg-[#12070d]'
                       } hover:bg-[#25101b]`}
                     >
                       {cell.neighborMines > 0 ? (
@@ -901,7 +901,7 @@ export const MinesweeperGame: React.FC<MinesweeperGameProps> = ({
                     <div
                       key={`${r}-${c}`}
                       style={{ width: `${finalCellPx}px`, height: `${finalCellPx}px` }}
-                      className="shrink-0 bg-[#38101e] flex items-center justify-center text-[#ef4444] relative"
+                      className="minesweeper-cell-mine-wrong shrink-0 bg-[#38101e] flex items-center justify-center text-[#ef4444] relative"
                     >
                       <Bomb className={`${iconSizeClass} opacity-40`} />
                       <X className={`${iconSizeClass} text-[#ef4444] absolute stroke-[3]`} />
@@ -919,7 +919,7 @@ export const MinesweeperGame: React.FC<MinesweeperGameProps> = ({
                       onTouchStart={() => handleTouchStart(r, c)}
                       onTouchEnd={handleTouchEnd}
                       style={{ width: `${finalCellPx}px`, height: `${finalCellPx}px` }}
-                      className="shrink-0 bg-[#25101b] hover:bg-[#341525] border border-[#ff4d79]/40 flex items-center justify-center cursor-pointer shadow-xs active:scale-95 transition-transform"
+                      className="minesweeper-cell-flagged shrink-0 bg-[#25101b] hover:bg-[#341525] border border-[#ff4d79]/40 flex items-center justify-center cursor-pointer shadow-xs active:scale-95 transition-transform"
                     >
                       <Flag className={`${iconSizeClass} text-[#ff4d79] fill-current animate-in zoom-in-75 duration-100`} />
                     </div>
@@ -936,7 +936,7 @@ export const MinesweeperGame: React.FC<MinesweeperGameProps> = ({
                     onTouchEnd={handleTouchEnd}
                     style={{ width: `${finalCellPx}px`, height: `${finalCellPx}px` }}
                     className={`shrink-0 ${
-                      isEven ? 'bg-[#291220]' : 'bg-[#220e1a]'
+                      isEven ? 'minesweeper-cell-unrevealed bg-[#291220]' : 'minesweeper-cell-unrevealed-alt bg-[#220e1a]'
                     } hover:bg-[#3d192e] border-t border-l border-[#4d2138] border-b border-r border-[#14080e] active:border-[#220e1a] active:bg-[#180a13] flex items-center justify-center cursor-pointer shadow-xs transition-colors duration-75`}
                   />
                 );

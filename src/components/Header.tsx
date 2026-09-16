@@ -3,6 +3,7 @@ import { Search, Users, BookOpen, Bookmark, PlusCircle, User, LogOut, LogIn, Set
 import { User as FirebaseUser } from 'firebase/auth';
 import { Story, UserProfile, Notification } from '../types';
 import { checkInDaily, getLocalDateString } from '../lib/storage';
+import { resolveStoryColors } from '../lib/themeConstants';
 
 const HEADER_THEME_TONES: Record<string, {
   headerBg: string;
@@ -158,6 +159,44 @@ const HEADER_THEME_TONES: Record<string, {
     dropdownActiveBg: 'bg-[#333333]',
     iconColor: 'text-[#737373]',
   },
+  'classic-black': {
+    headerBg: 'bg-[#0a0a0a]/90 backdrop-blur-xl',
+    headerBorder: 'border-[#262626]',
+    brandText: 'text-[#f5f5f5]',
+    brandHoverText: 'hover:text-white',
+    text: 'text-[#f5f5f5]',
+    textMuted: 'text-[#a3a3a3]',
+    inputBg: 'bg-[#141414]/90 backdrop-blur-md',
+    inputBorder: 'border-[#262626]',
+    inputFocusBorder: 'focus:border-[#525252]',
+    inputPlaceholder: 'placeholder-[#737373]',
+    buttonBg: 'bg-[#1f1f1f]/90 hover:bg-[#2e2e2e] backdrop-blur-md',
+    buttonBorder: 'border-[#404040]',
+    dropdownBg: 'bg-[#141414]/95 backdrop-blur-xl',
+    dropdownBorder: 'border-[#262626]',
+    dropdownItemHover: 'hover:bg-[#262626]',
+    dropdownActiveBg: 'bg-[#333333]',
+    iconColor: 'text-[#a3a3a3]',
+  },
+  'classic-white': {
+    headerBg: 'bg-[#ffffff]/90 backdrop-blur-xl',
+    headerBorder: 'border-[#e2e8f0]',
+    brandText: 'text-[#0f172a]',
+    brandHoverText: 'hover:text-[#0284c7]',
+    text: 'text-[#0f172a]',
+    textMuted: 'text-[#64748b]',
+    inputBg: 'bg-[#f8fafc]/90 backdrop-blur-md',
+    inputBorder: 'border-[#e2e8f0]',
+    inputFocusBorder: 'focus:border-[#94a3b8]',
+    inputPlaceholder: 'placeholder-[#94a3b8]',
+    buttonBg: 'bg-[#f1f5f9]/90 hover:bg-[#e2e8f0] backdrop-blur-md',
+    buttonBorder: 'border-[#cbd5e1]',
+    dropdownBg: 'bg-[#ffffff]/95 backdrop-blur-xl',
+    dropdownBorder: 'border-[#e2e8f0]',
+    dropdownItemHover: 'hover:bg-[#f1f5f9]',
+    dropdownActiveBg: 'bg-[#e2e8f0]',
+    iconColor: 'text-[#64748b]',
+  },
   'gradient-rose': {
     headerBg: 'bg-[#0c0408]/85 backdrop-blur-xl',
     gradientBg: 'linear-gradient(135deg, rgba(74, 21, 40, 0.9) 0%, rgba(35, 11, 21, 0.9) 50%, rgba(12, 4, 8, 0.9) 100%)',
@@ -278,6 +317,103 @@ const HEADER_THEME_TONES: Record<string, {
     dropdownActiveBg: 'bg-[#7e22ce]',
     iconColor: 'text-[#e879f9]',
   },
+  'cyberpunk': {
+    headerBg: 'bg-[#0f0c29]/85 backdrop-blur-xl',
+    headerBorder: 'border-[#ff007f]',
+    brandText: 'text-[#ff71ce]',
+    brandHoverText: 'hover:text-[#01cdfe]',
+    text: 'text-[#05ffa1]',
+    textMuted: 'text-[#b967ff]',
+    inputBg: 'bg-[#180e29]/80 backdrop-blur-md',
+    inputBorder: 'border-[#ff007f]',
+    inputFocusBorder: 'focus:border-[#01cdfe]',
+    inputPlaceholder: 'placeholder-[#b967ff]/70',
+    buttonBg: 'bg-[#24143d]/90 hover:bg-[#ff007f] backdrop-blur-md',
+    buttonBorder: 'border-[#ff007f]',
+    dropdownBg: 'bg-[#180e29]/90 backdrop-blur-xl',
+    dropdownBorder: 'border-[#ff007f]',
+    dropdownItemHover: 'hover:bg-[#24143d]',
+    dropdownActiveBg: 'bg-[#ff007f]',
+    iconColor: 'text-[#01cdfe]',
+  },
+  'forest-dark': {
+    headerBg: 'bg-[#05130b]/85 backdrop-blur-xl',
+    headerBorder: 'border-[#1b4332]',
+    brandText: 'text-[#d8f3dc]',
+    brandHoverText: 'hover:text-[#b7e4c7]',
+    text: 'text-[#d8f3dc]',
+    textMuted: 'text-[#74c69d]',
+    inputBg: 'bg-[#081c10]/80 backdrop-blur-md',
+    inputBorder: 'border-[#1b4332]',
+    inputFocusBorder: 'focus:border-[#2d6a4f]',
+    inputPlaceholder: 'placeholder-[#52b788]',
+    buttonBg: 'bg-[#1b4332]/90 hover:bg-[#2d6a4f] backdrop-blur-md',
+    buttonBorder: 'border-[#2d6a4f]',
+    dropdownBg: 'bg-[#081c10]/90 backdrop-blur-xl',
+    dropdownBorder: 'border-[#1b4332]',
+    dropdownItemHover: 'hover:bg-[#1b4332]',
+    dropdownActiveBg: 'bg-[#2d6a4f]',
+    iconColor: 'text-[#74c69d]',
+  },
+  'warm-coffee': {
+    headerBg: 'bg-[#18110b]/85 backdrop-blur-xl',
+    headerBorder: 'border-[#43281c]',
+    brandText: 'text-[#f5ebe0]',
+    brandHoverText: 'hover:text-[#e6ccb2]',
+    text: 'text-[#f5ebe0]',
+    textMuted: 'text-[#b08968]',
+    inputBg: 'bg-[#24180f]/80 backdrop-blur-md',
+    inputBorder: 'border-[#43281c]',
+    inputFocusBorder: 'focus:border-[#7f4f24]',
+    inputPlaceholder: 'placeholder-[#936639]',
+    buttonBg: 'bg-[#3b2416]/90 hover:bg-[#58311a] backdrop-blur-md',
+    buttonBorder: 'border-[#7f4f24]',
+    dropdownBg: 'bg-[#24180f]/90 backdrop-blur-xl',
+    dropdownBorder: 'border-[#43281c]',
+    dropdownItemHover: 'hover:bg-[#3b2416]',
+    dropdownActiveBg: 'bg-[#58311a]',
+    iconColor: 'text-[#b08968]',
+  },
+  'gradient-gold': {
+    headerBg: 'bg-[#180801]/85 backdrop-blur-xl',
+    gradientBg: 'linear-gradient(135deg, rgba(120, 53, 15, 0.9) 0%, rgba(69, 26, 3, 0.9) 50%, rgba(24, 8, 1, 0.9) 100%)',
+    headerBorder: 'border-[#b45309]',
+    brandText: 'text-[#fef3c7]',
+    brandHoverText: 'hover:text-[#fde68a]',
+    text: 'text-[#fef3c7]',
+    textMuted: 'text-[#fbbf24]',
+    inputBg: 'bg-[#290e02]/80 backdrop-blur-md',
+    inputBorder: 'border-[#b45309]',
+    inputFocusBorder: 'focus:border-[#d97706]',
+    inputPlaceholder: 'placeholder-[#fbbf24]/70',
+    buttonBg: 'bg-[#3d1703]/90 hover:bg-[#92400e] backdrop-blur-md',
+    buttonBorder: 'border-[#b45309]',
+    dropdownBg: 'bg-[#290e02]/90 backdrop-blur-xl',
+    dropdownBorder: 'border-[#b45309]',
+    dropdownItemHover: 'hover:bg-[#3d1703]',
+    dropdownActiveBg: 'bg-[#92400e]',
+    iconColor: 'text-[#fbbf24]',
+  },
+  'gradient-cherry': {
+    headerBg: 'bg-[#1f020d]/85 backdrop-blur-xl',
+    gradientBg: 'linear-gradient(135deg, rgba(131, 24, 67, 0.9) 0%, rgba(80, 7, 36, 0.9) 50%, rgba(31, 2, 13, 0.9) 100%)',
+    headerBorder: 'border-[#be185d]',
+    brandText: 'text-[#fce7f0]',
+    brandHoverText: 'hover:text-[#fbcfe8]',
+    text: 'text-[#fce7f0]',
+    textMuted: 'text-[#f4a6c1]',
+    inputBg: 'bg-[#2e0516]/80 backdrop-blur-md',
+    inputBorder: 'border-[#be185d]',
+    inputFocusBorder: 'focus:border-[#e11d48]',
+    inputPlaceholder: 'placeholder-[#f4a6c1]/70',
+    buttonBg: 'bg-[#42081f]/90 hover:bg-[#9d174d] backdrop-blur-md',
+    buttonBorder: 'border-[#be185d]',
+    dropdownBg: 'bg-[#2e0516]/90 backdrop-blur-xl',
+    dropdownBorder: 'border-[#be185d]',
+    dropdownItemHover: 'hover:bg-[#42081f]',
+    dropdownActiveBg: 'bg-[#9d174d]',
+    iconColor: 'text-[#f472b6]',
+  },
 };
 
 interface HeaderProps {
@@ -337,24 +473,7 @@ export const Header: React.FC<HeaderProps> = ({
     : (siteTheme === 'choco-light' ? 'choco-light' : 'dark-rose');
   const isCustomTheme = currentStory && toneKey === 'custom';
   const tone = HEADER_THEME_TONES[toneKey] || HEADER_THEME_TONES[siteTheme === 'choco-light' ? 'choco-light' : 'dark-rose'];
-
-  const customHeaderStyle = isCustomTheme ? {
-    background: currentStory.customBgColor || '#080406',
-    borderColor: currentStory.customBorderColor || '#2d1822',
-    color: currentStory.customTextColor || '#e0d0d5',
-  } : (tone.gradientBg ? { background: tone.gradientBg } : {});
-
-  const customInputStyle = isCustomTheme ? {
-    backgroundColor: currentStory.customCardBgColor || '#12090c',
-    borderColor: currentStory.customBorderColor || '#2d1822',
-    color: currentStory.customTextColor || '#e0d0d5',
-  } : {};
-
-  const customButtonStyle = isCustomTheme ? {
-    backgroundColor: currentStory.customBtnBgColor || '#160c10',
-    borderColor: currentStory.customBorderColor || '#3a1e2d',
-    color: currentStory.customTextColor || '#e0d0d5',
-  } : {};
+  const resolvedStoryColors = currentStory ? resolveStoryColors(currentStory) : null;
 
   const hexToRgba = (hex?: string, alpha: number = 0.9) => {
     if (!hex) return `rgba(17, 9, 12, ${alpha})`;
@@ -374,10 +493,28 @@ export const Header: React.FC<HeaderProps> = ({
     return hex;
   };
 
-  const customDropdownStyle: React.CSSProperties = isCustomTheme ? {
-    backgroundColor: hexToRgba(currentStory.customCardBgColor || '#11090c', 0.92),
-    borderColor: currentStory.customBorderColor || '#3d202e',
-    color: currentStory.customTextColor || '#e0d0d5',
+  const customHeaderStyle = isCustomTheme && resolvedStoryColors ? {
+    background: resolvedStoryColors.bg,
+    borderColor: resolvedStoryColors.border,
+    color: resolvedStoryColors.text,
+  } : (tone.gradientBg ? { background: tone.gradientBg } : {});
+
+  const customInputStyle = isCustomTheme && resolvedStoryColors ? {
+    backgroundColor: resolvedStoryColors.cardBg,
+    borderColor: resolvedStoryColors.border,
+    color: resolvedStoryColors.text,
+  } : {};
+
+  const customButtonStyle = isCustomTheme && resolvedStoryColors ? {
+    backgroundColor: resolvedStoryColors.btnSecondaryBg,
+    borderColor: resolvedStoryColors.btnBorder,
+    color: resolvedStoryColors.btnText,
+  } : {};
+
+  const customDropdownStyle: React.CSSProperties = isCustomTheme && resolvedStoryColors ? {
+    backgroundColor: hexToRgba(resolvedStoryColors.cardBg, 0.95),
+    borderColor: resolvedStoryColors.border,
+    color: resolvedStoryColors.text,
   } : {};
 
   const handleHeaderCheckIn = async () => {
@@ -426,7 +563,7 @@ export const Header: React.FC<HeaderProps> = ({
             className={`text-left font-mono-code font-bold text-xl tracking-[0.25em] uppercase transition ${
               isCustomTheme ? '' : `${tone.brandText} ${tone.brandHoverText}`
             }`}
-            style={isCustomTheme ? { color: currentStory.customTextColor } : {}}
+            style={isCustomTheme && resolvedStoryColors ? { color: resolvedStoryColors.text } : {}}
           >
             CHOCO HOUSE
           </button>
@@ -435,7 +572,7 @@ export const Header: React.FC<HeaderProps> = ({
             className={`flex items-center gap-1.5 ml-2 border-l pl-3 ${
               isCustomTheme ? '' : tone.inputBorder
             }`}
-            style={isCustomTheme ? { borderColor: currentStory.customBorderColor } : {}}
+            style={isCustomTheme && resolvedStoryColors ? { borderColor: resolvedStoryColors.border } : {}}
           >
             <button
               onClick={() => setActiveTab('browse')}
@@ -450,13 +587,13 @@ export const Header: React.FC<HeaderProps> = ({
               }`}
               title="Trang chủ"
               style={
-                isCustomTheme && activeTab === 'browse'
+                isCustomTheme && resolvedStoryColors && activeTab === 'browse'
                   ? {
-                      backgroundColor: currentStory.customBtnBgColor || currentStory.customCardBgColor,
-                      borderColor: currentStory.customBorderColor,
-                      color: currentStory.customTextColor,
+                      backgroundColor: resolvedStoryColors.btnBg,
+                      borderColor: resolvedStoryColors.btnBorder,
+                      color: resolvedStoryColors.btnText,
                     }
-                  : (isCustomTheme ? { color: currentStory.customTextMutedColor } : {})
+                  : (isCustomTheme && resolvedStoryColors ? { color: resolvedStoryColors.textMuted } : {})
               }
             >
               <Home className="w-3.5 h-3.5" />
@@ -474,13 +611,13 @@ export const Header: React.FC<HeaderProps> = ({
               }`}
               title="Diễn đàn"
               style={
-                isCustomTheme && activeTab === 'news'
+                isCustomTheme && resolvedStoryColors && activeTab === 'news'
                   ? {
-                      backgroundColor: currentStory.customBtnBgColor || currentStory.customCardBgColor,
-                      borderColor: currentStory.customBorderColor,
-                      color: currentStory.customTextColor,
+                      backgroundColor: resolvedStoryColors.btnBg,
+                      borderColor: resolvedStoryColors.btnBorder,
+                      color: resolvedStoryColors.btnText,
                     }
-                  : (isCustomTheme ? { color: currentStory.customTextMutedColor } : {})
+                  : (isCustomTheme && resolvedStoryColors ? { color: resolvedStoryColors.textMuted } : {})
               }
             >
               <Users className="w-3.5 h-3.5" />
@@ -498,13 +635,13 @@ export const Header: React.FC<HeaderProps> = ({
               }`}
               title="Trò chơi"
               style={
-                isCustomTheme && activeTab === 'games'
+                isCustomTheme && resolvedStoryColors && activeTab === 'games'
                   ? {
-                      backgroundColor: currentStory.customBtnBgColor || currentStory.customCardBgColor,
-                      borderColor: currentStory.customBorderColor,
-                      color: currentStory.customTextColor,
+                      backgroundColor: resolvedStoryColors.btnBg,
+                      borderColor: resolvedStoryColors.btnBorder,
+                      color: resolvedStoryColors.btnText,
                     }
-                  : (isCustomTheme ? { color: currentStory.customTextMutedColor } : {})
+                  : (isCustomTheme && resolvedStoryColors ? { color: resolvedStoryColors.textMuted } : {})
               }
             >
               <Gamepad2 className="w-3.5 h-3.5" />
@@ -517,7 +654,7 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="w-full md:w-56 relative font-mono-code flex items-center">
             <Search 
               className={`w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none ${isCustomTheme ? '' : tone.textMuted}`} 
-              style={isCustomTheme ? { color: currentStory.customTextMutedColor } : {}}
+              style={isCustomTheme && resolvedStoryColors ? { color: resolvedStoryColors.textMuted } : {}}
             />
             <input
               type="text"
@@ -526,7 +663,7 @@ export const Header: React.FC<HeaderProps> = ({
               placeholder="Tìm kiếm truyện..."
               className={`w-full border pl-9 pr-3 py-1.5 text-xs focus:outline-none transition-colors ${
                 isCustomTheme 
-                  ? '' 
+                  ? 'placeholder:text-current placeholder:opacity-50' 
                   : `${tone.inputBg} ${tone.inputBorder} ${tone.text} ${tone.inputPlaceholder} ${tone.inputFocusBorder}`
               }`}
               style={customInputStyle}
@@ -552,7 +689,7 @@ export const Header: React.FC<HeaderProps> = ({
               <span className="font-bold">{userProfile?.chucu || 0}</span>
               <span 
                 className={`text-[10px] ${isCustomTheme ? '' : tone.textMuted}`}
-                style={isCustomTheme ? { color: currentStory.customTextMutedColor } : {}}
+                style={isCustomTheme && resolvedStoryColors ? { color: resolvedStoryColors.textMuted } : {}}
               >
                 Chucu
               </span>
@@ -561,7 +698,7 @@ export const Header: React.FC<HeaderProps> = ({
                   className={`flex items-center gap-0.5 text-[10px] text-[#c89666] ml-1 pl-1.5 border-l ${
                     isCustomTheme ? '' : tone.inputBorder
                   }`}
-                  style={isCustomTheme ? { borderColor: currentStory.customBorderColor } : {}}
+                  style={isCustomTheme && resolvedStoryColors ? { borderColor: resolvedStoryColors.border } : {}}
                 >
                   <Flame className="w-3 h-3 text-[#c89666]" />
                   <span>{userProfile?.streak}</span>
@@ -631,7 +768,7 @@ export const Header: React.FC<HeaderProps> = ({
                   }`}
                   style={customDropdownStyle}
                 >
-                  <div className={`p-2 border-b flex items-center justify-between gap-2 ${isCustomTheme ? '' : tone.inputBorder}`} style={isCustomTheme ? { borderColor: currentStory.customBorderColor } : {}}>
+                  <div className={`p-2 border-b flex items-center justify-between gap-2 ${isCustomTheme ? '' : tone.inputBorder}`} style={isCustomTheme && resolvedStoryColors ? { borderColor: resolvedStoryColors.border } : {}}>
                     <span className="font-bold">THÔNG BÁO ({notifications.length})</span>
                     {notifications.some((n) => !n.isRead) && (
                       <button
@@ -755,7 +892,7 @@ export const Header: React.FC<HeaderProps> = ({
                 {currentUser ? (
                   <div 
                     className={`p-2 border-b space-y-1.5 ${isCustomTheme ? '' : tone.inputBorder}`}
-                    style={isCustomTheme ? { borderColor: currentStory.customBorderColor } : {}}
+                    style={isCustomTheme && resolvedStoryColors ? { borderColor: resolvedStoryColors.border } : {}}
                   >
                     <div className="flex items-center justify-between gap-1">
                       <p className="font-bold font-mono-code text-xs truncate">
@@ -768,10 +905,10 @@ export const Header: React.FC<HeaderProps> = ({
                               ? '' 
                               : `${tone.buttonBg} ${tone.buttonBorder} ${tone.text}`
                           }`}
-                          style={isCustomTheme ? {
-                            backgroundColor: currentStory.customBtnBgColor || currentStory.customCardBgColor,
-                            borderColor: currentStory.customBorderColor,
-                            color: currentStory.customTextColor,
+                          style={isCustomTheme && resolvedStoryColors ? {
+                            backgroundColor: resolvedStoryColors.btnBg,
+                            borderColor: resolvedStoryColors.btnBorder,
+                            color: resolvedStoryColors.btnText,
                           } : {}}
                         >
                           Editor
@@ -780,7 +917,7 @@ export const Header: React.FC<HeaderProps> = ({
                     </div>
                     <p 
                       className={`text-[11px] truncate font-mono-code ${isCustomTheme ? '' : tone.textMuted}`}
-                      style={isCustomTheme ? { color: currentStory.customTextMutedColor } : {}}
+                      style={isCustomTheme && resolvedStoryColors ? { color: resolvedStoryColors.textMuted } : {}}
                     >
                       {currentUser.email}
                     </p>
@@ -790,7 +927,7 @@ export const Header: React.FC<HeaderProps> = ({
                       className={`flex items-center justify-between p-1.5 border text-[11px] ${
                         isCustomTheme ? '' : `${tone.headerBg} ${tone.inputBorder}`
                       }`}
-                      style={isCustomTheme ? { backgroundColor: currentStory.customBgColor, borderColor: currentStory.customBorderColor } : {}}
+                      style={isCustomTheme && resolvedStoryColors ? { backgroundColor: resolvedStoryColors.bg, borderColor: resolvedStoryColors.border } : {}}
                     >
                       <div>
                         <span className="font-bold">{userProfile?.chucu || 0} Chucu</span>
@@ -804,12 +941,12 @@ export const Header: React.FC<HeaderProps> = ({
                 ) : (
                   <div 
                     className={`p-2 border-b ${isCustomTheme ? '' : tone.inputBorder}`}
-                    style={isCustomTheme ? { borderColor: currentStory.customBorderColor } : {}}
+                    style={isCustomTheme && resolvedStoryColors ? { borderColor: resolvedStoryColors.border } : {}}
                   >
                     <p className="font-bold font-mono-code text-xs">Tài khoản Khách</p>
                     <p 
                       className={`text-[11px] font-mono-code ${isCustomTheme ? '' : tone.textMuted}`}
-                      style={isCustomTheme ? { color: currentStory.customTextMutedColor } : {}}
+                      style={isCustomTheme && resolvedStoryColors ? { color: resolvedStoryColors.textMuted } : {}}
                     >
                       Chưa đăng nhập
                     </p>
@@ -837,7 +974,7 @@ export const Header: React.FC<HeaderProps> = ({
                   {hasCheckedInToday ? (
                     <span 
                       className={`text-[10px] font-bold ${isCustomTheme ? '' : tone.textMuted}`}
-                      style={isCustomTheme ? { color: currentStory.customTextMutedColor } : {}}
+                      style={isCustomTheme && resolvedStoryColors ? { color: resolvedStoryColors.textMuted } : {}}
                     >
                       Đã điểm danh
                     </span>
@@ -910,7 +1047,7 @@ export const Header: React.FC<HeaderProps> = ({
 
                 <div 
                   className={`border-t pt-1 ${isCustomTheme ? '' : tone.inputBorder}`}
-                  style={isCustomTheme ? { borderColor: currentStory.customBorderColor } : {}}
+                  style={isCustomTheme && resolvedStoryColors ? { borderColor: resolvedStoryColors.border } : {}}
                 >
                   {currentUser ? (
                     <button
