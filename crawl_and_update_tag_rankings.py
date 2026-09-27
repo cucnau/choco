@@ -39,15 +39,6 @@ def clean_intro_text(raw_intro):
     text = re.sub(r'<[^>]+>', '', text)
     text = text.replace('\r\n', '\n').replace('\r', '\n')
     text = text.replace('\u0000', '').replace('\u3000', ' ')
-    
-    # Tự động ngắt đoạn chống dính chữ trong văn án
-    text = re.sub(r'([^\n])([\[【［])', r'\1\n\n\2', text)
-    text = re.sub(r'([\]】］])\s*([^\n\[【［\s])', r'\1\n\n\2', text)
-    text = re.sub(r'([。！？!?])\s*(["“])', r'\1\n\2', text)
-    text = re.sub(r'(["”])\s*([^\n"”\s])', r'\1\n\2', text)
-    for kw in ['立意[：:]', '一句话简介[：:]', '主角[：:]', '配角[：:]', '其它[：:]', '内容标签[：:]', '搜索关键字[：:]', '排雷[：:]', 'ps[：:]', 'tip[：:]']:
-        text = re.sub(rf'([^\n])\s*({kw})', r'\1\n\n\2', text)
-        
     text = re.sub(r'\n{3,}', '\n\n', text)
     return text.strip()
 
@@ -57,23 +48,6 @@ def clean_digits(val):
     s = str(val).replace('\u0000', '').strip()
     digits = re.sub(r'[^\d]', '', s)
     return digits if digits else "0"
-
-def parse_score_to_str(val):
-    if not val:
-        return "0"
-    s = str(val).replace('\u0000', '').strip().replace(',', '').replace(' ', '')
-    try:
-        if '亿' in s:
-            num = float(re.sub(r'[^\d.]', '', s))
-            return str(int(num * 100_000_000))
-        elif '万' in s:
-            num = float(re.sub(r'[^\d.]', '', s))
-            return str(int(num * 10_000))
-        digits = re.sub(r'[^\d]', '', s)
-        return digits if digits else "0"
-    except:
-        digits = re.sub(r'[^\d]', '', s)
-        return digits if digits else "0"
 
 USER_TAG_CONFIGS = [
     ('wuxianliu', '无限流', 'Vô hạn lưu', 'https://m.jjwxc.net/assort?fw0=0&fbsj0=0&novelbefavoritedcount0=0&yc0=0&xx2=2&mainview0=0&sd0=0&lx0=0&collectiontypes=ors&notlikecollectiontypes=ands&bq=83&removebq=&searchkeywords='),
@@ -153,11 +127,8 @@ USER_TAG_CONFIGS = [
 
 print("=== BẮT ĐẦU CÀO BXH TỔNG ĐIỂM TÍCH LŨY CHUẨN XÁC 100% ===")
 
-try:
-    with open('src/data/jjwxcRealData.json', 'r', encoding='utf-8') as f:
-        master_data = json.load(f)
-except Exception:
-    master_data = {'crawledAt': '', 'allNovels': [], 'tagRankings': {}}
+with open('src/data/jjwxcRealData.json', 'r', encoding='utf-8') as f:
+    master_data = json.load(f)
 
 all_novels_map = {str(n['novelId']): n for n in master_data.get('allNovels', [])}
 
@@ -166,16 +137,17 @@ def fetch_mobile_assort(config):
     items = []
     seen_nids = set()
     
-    # Giữ nguyên 100% tham số URL của link gốc, chỉ loại bỏ &page= cũ nếu có
-    clean_url = re.sub(r'&page=\d+', '', raw_url)
+    # BẮT BUỘC THÊM orders2=2 ĐỂ TẤN GIANG LỌC CHUẨN XÁC THEO TỔNG ĐIỂM TÍCH LŨY
+    clean_url = re.sub(r'&(?:orders\d*|page)=[^&]*', '', raw_url)
     sep = '&' if '?' in clean_url else '?'
+    # orders2=2 là tham số cốt lõi quy định sắp xếp theo TỔNG ĐIỂM TÍCH LŨY
+    clean_url = f"{clean_url}{sep}orders2=2"
     
     page = 1
     empty_streak = 0
     
-    # Duyệt lần lượt các trang để lấy đủ 100 truyện đúng theo thứ tự Tấn Giang trả về
-    while len(items) < 100 and page <= 5:
-        page_url = f"{clean_url}{sep}page={page}"
+    while len(items) < 110 and page <= 6:
+        page_url = f"{clean_url}&page={page}"
         found_in_page = 0
         
         for attempt in range(4):
@@ -199,9 +171,7 @@ def fetch_mobile_assort(config):
                         seen_nids.add(nid)
                         items.append((nid, title, aid, author))
                         found_in_page += 1
-                        if len(items) >= 100:
-                            break
-                            
+                        
                 if found_in_page > 0:
                     break
             except Exception:
@@ -217,9 +187,9 @@ def fetch_mobile_assort(config):
         page += 1
         time.sleep(0.2)
 
-    return tag_id, tag_zh, tag_vi, items[:100]
+    return tag_id, tag_zh, tag_vi, items
 
-print(f"-> Đang tải danh sách đúng theo link gốc của bạn cho {len(USER_TAG_CONFIGS)} thể loại...")
+print(f"-> Đang tải danh sách theo thứ tự Tích Lũy (orders2=2) cho {len(USER_TAG_CONFIGS)} thể loại...")
 with ThreadPoolExecutor(max_workers=3) as executor:
     crawled_results = list(executor.map(fetch_mobile_assort, USER_TAG_CONFIGS))
 
@@ -227,8 +197,7 @@ new_needed_nids = set()
 for tag_id, tag_zh, tag_vi, novels in crawled_results:
     for nid, title, aid, author in novels:
         existing = all_novels_map.get(nid)
-        score_val = int(parse_score_to_str(existing.get('score', 0))) if existing else 0
-        if not existing or score_val < 100000 or not existing.get('isAuthorCover') or '<br' in existing.get('intro', ''):
+        if not existing or not existing.get('score') or not existing.get('isAuthorCover') or '<br' in existing.get('intro', ''):
             new_needed_nids.add((nid, title, aid, author))
 
 print(f"\n-> Đang lấy dữ liệu chi tiết (Điểm, số chữ, văn án sạch, bìa gốc) cho {len(new_needed_nids)} truyện...")
@@ -250,22 +219,14 @@ def fetch_book_detail_from_api(item):
             elif cu.startswith('http://'): cu = 'https://' + cu[7:]
             
             clean_intro = clean_intro_text(data.get('novelIntro', ''))
-            clean_score = parse_score_to_str(data.get('novelScore', '0'))
+            clean_score = clean_digits(data.get('novelScore', '0'))
             clean_words = clean_digits(data.get('novelSize', '0'))
-            clean_bookmarks = int(clean_digits(data.get('novelbefavoritedcount') or data.get('bfCount') or 0))
+            clean_bookmarks = int(clean_digits(data.get('bfCount', 0)))
             
-            raw_tags = data.get('novelTags', '')
-            if raw_tags:
-                parsed_tags = [t.strip() for t in re.split(r'[,/，、\s]+', raw_tags) if t.strip() and not t.strip().startswith('原创-') and '-' not in t.strip()]
-            else:
-                raw_class = data.get('novelClass', '')
-                parsed_tags = [t.strip() for t in re.split(r'[\s/]+', raw_class) if t.strip() and not t.strip().startswith('原创-') and '-' not in t.strip()]
+            raw_class = data.get('novelClass', '')
+            parsed_tags = [t.strip() for t in re.split(r'[\s/]+', raw_class) if t.strip()]
             
-            raw_review = str(data.get('novelReviewScore', ''))
-            review_match = re.search(r'(\d+(?:\.\d+)?)', raw_review)
-            rating_val = float(review_match.group(1)) if review_match else None
-
-            res_item = {
+            return nid, {
                 'title': data.get('novelName') or title,
                 'author': data.get('authorName') or author,
                 'authorId': str(data.get('authorId') or aid),
@@ -280,9 +241,6 @@ def fetch_book_detail_from_api(item):
                 'intro': clean_intro,
                 'tags': parsed_tags
             }
-            if rating_val is not None:
-                res_item['rating'] = rating_val
-            return nid, res_item
         except:
             time.sleep(0.3)
     return nid, {}
@@ -296,54 +254,49 @@ if new_needed_nids:
 
 def get_numeric_score(item):
     try:
-        val = item.get('score', 0) if isinstance(item, dict) else item
-        if not val:
-            return 0
-        s = str(val).strip().replace(',', '').replace(' ', '')
-        if '亿' in s:
-            num = float(re.sub(r'[^\d.]', '', s))
-            return int(num * 100_000_000)
-        elif '万' in s:
-            num = float(re.sub(r'[^\d.]', '', s))
-            return int(num * 10_000)
-        digits = re.sub(r'[^\d]', '', s)
-        return int(digits) if digits else 0
+        return int(clean_digits(item.get('score', 0)))
     except:
         return 0
 
-print("\n=== KẾT QUẢ XẾP HẠNG CHUẨN XÁC 100% THEO FILE LINK CỦA BẠN ===")
+print("\n=== KẾT QUẢ XẾP HẠNG CHUẨN XÁC THEO ĐIỂM TÍCH LŨY (TOP 1 -> TOP 100) ===")
 new_tag_rankings = {}
 
 for tag_id, tag_zh, tag_vi, novels in crawled_results:
     tag_list = []
-    # GIỮ NGUYÊN 100% THỨ TỰ TẤN GIANG TRẢ VỀ CHO LINK NÀY (KHÔNG SORT LẠI)
-    for rank_idx, (nid, title, aid, author) in enumerate(novels, start=1):
-        novel_base = all_novels_map.get(nid)
-        if novel_base:
-            item_obj = dict(novel_base)
-        else:
-            item_obj = {
-                'novelId': str(nid), 'title': title, 'author': author, 'authorId': str(aid),
-                'genre': '纯爱', 'status': '连载', 'wordCount': '', 'score': '0',
-                'bookmarks': 0, 'publishDate': '', 'intro': '',
-                'coverUrl': f'https://i9-static.jjwxc.net/novelimage.php?novelid={nid}',
-                'isAuthorCover': False, 'jjwxcUrl': f'https://www.jjwxc.net/onebook.php?novelid={nid}',
-                'tags': [tag_zh]
-            }
+    seen = set()
+    for nid, title, aid, author in novels:
+        if nid not in seen:
+            seen.add(nid)
+            novel_base = all_novels_map.get(nid)
+            if novel_base:
+                item_obj = dict(novel_base)
+            else:
+                item_obj = {
+                    'novelId': str(nid), 'title': title, 'author': author, 'authorId': str(aid),
+                    'genre': '纯爱', 'status': '连载', 'wordCount': '', 'score': '0',
+                    'bookmarks': 0, 'publishDate': '', 'intro': '',
+                    'coverUrl': f'https://i9-static.jjwxc.net/novelimage.php?novelid={nid}',
+                    'isAuthorCover': False, 'jjwxcUrl': f'https://www.jjwxc.net/onebook.php?novelid={nid}',
+                    'tags': [tag_zh]
+                }
+            tag_list.append(item_obj)
 
-        item_obj['rank'] = rank_idx
+    # BẮT BUỘC: SẮP XẾP CHUẨN XÁC 100% THEO ĐIỂM TÍCH LŨY GIẢM DẦN
+    tag_list = sorted(tag_list, key=get_numeric_score, reverse=True)[:100]
+
+    # Đánh số rank chuẩn 1 -> 100
+    for idx, item_obj in enumerate(tag_list, start=1):
+        item_obj['rank'] = idx
         tags = item_obj.get('tags', [])
         if tag_zh not in tags:
             tags = list(tags) + [tag_zh]
         item_obj['tags'] = tags
-        
         all_novels_map[item_obj['novelId']] = item_obj
-        tag_list.append(item_obj)
 
     new_tag_rankings[tag_id] = tag_list
     top1_title = tag_list[0]['title'] if tag_list else 'Chưa có'
-    top1_score_num = get_numeric_score(tag_list[0]) if tag_list else 0
-    print(f"  + {tag_vi:<20} ({tag_zh}): Đủ {len(tag_list):>3}/100 | Top 1: 《{top1_title}》 (Điểm: {top1_score_num:,})")
+    top1_score = tag_list[0].get('score', '0') if tag_list else '0'
+    print(f"  + {tag_vi:<20} ({tag_zh}): Đủ {len(tag_list):>3}/100 | Top 1: 《{top1_title}》 ({int(top1_score):,} điểm)")
 
 # Đồng bộ ngược vào tagRankings
 for tag_id, items in new_tag_rankings.items():
@@ -356,9 +309,6 @@ for tag_id, items in new_tag_rankings.items():
             item['status'] = updated.get('status', item.get('status'))
             item['genre'] = updated.get('genre', item.get('genre'))
             item['bookmarks'] = updated.get('bookmarks', item.get('bookmarks', 0))
-            item['tags'] = updated.get('tags', item.get('tags', []))
-            if updated.get('rating'):
-                item['rating'] = updated['rating']
             item['publishDate'] = updated.get('publishDate', item.get('publishDate', ''))
             item['intro'] = updated.get('intro', item.get('intro', ''))
             item['wordCount'] = updated.get('wordCount', item.get('wordCount', '0'))

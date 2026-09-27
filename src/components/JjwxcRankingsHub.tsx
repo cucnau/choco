@@ -156,48 +156,6 @@ export function formatRatingVi(rate?: string | number): string {
   return `${num.toFixed(1)}`;
 }
 
-// Format và tách đoạn văn bản giới thiệu truyện để không bị dính đoạn
-export function formatIntroText(rawText?: string): string {
-  if (!rawText) return 'Tác phẩm chưa có phần giới thiệu công khai trên Tấn Giang.';
-  
-  let text = String(rawText)
-    .replace(/&lt;br\s*\/?&gt;/gi, '\n')
-    .replace(/<br\s*\/?>/gi, '\n')
-    .replace(/<[^>]+>/g, '')
-    .replace(/\r\n/g, '\n')
-    .replace(/\r/g, '\n');
-
-  // 1. Tách dòng trước các thẻ mở ngoặc phân đoạn: [..., 【..., ［...
-  text = text.replace(/([^\n])([\[【［])/g, '$1\n\n$2');
-  
-  // 2. Tách dòng sau các thẻ đóng ngoặc phân đoạn: ] 身为... -> ]\n\n身为...
-  text = text.replace(/([\]】］])\s*([^\n\[【［\s])/g, '$1\n\n$2');
-
-  // 3. Tách dòng trước lời thoại mở ngoặc kép đứng sau dấu chấm câu
-  text = text.replace(/([。！？!?])\s*(["“])/g, '$1\n$2');
-
-  // 4. Tách dòng sau lời thoại đóng ngoặc kép nếu tiếp nối là đoạn văn mới
-  text = text.replace(/(["”])\s*([^\n"”\s])/g, '$1\n$2');
-
-  // 5. Tách dòng trước các đề mục tiêu chuẩn của văn án Tấn Giang
-  const sectionKeywords = [
-    '立意[：:]', '一句话简介[：:]', '主角[：:]', '配角[：:]', '其它[：:]',
-    '内容标签[：:]', '搜索关键字[：:]', '排雷[：:]', '【排雷】', '【文案】',
-    'ps[：:]', 'PS[：:]', 'tip[：:]', 'Tip[：:]', 'wb@'
-  ];
-  for (const kw of sectionKeywords) {
-    text = text.replace(new RegExp(`([^\\n])\\s*(${kw})`, 'g'), '$1\n\n$2');
-  }
-
-  // Tách dòng danh sách số thứ tự: 1. ..., 2. ...
-  text = text.replace(/([^\n])\s*([1-9]\s*[\.、])/g, '$1\n$2');
-
-  // Chuẩn hóa ngắt đoạn (tối đa 2 dòng trống)
-  text = text.replace(/\n{3,}/g, '\n\n');
-
-  return text.trim();
-}
-
 // Dịch / chuyển ngữ văn án chữ Hán sang tiếng Việt dễ hiểu
 export function translateIntroToVietnamese(introCn: string): string {
   if (!introCn) return 'Tác phẩm chưa có phần giới thiệu công khai trên bảng xếp hạng này. Bạn có thể bấm "Mở trên Tấn Giang" để xem trực tiếp tại trang gốc.';
@@ -1028,9 +986,8 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
                       {novel.tags && novel.tags.length > 0 && (
                         <div className="flex flex-wrap items-center gap-1 mt-2">
                           {(() => {
-                            // Lọc bỏ chuỗi phân cấp như '原创-纯爱-...'
-                            const cleanTags = novel.tags.filter(t => t && !t.includes('-') && !t.includes('原创'));
-                            let displayTags = [...cleanTags];
+                            // Sắp xếp đưa tag đang được chọn (nếu có) lên đầu tiên
+                            let displayTags = [...novel.tags];
                             if (hubMode === 'tags' && currentTagConfig) {
                               const matchIdx = displayTags.findIndex(t => t === currentTagConfig.zh || t === currentTagConfig.id || Boolean(currentTagConfig.aliases?.includes(t)));
                               if (matchIdx > 0) {
@@ -1083,7 +1040,7 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
                           <span className="font-bold text-white jjwxc-text-main">{scoreVi}</span>
                         </div>
                       )}
-                      {Boolean(novel.bookmarks && Number(novel.bookmarks) > 0) && (
+                      {novel.bookmarks && (
                         <div className="flex items-center gap-1">
                           <span className="text-emerald-500 font-bold">Bookmark:</span>
                           <span className="font-bold text-white jjwxc-text-main">{formatBookmarksVi(novel.bookmarks)}</span>
@@ -1095,13 +1052,13 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
                           <span className="font-medium text-white jjwxc-text-main">{wordsVi}</span>
                         </div>
                       )}
-                      {Boolean(novel.bawang && Number(novel.bawang) > 0) && (
+                      {novel.bawang && (
                         <div className="flex items-center gap-1">
                           <span className="text-pink-400 font-bold">Bá vương:</span>
                           <span className="font-bold text-white jjwxc-text-main">{formatBawangVi(novel.bawang)}</span>
                         </div>
                       )}
-                      {Boolean(novel.rating) && (
+                      {novel.rating && (
                         <div className="flex items-center gap-1">
                           <span className="text-amber-400 font-bold">Đánh giá:</span>
                           <span className="font-black text-amber-400">{formatRatingVi(novel.rating)}⭐</span>
@@ -1234,7 +1191,7 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
                     </div>
                   )}
 
-                  {Boolean(activeNovel.bookmarks && Number(activeNovel.bookmarks) > 0) && (
+                  {activeNovel.bookmarks && (
                     <div>
                       <span className="font-bold text-emerald-400">Lượt bookmark (Thâu tàng): </span>
                       <span className="text-emerald-300 font-black">{formatBookmarksVi(activeNovel.bookmarks)}</span>
@@ -1242,7 +1199,7 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
                     </div>
                   )}
 
-                  {Boolean(activeNovel.bawang && Number(activeNovel.bawang) > 0) && (
+                  {activeNovel.bawang && (
                     <div>
                       <span className="font-bold text-pink-400">Phiếu bá vương (Donate): </span>
                       <span className="text-pink-300 font-black">{formatBawangVi(activeNovel.bawang)}</span>
@@ -1250,7 +1207,7 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
                     </div>
                   )}
 
-                  {Boolean(activeNovel.rating) && (
+                  {activeNovel.rating && (
                     <div>
                       <span className="font-bold text-amber-400">Điểm đánh giá hoàn thành: </span>
                       <span className="text-amber-300 font-black">{formatRatingVi(activeNovel.rating)} / 10 ⭐</span>
@@ -1264,42 +1221,38 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
                     </div>
                   )}
 
-                  {/* Danh sách toàn bộ tag Tấn Giang của truyện (Đã lọc sạch chuỗi phân cấp và dịch nghĩa tiếng Việt) */}
-                  {(() => {
-                    const validModalTags = (activeNovel.tags || []).filter(t => t && !t.includes('-') && !t.includes('原创'));
-                    if (validModalTags.length === 0) return null;
-                    return (
-                      <div className="pt-1">
-                        <div className="font-bold jjwxc-text-sub mb-1.5 flex items-center gap-1.5">
-                          <Tag className="w-3.5 h-3.5 text-emerald-500" />
-                          <span>Tag nội dung Tấn Giang (内容标签):</span>
-                        </div>
-                        <div className="flex flex-wrap gap-1.5">
-                          {validModalTags.map((t, idx) => {
-                            const { vi, zh } = getTagDisplayName(t);
-                            const core = getCoreTagConfig(t);
-                            return (
-                              <button
-                                key={idx}
-                                onClick={() => {
-                                  setActiveNovel(null);
-                                  setHubMode('tags');
-                                  setSelectedTagId(core ? core.id : zh);
-                                  window.scrollTo({ top: 120, behavior: 'smooth' });
-                                }}
-                                className="px-2.5 py-1 rounded-md border text-[11px] font-bold flex items-center gap-1 transition-all shadow-xs jjwxc-tag-pill"
-                                title={`Xem BXH tag: ${vi} (${zh})`}
-                              >
-                                <Hash className="w-3 h-3 opacity-70" />
-                                <span>{vi}</span>
-                                {vi !== zh && <span className="text-[10px] opacity-60">({zh})</span>}
-                              </button>
-                            );
-                          })}
-                        </div>
+                  {/* Danh sách toàn bộ tag Tấn Giang của truyện */}
+                  {activeNovel.tags && activeNovel.tags.length > 0 && (
+                    <div className="pt-1">
+                      <div className="font-bold jjwxc-text-sub mb-1.5 flex items-center gap-1.5">
+                        <Tag className="w-3.5 h-3.5 text-emerald-500" />
+                        <span>Tag nội dung Tấn Giang (内容标签):</span>
                       </div>
-                    );
-                  })()}
+                      <div className="flex flex-wrap gap-1.5">
+                        {activeNovel.tags.map((t, idx) => {
+                          const { vi, zh } = getTagDisplayName(t);
+                          const core = getCoreTagConfig(t);
+                          return (
+                            <button
+                              key={idx}
+                              onClick={() => {
+                                setActiveNovel(null);
+                                setHubMode('tags');
+                                setSelectedTagId(core ? core.id : zh);
+                                window.scrollTo({ top: 120, behavior: 'smooth' });
+                              }}
+                              className="px-2.5 py-1 rounded-md border text-[11px] font-bold flex items-center gap-1 transition-all shadow-xs jjwxc-tag-pill"
+                              title={`Xem BXH tag: ${vi} (${zh})`}
+                            >
+                              <Hash className="w-3 h-3 opacity-70" />
+                              <span>{vi}</span>
+                              <span className="text-[10px] opacity-60">({zh})</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
 
                   <div className="pt-2 flex flex-wrap items-center gap-2">
                     <button
@@ -1349,19 +1302,19 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
                 <div className="flex items-center justify-between mb-2">
                   <h4 className="text-xs font-bold uppercase tracking-wider jjwxc-text-sub flex items-center gap-1.5">
                     <BookOpen className="w-4 h-4 text-emerald-500" />
-                    Giới thiệu:
+                    Văn án tác phẩm:
                   </h4>
                 </div>
 
-                {/* Khung nội dung giới thiệu nguyên tác 100% tiếng Trung */}
+                {/* Khung nội dung văn án nguyên tác 100% tiếng Trung */}
                 <div className="p-4 sm:p-5 rounded-xl bg-[#210e19] jjwxc-bg-surface border border-[#3b1828] jjwxc-border text-sm leading-relaxed text-white jjwxc-text-main whitespace-pre-line font-sans shadow-inner max-h-96 overflow-y-auto pr-2">
                   {isLoadingIntro ? (
                     <div className="flex items-center gap-2 py-8 justify-center jjwxc-text-sub text-xs">
                       <RefreshCw className="w-4 h-4 animate-spin text-emerald-500" />
-                      <span>Đang tải giới thiệu đầy đủ từ Tấn Giang...</span>
+                      <span>Đang tải văn án đầy đủ từ Tấn Giang...</span>
                     </div>
                   ) : (
-                    formatIntroText(activeNovel.intro)
+                    activeNovel.intro || 'Tác phẩm chưa có phần giới thiệu công khai trên Tấn Giang.'
                   )}
                 </div>
               </div>

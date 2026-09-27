@@ -734,18 +734,14 @@ app.get('/api/jjwxc/novel-detail/:novelId', async (req, res) => {
       const allN = data.allNovels || [];
       const item = allN.find((n: any) => n.novelId === novelId);
       if (item && item.intro && item.intro.length > 80 && item.status && !item.status.includes('连载中')) {
-        const cleanTags = (item.tags || []).filter((t: string) => t && !t.includes('-') && !t.includes('原创'));
         const result = {
           fullIntro: item.intro,
           status: item.status,
           wordCount: item.wordCount,
-          tags: cleanTags,
+          tags: item.tags,
           score: item.score,
           coverUrl: item.coverUrl,
-          isAuthorCover: item.isAuthorCover,
-          bookmarks: item.bookmarks,
-          rating: item.rating,
-          bawang: item.bawang
+          isAuthorCover: item.isAuthorCover
         };
         novelDetailCache.set(novelId, result);
         return res.json(result);
