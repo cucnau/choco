@@ -55,11 +55,12 @@ import { Footer } from './components/Footer';
 import { AuthModal } from './components/AuthModal';
 import { UserSettingsModal } from './components/UserSettingsModal';
 import { GamesHub } from './components/GamesHub';
+import { JjwxcRankingsHub } from './components/JjwxcRankingsHub';
 import { initAntiCopyProtection } from './lib/antiCopyProtection';
 
 export default function App() {
   // Navigation & View States
-  const [activeTab, setActiveTab] = useState<'browse' | 'news' | 'library' | 'studio' | 'games'>('browse');
+  const [activeTab, setActiveTab] = useState<'browse' | 'news' | 'library' | 'studio' | 'games' | 'rankings'>('browse');
   const [selectedStory, setSelectedStory] = useState<Story | null>(null);
   const [selectedChapter, setSelectedChapter] = useState<Chapter | null>(null);
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
@@ -416,6 +417,14 @@ export default function App() {
 
       if (cleanRoute === 'news' || cleanRoute === 'thong-bao') {
         setActiveTab('news');
+        setSelectedStory(null);
+        setSelectedChapter(null);
+        setSelectedGameId(null);
+        return;
+      }
+
+      if (cleanRoute === 'rankings' || cleanRoute === 'bxh' || cleanRoute === 'bang-xep-hang' || cleanRoute === 'jjwxc') {
+        setActiveTab('rankings');
         setSelectedStory(null);
         setSelectedChapter(null);
         setSelectedGameId(null);
@@ -1006,6 +1015,7 @@ export default function App() {
                 else if (activeTab === 'studio') navigateTo('/studio');
                 else if (activeTab === 'news') navigateTo('/news');
                 else if (activeTab === 'games') navigateTo('/games');
+                else if (activeTab === 'rankings') navigateTo('/bxh');
                 else navigateTo('/home');
               }}
               onAddComment={handleAddComment}
@@ -1286,6 +1296,15 @@ export default function App() {
               } else {
                 navigateTo('/games');
               }
+            }}
+          />
+        ) : activeTab === 'rankings' ? (
+          <JjwxcRankingsHub
+            stories={stories}
+            onSelectStory={handleSelectStory}
+            onNavigateHome={() => {
+              setActiveTab('browse');
+              navigateTo('/home');
             }}
           />
         ) : (

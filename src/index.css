@@ -781,3 +781,245 @@
   color: #0f172a !important;
 }
 
+/* JJWXC Rankings Hub High-Contrast Colors & Typography */
+.jjwxc-bg-card {
+  background-color: #14080e !important;
+  border-color: #381928 !important;
+}
+.jjwxc-bg-surface {
+  background-color: #1c0c16 !important;
+  border-color: #4a2135 !important;
+}
+.jjwxc-border {
+  border-color: #381928 !important;
+}
+.jjwxc-text-main {
+  color: #ffffff !important;
+}
+.jjwxc-text-sub {
+  color: #fbcfe8 !important;
+}
+.jjwxc-text-muted {
+  color: #f472b6 !important;
+}
+
+/* Rank Badge (#4, #5...) on book cover */
+.jjwxc-rank-badge {
+  background-color: rgba(22, 10, 17, 0.88) !important;
+  border-color: #52253c !important;
+  color: #ffffff !important;
+}
+
+/* Count badge on ranking tabs (12, 100...) */
+.jjwxc-count-pill {
+  background-color: #2b1320 !important;
+  border-color: #52253c !important;
+  color: #fce7f3 !important;
+}
+
+/* Tag buttons (# Vô hạn lưu, # Cả đôi đều mạnh...) */
+.jjwxc-tag-pill {
+  background-color: rgba(16, 185, 129, 0.15) !important;
+  border-color: rgba(16, 185, 129, 0.4) !important;
+  color: #6ee7b7 !important;
+}
+.jjwxc-tag-pill:hover {
+  background-color: rgba(16, 185, 129, 0.25) !important;
+  color: #a7f3d0 !important;
+}
+
+/* Status Badges */
+.jjwxc-status-completed {
+  background-color: rgba(16, 185, 129, 0.2) !important;
+  border-color: rgba(16, 185, 129, 0.45) !important;
+  color: #6ee7b7 !important;
+}
+.jjwxc-status-ongoing {
+  background-color: rgba(59, 130, 246, 0.2) !important;
+  border-color: rgba(59, 130, 246, 0.45) !important;
+  color: #93c5fd !important;
+}
+
+/* Intro snippet box */
+.jjwxc-intro-box {
+  background-color: rgba(28, 12, 22, 0.8) !important;
+  border-color: #4a2135 !important;
+  color: #fce7f3 !important;
+}
+
+/* Close & Action Buttons */
+.jjwxc-btn-close {
+  background-color: #2a1320 !important;
+  border-color: #52253c !important;
+  color: #ffffff !important;
+}
+.jjwxc-btn-close:hover {
+  background-color: #3d1a2f !important;
+}
+
+/* Light Mode Overrides for JJWXC Rankings Hub */
+.light-mode .jjwxc-bg-card {
+  background-color: #ffffff !important;
+  border-color: #e8d5c8 !important;
+}
+.light-mode .jjwxc-bg-surface {
+  background-color: #fbf5ee !important;
+  border-color: #e2cebf !important;
+}
+.light-mode .jjwxc-border {
+  border-color: #e8d5c8 !important;
+}
+.light-mode .jjwxc-text-main {
+  color: #23121b !important;
+}
+.light-mode .jjwxc-text-sub {
+  color: #5a2c41 !important;
+}
+.light-mode .jjwxc-text-muted {
+  color: #6b2e4d !important;
+  font-weight: 700 !important;
+}
+
+/* Light Mode Rank Badge on Cover */
+.light-mode .jjwxc-rank-badge {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  border-color: #d9c4b5 !important;
+  color: #23121b !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Light Mode Count Badge (12, 100...) */
+.light-mode .jjwxc-count-pill {
+  background-color: #f0e2d5 !important;
+  border-color: #d9c4b5 !important;
+  color: #2b141e !important;
+}
+
+/* Light Mode Tag Pills - Clear, Dark Emerald, No eye-strain */
+.light-mode .jjwxc-tag-pill {
+  background-color: #ecfdf5 !important;
+  border-color: #a7f3d0 !important;
+  color: #047857 !important;
+  font-weight: 700 !important;
+}
+.light-mode .jjwxc-tag-pill:hover {
+  background-color: #d1fae5 !important;
+  border-color: #6ee7b7 !important;
+  color: #065f46 !important;
+}
+
+/* Light Mode Status Badges - High Contrast */
+.light-mode .jjwxc-status-completed {
+  background-color: #ecfdf5 !important;
+  border-color: #6ee7b7 !important;
+  color: #047857 !important;
+  font-weight: 800 !important;
+}
+.light-mode .jjwxc-status-ongoing {
+  background-color: #f0f9ff !important;
+  border-color: #7dd3fc !important;
+  color: #0369a1 !important;
+  font-weight: 800 !important;
+}
+
+/* Light Mode Intro Box */
+.light-mode .jjwxc-intro-box {
+  background-color: #f8efe6 !important;
+  border-color: #e2cebf !important;
+  color: #2b141e !important;
+}
+
+/* Light Mode Close Button */
+.light-mode .jjwxc-btn-close {
+  background-color: #ebdcd0 !important;
+  border-color: #d9c4b5 !important;
+  color: #2b141e !important;
+  font-weight: 800 !important;
+}
+.light-mode .jjwxc-btn-close:hover {
+  background-color: #dec8b8 !important;
+  color: #1a0812 !important;
+}
+
+/* Banner Title Badge (VIP Kim Bảng, Top 100...) */
+.jjwxc-banner-badge {
+  background-color: rgba(16, 185, 129, 0.2) !important;
+  border-color: rgba(16, 185, 129, 0.5) !important;
+  color: #6ee7b7 !important;
+  font-weight: 900 !important;
+}
+.light-mode .jjwxc-banner-badge {
+  background-color: #ecfdf5 !important;
+  border-color: #10b981 !important;
+  color: #065f46 !important;
+  font-weight: 900 !important;
+  box-shadow: 0 1px 2px rgba(6, 95, 70, 0.08) !important;
+}
+
+/* Active tab text / buttons */
+.jjwxc-tab-active {
+  color: #34d399 !important;
+  font-weight: 800 !important;
+}
+.light-mode .jjwxc-tab-active {
+  color: #047857 !important;
+  font-weight: 800 !important;
+}
+
+/* Saved Novel Badge / Buttons */
+.jjwxc-saved-badge {
+  background-color: rgba(16, 185, 129, 0.2) !important;
+  border-color: #10b981 !important;
+  color: #34d399 !important;
+}
+.light-mode .jjwxc-saved-badge {
+  background-color: #ecfdf5 !important;
+  border-color: #059669 !important;
+  color: #065f46 !important;
+  font-weight: 800 !important;
+}
+
+/* Empty State Container (Khi không tìm thấy truyện) */
+.jjwxc-empty-box {
+  background-color: rgba(22, 10, 17, 0.6) !important;
+  border-color: #4a2135 !important;
+}
+.light-mode .jjwxc-empty-box {
+  background-color: #ffffff !important;
+  border-color: #e2cebf !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04) !important;
+}
+
+/* Subtle separator borders */
+.jjwxc-border-subtle {
+  border-color: #381928 !important;
+}
+.light-mode .jjwxc-border-subtle {
+  border-color: #ede2d7 !important;
+}
+
+/* Sort Toolbar Buttons */
+.jjwxc-sort-btn {
+  background-color: #210e19 !important;
+  border-color: #3b1828 !important;
+  color: #ffcfe3 !important;
+}
+.light-mode .jjwxc-sort-btn {
+  background-color: #f7ede3 !important;
+  border-color: #e2cebf !important;
+  color: #5a2c41 !important;
+}
+
+.jjwxc-sort-btn.active {
+  background-color: rgba(16, 185, 129, 0.2) !important;
+  border-color: #10b981 !important;
+  color: #34d399 !important;
+}
+.light-mode .jjwxc-sort-btn.active {
+  background-color: #ecfdf5 !important;
+  border-color: #059669 !important;
+  color: #065f46 !important;
+  font-weight: 800 !important;
+  box-shadow: 0 1px 3px rgba(6, 95, 70, 0.08) !important;
+}
+

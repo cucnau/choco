@@ -1,0 +1,212 @@
+    <!DOCTYPE html PUBLIC "-//WAPFORUM//DTD XHTML Mobile 1.0//EN" "http://www.wapforum.org/DTD/xhtml-mobile10.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh">
+    <head>
+        <style type="text/css" media="screen">
+            body {
+                -moz-user-select: none;
+                -webkit-user-select: none;
+                -ms-user-select:none;
+                -khtml-user-select:none;
+            }
+        </style>
+        <script type="text/javascript">
+            var protocolStr = document.location.protocol;
+            if (protocolStr=="http:") {
+                window.location.href = window.location.href.replace("http:", "https:");
+            }
+            document.onselectstart = function(e) {
+                return false;
+            }
+            document.oncontextmenu = function(e) {
+                return false;
+            }
+        </script>
+        <meta http-equiv="Content-Type" content="text/html; charset=gb18030" />
+        <meta name="viewport"content="width=device-width, initial-scale=1"/>
+        <meta name="apple-itunes-app" content="app-id=966807283"/>
+<title>登入 - 晋江文学城 - 手机版</title>
+<link rel="stylesheet" type="text/css" href="//m-static.jjwxc.net/wap/css/default.css" /></head>
+<body>
+
+    <!-- 内容 -->
+    <div class="grid-c">
+        <style>
+    #mclear{border:none;background: url(//s9-static.jjwxc.net/images/clear.png) no-repeat;width:15px;height:15px;outline:none;background-size:13px;vertical-align:middle;margin-left:-15px;}
+    .hide_menu{display:none}
+    .show_menu{display: block}
+    a {text-decoration:none;}
+    #menu_list a {display: inline-block}
+    @media (prefers-color-scheme: dark) {
+        a:link{color: #5A7A9E;}
+        .big.o a:link{color:#5A7A9E;}
+        .big.o{color:#5A7A9E;}
+    }
+    /*纯字*/
+    .double_column_simple td>ul>li{max-height: 2em;line-height:1.8em; overflow: hidden;word-wrap: break-word;word-break: break-all;line-break: anywhere;}
+    .double_column_div ul>li{max-height: 1.8em;line-height:1.8em;overflow: hidden;word-wrap: break-word;word-break: break-all;line-break: anywhere;}
+    /*顺序排在一行  带星号*/
+    .double_column td>ul>li{height: 1.8em;line-height:1.8em;overflow: hidden;word-wrap: break-word;word-break: break-all;display: flex;flex-wrap: nowrap;line-break: anywhere;}
+    /*左边靠左右边靠右*/
+    .double_column_flex ul>li{display: flex;flex-wrap: nowrap;}
+    .double_column_flex ul>li>a:first-child{display: flex;flex-wrap: nowrap;height: 2em;line-height:1.8em;overflow: hidden;flex: 1;}
+</style>
+<script type="text/javascript" src="//static.jjwxc.net/scripts/jquery-1.8.0.min.js?ver=20161210"></script>
+<script type="text/javascript" src="//static.jjwxc.net/scripts/jquery.blockUI.js"></script>
+<script type="text/javascript" src="//static.jjwxc.net/scripts/auto_save_text.js" charset="GBK"></script>
+<script>
+    function isonlinedoublered(type) {
+        if (type==2) {
+            return true;
+        }
+        if (type!=1) {
+            return false;
+        }
+        //2015.02.18-2015.03.05
+        var localtime = Math.round(new Date().getTime()/1000);
+        if (parseInt(localtime)>=1424188800&&parseInt(localtime)<=1425571199) {
+            return true;
+        }
+        return false;
+    }
+    var search_novelname_arr = [];
+    var search_timer;
+    var commentbody_textarea;
+    $(function() {
+        if (isonlinedoublered(1)) {
+            // 翻倍红包公告提示
+            $.ajax({
+                type: "get",
+                async: true, //同步异步 true为异步(默认),false为同步
+                url: "//s8-static.jjwxc.net/public_notice.php", //实际上访问时产生的地址为: test.php?callbackfun=jsonpCallback&id=10
+                cache: true, //默认值false false时生成随机的&_=随机数
+                dataType: "jsonp",
+                jsonpCallback: "red_envelope_150204",
+                ifModified: true,
+                success: function(json) {
+                    var msg = '';
+                    $.each(json.publicMsg, function(index, v) {
+                        msg += v+"&nbsp;&nbsp;&nbsp;&nbsp;";
+                    });
+                    if (msg!='') {
+                        $("#public_notice_new td#noticeImg").html('<img src="//s9-static.jjwxc.net/images/laba.png" />');
+                        $("#public_notice_new").css('display', 'block');
+                        $("#public_info_show").html(msg);
+                    }
+                }
+            });
+        }
+        // 内置搜索
+        if ($('#searchnovelname').val().trim()) {
+            search_novelname_arr = $('#searchnovelname').val().split(',');
+            if (search_novelname_arr.length > 1) {
+                setSearchNovelName();
+                var change_time = 2000;
+                search_timer = setInterval(function() {
+                    setSearchNovelName();
+                }, change_time);
+                $('#autoComplete').on('focus',function() {
+                    clearInterval(search_timer);
+                });
+                $('#autoComplete').on('blur',function() {
+                    search_timer = setInterval(function() {
+                        setSearchNovelName();
+                    }, change_time);
+                });
+            } else {
+                $('#autoComplete').attr('placeholder', search_novelname_arr[0]);
+            }
+        }
+        let sid = getcookie("sid");
+        // if (sid == '') {//隐藏掉我的收藏按钮
+        //     $("#myFav").css("display", "none");
+        // } else {//显示出我的收藏按钮
+        //     $("#myFav").css("display", "inline");
+        // }
+        if ($('#area').length === 1 && typeof autoSaveTextarea === 'function' && $('#commentbody_write').length === 1) {
+            commentbody_textarea = autoSaveTextarea('#area');
+            $('#commentbody_write').on('click', function(e) {
+                commentbody_textarea.clearCurrentData(true);
+            });
+        }
+    });
+
+    //输入框的清空事件
+    function clearkey() {
+        $("#autoComplete").val("");
+    }
+
+    function setSearchNovelName() {
+        if (search_novelname_arr.length === 0) {
+            search_novelname_arr = $('#searchnovelname').val().split(',');
+        }
+        var searchText = search_novelname_arr.splice(0, 1);
+        $('#autoComplete').attr('placeholder', searchText);
+    }
+</script>
+<script type="text/javascript" src="//static.jjwxc.net/scripts/wap.main.js?ver=20260810"></script>
+<div class="b module" style="display:flex">
+    <div style="display:inline-block;">
+        <a href="/"><img src="//m-static.jjwxc.net/images/wap/logo2.png" style="width:43px;" alt="晋江文学城"/></a>
+    </div>
+    <div id='logininfo' style="display:inline-block; margin-left: 5px;"></div>
+</div>
+
+<div class="module show_menu">
+    <p id="menu_list"><a href="/">首页</a>&nbsp;<a href="/channel/index/gy" style="color:">古言</a>&nbsp;<a href="/channel/index/xy" style="color:">现言</a>&nbsp;<a href="/channel/index/dm" style="color:">纯爱</a>&nbsp;<a href="/channel/index/tr" style="color:">衍生</a>&nbsp;<a href="/channel/index/nocp_plus" style="color:">无CP+</a>&nbsp;<a href="/channel/channel/bhxs" style="color:">百合</a>&nbsp;<a href="/endnovel" style="color:red;font-weight: bold">完结</a><br>
+    <a href="/pindao">分类</a>&nbsp;<a href="/rank">排行</a>&nbsp;<a href="/pindao/vip">全本</a>&nbsp;<a href="/endnovel/index/half">包月</a>&nbsp;<a href="/free">免费</a>&nbsp;<a href="/pindao/vip?type=dp">中短篇</a>&nbsp;<a href="/download/android">APP</a>&nbsp;<a href="/help">反馈</a></p>
+        <div><form method="get" action="/search" onsubmit="if(!$('#autoComplete').val()){$('#autoComplete').val($('#autoComplete').attr('placeholder'))};return true;">
+            <input type="hidden" name="version" value="1"/>
+        <div style="display: -webkit-flex;display: flex;flex-direction: row;align-items:stretch;max-width: 350px;">
+            <div style="flex:1;">
+                <input name = "kw" id = "autoComplete" autocomplete = "off" type = "text" value = "" placeholder="" style="width: 82%;padding-right: 1.2em;height: 17px;"/><input type="button"  id="mclear"  onclick="clearkey()"/>
+            </div>
+            <div>
+                <input type="radio" name="t" value="1" checked>书名<input type="radio" name="t" value="2" >作者<input type="submit" value="搜索">&nbsp;<a href="/assort">高级搜索</a>
+            </div>
+        </div></form></div>
+    <input type="hidden" id="searchnovelname" value="">
+</div>
+</div>
+<div>
+    <table style="width:100%;margin:5px 0px 0px 0px;display: none;" id="public_notice_new">
+        <tr>
+            <td style="width:20px;" id="noticeImg">
+            </td>
+            <td>
+        <marquee scrollAmount="3" id="public_info_show" onmouseover="this.stop()" onmouseout="this.start()"></marquee>
+        </td>
+        </tr>
+    </table>
+</div>
+        <div class="b module">
+            <h2 class="big o"><a href="/">首页</a>><a href="/my">我的晋江</a>>登入</h2>
+            <ul>
+                <li><a href="/my/login?login_mode=jjwxc">使用邮箱或笔名或手机号登入</a></li>
+                <li><a href="/my/login?login_mode=snda">使用盛大通行证登入</a></li>
+                <li><a href="/tencent/login">使用QQ账号登入</a>
+                                       </li>
+                <li>
+                    <a href="/sinaweibo/login">使用新浪微博账号登入</a>
+                    <span style="color: grey">（由于微博安全限制，可能需要输入手机验证码才能登陆）</span>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- 页脚 -->
+    <div class="ft" style="clear: both">
+            <font color="red">最后生成：2026-09-26 21:30:04</font> <a href="/help" target="_blank">反馈</a>
+        <a href="/help/contact" target="_blank">联系我们</a>@晋江文学城 <br />纯属虚构 请勿模仿 版权所有 侵权必究 适度阅读 切勿沉迷 合理安排 享受生活</div>
+<script src="//static.jjwxc.net/scripts/lib/fock/fock_1_0.prod.js"></script><script src="//static.jjwxc.net/scripts/searchkeysign.20260522.js"></script>
+<script type = "text/javascript" src = "//static.jjwxc.net/scripts/shumeiDeviceIdSdk.js?var=2025072215"></script>
+<script>
+    var _hmt = _hmt||[];
+    _hmt.push(['_setAccount', 'f73ac53cbcf4010dac5296a3d8ecf7cb']);
+    (function () {
+        var hm = document.createElement("script");
+        hm.src = "//hm.baidu.com/hm.js?f73ac53cbcf4010dac5296a3d8ecf7cb";
+        var s = document.getElementsByTagName("script")[0];
+        s.parentNode.insertBefore(hm, s);
+    })();
+</script></body>
+</html>

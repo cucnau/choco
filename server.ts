@@ -1,6 +1,7 @@
 import express from 'express';
 import path from 'path';
 import fs from 'fs';
+import crypto from 'crypto';
 import { createServer as createViteServer } from 'vite';
 
 const app = express();
@@ -412,9 +413,473 @@ app.post('/api/conversations/:id/messages', (req, res) => {
   res.json({ success: true, message: newMessage });
 });
 
+// === API TRÍCH XUẤT DỮ LIỆU THẬT & PROXY BÌA GỐC TẤN GIANG (JJWXC) ===
+
+const JJWXC_DATA_PATH = path.join(process.cwd(), 'src', 'data', 'jjwxcRealData.json');
+
+app.get('/api/jjwxc/rankings', (req, res) => {
+  try {
+    if (fs.existsSync(JJWXC_DATA_PATH)) {
+      const raw = fs.readFileSync(JJWXC_DATA_PATH, 'utf-8');
+      const data = JSON.parse(raw);
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      return res.json(data);
+    }
+    return res.status(404).json({ error: 'Chưa có dữ liệu JJWXC' });
+  } catch (err) {
+    console.error('[JJWXC API] Lỗi đọc dữ liệu:', err);
+    res.status(500).json({ error: 'Lỗi nạp dữ liệu Tấn Giang' });
+  }
+});
+
+// Thư mục cache ảnh bìa trên đĩa để lưu trữ vĩnh viễn và phản hồi ngay lập tức (<1ms)
+const DISK_COVER_CACHE_DIR = path.join(process.cwd(), '.cache', 'covers');
+try {
+  if (!fs.existsSync(DISK_COVER_CACHE_DIR)) {
+    fs.mkdirSync(DISK_COVER_CACHE_DIR, { recursive: true });
+  }
+} catch (e) {}
+
+// Cache ảnh bìa trong bộ nhớ RAM
+const imageCache = new Map<string, { buffer: Buffer; contentType: string }>();
+const MAX_IMAGE_CACHE = 2500;
+const inFlightRequests = new Map<string, Promise<{ buffer: Buffer; contentType: string } | null>>();
+
+function getUrlHash(url: string): string {
+  return crypto.createHash('md5').update(url).digest('hex');
+}
+
+function getCoverFromDisk(url: string): Buffer | null {
+  try {
+    const filePath = path.join(DISK_COVER_CACHE_DIR, getUrlHash(url));
+    if (fs.existsSync(filePath)) {
+      const buf = fs.readFileSync(filePath);
+      if (buf.length > 500) return buf;
+    }
+  } catch (e) {}
+  return null;
+}
+
+function saveCoverToDisk(url: string, buffer: Buffer): void {
+  try {
+    if (buffer.length > 500) {
+      const filePath = path.join(DISK_COVER_CACHE_DIR, getUrlHash(url));
+      fs.writeFileSync(filePath, buffer);
+    }
+  } catch (e) {}
+}
+
+// Ảnh bìa mặc định chuẩn Tấn Giang dạng SVG thanh lịch khi truyện không có ảnh hoặc mạng lỗi
+const DEFAULT_JJWXC_COVER_PATH = path.join(process.cwd(), 'public', 'noveldefaultimage.svg');
+let JJWXC_OFFICIAL_DEFAULT_COVER: Buffer;
+try {
+  if (fs.existsSync(DEFAULT_JJWXC_COVER_PATH)) {
+    JJWXC_OFFICIAL_DEFAULT_COVER = fs.readFileSync(DEFAULT_JJWXC_COVER_PATH);
+  } else {
+    JJWXC_OFFICIAL_DEFAULT_COVER = Buffer.alloc(0);
+  }
+} catch (e) {
+  JJWXC_OFFICIAL_DEFAULT_COVER = Buffer.alloc(0);
+}
+
+// Hàm fetch ảnh bìa chuẩn có retry và deduplication
+async function fetchCoverBuffer(targetUrl: string): Promise<{ buffer: Buffer; contentType: string } | null> {
+  // 1. Kiểm tra RAM cache
+  if (imageCache.has(targetUrl)) {
+    return imageCache.get(targetUrl)!;
+  }
+
+  // 2. Kiểm tra Disk cache
+  const diskBuf = getCoverFromDisk(targetUrl);
+  if (diskBuf) {
+    const resObj = { buffer: diskBuf, contentType: 'image/jpeg' };
+    imageCache.set(targetUrl, resObj);
+    return resObj;
+  }
+
+  // 3. Nếu đang có request cùng URL đang tải, đợi chung promise (In-flight deduplication)
+  if (inFlightRequests.has(targetUrl)) {
+    return await inFlightRequests.get(targetUrl)!;
+  }
+
+  const fetchPromise = (async () => {
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 12000);
+
+        const fetchResponse = await fetch(targetUrl, {
+          signal: controller.signal,
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Referer': targetUrl.includes('jjwxc.net') ? 'https://www.jjwxc.net/' : '',
+            'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+            'Connection': 'keep-alive'
+          }
+        }).finally(() => clearTimeout(timeoutId));
+
+        if (fetchResponse.ok) {
+          const contentType = fetchResponse.headers.get('content-type') || 'image/jpeg';
+          const arrayBuffer = await fetchResponse.arrayBuffer();
+          const buffer = Buffer.from(arrayBuffer);
+
+          if (buffer.length > 500) {
+            // Lưu vào cả RAM lẫn đĩa Disk
+            if (imageCache.size >= MAX_IMAGE_CACHE) {
+              const firstKey = imageCache.keys().next().value;
+              if (firstKey) imageCache.delete(firstKey);
+            }
+            imageCache.set(targetUrl, { buffer, contentType });
+            saveCoverToDisk(targetUrl, buffer);
+            return { buffer, contentType };
+          }
+        }
+      } catch (err) {
+        if (attempt === 1) {
+          await new Promise((r) => setTimeout(r, 400));
+        }
+      }
+    }
+    return null;
+  })();
+
+  inFlightRequests.set(targetUrl, fetchPromise);
+  try {
+    const result = await fetchPromise;
+    return result;
+  } finally {
+    inFlightRequests.delete(targetUrl);
+  }
+}
+
+// Proxy ảnh bìa gốc của JJWXC để tránh bị chặn hotlink / CORS / referrer
+app.get('/api/jjwxc/image-proxy', async (req, res) => {
+  let targetUrl = '';
+  // Trích xuất targetUrl chuẩn xác, hỗ trợ cả URL chứa nhiều params (&coverid=..., &ver=..., &imageName=...)
+  const urlParamIdx = req.originalUrl.indexOf('url=');
+  if (urlParamIdx !== -1) {
+    const rawTarget = req.originalUrl.substring(urlParamIdx + 4);
+    try {
+      targetUrl = decodeURIComponent(rawTarget);
+    } catch (e) {
+      targetUrl = rawTarget;
+    }
+  } else if (req.query.url) {
+    targetUrl = req.query.url as string;
+  }
+
+  if (!targetUrl || !targetUrl.startsWith('http')) {
+    return res.status(400).send('Invalid url');
+  }
+
+  try {
+    const parsed = new URL(targetUrl);
+    const hostname = parsed.hostname.toLowerCase();
+    
+    // Ngăn chặn SSRF tới mạng nội bộ / metadata server
+    const isPrivate = hostname === 'localhost' || 
+                      hostname === '127.0.0.1' || 
+                      hostname === '0.0.0.0' || 
+                      hostname === '::1' ||
+                      hostname.startsWith('10.') || 
+                      hostname.startsWith('192.168.') || 
+                      hostname.startsWith('169.254.') ||
+                      hostname.endsWith('.internal') || 
+                      hostname.endsWith('.local');
+
+    if (isPrivate) {
+      return res.status(403).send('Forbidden domain');
+    }
+
+    const result = await fetchCoverBuffer(targetUrl);
+    if (result) {
+      res.setHeader('Content-Type', result.contentType);
+      res.setHeader('Cache-Control', 'public, max-age=86400'); // Cache 24h
+      return res.send(result.buffer);
+    }
+
+    // Nếu tải thất bại, hiển thị bìa mặc định Tấn Giang
+    res.setHeader('Content-Type', 'image/svg+xml');
+    res.setHeader('Cache-Control', 'no-cache');
+    return res.send(JJWXC_OFFICIAL_DEFAULT_COVER);
+  } catch (e: any) {
+    res.setHeader('Content-Type', 'image/svg+xml');
+    res.setHeader('Cache-Control', 'no-cache');
+    return res.send(JJWXC_OFFICIAL_DEFAULT_COVER);
+  }
+});
+
+app.get('/api/jjwxc/cover/:novelId', async (req, res) => {
+  const { novelId } = req.params;
+  if (!novelId || !/^\d+$/.test(novelId)) {
+    return res.status(400).send('Invalid novelId');
+  }
+
+  // Tìm URL bìa gốc của tác giả trong dataset (allNovels, tagRankings, rankings)
+  let targetUrl = '';
+  const isCustomCover = (url?: string) => {
+    if (!url || typeof url !== 'string') return false;
+    return url.startsWith('http://') || url.startsWith('https://');
+  };
+
+  try {
+    if (fs.existsSync(JJWXC_DATA_PATH)) {
+      const raw = fs.readFileSync(JJWXC_DATA_PATH, 'utf-8');
+      const data = JSON.parse(raw);
+      
+      // 1. Tìm trong tagRankings
+      for (const tagKey of Object.keys(data.tagRankings || {})) {
+        const item = data.tagRankings[tagKey]?.find((n: any) => n.novelId === novelId);
+        if (item && isCustomCover(item.coverUrl)) {
+          targetUrl = item.coverUrl;
+          break;
+        }
+      }
+
+      // 2. Tìm trong rankings nếu chưa có
+      if (!targetUrl) {
+        for (const rk of Object.keys(data.rankings || {})) {
+          const item = data.rankings[rk].items?.find((n: any) => n.novelId === novelId);
+          if (item && isCustomCover(item.coverUrl)) {
+            targetUrl = item.coverUrl;
+            break;
+          }
+        }
+      }
+
+      // 3. Tìm trong allNovels nếu chưa có
+      if (!targetUrl) {
+        const itemInAll = (data.allNovels || []).find((n: any) => n.novelId === novelId);
+        if (itemInAll && isCustomCover(itemInAll.coverUrl)) {
+          targetUrl = itemInAll.coverUrl;
+        }
+      }
+    }
+  } catch (err) {
+    // bỏ qua nếu lỗi đọc file
+  }
+
+  // Nếu chưa có bìa riêng thật, fetch onebook.php để lấy trực tiếp thẻ img bìa tác giả
+  if (!targetUrl) {
+    try {
+      const obRes = await fetch(`https://www.jjwxc.net/onebook.php?novelid=${novelId}`, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Referer': 'https://www.jjwxc.net/'
+        }
+      });
+      if (obRes.ok) {
+        const buffer = await obRes.arrayBuffer();
+        const decoder = new TextDecoder('gb18030');
+        const html = decoder.decode(buffer);
+        const imgMatch = html.match(/<img[^>]*class=["']noveldefaultimage["'][^>]*>/i) || html.match(/<img[^>]*itemprop=["']image["'][^>]*>/i);
+        if (imgMatch) {
+          const tag = imgMatch[0];
+          const srcMatch = tag.match(/\ssrc=["']([^"']+)["']/i);
+          const _srcMatch = tag.match(/\s_src=["']([^"']+)["']/i);
+          const candSrc = srcMatch ? srcMatch[1] : '';
+          const cand_Src = _srcMatch ? _srcMatch[1] : '';
+          for (const cand of [candSrc, cand_Src]) {
+            if (cand && isCustomCover(cand)) {
+              targetUrl = cand;
+              break;
+            }
+          }
+          if (!targetUrl && candSrc) {
+            targetUrl = candSrc;
+          }
+        }
+      }
+    } catch (e) {
+      // bỏ qua
+    }
+  }
+
+  if (!targetUrl) {
+    targetUrl = `https://i9-static.jjwxc.net/novelimage.php?novelid=${novelId}`;
+  }
+
+  const result = await fetchCoverBuffer(targetUrl);
+  if (result) {
+    res.setHeader('Content-Type', result.contentType);
+    res.setHeader('Cache-Control', 'public, max-age=86400'); // Cache 24h
+    return res.send(result.buffer);
+  }
+
+  res.setHeader('Content-Type', 'image/svg+xml');
+  res.setHeader('Cache-Control', 'no-cache');
+  return res.send(JJWXC_OFFICIAL_DEFAULT_COVER);
+});
+
+// Cache chi tiết văn án đầy đủ và trạng thái chuẩn cho tác phẩm
+const novelDetailCache = new Map<string, { fullIntro: string; status: string; wordCount?: string; tags?: string[]; score?: string; coverUrl?: string; isAuthorCover?: boolean }>();
+
+app.get('/api/jjwxc/novel-detail/:novelId', async (req, res) => {
+  const { novelId } = req.params;
+  if (!novelId || !/^\d+$/.test(novelId)) {
+    return res.status(400).json({ error: 'Mã truyện không hợp lệ' });
+  }
+
+  // 1. Kiểm tra cache bộ nhớ
+  if (novelDetailCache.has(novelId)) {
+    return res.json(novelDetailCache.get(novelId));
+  }
+
+  // 2. Kiểm tra trong jjwxcRealData.json
+  try {
+    if (fs.existsSync(JJWXC_DATA_PATH)) {
+      const raw = fs.readFileSync(JJWXC_DATA_PATH, 'utf-8');
+      const data = JSON.parse(raw);
+      
+      const allN = data.allNovels || [];
+      const item = allN.find((n: any) => n.novelId === novelId);
+      if (item && item.intro && item.intro.length > 80 && item.status && !item.status.includes('连载中')) {
+        const cleanTags = (item.tags || []).filter((t: string) => t && !t.includes('-') && !t.includes('原创'));
+        const result = {
+          fullIntro: item.intro,
+          status: item.status,
+          wordCount: item.wordCount,
+          tags: cleanTags,
+          score: item.score,
+          coverUrl: item.coverUrl,
+          isAuthorCover: item.isAuthorCover,
+          bookmarks: item.bookmarks,
+          rating: item.rating,
+          bawang: item.bawang
+        };
+        novelDetailCache.set(novelId, result);
+        return res.json(result);
+      }
+    }
+  } catch (e) {
+    // tiếp tục fetch
+  }
+
+  // 3. Fetch trực tiếp từ onebook.php của Tấn Giang để lấy trọn vẹn văn án gốc và bìa riêng
+  try {
+    const targetUrl = `https://www.jjwxc.net/onebook.php?novelid=${novelId}`;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 7000);
+
+    const fetchRes = await fetch(targetUrl, {
+      signal: controller.signal,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Referer': 'https://www.jjwxc.net/',
+      }
+    }).finally(() => clearTimeout(timeoutId));
+
+    if (!fetchRes.ok) {
+      return res.status(404).json({ error: 'Không thể tải trang truyện từ Tấn Giang' });
+    }
+
+    const buffer = await fetchRes.arrayBuffer();
+    // Tấn Giang sử dụng encoding gb18030 / gbk
+    const decoder = new TextDecoder('gb18030');
+    const html = decoder.decode(buffer);
+
+    // Trích xuất status chuẩn từ itemprop="updataStatus"
+    let status = '完结';
+    const statusMatch = html.match(/itemprop=["']updataStatus["'][^>]*>(?:<font[^>]*>)?([^<]+)/i);
+    if (statusMatch && statusMatch[1]) {
+      const rawSt = statusMatch[1].trim();
+      if (rawSt.includes('连载')) status = '连载';
+      else if (rawSt.includes('完结')) status = '完结';
+      else if (rawSt.includes('暂停')) status = '暂停';
+      else status = rawSt;
+    }
+
+    // Trích xuất fullIntro từ <div id="novelintro">
+    let fullIntro = '';
+    const introMatch = html.match(/<div[^>]*id=["']novelintro["'][^>]*>([\s\S]*?)<\/div>/i);
+    if (introMatch && introMatch[1]) {
+      let rawIntro = introMatch[1];
+      rawIntro = rawIntro.replace(/<br\s*\/?>/gi, '\n');
+      rawIntro = rawIntro.replace(/<[^>]+>/g, '');
+      fullIntro = rawIntro.trim();
+    }
+
+    // Trích xuất bìa riêng của tác giả
+    let coverUrl: string | undefined;
+    let isAuthorCover = false;
+    const imgMatch = html.match(/<img[^>]*class=["']noveldefaultimage["'][^>]*>/i) || html.match(/<img[^>]*itemprop=["']image["'][^>]*>/i);
+    if (imgMatch) {
+      const tag = imgMatch[0];
+      const srcMatch = tag.match(/\ssrc=["']([^"']+)["']/i);
+      const _srcMatch = tag.match(/\s_src=["']([^"']+)["']/i);
+      const candSrc = srcMatch ? srcMatch[1] : '';
+      const cand_Src = _srcMatch ? _srcMatch[1] : '';
+      if (candSrc && (candSrc.includes('authorspace') || candSrc.includes('sinaimg') || candSrc.includes('bmp.ovh') || candSrc.includes('loli.net') || candSrc.includes('frontcover') || candSrc.includes('coverid='))) {
+        coverUrl = candSrc;
+        isAuthorCover = true;
+      } else if (cand_Src && cand_Src.includes('coverid=')) {
+        coverUrl = cand_Src;
+        isAuthorCover = true;
+      } else if (candSrc) {
+        coverUrl = candSrc;
+      }
+    }
+
+    // Trích xuất số chữ nếu có
+    let wordCount: string | undefined;
+    const wordMatch = html.match(/itemprop=["']wordCount["'][^>]*>([^<]+)/i);
+    if (wordMatch) {
+      wordCount = wordMatch[1].trim();
+    }
+
+    const result = {
+      fullIntro: fullIntro || 'Tác phẩm chưa có văn án công khai.',
+      status,
+      wordCount,
+      coverUrl,
+      isAuthorCover
+    };
+
+    novelDetailCache.set(novelId, result);
+    return res.json(result);
+  } catch (err: any) {
+    console.error(`[Novel Detail] Lỗi fetch chi tiết truyện ${novelId}:`, err);
+    return res.status(500).json({ error: 'Lỗi tải văn án tác phẩm' });
+  }
+});
+
 // === TÍCH HỢP VITE MIDDLEWARE CHO DEVELOPMENT VÀ PRODUCTION ===
 
 async function startServer() {
+// API Cập nhật Live Tag Ranking theo thời gian thực từ Tấn Giang
+app.get('/api/jjwxc/live-tag', async (req, res) => {
+  const { tagId, page = '1' } = req.query;
+  const pageNum = Math.max(1, parseInt(page as string, 10) || 1);
+
+  try {
+    let fullDataset: any = {};
+    if (fs.existsSync(JJWXC_DATA_PATH)) {
+      fullDataset = JSON.parse(fs.readFileSync(JJWXC_DATA_PATH, 'utf-8'));
+    }
+
+    const tagRankings = fullDataset.tagRankings || {};
+    const novelsList = tagRankings[tagId as string] || [];
+    const PAGE_SIZE = 20;
+    const totalNovels = novelsList.length;
+    const totalPages = Math.max(1, Math.ceil(totalNovels / PAGE_SIZE));
+    
+    const startIndex = (pageNum - 1) * PAGE_SIZE;
+    const pagedNovels = novelsList.slice(startIndex, startIndex + PAGE_SIZE);
+
+    return res.json({
+      success: true,
+      tagId,
+      page: pageNum,
+      totalPages,
+      totalNovels,
+      crawledAt: fullDataset.crawledAt || new Date().toISOString(),
+      novels: pagedNovels
+    });
+  } catch (err: any) {
+    return res.status(500).json({ error: 'Không thể tải dữ liệu tag realtime', details: err.message });
+  }
+});
+
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
       server: { middlewareMode: true },

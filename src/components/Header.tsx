@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Users, BookOpen, Bookmark, PlusCircle, User, LogOut, LogIn, Settings, Flame, Calendar, Check, Loader2, Home, Gamepad2, Bell, MessageSquare, Sun, Moon } from 'lucide-react';
+import { Search, Users, BookOpen, Bookmark, PlusCircle, User, LogOut, LogIn, Settings, Flame, Calendar, Check, Loader2, Home, Gamepad2, Bell, MessageSquare, Sun, Moon, Trophy } from 'lucide-react';
 import { User as FirebaseUser } from 'firebase/auth';
 import { Story, UserProfile, Notification } from '../types';
 import { checkInDaily, getLocalDateString } from '../lib/storage';
@@ -417,8 +417,8 @@ const HEADER_THEME_TONES: Record<string, {
 };
 
 interface HeaderProps {
-  activeTab: 'browse' | 'news' | 'library' | 'studio' | 'games';
-  setActiveTab: (tab: 'browse' | 'news' | 'library' | 'studio' | 'games') => void;
+  activeTab: 'browse' | 'news' | 'library' | 'studio' | 'games' | 'rankings';
+  setActiveTab: (tab: 'browse' | 'news' | 'library' | 'studio' | 'games' | 'rankings') => void;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
   bookmarkCount: number;
@@ -645,6 +645,30 @@ export const Header: React.FC<HeaderProps> = ({
               }
             >
               <Gamepad2 className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={() => setActiveTab('rankings')}
+              className={`p-1.5 text-xs font-mono-code font-bold transition rounded-xs border flex items-center justify-center ${
+                activeTab === 'rankings'
+                  ? (isCustomTheme 
+                      ? 'shadow-sm' 
+                      : `${tone.buttonBg} ${tone.buttonBorder} ${tone.text} shadow-sm`)
+                  : (isCustomTheme 
+                      ? 'border-transparent hover:opacity-80' 
+                      : `border-transparent ${tone.textMuted} hover:${tone.text}`)
+              }`}
+              title="BXH Tấn Giang (JJWXC - Đam Mỹ)"
+              style={
+                isCustomTheme && resolvedStoryColors && activeTab === 'rankings'
+                  ? {
+                      backgroundColor: resolvedStoryColors.btnBg,
+                      borderColor: resolvedStoryColors.btnBorder,
+                      color: resolvedStoryColors.btnText,
+                    }
+                  : (isCustomTheme && resolvedStoryColors ? { color: resolvedStoryColors.textMuted } : {})
+              }
+            >
+              <Trophy className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
@@ -988,6 +1012,28 @@ export const Header: React.FC<HeaderProps> = ({
                       Nhận ngay
                     </span>
                   )}
+                </button>
+
+                <button
+                  onClick={() => {
+                    setActiveTab('rankings');
+                    setShowUserMenu(false);
+                  }}
+                  className={`w-full text-left px-2.5 py-2 flex items-center justify-between transition font-mono-code ${
+                    activeTab === 'rankings'
+                      ? (isCustomTheme ? 'font-bold underline' : `${tone.dropdownActiveBg} font-bold`)
+                      : (isCustomTheme ? 'hover:opacity-80' : tone.dropdownItemHover)
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <Trophy className={`w-3.5 h-3.5 ${isCustomTheme ? '' : tone.iconColor}`} />
+                    <span>BXH Tấn Giang (JJWXC)</span>
+                  </div>
+                  <span 
+                    className={`text-[9px] border px-1 py-0.5 uppercase font-bold text-amber-400 border-amber-500/30 bg-amber-500/10`}
+                  >
+                    Đam Mỹ
+                  </span>
                 </button>
 
                 <button
