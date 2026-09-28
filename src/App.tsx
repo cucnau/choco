@@ -64,6 +64,9 @@ export default function App() {
   const [selectedStory, setSelectedStory] = useState<Story | null>(null);
   const [selectedChapter, setSelectedChapter] = useState<Chapter | null>(null);
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
+  const [selectedRankId, setSelectedRankId] = useState<string>('vip_jinbang');
+  const [selectedTagId, setSelectedTagId] = useState<string>('wuxianliu');
+  const [rankingHubMode, setRankingHubMode] = useState<'ranks' | 'tags'>('ranks');
 
   // Search Filter State
   const [searchQuery, setSearchQuery] = useState('');
@@ -314,7 +317,7 @@ export default function App() {
     if (typeof window === 'undefined') return '';
     if (window.location.hostname.includes('github.io')) {
       const parts = window.location.pathname.split('/').filter(Boolean);
-      const appRoutes = ['home', 'browse', 'library', 'studio', 'games', 'truyen', 'story', 'tu-sach', 'xuong-viet', 'tro-choi', 'news', 'thong-bao'];
+      const appRoutes = ['home', 'browse', 'library', 'studio', 'games', 'truyen', 'story', 'tu-sach', 'xuong-viet', 'tro-choi', 'news', 'thong-bao', 'bxh', 'rankings', 'bang-xep-hang', 'jjwxc'];
       if (parts.length > 0 && !appRoutes.includes(parts[0])) {
         return '/' + parts[0];
       }
@@ -358,6 +361,7 @@ export default function App() {
         else if (cleanFromHash === 'xuong-viet' || cleanFromHash === 'sang-tac') cleanFromHash = 'studio';
         else if (cleanFromHash === 'tro-choi') cleanFromHash = 'games';
         else if (cleanFromHash.startsWith('tro-choi/')) cleanFromHash = cleanFromHash.replace('tro-choi/', 'games/');
+        else if (cleanFromHash === 'bxh' || cleanFromHash === 'rankings' || cleanFromHash === 'bang-xep-hang' || cleanFromHash === 'jjwxc') cleanFromHash = 'bxh';
 
         const newCleanPath = (basePath ? `${basePath}` : '') + (cleanFromHash ? `/${cleanFromHash}` : '/home');
         window.history.replaceState(null, '', newCleanPath);
@@ -374,7 +378,11 @@ export default function App() {
           window.history.replaceState(null, '', (basePath ? `${basePath}` : '') + `/truyen/${storyId}`);
         } else if (params.get('tab')) {
           const tabName = params.get('tab');
-          window.history.replaceState(null, '', (basePath ? `${basePath}` : '') + `/${tabName}`);
+          if (tabName === 'rankings' || tabName === 'bang-xep-hang' || tabName === 'jjwxc') {
+            window.history.replaceState(null, '', (basePath ? `${basePath}` : '') + `/bxh`);
+          } else {
+            window.history.replaceState(null, '', (basePath ? `${basePath}` : '') + `/${tabName}`);
+          }
         }
       }
 
@@ -423,11 +431,23 @@ export default function App() {
         return;
       }
 
-      if (cleanRoute === 'rankings' || cleanRoute === 'bxh' || cleanRoute === 'bang-xep-hang' || cleanRoute === 'jjwxc') {
+      if (cleanRoute === 'rankings' || cleanRoute === 'bxh' || cleanRoute === 'bang-xep-hang' || cleanRoute === 'jjwxc' || cleanRoute.startsWith('rankings/') || cleanRoute.startsWith('bxh/') || cleanRoute.startsWith('bang-xep-hang/') || cleanRoute.startsWith('jjwxc/')) {
         setActiveTab('rankings');
         setSelectedStory(null);
         setSelectedChapter(null);
         setSelectedGameId(null);
+        const parts = cleanRoute.split('/');
+        if (parts.length > 1 && parts[1]) {
+          if (parts[1] === 'tags' || parts[1] === 'tag' || parts[1] === 'the-loai') {
+            setRankingHubMode('tags');
+            if (parts[2]) {
+              setSelectedTagId(parts[2]);
+            }
+          } else {
+            setRankingHubMode('ranks');
+            setSelectedRankId(parts[1]);
+          }
+        }
         return;
       }
 
@@ -883,6 +903,7 @@ export default function App() {
             else if (tab === 'news') navigateTo('/news');
             else if (tab === 'studio') navigateTo('/studio');
             else if (tab === 'games') navigateTo('/games');
+            else if (tab === 'rankings') navigateTo('/bxh');
           }}
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
@@ -1305,6 +1326,19 @@ export default function App() {
             onNavigateHome={() => {
               setActiveTab('browse');
               navigateTo('/home');
+            }}
+            selectedRankId={selectedRankId}
+            selectedTagId={selectedTagId}
+            hubMode={rankingHubMode}
+            onRankingChange={(newMode, newRankId, newTagId) => {
+              setRankingHubMode(newMode);
+              if (newMode === 'tags') {
+                if (newTagId) setSelectedTagId(newTagId);
+                navigateTo(newTagId && newTagId !== 'wuxianliu' ? `/bxh/tags/${newTagId}` : '/bxh/tags');
+              } else {
+                if (newRankId) setSelectedRankId(newRankId);
+                navigateTo(newRankId && newRankId !== 'vip_jinbang' ? `/bxh/${newRankId}` : '/bxh');
+              }
             }}
           />
         ) : (

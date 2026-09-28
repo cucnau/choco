@@ -99,14 +99,45 @@ export function formatWordsVi(words: string): string {
   return `${num.toLocaleString('vi-VN')} chữ`;
 }
 
-// Format điểm tích lũy sang Tiếng Việt
+// Format điểm tích lũy sang Tiếng Việt chuẩn xác
 export function formatScoreVi(score: string): string {
   if (!score) return '';
-  const clean = score.replace(/[^\d]/g, '');
-  const num = parseInt(clean, 10);
-  if (isNaN(num)) return score;
+  const s = String(score).trim();
+  if (!s) return '';
+
+  // 1. Nhận diện đơn vị chữ Hán: 亿 (ức = 10^8 = 100 triệu), 万 (vạn = 10^4 = 10 ngàn)
+  if (s.includes('亿')) {
+    const m = s.match(/([0-9]+(?:\.[0-9]+)?)\s*亿/);
+    if (m) {
+      const val = parseFloat(m[1]);
+      if (val >= 10) {
+        return `${(val / 10).toFixed(2)} tỷ (${val} ức)`;
+      }
+      return `${val} ức (${Math.round(val * 100)} triệu)`;
+    }
+  }
+
+  if (s.includes('万')) {
+    const m = s.match(/([0-9]+(?:\.[0-9]+)?)\s*万/);
+    if (m) {
+      const val = parseFloat(m[1]);
+      if (val >= 10000) {
+        return `${(val / 10000).toFixed(2)} ức`;
+      }
+      return `${val} vạn (${Math.round(val * 10).toLocaleString('vi-VN')} nghìn)`;
+    }
+  }
+
+  // 2. Nhận diện số nguyên / số có dấu phẩy
+  const clean = s.replace(/,/g, '').replace(/\s+/g, '');
+  const num = parseFloat(clean);
+  if (isNaN(num)) return s;
+
   if (num >= 1000000000) {
-    return `${(num / 1000000000).toFixed(2)} tỷ`;
+    return `${(num / 1000000000).toFixed(2)} tỷ (${(num / 100000000).toFixed(1)} ức)`;
+  }
+  if (num >= 100000000) {
+    return `${(num / 100000000).toFixed(1)} ức (${Math.round(num / 1000000)} triệu)`;
   }
   if (num >= 1000000) {
     return `${(num / 1000000).toFixed(1)} triệu`;
@@ -115,6 +146,98 @@ export function formatScoreVi(score: string): string {
     return `${(num / 10000).toFixed(1)} vạn`;
   }
   return num.toLocaleString('vi-VN');
+}
+
+// Làm sạch các thẻ HTML và ký tự đặc biệt trong văn án
+export function cleanHtmlText(text?: string): string {
+  if (!text) return '';
+  return text
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/p>/gi, '\n')
+    .replace(/<p[^>]*>/gi, '')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&quot;/gi, '"')
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&#39;/gi, "'")
+    .replace(/\r\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+// Trích xuất tóm tắt ngắn cho thẻ truyện
+export function getIntroSnippet(intro?: string, maxLength = 130): string {
+  if (!intro) return '';
+  const cleaned = cleanHtmlText(intro);
+  if (!cleaned) return '';
+
+  // Tìm "一句话简介：" (Tóm tắt 1 câu) hoặc "立意：" nếu có
+  const oneLineMatch = cleaned.match(/一句话简介[：:]\s*([^\n]+)/i);
+  if (oneLineMatch && oneLineMatch[1].trim()) {
+    return `Tóm tắt: ${oneLineMatch[1].trim()}`;
+  }
+
+  // Tách dòng văn bản có nghĩa đầu tiên
+  const lines = cleaned.split('\n')
+    .map(l => l.trim())
+    .filter(l => l && !l.startsWith('【') && !l.includes('推推') && !l.includes('预收') && !l.includes('收藏') && !l.includes('作者微博'));
+  
+  const text = lines.length > 0 ? lines.join(' ') : cleaned.replace(/\n+/g, ' ');
+  if (text.length > maxLength) {
+    return text.substring(0, maxLength) + '...';
+  }
+  return text;
+}
+
+// Chuyển đổi URL ảnh bìa an toàn cho web HTTPS
+export function getCleanCoverUrl(url?: string): string {
+  if (!url || typeof url !== 'string') return '';
+  let clean = url.trim();
+  if (clean.startsWith('http://')) {
+    clean = clean.replace('http://', 'https://');
+  }
+  return clean;
+}
+
+// Tạo bìa vector SVG phong cách Tấn Giang tuyệt đẹp khi truyện không có bìa hoặc link bị lỗi
+export function generateJjwxcCoverSvg(title: string, author: string, novelId?: string): string {
+  const safeTitle = (title || 'Tấn Giang').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  const safeAuthor = (author || 'Tác giả').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  const safeId = novelId || '';
+
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 420" width="300" height="420">
+    <defs>
+      <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#2c1420"/>
+        <stop offset="50%" stop-color="#1a0b14"/>
+        <stop offset="100%" stop-color="#10050d"/>
+      </linearGradient>
+      <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#fef3c7"/>
+        <stop offset="100%" stop-color="#f59e0b"/>
+      </linearGradient>
+    </defs>
+    <rect width="300" height="420" fill="url(#bg)"/>
+    <rect x="10" y="10" width="280" height="400" fill="none" stroke="#4a2235" stroke-width="1.5" rx="6"/>
+    <rect x="14" y="14" width="272" height="392" fill="none" stroke="#2d1421" stroke-width="1" rx="4"/>
+    <rect x="65" y="32" width="170" height="24" rx="12" fill="#10b981" fill-opacity="0.15" stroke="#10b981" stroke-opacity="0.4"/>
+    <text x="150" y="48" fill="#34d399" font-family="serif, sans-serif" font-size="11" font-weight="bold" text-anchor="middle" letter-spacing="3">晋江文学城</text>
+    <rect x="30" y="75" width="240" height="235" fill="#160810" fill-opacity="0.75" rx="8" stroke="#3d1b2c" stroke-width="1"/>
+    <text x="150" y="145" fill="url(#gold)" font-family="serif, sans-serif" font-size="${safeTitle.length > 7 ? '18' : '22'}" font-weight="900" text-anchor="middle">
+      ${safeTitle.length > 8 ? safeTitle.slice(0, 8) : safeTitle}
+    </text>
+    ${safeTitle.length > 8 ? `<text x="150" y="175" fill="url(#gold)" font-family="serif, sans-serif" font-size="17" font-weight="900" text-anchor="middle">${safeTitle.slice(8, 16)}</text>` : ''}
+    <line x1="75" y1="210" x2="225" y2="210" stroke="#10b981" stroke-width="1" stroke-dasharray="4 2" opacity="0.6"/>
+    <text x="150" y="240" fill="#e5e7eb" font-family="sans-serif" font-size="13" font-weight="600" text-anchor="middle">
+      ${safeAuthor} 著
+    </text>
+    ${safeId ? `<text x="150" y="270" fill="#9ca3af" font-family="monospace" font-size="11" text-anchor="middle">ID: ${safeId}</text>` : ''}
+    <rect x="40" y="340" width="220" height="42" rx="6" fill="#13070f" stroke="#331424" stroke-width="1"/>
+    <text x="150" y="365" fill="#a78bfa" font-family="sans-serif" font-size="11" font-weight="bold" text-anchor="middle" letter-spacing="2">纯 爱 • 原 创</text>
+  </svg>`;
+
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 }
 
 // Format lượt bookmark (thâu tàng) sang Tiếng Việt
@@ -160,7 +283,7 @@ export function formatRatingVi(rate?: string | number): string {
 export function translateIntroToVietnamese(introCn: string): string {
   if (!introCn) return 'Tác phẩm chưa có phần giới thiệu công khai trên bảng xếp hạng này. Bạn có thể bấm "Mở trên Tấn Giang" để xem trực tiếp tại trang gốc.';
 
-  let text = introCn;
+  let text = cleanHtmlText(introCn);
 
   // Bản dịch các thuật ngữ, thiết lập đam mỹ phổ biến trong văn án JJWXC
   const termMap: [RegExp, string][] = [
@@ -251,7 +374,7 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'completed' | 'ongoing'>('all');
   
-  // Modal xem chi tiết văn án gốc
+  // Modal xem chi tiết giới thiệu tác phẩm
   const [activeNovel, setActiveNovel] = useState<JjwxcNovel | null>(null);
   const [isLoadingIntro, setIsLoadingIntro] = useState<boolean>(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -407,7 +530,13 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
     if (!activeNovel.intro || activeNovel.intro.length < 150) {
       setIsLoadingIntro(true);
       fetch(`/api/jjwxc/novel-detail/${activeNovel.novelId}`)
-        .then(res => res.ok ? res.json() : null)
+        .then(res => {
+          const contentType = res.headers.get('content-type') || '';
+          if (res.ok && contentType.includes('application/json')) {
+            return res.json();
+          }
+          return null;
+        })
         .then(detail => {
           if (detail && isMounted) {
             setActiveNovel(prev => {
@@ -423,7 +552,10 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
             });
           }
         })
-        .catch(err => console.warn('Lỗi nạp văn án chi tiết:', err))
+        .catch(err => {
+          // Bỏ qua lỗi kết nối khi chạy trên môi trường tĩnh (như GitHub Pages)
+          console.debug('Không thể kết nối proxy backend lấy văn án mở rộng:', err);
+        })
         .finally(() => {
           if (isMounted) setIsLoadingIntro(false);
         });
@@ -440,12 +572,46 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
     );
   };
 
-  // Helper lấy URL ảnh bìa gốc tác giả (qua proxy server để chống chặn hotlink)
-  const getCoverSrc = (novel: JjwxcNovel) => {
-    if (novel.coverUrl && (novel.coverUrl.startsWith('http://') || novel.coverUrl.startsWith('https://'))) {
-      return `/api/jjwxc/image-proxy?url=${encodeURIComponent(novel.coverUrl)}`;
+  // Helper lấy URL ảnh bìa an toàn đa tầng (hoạt động tốt cả Localhost lẫn GitHub Pages)
+  const getCoverSrc = (novel: JjwxcNovel): string => {
+    const clean = getCleanCoverUrl(novel.coverUrl);
+    if (clean) {
+      return clean;
     }
-    return `/api/jjwxc/cover/${novel.novelId}`;
+    return generateJjwxcCoverSvg(novel.title, novel.author, novel.novelId);
+  };
+
+  // Xử lý lỗi tải ảnh đa tầng, đảm bảo 100% không bao giờ hiển thị icon ảnh vỡ
+  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>, novel: JjwxcNovel) => {
+    const img = e.currentTarget;
+    const currentSrc = img.src || '';
+    const clean = getCleanCoverUrl(novel.coverUrl);
+
+    // Đã dùng bìa SVG fallback thì không đổi thêm
+    if (currentSrc.startsWith('data:image/svg')) {
+      return;
+    }
+
+    // Tầng 1: Thử CDN proxy mở wsrv.nl (vượt CORS & Referer kiểm tra 100% trên GitHub Pages)
+    if (clean && !currentSrc.includes('wsrv.nl') && !currentSrc.includes('/api/jjwxc/')) {
+      img.src = `https://wsrv.nl/?url=${encodeURIComponent(clean)}&output=webp`;
+      return;
+    }
+
+    // Tầng 2: Nếu wsrv.nl lỗi, thử endpoint proxy server nội bộ (nếu chạy local / có server Node)
+    if (clean && !currentSrc.includes('/api/jjwxc/image-proxy')) {
+      img.src = `/api/jjwxc/image-proxy?url=${encodeURIComponent(clean)}`;
+      return;
+    }
+
+    // Tầng 3: Thử bìa theo novelId từ server
+    if (!currentSrc.includes('/api/jjwxc/cover/')) {
+      img.src = `/api/jjwxc/cover/${novel.novelId}`;
+      return;
+    }
+
+    // Tầng 4: Tạo bìa vector SVG phong cách Tấn Giang tuyệt đẹp, sắc nét 100%
+    img.src = generateJjwxcCoverSvg(novel.title, novel.author, novel.novelId);
   };
 
   const handleCopyChinese = (text: string, id: string, e?: React.MouseEvent) => {
@@ -917,12 +1083,7 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
                       decoding="async"
                       referrerPolicy="no-referrer"
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      onError={(e) => {
-                        const currentSrc = e.currentTarget.src;
-                        if (!currentSrc.includes('/api/jjwxc/cover/')) {
-                          e.currentTarget.src = `/api/jjwxc/cover/${novel.novelId}`;
-                        }
-                      }}
+                      onError={(e) => handleImageError(e, novel)}
                     />
                     {/* Badge thứ hạng ở góc ảnh */}
                     <div className="absolute top-1.5 left-1.5">
@@ -956,15 +1117,18 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
                         </button>
                       </div>
 
-                      {/* Tác giả gốc tiếng Trung (GIỮ NGUYÊN GỐC) */}
-                      <div className="text-xs jjwxc-text-sub mt-1 flex items-center gap-2">
-                        <span>Tác giả:</span>
+                      {/* Tác giả & Mã truyện */}
+                      <div className="text-xs jjwxc-text-sub mt-1 flex flex-wrap items-center gap-1.5">
+                        <span className="opacity-80">Tác giả:</span>
                         <span className="font-bold text-white jjwxc-text-main px-1.5 py-0.5 rounded bg-[#210e19] jjwxc-bg-surface border border-[#3b1828] jjwxc-border-subtle">
                           {novel.author}
                         </span>
                         {novel.authorId && (
                           <span className="text-[10px] jjwxc-text-muted font-bold font-mono">Mã TG: {novel.authorId}</span>
                         )}
+                        <span className="text-[10px] text-emerald-400 font-bold font-mono bg-emerald-950/40 px-1.5 py-0.5 rounded border border-emerald-800/40" title="Mã truyện Tấn Giang (Novel ID)">
+                          ID: {novel.novelId}
+                        </span>
                       </div>
 
                       {/* Thể loại & Tình trạng dịch sang Tiếng Việt */}
@@ -1033,35 +1197,41 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
                     </div>
 
                     {/* Chỉ số chính: Điểm tích lũy, Bookmark, Độ dài, Bá vương, Đánh giá */}
-                    <div className="mt-2.5 pt-2 border-t border-[#3b1828] jjwxc-border-subtle flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] jjwxc-text-sub">
-                      {scoreVi && (
+                    <div className="mt-2.5 pt-2 border-t border-[#3b1828] jjwxc-border-subtle flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[11px] jjwxc-text-sub">
+                      {scoreVi ? (
                         <div className="flex items-center gap-1">
                           <span className="text-amber-500 font-bold">Tích lũy:</span>
                           <span className="font-bold text-white jjwxc-text-main">{scoreVi}</span>
                         </div>
-                      )}
-                      {novel.bookmarks && (
+                      ) : null}
+                      {Boolean(novel.bookmarks && Number(String(novel.bookmarks).replace(/[^\d]/g, '')) > 0) && (
                         <div className="flex items-center gap-1">
                           <span className="text-emerald-500 font-bold">Bookmark:</span>
                           <span className="font-bold text-white jjwxc-text-main">{formatBookmarksVi(novel.bookmarks)}</span>
                         </div>
                       )}
-                      {wordsVi && (
+                      {wordsVi ? (
                         <div className="flex items-center gap-1">
                           <span>Số chữ:</span>
                           <span className="font-medium text-white jjwxc-text-main">{wordsVi}</span>
                         </div>
-                      )}
-                      {novel.bawang && (
+                      ) : null}
+                      {Boolean(novel.bawang && Number(String(novel.bawang).replace(/[^\d]/g, '')) > 0) && (
                         <div className="flex items-center gap-1">
                           <span className="text-pink-400 font-bold">Bá vương:</span>
                           <span className="font-bold text-white jjwxc-text-main">{formatBawangVi(novel.bawang)}</span>
                         </div>
                       )}
-                      {novel.rating && (
+                      {Boolean(novel.rating && Number(String(novel.rating).replace(/[^\d.]/g, '')) > 0) && (
                         <div className="flex items-center gap-1">
                           <span className="text-amber-400 font-bold">Đánh giá:</span>
                           <span className="font-black text-amber-400">{formatRatingVi(novel.rating)}⭐</span>
+                        </div>
+                      )}
+                      {novel.publishDate && (
+                        <div className="flex items-center gap-1 text-[10px] opacity-75">
+                          <Clock className="w-2.5 h-2.5 text-blue-400" />
+                          <span>{novel.publishDate}</span>
                         </div>
                       )}
                     </div>
@@ -1079,6 +1249,16 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
                     >
                       {isCopied ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
                       <span>{isCopied ? 'Đã chép' : 'Chép tên gốc'}</span>
+                    </button>
+
+                    {/* Copy ID truyện */}
+                    <button
+                      onClick={(e) => handleCopyChinese(novel.novelId, 'id-' + novel.novelId, e)}
+                      className="px-2.5 py-1 rounded-lg border border-[#3b1828] jjwxc-border bg-[#210e19] jjwxc-bg-surface hover:opacity-90 jjwxc-text-sub hover:text-white jjwxc-text-main text-[11px] font-bold flex items-center gap-1 transition-all"
+                      title="Sao chép mã ID truyện Tấn Giang"
+                    >
+                      {copiedId === 'id-' + novel.novelId ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                      <span>{copiedId === 'id-' + novel.novelId ? 'Đã chép ID' : `ID: ${novel.novelId}`}</span>
                     </button>
 
                     {/* Mở link JJWXC gốc */}
@@ -1106,7 +1286,7 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
       </>
       )}
 
-      {/* Modal Xem Chi Tiết Tác Phẩm & Toàn Bộ Văn Án */}
+      {/* Modal Xem Chi Tiết Tác Phẩm & Toàn Bộ Giới Thiệu */}
       {activeNovel && (
         <div 
           className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
@@ -1124,10 +1304,15 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
                   <h3 className="text-lg sm:text-xl font-black text-white jjwxc-text-main tracking-tight drop-shadow-sm">
                     {activeNovel.title}
                   </h3>
-                  <div className="text-xs jjwxc-text-sub mt-0.5 flex items-center gap-2">
+                  <div className="text-xs jjwxc-text-sub mt-0.5 flex flex-wrap items-center gap-2">
                     <span>Tác giả: <strong className="text-white jjwxc-text-main">{activeNovel.author}</strong></span>
+                    {activeNovel.authorId && (
+                      <span className="text-[10px] jjwxc-text-muted font-bold font-mono">TG: {activeNovel.authorId}</span>
+                    )}
                     <span>•</span>
-                    <span>Mã truyện Tấn Giang: <strong className="text-emerald-400 font-mono font-bold">{activeNovel.novelId}</strong></span>
+                    <span className="flex items-center gap-1">
+                      Mã truyện Tấn Giang: <strong className="text-emerald-400 font-mono font-bold">{activeNovel.novelId}</strong>
+                    </span>
                   </div>
                 </div>
               </div>
@@ -1151,12 +1336,7 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
                     decoding="async"
                     referrerPolicy="no-referrer"
                     className="w-full h-full object-cover"
-                    onError={(e) => {
-                      const currentSrc = e.currentTarget.src;
-                      if (!currentSrc.includes('/api/jjwxc/cover/')) {
-                        e.currentTarget.src = `/api/jjwxc/cover/${activeNovel.novelId}`;
-                      }
-                    }}
+                    onError={(e) => handleImageError(e, activeNovel)}
                   />
                 </div>
 
@@ -1191,7 +1371,7 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
                     </div>
                   )}
 
-                  {activeNovel.bookmarks && (
+                  {Boolean(activeNovel.bookmarks && Number(String(activeNovel.bookmarks).replace(/[^\d]/g, '')) > 0) && (
                     <div>
                       <span className="font-bold text-emerald-400">Lượt bookmark (Thâu tàng): </span>
                       <span className="text-emerald-300 font-black">{formatBookmarksVi(activeNovel.bookmarks)}</span>
@@ -1199,7 +1379,7 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
                     </div>
                   )}
 
-                  {activeNovel.bawang && (
+                  {Boolean(activeNovel.bawang && Number(String(activeNovel.bawang).replace(/[^\d]/g, '')) > 0) && (
                     <div>
                       <span className="font-bold text-pink-400">Phiếu bá vương (Donate): </span>
                       <span className="text-pink-300 font-black">{formatBawangVi(activeNovel.bawang)}</span>
@@ -1207,7 +1387,7 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
                     </div>
                   )}
 
-                  {activeNovel.rating && (
+                  {Boolean(activeNovel.rating && Number(String(activeNovel.rating).replace(/[^\d.]/g, '')) > 0) && (
                     <div>
                       <span className="font-bold text-amber-400">Điểm đánh giá hoàn thành: </span>
                       <span className="text-amber-300 font-black">{formatRatingVi(activeNovel.rating)} / 10 ⭐</span>
@@ -1272,6 +1452,23 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
                       )}
                     </button>
 
+                    <button
+                      onClick={(e) => handleCopyChinese(activeNovel.novelId, 'modal-id-' + activeNovel.novelId, e)}
+                      className="px-3 py-1.5 rounded-lg border border-[#3b1828] jjwxc-border bg-[#160a11] jjwxc-bg-card hover:bg-[#210e19] jjwxc-bg-surface text-white jjwxc-text-main font-bold flex items-center gap-1.5 transition-all text-xs"
+                    >
+                      {copiedId === 'modal-id-' + activeNovel.novelId ? (
+                        <>
+                          <Check className="w-3.5 h-3.5 text-emerald-400" />
+                          <span>Đã chép ID</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-3.5 h-3.5" />
+                          <span>Copy ID truyện</span>
+                        </>
+                      )}
+                    </button>
+
                     <a
                       href={activeNovel.jjwxcUrl || `https://www.jjwxc.net/onebook.php?novelid=${activeNovel.novelId}`}
                       target="_blank"
@@ -1297,24 +1494,44 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
                 </div>
               </div>
 
-              {/* Phần Giới thiệu tác phẩm (100% Nguyên tác Tiếng Trung) */}
+              {/* Phần Giới thiệu tác phẩm */}
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <h4 className="text-xs font-bold uppercase tracking-wider jjwxc-text-sub flex items-center gap-1.5">
                     <BookOpen className="w-4 h-4 text-emerald-500" />
-                    Văn án tác phẩm:
+                    Giới thiệu tác phẩm:
                   </h4>
+
+                  <button
+                    onClick={(e) => {
+                      const textToCopy = cleanHtmlText(activeNovel.intro);
+                      handleCopyChinese(textToCopy, 'intro-' + activeNovel.novelId, e);
+                    }}
+                    className="px-2.5 py-1 rounded-lg border border-[#3b1828] jjwxc-border bg-[#160a11] jjwxc-bg-card text-xs font-bold jjwxc-text-sub hover:text-white jjwxc-text-main flex items-center gap-1.5 transition-all"
+                  >
+                    {copiedId === 'intro-' + activeNovel.novelId ? (
+                      <>
+                        <Check className="w-3 h-3 text-emerald-400" />
+                        <span>Đã chép giới thiệu</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3 h-3" />
+                        <span>Chép giới thiệu</span>
+                      </>
+                    )}
+                  </button>
                 </div>
 
-                {/* Khung nội dung văn án nguyên tác 100% tiếng Trung */}
+                {/* Khung nội dung giới thiệu đã làm sạch tags HTML (giữ nguyên gốc) */}
                 <div className="p-4 sm:p-5 rounded-xl bg-[#210e19] jjwxc-bg-surface border border-[#3b1828] jjwxc-border text-sm leading-relaxed text-white jjwxc-text-main whitespace-pre-line font-sans shadow-inner max-h-96 overflow-y-auto pr-2">
                   {isLoadingIntro ? (
                     <div className="flex items-center gap-2 py-8 justify-center jjwxc-text-sub text-xs">
                       <RefreshCw className="w-4 h-4 animate-spin text-emerald-500" />
-                      <span>Đang tải văn án đầy đủ từ Tấn Giang...</span>
+                      <span>Đang tải giới thiệu đầy đủ từ Tấn Giang...</span>
                     </div>
                   ) : (
-                    activeNovel.intro || 'Tác phẩm chưa có phần giới thiệu công khai trên Tấn Giang.'
+                    cleanHtmlText(activeNovel.intro) || 'Tác phẩm chưa có phần giới thiệu công khai trên Tấn Giang.'
                   )}
                 </div>
               </div>
