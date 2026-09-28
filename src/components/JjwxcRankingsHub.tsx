@@ -39,10 +39,6 @@ interface JjwxcRankingsHubProps {
   stories?: Story[];
   onSelectStory?: (story: Story) => void;
   onNavigateHome?: () => void;
-  selectedRankId?: string;
-  selectedTagId?: string;
-  hubMode?: 'ranks' | 'tags';
-  onRankingChange?: (mode: 'ranks' | 'tags', rankId?: string, tagId?: string) => void;
 }
 
 // Dịch thể loại Tấn Giang sang Tiếng Việt
@@ -242,14 +238,10 @@ export function translateIntroToVietnamese(introCn: string): string {
 export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
   stories = [],
   onSelectStory,
-  onNavigateHome,
-  selectedRankId: propSelectedRankId,
-  selectedTagId: propSelectedTagId,
-  hubMode: propHubMode,
-  onRankingChange
+  onNavigateHome
 }) => {
   // Bảng xếp hạng đang chọn
-  const [selectedRankId, setSelectedRankId] = useState<string>(propSelectedRankId || 'vip_jinbang');
+  const [selectedRankId, setSelectedRankId] = useState<string>('vip_jinbang');
   // Dữ liệu bảng xếp hạng
   const [dataset, setDataset] = useState(initialRealRankingsData);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -265,29 +257,10 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   // Chế độ: 'ranks' (9 BXH chính) hoặc 'tags' (BXH Theo Tag Thể Loại)
-  const [hubMode, setHubMode] = useState<'ranks' | 'tags'>(propHubMode || 'ranks');
-  const [selectedTagId, setSelectedTagId] = useState<string>(propSelectedTagId || 'wuxianliu');
+  const [hubMode, setHubMode] = useState<'ranks' | 'tags'>('ranks');
+  const [selectedTagId, setSelectedTagId] = useState<string>('wuxianliu');
   const [tagCategoryFilter, setTagCategoryFilter] = useState<'all' | 'genre' | 'setting' | 'trope' | 'relationship'>('all');
   const [tagSearchQuery, setTagSearchQuery] = useState<string>('');
-
-  // Đồng bộ props từ URL nếu có thay đổi từ bên ngoài (ví dụ bấm back/forward trình duyệt)
-  useEffect(() => {
-    if (propSelectedRankId && propSelectedRankId !== selectedRankId) {
-      setSelectedRankId(propSelectedRankId);
-    }
-  }, [propSelectedRankId]);
-
-  useEffect(() => {
-    if (propSelectedTagId && propSelectedTagId !== selectedTagId) {
-      setSelectedTagId(propSelectedTagId);
-    }
-  }, [propSelectedTagId]);
-
-  useEffect(() => {
-    if (propHubMode && propHubMode !== hubMode) {
-      setHubMode(propHubMode);
-    }
-  }, [propHubMode]);
 
   // Bookmark yêu thích lưu localStorage
   const [savedNovelIds, setSavedNovelIds] = useState<string[]>(() => {
@@ -626,9 +599,6 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
           onClick={() => {
             setHubMode('ranks');
             setShowSavedOnly(false);
-            if (onRankingChange) {
-              onRankingChange('ranks', selectedRankId, selectedTagId);
-            }
           }}
           className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${
             hubMode === 'ranks' && !showSavedOnly
@@ -644,9 +614,6 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
           onClick={() => {
             setHubMode('tags');
             setShowSavedOnly(false);
-            if (onRankingChange) {
-              onRankingChange('tags', selectedRankId, selectedTagId);
-            }
           }}
           className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${
             hubMode === 'tags' && !showSavedOnly
@@ -693,9 +660,6 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
                   onClick={() => {
                     setSelectedRankId(category.id);
                     setShowSavedOnly(false);
-                    if (onRankingChange) {
-                      onRankingChange('ranks', category.id, selectedTagId);
-                    }
                   }}
                   className={`p-3 rounded-xl border text-left transition-all relative overflow-hidden group flex flex-col justify-between ${
                     isSelected
@@ -783,9 +747,6 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
                   onClick={() => {
                     setSelectedTagId(tagItem.id);
                     setShowSavedOnly(false);
-                    if (onRankingChange) {
-                      onRankingChange('tags', selectedRankId, tagItem.id);
-                    }
                   }}
                   className={`p-2.5 rounded-xl border text-left transition-all relative flex flex-col justify-between ${
                     isSelected
