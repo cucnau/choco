@@ -6,14 +6,14 @@ export interface JjwxcNovel {
   title: string;          // Tên gốc tiếng Trung (Không dịch)
   author: string;         // Tác giả gốc tiếng Trung (Không dịch)
   authorId?: string;
-  genre: string;          // Thể loại gốc JJWXC (Đam Mỹ thuần ái)
+  genre?: string;         // Thể loại gốc JJWXC (Đam Mỹ thuần ái)
   status: string;         // Tình trạng gốc (完结 / 连载)
   wordCount: string;      // Số chữ gốc
   score: string;          // Điểm tích phân / điểm bá vương gốc
   publishDate?: string;   // Ngày phát hành gốc
-  intro: string;          // Văn án gốc tiếng Trung của tác giả
-  coverUrl: string;       // Bìa gốc từ server JJWXC
-  jjwxcUrl: string;       // Link truyện gốc trên JJWXC
+  intro?: string;         // Văn án gốc tiếng Trung của tác giả
+  coverUrl?: string;      // Bìa gốc từ server JJWXC
+  jjwxcUrl?: string;      // Link truyện gốc trên JJWXC
   tags?: string[];        // Các tag thể loại chính thức của Tấn Giang
   isAuthorCover?: boolean;// Đánh dấu bìa do chính tác giả/NXB thiết kế riêng
   bookmarks?: string | number; // Lượt bookmark (Thâu tàng)
@@ -117,4 +117,4 @@ export interface JjwxcRealDataset {
   }>;
 }
 
-export const initialRealRankingsData = rawData as JjwxcRealDataset;
+export const initialRealRankingsData = rawData as unknown as JjwxcRealDataset;

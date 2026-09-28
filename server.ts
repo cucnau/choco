@@ -12,7 +12,7 @@ const PORT = 3000;
 app.use(express.json());
 
 // Nạp dữ liệu Bảng Xếp Hạng Tấn Giang từ master data
-const MASTER_DATA_FILE = path.join(process.cwd(), 'data', 'jjwxcMasterData.json');
+const MASTER_DATA_FILE = path.join(process.cwd(), 'src', 'data', 'jjwxcRealData.json');
 let masterDataCache: any = null;
 
 function getMasterData() {
@@ -21,10 +21,10 @@ function getMasterData() {
       const raw = fs.readFileSync(MASTER_DATA_FILE, 'utf-8');
       masterDataCache = JSON.parse(raw);
     } catch (e) {
-      console.error('Lỗi khi đọc jjwxcMasterData.json:', e);
+      console.error('Lỗi khi đọc jjwxcRealData.json:', e);
     }
   }
-  return masterDataCache || { crawledAt: new Date().toISOString(), allNovels: [], tagRankings: {} };
+  return masterDataCache || { crawledAt: new Date().toISOString(), rankings: {}, tagRankings: {} };
 }
 
 // 1. API Lấy dữ liệu Bảng Xếp Hạng & Danh sách truyện
@@ -32,18 +32,32 @@ app.get('/api/jjwxc/rankings', (req, res) => {
   const data = getMasterData();
   res.json({
     crawledAt: data.crawledAt,
-    rankings: data.tagRankings || {},
-    allNovels: data.allNovels || []
+    rankings: data.rankings || {},
+    tagRankings: data.tagRankings || {}
   });
 });
 
 // 2. API Chi tiết truyện
 app.get('/api/jjwxc/novel-detail/:id', (req, res) => {
   const data = getMasterData();
-  const novelId = req.params.id;
-  const novel = (data.allNovels || []).find((n: any) => String(n.novelId) === String(novelId));
-  if (novel) {
-    res.json(novel);
+  const novelId = String(req.params.id);
+  
+  let found: any = null;
+  if (data.rankings) {
+    for (const rank of Object.values(data.rankings) as any[]) {
+      found = rank.items?.find((n: any) => String(n.novelId) === novelId);
+      if (found) break;
+    }
+  }
+  if (!found && data.tagRankings) {
+    for (const items of Object.values(data.tagRankings) as any[]) {
+      found = items?.find((n: any) => String(n.novelId) === novelId);
+      if (found) break;
+    }
+  }
+
+  if (found) {
+    res.json(found);
   } else {
     res.status(404).json({ error: 'Không tìm thấy truyện' });
   }

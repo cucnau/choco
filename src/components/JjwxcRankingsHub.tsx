@@ -87,9 +87,9 @@ export function formatStatusVi(statusCn: string): { label: string; isCompleted: 
 
 // Format số chữ sang Tiếng Việt
 export function formatWordsVi(words: string): string {
-  if (!words) return '';
+  if (!words || words === '0') return '';
   const num = parseInt(words.replace(/[^\d]/g, ''), 10);
-  if (isNaN(num)) return words;
+  if (isNaN(num) || num <= 0) return '';
   if (num >= 1000000) {
     return `${(num / 1000000).toFixed(2)} triệu chữ`;
   }
@@ -101,9 +101,9 @@ export function formatWordsVi(words: string): string {
 
 // Format điểm tích lũy sang Tiếng Việt chuẩn xác
 export function formatScoreVi(score: string): string {
-  if (!score) return '';
+  if (!score || score === '0') return '';
   const s = String(score).trim();
-  if (!s) return '';
+  if (!s || s === '0') return '';
 
   // 1. Nhận diện đơn vị chữ Hán: 亿 (ức = 10^8 = 100 triệu), 万 (vạn = 10^4 = 10 ngàn)
   if (s.includes('亿')) {
@@ -500,20 +500,29 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
     return top100.map((n, idx) => ({ ...n, rank: idx + 1 }));
   }, [dataset, masterNovelList, currentTagConfig]);
 
-  // Fetch dữ liệu từ backend API nếu có cập nhật
+  // Fetch dữ liệu từ backend API nếu có cập nhật (bảo vệ không làm mất 9 BXH trên GitHub Pages)
   const fetchRankings = async (isManualRefresh = false) => {
     try {
       if (isManualRefresh) setIsLoading(true);
       const res = await fetch('/api/jjwxc/rankings');
-      if (res.ok) {
+      const contentType = res.headers.get('content-type') || '';
+      if (res.ok && contentType.includes('application/json')) {
         const data = await res.json();
-        if (data && data.rankings) {
-          setDataset(data);
-          if (data.crawledAt) setLastUpdated(data.crawledAt);
+        if (data && data.rankings && Object.keys(data.rankings).length > 0) {
+          const hasItems = Object.values(data.rankings).some((r: any) => r?.items && r.items.length > 0);
+          if (hasItems) {
+            setDataset(prev => ({
+              ...prev,
+              ...data,
+              rankings: data.rankings || prev.rankings,
+              tagRankings: data.tagRankings || prev.tagRankings
+            }));
+            if (data.crawledAt) setLastUpdated(data.crawledAt);
+          }
         }
       }
     } catch (err) {
-      console.error('Không thể tải API rankings, dùng dữ liệu bundle sẵn có:', err);
+      console.debug('Không thể tải API rankings, giữ nguyên dữ liệu bundle:', err);
     } finally {
       if (isManualRefresh) setIsLoading(false);
     }
@@ -572,13 +581,13 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
     );
   };
 
-  // Helper lấy URL ảnh bìa an toàn đa tầng (hoạt động tốt cả Localhost lẫn GitHub Pages)
+  // Helper lấy URL ảnh bìa an toàn (tải trực tiếp từ server CDN Tấn Giang với chính sách no-referrer)
   const getCoverSrc = (novel: JjwxcNovel): string => {
     const clean = getCleanCoverUrl(novel.coverUrl);
-    if (clean) {
-      return clean;
+    if (!clean) {
+      return generateJjwxcCoverSvg(novel.title, novel.author, novel.novelId);
     }
-    return generateJjwxcCoverSvg(novel.title, novel.author, novel.novelId);
+    return clean;
   };
 
   // Xử lý lỗi tải ảnh đa tầng, đảm bảo 100% không bao giờ hiển thị icon ảnh vỡ
@@ -592,25 +601,19 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
       return;
     }
 
-    // Tầng 1: Thử CDN proxy mở wsrv.nl (vượt CORS & Referer kiểm tra 100% trên GitHub Pages)
-    if (clean && !currentSrc.includes('wsrv.nl') && !currentSrc.includes('/api/jjwxc/')) {
-      img.src = `https://wsrv.nl/?url=${encodeURIComponent(clean)}&output=webp`;
+    // Tầng 1: Nếu URL là dạng tĩnh không có dấu ?, thử qua proxy wsrv.nl
+    if (clean && !clean.includes('?') && !currentSrc.includes('wsrv.nl')) {
+      img.src = `https://wsrv.nl/?url=${encodeURIComponent(clean)}`;
       return;
     }
 
-    // Tầng 2: Nếu wsrv.nl lỗi, thử endpoint proxy server nội bộ (nếu chạy local / có server Node)
-    if (clean && !currentSrc.includes('/api/jjwxc/image-proxy')) {
+    // Tầng 2: Nếu môi trường có server Node (local/dev preview), thử qua image-proxy backend
+    if (clean && !currentSrc.includes('/api/jjwxc/image-proxy') && typeof window !== 'undefined' && !window.location.hostname.includes('github.io')) {
       img.src = `/api/jjwxc/image-proxy?url=${encodeURIComponent(clean)}`;
       return;
     }
 
-    // Tầng 3: Thử bìa theo novelId từ server
-    if (!currentSrc.includes('/api/jjwxc/cover/')) {
-      img.src = `/api/jjwxc/cover/${novel.novelId}`;
-      return;
-    }
-
-    // Tầng 4: Tạo bìa vector SVG phong cách Tấn Giang tuyệt đẹp, sắc nét 100%
+    // Tầng 3: Tạo bìa vector SVG phong cách Tấn Giang tuyệt đẹp, sắc nét 100%
     img.src = generateJjwxcCoverSvg(novel.title, novel.author, novel.novelId);
   };
 
@@ -1124,9 +1127,9 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
                           {novel.author}
                         </span>
                         {novel.authorId && (
-                          <span className="text-[10px] jjwxc-text-muted font-bold font-mono">Mã TG: {novel.authorId}</span>
+                          <span className="text-[10px] jjwxc-author-id font-bold font-mono">Mã TG: {novel.authorId}</span>
                         )}
-                        <span className="text-[10px] text-emerald-400 font-bold font-mono bg-emerald-950/40 px-1.5 py-0.5 rounded border border-emerald-800/40" title="Mã truyện Tấn Giang (Novel ID)">
+                        <span className="text-[10px] font-bold font-mono px-1.5 py-0.5 rounded jjwxc-id-badge" title="Mã truyện Tấn Giang (Novel ID)">
                           ID: {novel.novelId}
                         </span>
                       </div>
@@ -1244,7 +1247,7 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
                     {/* Copy tên gốc tiếng Trung */}
                     <button
                       onClick={(e) => handleCopyChinese(novel.title, novel.novelId, e)}
-                      className="px-2.5 py-1 rounded-lg border border-[#3b1828] jjwxc-border bg-[#210e19] jjwxc-bg-surface hover:opacity-90 jjwxc-text-sub hover:text-white jjwxc-text-main text-[11px] font-bold flex items-center gap-1.5 transition-all"
+                      className="px-2.5 py-1 rounded-lg border text-[11px] font-bold flex items-center gap-1.5 transition-all jjwxc-action-btn"
                       title="Sao chép tên truyện gốc tiếng Trung để tìm kiếm raw/convert"
                     >
                       {isCopied ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
@@ -1254,7 +1257,7 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
                     {/* Copy ID truyện */}
                     <button
                       onClick={(e) => handleCopyChinese(novel.novelId, 'id-' + novel.novelId, e)}
-                      className="px-2.5 py-1 rounded-lg border border-[#3b1828] jjwxc-border bg-[#210e19] jjwxc-bg-surface hover:opacity-90 jjwxc-text-sub hover:text-white jjwxc-text-main text-[11px] font-bold flex items-center gap-1 transition-all"
+                      className="px-2.5 py-1 rounded-lg border text-[11px] font-bold flex items-center gap-1 transition-all jjwxc-action-btn"
                       title="Sao chép mã ID truyện Tấn Giang"
                     >
                       {copiedId === 'id-' + novel.novelId ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
@@ -1267,7 +1270,7 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
                       target="_blank"
                       rel="noopener noreferrer"
                       onClick={(e) => e.stopPropagation()}
-                      className="px-2.5 py-1 rounded-lg border border-[#3b1828] jjwxc-border bg-[#210e19] jjwxc-bg-surface hover:opacity-90 jjwxc-text-sub hover:text-white jjwxc-text-main text-[11px] font-bold flex items-center gap-1 transition-all"
+                      className="px-2.5 py-1 rounded-lg border text-[11px] font-bold flex items-center gap-1 transition-all jjwxc-action-btn"
                       title="Mở trang truyện trực tiếp trên Tấn Giang"
                     >
                       <span>Trang gốc</span>
@@ -1311,7 +1314,7 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
                     )}
                     <span>•</span>
                     <span className="flex items-center gap-1">
-                      Mã truyện Tấn Giang: <strong className="text-emerald-400 font-mono font-bold">{activeNovel.novelId}</strong>
+                      Mã truyện Tấn Giang: <strong className="jjwxc-id-text font-mono font-bold">{activeNovel.novelId}</strong>
                     </span>
                   </div>
                 </div>
@@ -1454,7 +1457,7 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
 
                     <button
                       onClick={(e) => handleCopyChinese(activeNovel.novelId, 'modal-id-' + activeNovel.novelId, e)}
-                      className="px-3 py-1.5 rounded-lg border border-[#3b1828] jjwxc-border bg-[#160a11] jjwxc-bg-card hover:bg-[#210e19] jjwxc-bg-surface text-white jjwxc-text-main font-bold flex items-center gap-1.5 transition-all text-xs"
+                      className="px-3 py-1.5 rounded-lg border text-xs font-bold flex items-center gap-1.5 transition-all jjwxc-action-btn"
                     >
                       {copiedId === 'modal-id-' + activeNovel.novelId ? (
                         <>
@@ -1473,7 +1476,7 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
                       href={activeNovel.jjwxcUrl || `https://www.jjwxc.net/onebook.php?novelid=${activeNovel.novelId}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="px-3 py-1.5 rounded-lg border border-[#3b1828] jjwxc-border bg-[#160a11] jjwxc-bg-card hover:bg-[#210e19] jjwxc-bg-surface text-white jjwxc-text-main font-bold flex items-center gap-1.5 transition-all text-xs"
+                      className="px-3 py-1.5 rounded-lg border text-xs font-bold flex items-center gap-1.5 transition-all jjwxc-action-btn"
                     >
                       <span>Mở trên Tấn Giang</span>
                       <ExternalLink className="w-3.5 h-3.5" />
