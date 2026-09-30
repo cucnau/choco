@@ -64,7 +64,7 @@ export default function App() {
   const [selectedStory, setSelectedStory] = useState<Story | null>(null);
   const [selectedChapter, setSelectedChapter] = useState<Chapter | null>(null);
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
-  const [selectedRankId, setSelectedRankId] = useState<string>('vip_jinbang');
+  const [selectedRankId, setSelectedRankId] = useState<string>('yuedu');
   const [selectedTagId, setSelectedTagId] = useState<string>('wuxianliu');
   const [rankingHubMode, setRankingHubMode] = useState<'ranks' | 'tags'>('ranks');
 

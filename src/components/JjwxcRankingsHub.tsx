@@ -7,17 +7,8 @@ import {
   Search, 
   Bookmark, 
   BookOpen, 
-  ChevronRight, 
   X, 
-  RefreshCw, 
-  Layers,
-  Languages,
-  FileText,
-  Tag,
-  Hash,
-  Crown,
-  Star,
-  Clock
+  RefreshCw
 } from 'lucide-react';
 import { 
   JjwxcNovel, 
@@ -25,14 +16,8 @@ import {
   initialRealRankingsData, 
   JjwxcRankCategoryConfig 
 } from '../data/jjwxcRankingsData';
-import { 
-  CORE_JJWXC_TAGS,
-  TAG_CATEGORY_TABS,
-  CoreTagConfig,
-  getCoreTagConfig,
-  getTagDisplayName 
-} from '../data/jjwxcTagsData';
 import { Story } from '../types';
+import { extractPaletteFromImage, CanvaPalette } from '../lib/coverColorExtractor';
 
 interface JjwxcRankingsHubProps {
   currentStory?: Story | null;
@@ -41,349 +26,27 @@ interface JjwxcRankingsHubProps {
   onNavigateHome?: () => void;
 }
 
-// Dịch thể loại Tấn Giang sang Tiếng Việt
-export function formatGenreVi(genreCn: string): string {
-  if (!genreCn) return 'Đam mỹ / Thuần ái';
-  
-  const translations: Record<string, string> = {
-    '原创': 'Nguyên sang',
-    '纯爱': 'Đam mỹ',
-    '架空历史': 'Cổ đại lịch sử',
-    '近代现代': 'Hiện đại đô thị',
-    '幻想未来': 'Tương lai viễn tưởng',
-    '古色古香': 'Cổ trang truyền thống',
-    '爱情': 'Tình cảm',
-    '奇幻': 'Kỳ ảo dị thế',
-    '悬疑': 'Trinh thám phá án',
-    '惊悚': 'Kinh dị rùng rợn',
-    '科幻': 'Khoa học viễn tưởng',
-    '传奇': 'Truyền kỳ',
-    '同人': 'Đồng nhân',
-    '衍生': 'Phái sinh',
-    '武侠': 'Võ hiệp',
-    '仙侠': 'Tiên hiệp tu chân',
-    '游戏': 'Võng du eSports'
-  };
-
-  const parts = genreCn.split(/[-–—\s]+/).filter(Boolean);
-  const viParts = parts.map(p => translations[p.trim()] || p.trim());
-  return viParts.join(' • ');
-}
-
-// Dịch tình trạng sang Tiếng Việt chuẩn theo gốc Tấn Giang
-export function formatStatusVi(statusCn: string): { label: string; isCompleted: boolean } {
-  if (!statusCn) return { label: 'Đã hoàn thành', isCompleted: true };
-  if (statusCn.includes('完结') || statusCn.includes('完') || statusCn === '已完结') {
-    return { label: 'Đã hoàn thành', isCompleted: true };
-  }
-  if (statusCn.includes('连载') || statusCn.includes('连载中')) {
-    return { label: 'Đang ra', isCompleted: false };
-  }
-  if (statusCn.includes('暂停')) {
-    return { label: 'Tạm dừng', isCompleted: false };
-  }
-  return { label: statusCn, isCompleted: statusCn.includes('完') };
-}
-
-// Format số chữ sang Tiếng Việt
-export function formatWordsVi(words: string): string {
-  if (!words || words === '0') return '';
-  const num = parseInt(words.replace(/[^\d]/g, ''), 10);
-  if (isNaN(num) || num <= 0) return '';
-  if (num >= 1000000) {
-    return `${(num / 1000000).toFixed(2)} triệu chữ`;
-  }
-  if (num >= 10000) {
-    return `${(num / 10000).toFixed(1)} vạn chữ`;
-  }
-  return `${num.toLocaleString('vi-VN')} chữ`;
-}
-
-// Format điểm tích lũy sang Tiếng Việt chuẩn xác
-export function formatScoreVi(score: string): string {
-  if (!score || score === '0') return '';
-  const s = String(score).trim();
-  if (!s || s === '0') return '';
-
-  // 1. Nhận diện đơn vị chữ Hán: 亿 (ức = 10^8 = 100 triệu), 万 (vạn = 10^4 = 10 ngàn)
-  if (s.includes('亿')) {
-    const m = s.match(/([0-9]+(?:\.[0-9]+)?)\s*亿/);
-    if (m) {
-      const val = parseFloat(m[1]);
-      if (val >= 10) {
-        return `${(val / 10).toFixed(2)} tỷ (${val} ức)`;
-      }
-      return `${val} ức (${Math.round(val * 100)} triệu)`;
-    }
-  }
-
-  if (s.includes('万')) {
-    const m = s.match(/([0-9]+(?:\.[0-9]+)?)\s*万/);
-    if (m) {
-      const val = parseFloat(m[1]);
-      if (val >= 10000) {
-        return `${(val / 10000).toFixed(2)} ức`;
-      }
-      return `${val} vạn (${Math.round(val * 10).toLocaleString('vi-VN')} nghìn)`;
-    }
-  }
-
-  // 2. Nhận diện số nguyên / số có dấu phẩy
-  const clean = s.replace(/,/g, '').replace(/\s+/g, '');
-  const num = parseFloat(clean);
-  if (isNaN(num)) return s;
-
-  if (num >= 1000000000) {
-    return `${(num / 1000000000).toFixed(2)} tỷ (${(num / 100000000).toFixed(1)} ức)`;
-  }
-  if (num >= 100000000) {
-    return `${(num / 100000000).toFixed(1)} ức (${Math.round(num / 1000000)} triệu)`;
-  }
-  if (num >= 1000000) {
-    return `${(num / 1000000).toFixed(1)} triệu`;
-  }
-  if (num >= 10000) {
-    return `${(num / 10000).toFixed(1)} vạn`;
-  }
-  return num.toLocaleString('vi-VN');
-}
-
-// Làm sạch các thẻ HTML và ký tự đặc biệt trong văn án
-export function cleanHtmlText(text?: string): string {
-  if (!text) return '';
-  return text
-    .replace(/<br\s*\/?>/gi, '\n')
-    .replace(/<\/p>/gi, '\n')
-    .replace(/<p[^>]*>/gi, '')
-    .replace(/&nbsp;/gi, ' ')
-    .replace(/&quot;/gi, '"')
-    .replace(/&amp;/gi, '&')
-    .replace(/&lt;/gi, '<')
-    .replace(/&gt;/gi, '>')
-    .replace(/&#39;/gi, "'")
-    .replace(/\r\n/g, '\n')
-    .replace(/\n{3,}/g, '\n\n')
-    .trim();
-}
-
-// Trích xuất tóm tắt ngắn cho thẻ truyện
-export function getIntroSnippet(intro?: string, maxLength = 130): string {
-  if (!intro) return '';
-  const cleaned = cleanHtmlText(intro);
-  if (!cleaned) return '';
-
-  // Tìm "一句话简介：" (Tóm tắt 1 câu) hoặc "立意：" nếu có
-  const oneLineMatch = cleaned.match(/一句话简介[：:]\s*([^\n]+)/i);
-  if (oneLineMatch && oneLineMatch[1].trim()) {
-    return `Tóm tắt: ${oneLineMatch[1].trim()}`;
-  }
-
-  // Tách dòng văn bản có nghĩa đầu tiên
-  const lines = cleaned.split('\n')
-    .map(l => l.trim())
-    .filter(l => l && !l.startsWith('【') && !l.includes('推推') && !l.includes('预收') && !l.includes('收藏') && !l.includes('作者微博'));
-  
-  const text = lines.length > 0 ? lines.join(' ') : cleaned.replace(/\n+/g, ' ');
-  if (text.length > maxLength) {
-    return text.substring(0, maxLength) + '...';
-  }
-  return text;
-}
-
-// Chuyển đổi URL ảnh bìa an toàn cho web HTTPS
-export function getCleanCoverUrl(url?: string): string {
-  if (!url || typeof url !== 'string') return '';
-  let clean = url.trim();
-  if (clean.startsWith('http://')) {
-    clean = clean.replace('http://', 'https://');
-  }
-  return clean;
-}
-
-// Tạo bìa vector SVG phong cách Tấn Giang tuyệt đẹp khi truyện không có bìa hoặc link bị lỗi
-export function generateJjwxcCoverSvg(title: string, author: string, novelId?: string): string {
-  const safeTitle = (title || 'Tấn Giang').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-  const safeAuthor = (author || 'Tác giả').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-  const safeId = novelId || '';
-
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 420" width="300" height="420">
-    <defs>
-      <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stop-color="#2c1420"/>
-        <stop offset="50%" stop-color="#1a0b14"/>
-        <stop offset="100%" stop-color="#10050d"/>
-      </linearGradient>
-      <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stop-color="#fef3c7"/>
-        <stop offset="100%" stop-color="#f59e0b"/>
-      </linearGradient>
-    </defs>
-    <rect width="300" height="420" fill="url(#bg)"/>
-    <rect x="10" y="10" width="280" height="400" fill="none" stroke="#4a2235" stroke-width="1.5" rx="6"/>
-    <rect x="14" y="14" width="272" height="392" fill="none" stroke="#2d1421" stroke-width="1" rx="4"/>
-    <rect x="65" y="32" width="170" height="24" rx="12" fill="#10b981" fill-opacity="0.15" stroke="#10b981" stroke-opacity="0.4"/>
-    <text x="150" y="48" fill="#34d399" font-family="serif, sans-serif" font-size="11" font-weight="bold" text-anchor="middle" letter-spacing="3">晋江文学城</text>
-    <rect x="30" y="75" width="240" height="235" fill="#160810" fill-opacity="0.75" rx="8" stroke="#3d1b2c" stroke-width="1"/>
-    <text x="150" y="145" fill="url(#gold)" font-family="serif, sans-serif" font-size="${safeTitle.length > 7 ? '18' : '22'}" font-weight="900" text-anchor="middle">
-      ${safeTitle.length > 8 ? safeTitle.slice(0, 8) : safeTitle}
-    </text>
-    ${safeTitle.length > 8 ? `<text x="150" y="175" fill="url(#gold)" font-family="serif, sans-serif" font-size="17" font-weight="900" text-anchor="middle">${safeTitle.slice(8, 16)}</text>` : ''}
-    <line x1="75" y1="210" x2="225" y2="210" stroke="#10b981" stroke-width="1" stroke-dasharray="4 2" opacity="0.6"/>
-    <text x="150" y="240" fill="#e5e7eb" font-family="sans-serif" font-size="13" font-weight="600" text-anchor="middle">
-      ${safeAuthor} 著
-    </text>
-    ${safeId ? `<text x="150" y="270" fill="#9ca3af" font-family="monospace" font-size="11" text-anchor="middle">ID: ${safeId}</text>` : ''}
-    <rect x="40" y="340" width="220" height="42" rx="6" fill="#13070f" stroke="#331424" stroke-width="1"/>
-    <text x="150" y="365" fill="#a78bfa" font-family="sans-serif" font-size="11" font-weight="bold" text-anchor="middle" letter-spacing="2">纯 爱 • 原 创</text>
-  </svg>`;
-
-  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
-}
-
-// Format lượt bookmark (thâu tàng) sang Tiếng Việt
-export function formatBookmarksVi(bm?: string | number): string {
-  if (!bm) return '';
-  const num = typeof bm === 'number' ? bm : parseInt(String(bm).replace(/[^\d]/g, ''), 10);
-  if (isNaN(num)) return '';
-  if (num >= 1000000) {
-    return `${(num / 1000000).toFixed(2)} triệu`;
-  }
-  if (num >= 10000) {
-    return `${(num / 10000).toFixed(1)} vạn`;
-  }
-  return num.toLocaleString('vi-VN');
-}
-
-// Format phiếu bá vương sang Tiếng Việt
-export function formatBawangVi(bw?: string | number): string {
-  if (!bw) return '';
-  const num = typeof bw === 'number' ? bw : parseInt(String(bw).replace(/[^\d]/g, ''), 10);
-  if (isNaN(num)) return '';
-  if (num >= 100000000) {
-    return `${(num / 100000000).toFixed(1)} ức`;
-  }
-  if (num >= 10000000) {
-    return `${(num / 10000000).toFixed(1)} ngàn vạn`;
-  }
-  if (num >= 10000) {
-    return `${(num / 10000).toFixed(1)} vạn`;
-  }
-  return num.toLocaleString('vi-VN');
-}
-
-// Format điểm đánh giá hoàn thành (thang 10)
-export function formatRatingVi(rate?: string | number): string {
-  if (!rate) return '';
-  const num = typeof rate === 'number' ? rate : parseFloat(String(rate));
-  if (isNaN(num)) return '';
-  return `${num.toFixed(1)}`;
-}
-
-// Dịch / chuyển ngữ văn án chữ Hán sang tiếng Việt dễ hiểu
-export function translateIntroToVietnamese(introCn: string): string {
-  if (!introCn) return 'Tác phẩm chưa có phần giới thiệu công khai trên bảng xếp hạng này. Bạn có thể bấm "Mở trên Tấn Giang" để xem trực tiếp tại trang gốc.';
-
-  let text = cleanHtmlText(introCn);
-
-  // Bản dịch các thuật ngữ, thiết lập đam mỹ phổ biến trong văn án JJWXC
-  const termMap: [RegExp, string][] = [
-    [/订阅请注意[：:]/g, '【Lưu ý khi theo dõi】: '],
-    [/攻[×xX*]受/g, 'Công x Thụ'],
-    [/受[×xX*]攻/g, 'Thụ x Công'],
-    [/主角受/g, 'Chủ thụ (Góc nhìn Thụ)'],
-    [/主角攻/g, 'Chủ công (Góc nhìn Công)'],
-    [/互攻/g, 'Hỗ công'],
-    [/1[Vv]1/g, '1v1 (Một kèm một chung thủy)'],
-    [/[Hh][Ee]/g, 'HE (Kết thúc viên mãn có hậu)'],
-    [/[Bb][Ee]/g, 'BE (Kết buồn chia ly)'],
-    [/[Oo][Ee]/g, 'OE (Kết mở)'],
-    [/排雷[：:]/g, '【Nhắc nhở trước khi đọc】: '],
-    [/文案[：:]/g, '【Văn án】: '],
-    [/内容标签[：:]/g, '【Nhãn nội dung】: '],
-    [/搜索关键字[：:]/g, '【Từ khóa tìm kiếm】: '],
-    [/一句话简介[：:]/g, '【Tóm tắt một câu】: '],
-    [/立意[：:]/g, '【Thông điệp tác phẩm】: '],
-    [/无限流/g, 'Vô hạn lưu (Game sinh tồn)'],
-    [/快穿/g, 'Khoái xuyên (Nhanh qua các thế giới)'],
-    [/穿越/g, 'Xuyên không'],
-    [/重生/g, 'Trọng sinh (Sống lại kiếp trước)'],
-    [/穿书/g, 'Xuyên thư (Xuyên vào tiểu thuyết)'],
-    [/系统/g, 'Hệ thống'],
-    [/娱乐圈/g, 'Giới giải trí'],
-    [/修真/g, 'Tu chân tiên hiệp'],
-    [/修仙/g, 'Tu tiên'],
-    [/甜文/g, 'Điềm văn (Truyện ngọt sủng)'],
-    [/爽文/g, 'Sảng văn (Truyện vả mặt sảng khoái)'],
-    [/强强/g, 'Cường cường (Cả hai đều siêu mạnh)'],
-    [/万人迷/g, 'Vạn nhân mê (Ai cũng say đắm)'],
-    [/白月光/g, 'Bạch nguyệt quang (Người thương trong lòng)'],
-    [/替身/g, 'Thế thân'],
-    [/破镜重圆/g, 'Gương vỡ lại lành'],
-    [/青梅竹马/g, 'Thanh mai trúc mã'],
-    [/天作之合/g, 'Trời sinh một đôi'],
-    [/情有独钟/g, 'Duyên trời tác hợp, tình cảm chung thủy'],
-    [/宿敌/g, 'Kẻ thù truyền kiếp'],
-    [/死对头/g, 'Oan gia đối đầu'],
-    [/金手指/g, 'Bàn tay vàng'],
-    [/师尊/g, 'Sư tôn'],
-    [/徒弟/g, 'Đồ đệ'],
-    [/年下/g, 'Niên hạ (Công nhỏ tuổi hơn Thụ)'],
-    [/年上/g, 'Niên thượng (Công lớn tuổi hơn Thụ)'],
-    [/ABO/g, 'ABO (Alpha/Beta/Omega)'],
-    [/万人嫌/g, 'Vạn nhân hiềm (Bị mọi người ghét bỏ)'],
-    [/升级流/g, 'Thăng cấp lưu (Luyện cấp tăng tiến)'],
-    [/打脸/g, 'Vả mặt'],
-    [/打怪/g, 'Đánh quái'],
-    [/大佬/g, 'Đại lão'],
-    [/魔尊/g, 'Ma tôn'],
-    [/仙尊/g, 'Tiên tôn'],
-    [/小少爷/g, 'Tiểu thiếu gia'],
-    [/网恋/g, 'Hẹn hò qua mạng'],
-    [/电竞/g, 'Thể thao điện tử (eSports)'],
-    [/直播/g, 'Livestream'],
-    [/双向奔赴/g, 'Song phương cùng hướng về nhau'],
-    [/暗恋/g, 'Thầm yêu đơn phương'],
-    [/先婚后爱/g, 'Cưới trước yêu sau'],
-    [/追妻火葬场/g, 'Truy thê hỏa táng tràng'],
-    [/火葬场/g, 'Hỏa táng tràng (Hối hận theo đuổi lại)'],
-    [/沙雕/g, 'Hài hước sa điêu'],
-    [/治愈/g, 'Chữa lành tâm hồn'],
-    [/救赎/g, 'Cứu rỗi lẫn nhau']
-  ];
-
-  for (const [regex, rep] of termMap) {
-    text = text.replace(regex, rep);
-  }
-
-  return text;
-}
-
 export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
   stories = [],
   onSelectStory,
   onNavigateHome
 }) => {
-  // Bảng xếp hạng đang chọn
-  const [selectedRankId, setSelectedRankId] = useState<string>('vip_jinbang');
+  // Bảng xếp hạng đang chọn (Mặc định Top Mọi Thời Đại)
+  const [selectedRankId, setSelectedRankId] = useState<string>('zongfen');
   // Dữ liệu bảng xếp hạng
   const [dataset, setDataset] = useState(initialRealRankingsData);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [lastUpdated, setLastUpdated] = useState<string>(initialRealRankingsData.crawledAt || 'Mới cập nhật');
 
   // Bộ lọc
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'completed' | 'ongoing'>('all');
   
-  // Modal xem chi tiết giới thiệu tác phẩm
+  // Modal xem chi tiết giới thiệu gốc & bảng màu tự động từ bìa truyện (Không dùng AI)
   const [activeNovel, setActiveNovel] = useState<JjwxcNovel | null>(null);
-  const [isLoadingIntro, setIsLoadingIntro] = useState<boolean>(false);
+  const [activePalette, setActivePalette] = useState<CanvaPalette | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
-
-  // Chế độ: 'ranks' (9 BXH chính) hoặc 'tags' (BXH Theo Tag Thể Loại)
-  const [hubMode, setHubMode] = useState<'ranks' | 'tags'>('ranks');
-  const [selectedTagId, setSelectedTagId] = useState<string>('wuxianliu');
-  const [tagCategoryFilter, setTagCategoryFilter] = useState<'all' | 'genre' | 'setting' | 'trope' | 'relationship'>('all');
-  const [tagSearchQuery, setTagSearchQuery] = useState<string>('');
+  const [novelIntro, setNovelIntro] = useState<string>('');
+  const [isLoadingIntro, setIsLoadingIntro] = useState<boolean>(false);
 
   // Bookmark yêu thích lưu localStorage
   const [savedNovelIds, setSavedNovelIds] = useState<string[]>(() => {
@@ -396,6 +59,46 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
   });
   const [showSavedOnly, setShowSavedOnly] = useState(false);
 
+  // Tự động phân tích màu sắc từ ảnh bìa và tải giới thiệu đầy đủ khi mở modal truyện
+  useEffect(() => {
+    if (activeNovel) {
+      const coverSrc = `/api/jjwxc/cover/${activeNovel.novelId}`;
+      extractPaletteFromImage(coverSrc, activeNovel.novelId).then(palette => {
+        setActivePalette(palette);
+      });
+
+      // Nếu truyện đã có sẵn văn án giới thiệu
+      if (activeNovel.intro && activeNovel.intro.trim().length > 0) {
+        setNovelIntro(activeNovel.intro);
+        setIsLoadingIntro(false);
+      } else {
+        // Tự động lấy trực tiếp từ trang onebook.php của Tấn Giang
+        setIsLoadingIntro(true);
+        setNovelIntro('');
+        fetch(`/api/jjwxc/intro/${activeNovel.novelId}`)
+          .then(res => res.json())
+          .then(data => {
+            if (data && data.intro) {
+              setNovelIntro(data.intro);
+              activeNovel.intro = data.intro;
+            } else {
+              setNovelIntro('Chưa có thông tin giới thiệu.');
+            }
+          })
+          .catch(() => {
+            setNovelIntro('Chưa có thông tin giới thiệu.');
+          })
+          .finally(() => {
+            setIsLoadingIntro(false);
+          });
+      }
+    } else {
+      setActivePalette(null);
+      setNovelIntro('');
+      setIsLoadingIntro(false);
+    }
+  }, [activeNovel]);
+
   useEffect(() => {
     try {
       localStorage.setItem('choco_jjwxc_real_saved', JSON.stringify(savedNovelIds));
@@ -404,125 +107,19 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
     }
   }, [savedNovelIds]);
 
-  // Danh sách toàn bộ các tác phẩm trong kho truyện Tấn Giang (hơn 1.400+ truyện đam mỹ)
-  const masterNovelList: JjwxcNovel[] = useMemo(() => {
-    const list = (dataset as any).allNovels as JjwxcNovel[] | undefined;
-    if (list && list.length > 0) return list;
-    const map = new Map<string, JjwxcNovel>();
-    Object.values(dataset.rankings || {}).forEach((r: any) => {
-      r.items?.forEach((n: JjwxcNovel) => {
-        if (!map.has(n.novelId)) map.set(n.novelId, n);
-      });
-    });
-    return Array.from(map.values());
-  }, [dataset]);
-
-  // Hàm kiểm tra tác phẩm có thuộc tag thể loại (BẮT BUỘC 100%: phải có đúng tag gốc tiếng Trung trong tags)
-  const isNovelMatchingTagConfig = (novel: JjwxcNovel, tagConfig: CoreTagConfig): boolean => {
-    if (!novel.tags || novel.tags.length === 0) return false;
-    return novel.tags.some(t => t.trim() === tagConfig.zh || t.trim().includes(tagConfig.zh));
-  };
-
-  // Thống kê số lượng truyện cho từng Tag cơ bản phổ biến nhất (Đảm bảo đúng 100 tác phẩm mỗi tag)
-  const coreTagsWithStats = useMemo(() => {
-    return CORE_JJWXC_TAGS.map(tagConfig => {
-      const directList = (dataset as any).tagRankings?.[tagConfig.id] as JjwxcNovel[] | undefined;
-      const count = directList ? directList.length : 0;
-      return {
-        ...tagConfig,
-        count: count,
-        totalAvailable: count
-      };
-    });
-  }, [dataset]);
-
-  // Danh sách các tag sau khi lọc theo tab danh mục và ô tìm kiếm tag
-  const filteredTagsList = useMemo(() => {
-    let list = coreTagsWithStats;
-    if (tagCategoryFilter !== 'all') {
-      list = list.filter(t => t.category === tagCategoryFilter);
-    }
-    if (tagSearchQuery.trim()) {
-      const q = tagSearchQuery.toLowerCase().trim();
-      list = list.filter(t => 
-        t.nameVi.toLowerCase().includes(q) || 
-        t.zh.toLowerCase().includes(q)
-      );
-    }
-    return list;
-  }, [coreTagsWithStats, tagCategoryFilter, tagSearchQuery]);
-
-  // Tag đang được chọn hiện tại
-  const currentTagConfig = useMemo(() => {
-    return (
-      coreTagsWithStats.find(t => t.id === selectedTagId || t.zh === selectedTagId) || 
-      coreTagsWithStats[0]
-    );
-  }, [coreTagsWithStats, selectedTagId]);
-
-  // BXH truyện theo Tag được chọn: LẤY TRỰC TIẾP TOP 100 GỐC TỪ TẤN GIANG (Rank 1 -> 100)
-  const tagNovelList: JjwxcNovel[] = useMemo(() => {
-    if (!currentTagConfig) return [];
-    
-    // 1. Nếu có dữ liệu BXH tag được cào trực tiếp từ Tấn Giang
-    const directTagRank = (dataset as any).tagRankings?.[currentTagConfig.id] as JjwxcNovel[] | undefined;
-    if (directTagRank && directTagRank.length > 0) {
-      return directTagRank.slice(0, 100).map((n, idx) => ({ ...n, rank: idx + 1 }));
-    }
-
-    // 2. Fallback: Lọc từ masterNovelList và xếp theo điểm tích phân
-    const map = new Map<string, JjwxcNovel>();
-    
-    const parseScore = (str?: string): number => {
-      if (!str) return 0;
-      const clean = str.replace(/[^0-9]/g, '');
-      return clean ? parseInt(clean, 10) : 0;
-    };
-
-    masterNovelList.forEach(n => {
-      if (isNovelMatchingTagConfig(n, currentTagConfig)) {
-        if (!map.has(n.novelId)) {
-          map.set(n.novelId, { ...n });
-        } else {
-          const exist = map.get(n.novelId)!;
-          if (parseScore(n.score) > parseScore(exist.score)) {
-            map.set(n.novelId, { ...n });
-          }
-        }
-      }
-    });
-
-    const sorted = Array.from(map.values()).sort((a, b) => {
-      return parseScore(b.score) - parseScore(a.score);
-    });
-
-    const top100 = sorted.slice(0, 100);
-    return top100.map((n, idx) => ({ ...n, rank: idx + 1 }));
-  }, [dataset, masterNovelList, currentTagConfig]);
-
-  // Fetch dữ liệu từ backend API nếu có cập nhật (bảo vệ không làm mất 9 BXH trên GitHub Pages)
+  // Fetch dữ liệu từ backend API nếu có cập nhật
   const fetchRankings = async (isManualRefresh = false) => {
     try {
       if (isManualRefresh) setIsLoading(true);
       const res = await fetch('/api/jjwxc/rankings');
-      const contentType = res.headers.get('content-type') || '';
-      if (res.ok && contentType.includes('application/json')) {
+      if (res.ok) {
         const data = await res.json();
-        if (data && data.rankings && Object.keys(data.rankings).length > 0) {
-          const hasItems = Object.values(data.rankings).some((r: any) => r?.items && r.items.length > 0);
-          if (hasItems) {
-            setDataset(prev => ({
-              ...prev,
-              ...data,
-              rankings: data.rankings || prev.rankings,
-              tagRankings: data.tagRankings || prev.tagRankings
-            }));
-            if (data.crawledAt) setLastUpdated(data.crawledAt);
-          }
+        if (data && data.rankings) {
+          setDataset(data);
         }
       }
     } catch (err) {
-      console.debug('Không thể tải API rankings, giữ nguyên dữ liệu bundle:', err);
+      console.error('Không thể tải API rankings, dùng dữ liệu bundle sẵn có:', err);
     } finally {
       if (isManualRefresh) setIsLoading(false);
     }
@@ -532,89 +129,11 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
     fetchRankings(false);
   }, []);
 
-  // Tự động kiểm tra và nạp văn án đầy đủ & bìa riêng từ Tấn Giang nếu văn án hiện tại chưa đủ
-  useEffect(() => {
-    if (!activeNovel) return;
-    let isMounted = true;
-    if (!activeNovel.intro || activeNovel.intro.length < 150) {
-      setIsLoadingIntro(true);
-      fetch(`/api/jjwxc/novel-detail/${activeNovel.novelId}`)
-        .then(res => {
-          const contentType = res.headers.get('content-type') || '';
-          if (res.ok && contentType.includes('application/json')) {
-            return res.json();
-          }
-          return null;
-        })
-        .then(detail => {
-          if (detail && isMounted) {
-            setActiveNovel(prev => {
-              if (!prev || prev.novelId !== activeNovel.novelId) return prev;
-              return {
-                ...prev,
-                intro: detail.fullIntro || prev.intro,
-                status: detail.status || prev.status,
-                wordCount: detail.wordCount || prev.wordCount,
-                coverUrl: detail.coverUrl || prev.coverUrl,
-                isAuthorCover: detail.isAuthorCover ?? prev.isAuthorCover
-              };
-            });
-          }
-        })
-        .catch(err => {
-          // Bỏ qua lỗi kết nối khi chạy trên môi trường tĩnh (như GitHub Pages)
-          console.debug('Không thể kết nối proxy backend lấy văn án mở rộng:', err);
-        })
-        .finally(() => {
-          if (isMounted) setIsLoadingIntro(false);
-        });
-    } else {
-      setIsLoadingIntro(false);
-    }
-    return () => { isMounted = false; };
-  }, [activeNovel?.novelId]);
-
   const toggleSaveNovel = (id: string, e?: React.MouseEvent) => {
     e?.stopPropagation();
     setSavedNovelIds(prev => 
       prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
     );
-  };
-
-  // Helper lấy URL ảnh bìa an toàn (tải trực tiếp từ server CDN Tấn Giang với chính sách no-referrer)
-  const getCoverSrc = (novel: JjwxcNovel): string => {
-    const clean = getCleanCoverUrl(novel.coverUrl);
-    if (!clean) {
-      return generateJjwxcCoverSvg(novel.title, novel.author, novel.novelId);
-    }
-    return clean;
-  };
-
-  // Xử lý lỗi tải ảnh đa tầng, đảm bảo 100% không bao giờ hiển thị icon ảnh vỡ
-  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>, novel: JjwxcNovel) => {
-    const img = e.currentTarget;
-    const currentSrc = img.src || '';
-    const clean = getCleanCoverUrl(novel.coverUrl);
-
-    // Đã dùng bìa SVG fallback thì không đổi thêm
-    if (currentSrc.startsWith('data:image/svg')) {
-      return;
-    }
-
-    // Tầng 1: Nếu URL là dạng tĩnh không có dấu ?, thử qua proxy wsrv.nl
-    if (clean && !clean.includes('?') && !currentSrc.includes('wsrv.nl')) {
-      img.src = `https://wsrv.nl/?url=${encodeURIComponent(clean)}`;
-      return;
-    }
-
-    // Tầng 2: Nếu môi trường có server Node (local/dev preview), thử qua image-proxy backend
-    if (clean && !currentSrc.includes('/api/jjwxc/image-proxy') && typeof window !== 'undefined' && !window.location.hostname.includes('github.io')) {
-      img.src = `/api/jjwxc/image-proxy?url=${encodeURIComponent(clean)}`;
-      return;
-    }
-
-    // Tầng 3: Tạo bìa vector SVG phong cách Tấn Giang tuyệt đẹp, sắc nét 100%
-    img.src = generateJjwxcCoverSvg(novel.title, novel.author, novel.novelId);
   };
 
   const handleCopyChinese = (text: string, id: string, e?: React.MouseEvent) => {
@@ -639,8 +158,8 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
   // Toàn bộ truyện đã bookmark
   const allSavedNovels: JjwxcNovel[] = useMemo(() => {
     const map = new Map<string, JjwxcNovel>();
-    Object.values(dataset.rankings || {}).forEach((r: any) => {
-      r.items?.forEach((n: JjwxcNovel) => {
+    Object.values(dataset.rankings || {}).forEach(r => {
+      r.items?.forEach(n => {
         if (savedNovelIds.includes(n.novelId) && !map.has(n.novelId)) {
           map.set(n.novelId, n);
         }
@@ -649,908 +168,429 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
     return Array.from(map.values());
   }, [dataset, savedNovelIds]);
 
-  // Danh sách sau lọc (giữ nguyên 100% thứ tự xếp hạng gốc của Tấn Giang từ #1 đến #100)
+  // Danh sách sau lọc
   const filteredNovels = useMemo(() => {
-    const list = showSavedOnly ? allSavedNovels : (hubMode === 'tags' ? tagNovelList : rawNovelList);
-    const matched = list.filter(novel => {
-      // Đảm bảo 100% CHỈ CÓ ĐAM MỸ / THUẦN ÁI
-      if (novel.genre && !novel.genre.includes('纯爱') && !novel.genre.includes('耽美')) {
-        return false;
-      }
-
-      // Tìm kiếm theo tên gốc tiếng Trung, tác giả, id
+    const list = showSavedOnly ? allSavedNovels : rawNovelList;
+    return list.filter(novel => {
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
-        const matchTitle = (novel.title || '').toLowerCase().includes(q);
-        const matchAuthor = (novel.author || '').toLowerCase().includes(q);
-        const matchId = (novel.novelId || '').includes(q);
-        const matchGenre = (novel.genre || '').toLowerCase().includes(q);
-        const matchViGenre = formatGenreVi(novel.genre || '').toLowerCase().includes(q);
-        const matchTags = novel.tags?.some(t => {
-          if (!t) return false;
-          const { vi } = getTagDisplayName(t);
-          return t.toLowerCase().includes(q) || (vi || '').toLowerCase().includes(q);
-        });
-        if (!matchTitle && !matchAuthor && !matchId && !matchGenre && !matchViGenre && !matchTags) return false;
+        const matchTitle = novel.title.toLowerCase().includes(q);
+        const matchAuthor = novel.author.toLowerCase().includes(q);
+        if (!matchTitle && !matchAuthor) return false;
       }
 
-      // Lọc tình trạng (完结 / 连载)
-      if (statusFilter === 'completed' && !(novel.status || '').includes('完结')) return false;
-      if (statusFilter === 'ongoing' && !(novel.status || '').includes('连载')) return false;
+      if (statusFilter === 'completed' && !novel.status.includes('完结')) return false;
+      if (statusFilter === 'ongoing' && !novel.status.includes('连载')) return false;
 
       return true;
     });
+  }, [rawNovelList, allSavedNovels, showSavedOnly, searchQuery, statusFilter]);
 
-    return matched;
-  }, [rawNovelList, tagNovelList, allSavedNovels, hubMode, showSavedOnly, searchQuery, statusFilter]);
-
-  // Icon badge theo top 1, 2, 3
+  // Badge thứ hạng tối giản
   const getRankBadge = (rank: number) => {
     if (rank === 1) {
       return (
-        <span className="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-500 border border-amber-500/40 flex items-center justify-center font-black text-base shadow-sm">
+        <span className="w-6 h-6 rounded-md bg-amber-500/20 text-amber-500 border border-amber-500/40 flex items-center justify-center font-bold text-xs shrink-0">
           1
         </span>
       );
     }
     if (rank === 2) {
       return (
-        <span className="w-8 h-8 rounded-lg bg-slate-300/20 text-slate-300 border border-slate-300/40 flex items-center justify-center font-black text-base shadow-sm">
+        <span className="w-6 h-6 rounded-md bg-slate-300/20 text-slate-300 border border-slate-300/40 flex items-center justify-center font-bold text-xs shrink-0">
           2
         </span>
       );
     }
     if (rank === 3) {
       return (
-        <span className="w-8 h-8 rounded-lg bg-amber-700/20 text-amber-600 border border-amber-600/40 flex items-center justify-center font-black text-base shadow-sm">
+        <span className="w-6 h-6 rounded-md bg-amber-700/20 text-amber-600 border border-amber-600/40 flex items-center justify-center font-bold text-xs shrink-0">
           3
         </span>
       );
     }
     return (
-      <span className="w-8 h-8 rounded-lg jjwxc-rank-badge border flex items-center justify-center font-bold text-sm shadow-sm backdrop-blur-xs">
+      <span className="w-6 h-6 rounded-md bg-bg-surface text-text-sub border border-border-custom/50 flex items-center justify-center text-xs font-semibold shrink-0">
         {rank}
       </span>
     );
   };
 
   return (
-    <div className="w-full max-w-7xl mx-auto px-4 py-6 font-mono text-white jjwxc-text-main">
-      {/* Header Banner thu gọn - Chỉ giữ thông tin cơ bản */}
-      <div className="rounded-xl border border-[#3b1828] jjwxc-border bg-[#160a11] jjwxc-bg-card px-4 py-3 mb-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center flex-shrink-0">
-            <Trophy className="w-4 h-4 text-amber-500" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-base sm:text-lg font-black text-white jjwxc-text-main tracking-tight">
-                BXH Tấn Giang (JJWXC)
-              </h1>
-            </div>
-            <div className="text-[11px] jjwxc-text-sub mt-0.5">
-              Cập nhật: <span className="text-white jjwxc-text-main">{lastUpdated}</span>
-              {savedNovelIds.length > 0 && (
-                <> • Đã lưu: <span className="text-emerald-400 font-bold">{savedNovelIds.length}</span></>
-              )}
-            </div>
-          </div>
+    <div className="w-full max-w-5xl mx-auto px-4 py-6 font-mono text-text-main space-y-4">
+      {/* Header thanh lịch, đơn giản */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-border-custom">
+        <div className="flex items-center gap-2.5">
+          <Trophy className="w-5 h-5 text-amber-500 shrink-0" />
+          <h1 className="text-lg font-bold text-text-main tracking-tight">
+            Bảng Xếp Hạng Tấn Giang
+          </h1>
+          <span className="text-xs text-text-sub px-2 py-0.5 rounded bg-bg-card border border-border-custom">
+            {showSavedOnly ? 'Đã lưu' : currentCategoryConfig.nameViGuide}
+          </span>
         </div>
 
-        {/* Nút tác vụ nhanh gọn */}
-        <div className="flex items-center gap-2 self-end sm:self-center">
+        <div className="flex items-center gap-2">
+          {savedNovelIds.length > 0 && (
+            <button
+              onClick={() => setShowSavedOnly(!showSavedOnly)}
+              className={`text-xs px-2.5 py-1.5 rounded-lg border transition-all flex items-center gap-1.5 ${
+                showSavedOnly 
+                  ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400 font-bold' 
+                  : 'bg-bg-card border-border-custom text-text-sub hover:text-text-main'
+              }`}
+            >
+              <Bookmark className={`w-3.5 h-3.5 ${showSavedOnly ? 'fill-emerald-400' : ''}`} />
+              <span>Đã lưu ({savedNovelIds.length})</span>
+            </button>
+          )}
+
           <button
             onClick={() => fetchRankings(true)}
             disabled={isLoading}
-            className="px-2.5 py-1.5 rounded-lg border border-[#3b1828] jjwxc-border bg-[#210e19] jjwxc-bg-surface hover:bg-[#160a11] jjwxc-bg-card text-white jjwxc-text-main text-xs font-bold transition-all flex items-center gap-1.5 active:scale-95 shadow-xs"
-            title="Đồng bộ lại từ Tấn Giang"
+            className="p-1.5 rounded-lg border border-border-custom bg-bg-card hover:bg-bg-surface text-text-sub hover:text-text-main transition-all"
+            title="Làm mới"
           >
             <RefreshCw className={`w-3.5 h-3.5 text-emerald-500 ${isLoading ? 'animate-spin' : ''}`} />
-            <span>{isLoading ? 'Đang tải...' : 'Làm mới'}</span>
           </button>
-
-          <a
-            href="https://www.jjwxc.net/fenzhan/noyq/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="px-2.5 py-1.5 rounded-lg border border-[#3b1828] jjwxc-border bg-[#210e19] jjwxc-bg-surface hover:bg-[#160a11] jjwxc-bg-card jjwxc-text-sub hover:text-white jjwxc-text-main text-xs font-bold transition-all flex items-center gap-1 shadow-xs"
-            title="Mở trang chủ phân khu Thuần Ái JJWXC"
-          >
-            <span>Trang gốc</span>
-            <ExternalLink className="w-3 h-3" />
-          </a>
         </div>
       </div>
 
-      {/* Thanh chuyển chế độ: 9 BXH Chính vs BXH Theo Tag Thể Loại */}
-      <div className="flex items-center gap-2 mb-4 p-1 rounded-xl bg-[#160a11] jjwxc-bg-card border border-[#3b1828] jjwxc-border w-fit">
-        <button
-          onClick={() => {
-            setHubMode('ranks');
-            setShowSavedOnly(false);
-          }}
-          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${
-            hubMode === 'ranks' && !showSavedOnly
-              ? 'bg-emerald-500 text-white shadow-sm'
-              : 'jjwxc-text-sub hover:text-white jjwxc-text-main'
-          }`}
-        >
-          <Layers className="w-3.5 h-3.5" />
-          <span>9 Bảng Xếp Hạng Chính</span>
-        </button>
-
-        <button
-          onClick={() => {
-            setHubMode('tags');
-            setShowSavedOnly(false);
-          }}
-          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${
-            hubMode === 'tags' && !showSavedOnly
-              ? 'bg-emerald-500 text-white shadow-sm'
-              : 'jjwxc-text-sub hover:text-white jjwxc-text-main'
-          }`}
-        >
-          <Tag className="w-3.5 h-3.5" />
-          <span>BXH Theo Tag Thể Loại ({coreTagsWithStats.length} Tag Chính)</span>
-        </button>
-      </div>
-
-      {/* Hiển thị chọn bảng tùy theo chế độ */}
-      {hubMode === 'ranks' ? (
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="text-xs font-bold uppercase tracking-wider jjwxc-text-sub flex items-center gap-2">
-              <Layers className="w-4 h-4 text-emerald-500" />
-              Chọn Bảng Xếp Hạng ({JJWXC_RANK_CATEGORIES.length} Bảng):
-            </h2>
-            {savedNovelIds.length > 0 && (
-              <button
-                onClick={() => setShowSavedOnly(!showSavedOnly)}
-                className={`text-xs font-bold px-3 py-1 rounded-lg border transition-all flex items-center gap-1.5 ${
-                  showSavedOnly 
-                    ? 'jjwxc-saved-badge shadow-xs' 
-                    : 'bg-[#160a11] jjwxc-bg-card border-[#3b1828] jjwxc-border jjwxc-text-sub hover:text-white jjwxc-text-main'
-                }`}
-              >
-                <Bookmark className="w-3.5 h-3.5" />
-                <span>Xem truyện đã lưu ({savedNovelIds.length})</span>
-              </button>
-            )}
-          </div>
-
-          {/* Danh sách tab bảng với tên tiếng Việt rõ ràng */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
+      {/* Thanh tab các BXH dạng cuộn ngang đơn giản */}
+      {!showSavedOnly && (
+        <div className="space-y-2">
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
             {JJWXC_RANK_CATEGORIES.map(category => {
-              const isSelected = selectedRankId === category.id && !showSavedOnly && hubMode === 'ranks';
-              const count = dataset.rankings?.[category.id]?.items?.length || 0;
+              const isSelected = selectedRankId === category.id;
               return (
                 <button
                   key={category.id}
-                  onClick={() => {
-                    setSelectedRankId(category.id);
-                    setShowSavedOnly(false);
-                  }}
-                  className={`p-3 rounded-xl border text-left transition-all relative overflow-hidden group flex flex-col justify-between ${
+                  onClick={() => setSelectedRankId(category.id)}
+                  className={`px-3 py-1.5 rounded-lg border text-xs whitespace-nowrap transition-all ${
                     isSelected
-                      ? 'border-emerald-500 bg-emerald-500/10 text-white jjwxc-text-main shadow-md'
-                      : 'border-[#3b1828] jjwxc-border bg-[#160a11] jjwxc-bg-card hover:opacity-90 jjwxc-text-sub hover:text-white jjwxc-text-main'
+                      ? 'border-emerald-500/80 bg-emerald-500/15 text-emerald-400 font-bold shadow-xs'
+                      : 'border-border-custom/70 bg-bg-card/70 hover:bg-bg-card text-text-sub hover:text-text-main'
                   }`}
                 >
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs font-black tracking-tight text-white jjwxc-text-main group-hover:text-emerald-500 transition-colors leading-snug line-clamp-2 min-h-[32px] flex items-center">
-                        {category.nameViGuide}
-                      </span>
-                    </div>
-                    <div className="text-[11px] font-medium text-emerald-500/80 font-mono">
-                      {category.name}
-                    </div>
-                  </div>
-                  <div className="mt-2 flex items-center justify-end min-h-[6px]">
-                    {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>}
-                  </div>
+                  {category.nameViGuide}
                 </button>
               );
             })}
           </div>
-        </div>
-      ) : (
-        /* Giao diện chọn BXH Theo Tag Thể Loại Cơ Bản của Tấn Giang */
-        <div className="mb-6 rounded-xl border border-[#3b1828] jjwxc-border bg-[#160a11] jjwxc-bg-card p-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
-            <div>
-              <h2 className="text-xs font-bold uppercase tracking-wider jjwxc-text-sub flex items-center gap-2">
-                <Tag className="w-4 h-4 text-emerald-500" />
-                Chọn Tag Thể Loại Đam Mỹ ({filteredTagsList.length} Tag):
-              </h2>
-              <p className="text-[11px] jjwxc-text-sub mt-0.5">
-                Các thể loại quen thuộc & phổ biến nhất trên Tấn Giang, bấm để xem bảng xếp hạng điểm cao
-              </p>
-            </div>
 
-            {/* Ô tìm kiếm tag nhanh */}
-            <div className="relative min-w-[240px]">
-              <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 jjwxc-text-sub" />
-              <input
-                type="text"
-                value={tagSearchQuery}
-                onChange={(e) => setTagSearchQuery(e.target.value)}
-                placeholder="Tìm tag (Vô hạn, học đường, abo...)"
-                className="w-full bg-[#210e19] jjwxc-bg-surface border border-[#3b1828] jjwxc-border rounded-lg pl-9 pr-7 py-1.5 text-xs text-white jjwxc-text-main placeholder-text-sub/60 focus:outline-hidden focus:border-emerald-500 transition-colors"
-              />
-              {tagSearchQuery && (
-                <button
-                  onClick={() => setTagSearchQuery('')}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 jjwxc-text-sub hover:text-white jjwxc-text-main"
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Tab danh mục tag (Bối cảnh, Thể loại, Thiết lập, Tình cảm) */}
-          <div className="flex items-center gap-1.5 mb-3 overflow-x-auto pb-1">
-            {TAG_CATEGORY_TABS.map(tab => (
-              <button
-                key={tab.id}
-                onClick={() => setTagCategoryFilter(tab.id as any)}
-                className={`px-2.5 py-1 rounded-lg text-xs font-bold whitespace-nowrap transition-all border ${
-                  tagCategoryFilter === tab.id
-                    ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40'
-                    : 'bg-[#210e19] jjwxc-bg-surface border-[#3b1828] jjwxc-border jjwxc-text-sub hover:text-white jjwxc-text-main'
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-
-          {/* Lưới các Tag Thể Loại chính */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 max-h-72 overflow-y-auto pr-1">
-            {filteredTagsList.map(tagItem => {
-              const isSelected = (selectedTagId === tagItem.id || selectedTagId === tagItem.zh) && !showSavedOnly;
-              return (
-                <button
-                  key={tagItem.id}
-                  onClick={() => {
-                    setSelectedTagId(tagItem.id);
-                    setShowSavedOnly(false);
-                  }}
-                  className={`p-2.5 rounded-xl border text-left transition-all relative flex flex-col justify-between ${
-                    isSelected
-                      ? 'border-emerald-500 bg-emerald-500/10 shadow-sm'
-                      : 'border-[#3b1828] jjwxc-border bg-[#210e19] jjwxc-bg-surface hover:bg-[#160a11] jjwxc-bg-card'
-                  }`}
-                >
-                  <div className="flex items-center justify-between gap-1 mb-1.5">
-                    <div className="flex items-center gap-1 min-w-0">
-                      <Hash className={`w-3.5 h-3.5 flex-shrink-0 ${isSelected ? 'text-emerald-400' : 'jjwxc-text-sub'}`} />
-                      <span className={`text-xs font-black truncate capitalize ${isSelected ? 'text-emerald-400' : 'text-white jjwxc-text-main'}`}>
-                        {tagItem.nameVi}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between text-[10px] jjwxc-text-sub font-mono">
-                    <span>{tagItem.zh}</span>
-                    {isSelected && <span className="text-emerald-400 font-bold">Đang xem</span>}
-                  </div>
-                </button>
-              );
-            })}
+          {/* Tiêu chí xếp hạng của bảng hiện tại */}
+          <div className="text-[11px] text-text-sub bg-bg-card/40 px-3 py-1.5 rounded-lg border border-border-custom/60 flex items-center justify-between">
+            <span>📌 {currentCategoryConfig.desc}</span>
+            <span className="font-mono text-[10px] opacity-75">{currentCategoryConfig.channel}</span>
           </div>
         </div>
       )}
 
-      {/* Thanh Thông Tin Bảng Đang Chọn + Bộ Lọc Tìm Kiếm */}
-      <div className="rounded-xl border border-[#3b1828] jjwxc-border bg-[#160a11] jjwxc-bg-card p-4 mb-6">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="px-3 py-1 rounded text-xs font-black uppercase border jjwxc-banner-badge">
-                {showSavedOnly 
-                  ? 'DANH SÁCH ĐÃ LƯU' 
-                  : hubMode === 'tags'
-                    ? `TOP ${tagNovelList.length} • ${currentTagConfig.nameVi}`
-                    : currentCategoryConfig.nameViGuide}
-              </span>
-              <span className="text-xs jjwxc-text-sub font-mono font-bold">
-                ({hubMode === 'tags' ? currentTagConfig.zh : currentCategoryConfig.name})
-              </span>
-              {hubMode === 'tags' && (
-                <div className="flex items-center gap-2">
-                  <span className="text-xs jjwxc-tab-active font-bold">
-                    • Xếp theo BXH gốc Tấn Giang ({filteredNovels.length} bộ)
-                  </span>
-                </div>
-              )}
-            </div>
-            {showSavedOnly && (
-              <p className="text-xs jjwxc-text-sub mt-1">
-                Tổng hợp tất cả các tác phẩm bạn đã lưu từ mọi bảng xếp hạng Tấn Giang
-              </p>
-            )}
-            {!showSavedOnly && hubMode === 'ranks' && (
-              <p className="text-xs jjwxc-text-sub mt-1">
-                {currentCategoryConfig.desc}
-              </p>
-            )}
-          </div>
-
-          {/* Công cụ tìm kiếm & lọc bằng tiếng Việt */}
-          <div className="flex flex-wrap items-center gap-2.5">
-            {/* Input tìm kiếm */}
-            <div className="relative min-w-[220px] flex-1 sm:flex-initial">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 jjwxc-text-sub" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Tìm tên gốc, tác giả, thể loại..."
-                className="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg border border-[#3b1828] jjwxc-border bg-[#210e19] jjwxc-bg-surface text-white jjwxc-text-main focus:outline-none focus:border-emerald-500 transition-colors"
-              />
-              {searchQuery && (
-                <button 
-                  onClick={() => setSearchQuery('')}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 jjwxc-text-sub hover:text-white jjwxc-text-main"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              )}
-            </div>
-
-            {/* Lọc tình trạng bằng tiếng Việt */}
-            <div className="flex items-center rounded-lg border border-[#3b1828] jjwxc-border bg-[#210e19] jjwxc-bg-surface p-0.5 text-xs">
-              <button
-                onClick={() => setStatusFilter('all')}
-                className={`px-2.5 py-1 rounded font-bold transition-all ${
-                  statusFilter === 'all'
-                    ? 'bg-[#160a11] jjwxc-bg-card border border-[#3b1828] jjwxc-border shadow-sm jjwxc-tab-active'
-                    : 'jjwxc-text-sub hover:text-white jjwxc-text-main'
-                }`}
-              >
-                Tất cả
-              </button>
-              <button
-                onClick={() => setStatusFilter('completed')}
-                className={`px-2.5 py-1 rounded font-bold transition-all ${
-                  statusFilter === 'completed'
-                    ? 'bg-[#160a11] jjwxc-bg-card border border-[#3b1828] jjwxc-border shadow-sm jjwxc-tab-active'
-                    : 'jjwxc-text-sub hover:text-white jjwxc-text-main'
-                }`}
-              >
-                Đã hoàn thành
-              </button>
-              <button
-                onClick={() => setStatusFilter('ongoing')}
-                className={`px-2.5 py-1 rounded font-bold transition-all ${
-                  statusFilter === 'ongoing'
-                    ? 'bg-[#160a11] jjwxc-bg-card border border-[#3b1828] jjwxc-border shadow-sm jjwxc-tab-active'
-                    : 'jjwxc-text-sub hover:text-white jjwxc-text-main'
-                }`}
-              >
-                Đang ra
-              </button>
-            </div>
-
-            <span className="text-xs font-bold jjwxc-text-muted ml-auto sm:ml-2">
-              Hiển thị: <strong className="jjwxc-text-main text-emerald-400">{filteredNovels.length}</strong> tác phẩm
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Danh Sách Truyện */}
-      {filteredNovels.length === 0 ? (
-        <div className="rounded-2xl border border-dashed jjwxc-empty-box p-12 text-center shadow-xs">
-          <BookOpen className="w-12 h-12 mx-auto jjwxc-text-muted mb-3 opacity-70" />
-          <p className="text-sm sm:text-base font-black jjwxc-text-main">Không tìm thấy tác phẩm nào phù hợp</p>
-          <p className="text-xs jjwxc-text-sub mt-1.5 max-w-md mx-auto">Hãy thử xóa bộ lọc tìm kiếm hoặc chọn bảng xếp hạng khác</p>
+      {/* Thanh tìm kiếm & lọc nhanh gọn */}
+      <div className="flex items-center justify-between gap-3 text-xs">
+        <div className="relative flex-1 max-w-xs">
+          <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-text-sub" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Tìm tên truyện, tác giả..."
+            className="w-full pl-8 pr-7 py-1.5 text-xs rounded-lg border border-border-custom bg-bg-surface text-text-main focus:outline-none focus:border-emerald-500/70"
+          />
           {searchQuery && (
-            <button
+            <button 
               onClick={() => setSearchQuery('')}
-              className="mt-4 px-4 py-2 rounded-xl border text-xs font-bold transition-all shadow-xs jjwxc-btn-close cursor-pointer"
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-text-sub hover:text-text-main"
             >
-              Xóa từ khóa tìm kiếm
+              <X className="w-3 h-3" />
             </button>
           )}
         </div>
+
+        {/* Lọc trạng thái */}
+        <div className="flex items-center rounded-lg border border-border-custom bg-bg-surface p-0.5 text-xs shrink-0">
+          <button
+            onClick={() => setStatusFilter('all')}
+            className={`px-2 py-1 rounded transition-all ${
+              statusFilter === 'all'
+                ? 'bg-bg-card text-emerald-400 font-bold shadow-xs'
+                : 'text-text-sub hover:text-text-main'
+            }`}
+          >
+            Tất cả
+          </button>
+          <button
+            onClick={() => setStatusFilter('completed')}
+            className={`px-2 py-1 rounded transition-all ${
+              statusFilter === 'completed'
+                ? 'bg-bg-card text-emerald-400 font-bold shadow-xs'
+                : 'text-text-sub hover:text-text-main'
+            }`}
+          >
+            Hoàn
+          </button>
+          <button
+            onClick={() => setStatusFilter('ongoing')}
+            className={`px-2 py-1 rounded transition-all ${
+              statusFilter === 'ongoing'
+                ? 'bg-bg-card text-emerald-400 font-bold shadow-xs'
+                : 'text-text-sub hover:text-text-main'
+            }`}
+          >
+            Đang ra
+          </button>
+        </div>
+      </div>
+
+      {/* Danh sách xếp hạng truyện tối giản */}
+      {filteredNovels.length === 0 ? (
+        <div className="rounded-xl border border-dashed border-border-custom py-12 text-center text-text-sub bg-bg-card/30">
+          <BookOpen className="w-8 h-8 mx-auto text-text-sub/40 mb-2" />
+          <p className="text-xs">Không tìm thấy truyện phù hợp</p>
+        </div>
       ) : (
-        <>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {filteredNovels.map((novel, index) => {
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+          {filteredNovels.map((novel, index) => {
             const isSaved = savedNovelIds.includes(novel.novelId);
-            const isCopied = copiedId === novel.novelId;
-            const statusInfo = formatStatusVi(novel.status);
-            const genreVi = formatGenreVi(novel.genre);
-            const wordsVi = formatWordsVi(novel.wordCount);
-            const scoreVi = formatScoreVi(novel.score);
 
             return (
               <div
                 key={`${novel.novelId}-${index}`}
-                onClick={() => {
-                  setActiveNovel(novel);
-                }}
-                className="group rounded-2xl border border-[#3b1828] jjwxc-border bg-[#160a11] jjwxc-bg-card hover:jjwxc-bg-surface hover:border-emerald-500/50 transition-all duration-200 p-4 flex flex-col justify-between cursor-pointer relative shadow-sm hover:shadow-lg"
+                onClick={() => setActiveNovel(novel)}
+                className="group rounded-xl border border-border-custom/80 bg-bg-card hover:bg-bg-surface hover:border-emerald-500/50 transition-all p-3 flex items-center justify-between gap-3 cursor-pointer shadow-xs"
               >
-                {/* Phần trên: Thứ hạng + Bìa + Thông tin chính */}
-                <div className="flex gap-4">
-                  {/* Bìa truyện gốc từ Tấn Giang */}
-                  <div className="relative w-20 h-28 sm:w-24 sm:h-32 rounded-xl overflow-hidden flex-shrink-0 bg-[#210e19] jjwxc-bg-surface border border-[#3b1828] jjwxc-border shadow-md">
-                    <img
-                      src={getCoverSrc(novel)}
-                      alt={novel.title}
-                      loading="lazy"
-                      decoding="async"
-                      referrerPolicy="no-referrer"
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      onError={(e) => handleImageError(e, novel)}
-                    />
-                    {/* Badge thứ hạng ở góc ảnh */}
-                    <div className="absolute top-1.5 left-1.5">
-                      {getRankBadge(novel.rank)}
-                    </div>
-                  </div>
+                {/* Thứ hạng + Bìa + Thông tin chính */}
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  {getRankBadge(novel.rank)}
 
-                  {/* Thông tin truyện */}
-                  <div className="flex-1 min-w-0 flex flex-col justify-between">
-                    <div>
-                      {/* Tiêu đề gốc tiếng Trung (GIỮ NGUYÊN GỐC) */}
-                      <div className="flex items-start justify-between gap-2">
-                        <h4 
-                          className="text-base sm:text-lg font-black text-white jjwxc-text-main group-hover:text-emerald-400 transition-colors line-clamp-1 tracking-tight"
-                          title={novel.title}
-                        >
-                          {novel.title}
-                        </h4>
-                        
-                        {/* Nút bookmark */}
-                        <button
-                          onClick={(e) => toggleSaveNovel(novel.novelId, e)}
-                          className={`p-1.5 rounded-lg border transition-all flex-shrink-0 ${
-                            isSaved 
-                              ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400' 
-                              : 'bg-[#210e19] jjwxc-bg-surface border-[#3b1828] jjwxc-border jjwxc-text-sub hover:text-white jjwxc-text-main'
-                          }`}
-                          title={isSaved ? 'Hủy lưu truyện' : 'Lưu vào danh sách theo dõi'}
-                        >
-                          <Bookmark className={`w-3.5 h-3.5 ${isSaved ? 'fill-emerald-400' : ''}`} />
-                        </button>
-                      </div>
+                  {/* Bìa truyện */}
+                  <img
+                    src={`/api/jjwxc/cover/${novel.novelId}`}
+                    alt={novel.title}
+                    loading="lazy"
+                    referrerPolicy="no-referrer"
+                    className="w-11 h-15 object-cover rounded-md border border-border-custom shrink-0 group-hover:scale-102 transition-transform bg-bg-surface"
+                    onError={(e) => {
+                      const target = e.currentTarget;
+                      if (novel.coverUrl && !target.src.includes(novel.coverUrl)) {
+                        target.src = novel.coverUrl;
+                      } else {
+                        target.src = 'https://static.jjwxc.net/images/cover.png';
+                      }
+                    }}
+                  />
 
-                      {/* Tác giả & Mã truyện */}
-                      <div className="text-xs jjwxc-text-sub mt-1 flex flex-wrap items-center gap-1.5">
-                        <span className="opacity-80">Tác giả:</span>
-                        <span className="font-bold text-white jjwxc-text-main px-1.5 py-0.5 rounded bg-[#210e19] jjwxc-bg-surface border border-[#3b1828] jjwxc-border-subtle">
-                          {novel.author}
-                        </span>
-                        {novel.authorId && (
-                          <span className="text-[10px] jjwxc-author-id font-bold font-mono">Mã TG: {novel.authorId}</span>
-                        )}
-                        <span className="text-[10px] font-bold font-mono px-1.5 py-0.5 rounded jjwxc-id-badge" title="Mã truyện Tấn Giang (Novel ID)">
-                          ID: {novel.novelId}
-                        </span>
-                      </div>
+                  {/* Chi tiết truyện */}
+                  <div className="min-w-0 flex-1">
+                    <h2 
+                      className="text-sm font-bold text-text-main group-hover:text-emerald-400 transition-colors truncate"
+                      title={novel.title}
+                    >
+                      {novel.title}
+                    </h2>
 
-                      {/* Thể loại & Tình trạng dịch sang Tiếng Việt */}
-                      <div className="flex flex-wrap items-center gap-1.5 mt-2">
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${
-                          statusInfo.isCompleted
-                            ? 'jjwxc-status-completed'
-                            : 'jjwxc-status-ongoing'
-                        }`}>
-                          {statusInfo.label}
-                        </span>
-
-                        <span className="text-[10px] jjwxc-text-sub px-2 py-0.5 rounded bg-[#210e19] jjwxc-bg-surface border border-[#3b1828] jjwxc-border-subtle line-clamp-1 max-w-[200px]" title={genreVi}>
-                          {genreVi}
-                        </span>
-                      </div>
-
-                      {/* Danh sách Tag thể loại chính thức của Tấn Giang */}
-                      {novel.tags && novel.tags.length > 0 && (
-                        <div className="flex flex-wrap items-center gap-1 mt-2">
-                          {(() => {
-                            // Sắp xếp đưa tag đang được chọn (nếu có) lên đầu tiên
-                            let displayTags = [...novel.tags];
-                            if (hubMode === 'tags' && currentTagConfig) {
-                              const matchIdx = displayTags.findIndex(t => t === currentTagConfig.zh || t === currentTagConfig.id || Boolean(currentTagConfig.aliases?.includes(t)));
-                              if (matchIdx > 0) {
-                                const matched = displayTags.splice(matchIdx, 1)[0];
-                                displayTags = [matched, ...displayTags];
-                              }
-                            }
-                            return (
-                              <>
-                                {displayTags.slice(0, 4).map((t, idx) => {
-                                  const { vi, zh } = getTagDisplayName(t);
-                                  const core = getCoreTagConfig(t);
-                                  const isSelectedCurrent = hubMode === 'tags' && currentTagConfig && (t === currentTagConfig.zh || core?.id === currentTagConfig.id || Boolean(currentTagConfig.aliases?.includes(t)));
-                                  return (
-                                    <button
-                                      key={idx}
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setHubMode('tags');
-                                        setSelectedTagId(core ? core.id : zh);
-                                        window.scrollTo({ top: 120, behavior: 'smooth' });
-                                      }}
-                                      className={`text-[10px] font-semibold px-2 py-0.5 rounded border transition-colors flex items-center gap-0.5 shadow-xs ${
-                                        isSelectedCurrent
-                                          ? 'border-emerald-500 bg-emerald-500/20 text-emerald-300 font-bold'
-                                          : 'jjwxc-tag-pill'
-                                      }`}
-                                      title={`Xem BXH tag: ${vi} (${zh})`}
-                                    >
-                                      <Hash className="w-2.5 h-2.5 opacity-70" />
-                                      <span>{vi}</span>
-                                    </button>
-                                  );
-                                })}
-                                {displayTags.length > 4 && (
-                                  <span className="text-[10px] jjwxc-text-sub font-mono">+{displayTags.length - 4}</span>
-                                )}
-                              </>
-                            );
-                          })()}
-                        </div>
-                      )}
+                    <div className="flex items-center gap-2 text-xs text-text-sub mt-1">
+                      <span className="truncate max-w-[120px]">{novel.author}</span>
+                      <span>•</span>
+                      <span className={novel.status.includes('完结') ? 'text-emerald-400' : 'text-blue-400'}>
+                        {novel.status.includes('完结') ? 'Hoàn' : 'Đang ra'}
+                      </span>
                     </div>
 
-                    {/* Chỉ số chính: Điểm tích lũy, Bookmark, Độ dài, Bá vương, Đánh giá */}
-                    <div className="mt-2.5 pt-2 border-t border-[#3b1828] jjwxc-border-subtle flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[11px] jjwxc-text-sub">
-                      {scoreVi ? (
-                        <div className="flex items-center gap-1">
-                          <span className="text-amber-500 font-bold">Tích lũy:</span>
-                          <span className="font-bold text-white jjwxc-text-main">{scoreVi}</span>
-                        </div>
-                      ) : null}
-                      {Boolean(novel.bookmarks && Number(String(novel.bookmarks).replace(/[^\d]/g, '')) > 0) && (
-                        <div className="flex items-center gap-1">
-                          <span className="text-emerald-500 font-bold">Bookmark:</span>
-                          <span className="font-bold text-white jjwxc-text-main">{formatBookmarksVi(novel.bookmarks)}</span>
-                        </div>
-                      )}
-                      {wordsVi ? (
-                        <div className="flex items-center gap-1">
-                          <span>Số chữ:</span>
-                          <span className="font-medium text-white jjwxc-text-main">{wordsVi}</span>
-                        </div>
-                      ) : null}
-                      {Boolean(novel.bawang && Number(String(novel.bawang).replace(/[^\d]/g, '')) > 0) && (
-                        <div className="flex items-center gap-1">
-                          <span className="text-pink-400 font-bold">Bá vương:</span>
-                          <span className="font-bold text-white jjwxc-text-main">{formatBawangVi(novel.bawang)}</span>
-                        </div>
-                      )}
-                      {Boolean(novel.rating && Number(String(novel.rating).replace(/[^\d.]/g, '')) > 0) && (
-                        <div className="flex items-center gap-1">
-                          <span className="text-amber-400 font-bold">Đánh giá:</span>
-                          <span className="font-black text-amber-400">{formatRatingVi(novel.rating)}⭐</span>
-                        </div>
-                      )}
-                      {novel.publishDate && (
-                        <div className="flex items-center gap-1 text-[10px] opacity-75">
-                          <Clock className="w-2.5 h-2.5 text-blue-400" />
-                          <span>{novel.publishDate}</span>
-                        </div>
-                      )}
-                    </div>
+                    {novel.score && (
+                      <div className="text-[11px] text-text-sub/80 mt-1 truncate">
+                        <span>{selectedRankId === 'bawang' ? 'Điểm ủng hộ: ' : 'Tích phân: '}</span>
+                        <span className="text-amber-500 font-medium">{novel.score.trim()}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                {/* Nút hành động nhanh ở dưới cùng thẻ */}
-                <div className="mt-3 pt-2.5 border-t border-[#3b1828] jjwxc-border-subtle flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-2">
-                    {/* Copy tên gốc tiếng Trung */}
-                    <button
-                      onClick={(e) => handleCopyChinese(novel.title, novel.novelId, e)}
-                      className="px-2.5 py-1 rounded-lg border text-[11px] font-bold flex items-center gap-1.5 transition-all jjwxc-action-btn"
-                      title="Sao chép tên truyện gốc tiếng Trung để tìm kiếm raw/convert"
-                    >
-                      {isCopied ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
-                      <span>{isCopied ? 'Đã chép' : 'Chép tên gốc'}</span>
-                    </button>
-
-                    {/* Copy ID truyện */}
-                    <button
-                      onClick={(e) => handleCopyChinese(novel.novelId, 'id-' + novel.novelId, e)}
-                      className="px-2.5 py-1 rounded-lg border text-[11px] font-bold flex items-center gap-1 transition-all jjwxc-action-btn"
-                      title="Sao chép mã ID truyện Tấn Giang"
-                    >
-                      {copiedId === 'id-' + novel.novelId ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
-                      <span>{copiedId === 'id-' + novel.novelId ? 'Đã chép ID' : `ID: ${novel.novelId}`}</span>
-                    </button>
-
-                    {/* Mở link JJWXC gốc */}
-                    <a
-                      href={novel.jjwxcUrl || `https://www.jjwxc.net/onebook.php?novelid=${novel.novelId}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={(e) => e.stopPropagation()}
-                      className="px-2.5 py-1 rounded-lg border text-[11px] font-bold flex items-center gap-1 transition-all jjwxc-action-btn"
-                      title="Mở trang truyện trực tiếp trên Tấn Giang"
-                    >
-                      <span>Trang gốc</span>
-                      <ExternalLink className="w-3 h-3" />
-                    </a>
-                  </div>
-
-                  <span className="text-xs jjwxc-tab-active font-bold flex items-center gap-1 group-hover:translate-x-0.5 transition-all cursor-pointer">
-                    Xem chi tiết <ChevronRight className="w-3.5 h-3.5" />
-                  </span>
-                </div>
+                {/* Bookmark nhanh */}
+                <button
+                  onClick={(e) => toggleSaveNovel(novel.novelId, e)}
+                  className={`p-2 rounded-lg border transition-all shrink-0 ${
+                    isSaved 
+                      ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400' 
+                      : 'border-transparent text-text-sub hover:text-text-main'
+                  }`}
+                  title={isSaved ? 'Bỏ lưu' : 'Lưu truyện'}
+                >
+                  <Bookmark className={`w-4 h-4 ${isSaved ? 'fill-emerald-400' : ''}`} />
+                </button>
               </div>
             );
           })}
         </div>
-      </>
       )}
 
-      {/* Modal Xem Chi Tiết Tác Phẩm & Toàn Bộ Giới Thiệu */}
+      {/* Modal Chi Tiết Tối Giản khi bấm vào truyện - Tự động đồng bộ màu theo bìa (Giống Canva Photo Palette) */}
       {activeNovel && (
         <div 
-          className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-center justify-center p-4 transition-all duration-200"
           onClick={() => setActiveNovel(null)}
         >
           <div 
-            className="w-full max-w-2xl bg-[#160a11] jjwxc-bg-card border border-[#3b1828] jjwxc-border rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-200"
+            className="w-full max-w-lg rounded-2xl border shadow-2xl overflow-hidden flex flex-col max-h-[88vh] animate-in fade-in zoom-in-95 duration-150"
+            style={{
+              backgroundColor: activePalette?.bg || '#f4f6f4',
+              borderColor: activePalette?.border || '#cbd5cc',
+              color: activePalette?.text || '#1a231d',
+              boxShadow: activePalette 
+                ? `0 25px 60px -15px rgba(0, 0, 0, 0.7), 0 0 25px -5px ${activePalette.border}` 
+                : '0 25px 60px -15px rgba(0, 0, 0, 0.7)'
+            }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header Modal */}
-            <div className="p-4 sm:p-6 border-b border-[#3b1828] jjwxc-border flex items-center justify-between bg-[#210e19] jjwxc-bg-surface">
-              <div className="flex items-center gap-3">
-                {getRankBadge(activeNovel.rank)}
-                <div>
-                  <h3 className="text-lg sm:text-xl font-black text-white jjwxc-text-main tracking-tight drop-shadow-sm">
-                    {activeNovel.title}
-                  </h3>
-                  <div className="text-xs jjwxc-text-sub mt-0.5 flex flex-wrap items-center gap-2">
-                    <span>Tác giả: <strong className="text-white jjwxc-text-main">{activeNovel.author}</strong></span>
-                    {activeNovel.authorId && (
-                      <span className="text-[10px] jjwxc-text-muted font-bold font-mono">TG: {activeNovel.authorId}</span>
-                    )}
-                    <span>•</span>
-                    <span className="flex items-center gap-1">
-                      Mã truyện Tấn Giang: <strong className="jjwxc-id-text font-mono font-bold">{activeNovel.novelId}</strong>
-                    </span>
-                  </div>
-                </div>
+            <div 
+              className="p-4 border-b flex items-center justify-between"
+              style={{
+                backgroundColor: activePalette?.cardBg || '#ffffff',
+                borderColor: activePalette?.border || '#cbd5cc'
+              }}
+            >
+              <div className="flex items-center gap-2.5 min-w-0">
+                <span 
+                  className="w-6 h-6 rounded-md flex items-center justify-center font-bold text-xs shrink-0 border"
+                  style={{
+                    backgroundColor: activePalette?.accent || '#2b7050',
+                    borderColor: activePalette?.border || '#cbd5cc',
+                    color: activePalette?.accentText || '#ffffff'
+                  }}
+                >
+                  {activeNovel.rank}
+                </span>
+                <h3 
+                  className="text-base font-bold truncate tracking-tight"
+                  style={{ color: activePalette?.text || '#1a231d' }}
+                >
+                  {activeNovel.title}
+                </h3>
               </div>
-
               <button
                 onClick={() => setActiveNovel(null)}
-                className="p-2 rounded-xl border border-[#3b1828] jjwxc-border bg-[#160a11] jjwxc-bg-card jjwxc-text-sub hover:text-white jjwxc-text-main hover:bg-[#210e19] jjwxc-bg-surface transition-all"
+                className="p-1.5 rounded-lg border transition-all shrink-0 ml-2 hover:opacity-75"
+                style={{
+                  backgroundColor: activePalette?.cardBg || '#ffffff',
+                  borderColor: activePalette?.border || '#cbd5cc',
+                  color: activePalette?.textMuted || '#4f6154'
+                }}
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            {/* Nội dung chi tiết */}
-            <div className="p-4 sm:p-6 overflow-y-auto space-y-5">
-              {/* Box tổng quan bằng tiếng Việt */}
-              <div className="flex flex-col sm:flex-row gap-5 p-4 rounded-xl bg-[#210e19] jjwxc-bg-surface border border-[#3b1828] jjwxc-border">
-                <div className="w-28 h-36 rounded-lg overflow-hidden flex-shrink-0 border border-[#3b1828] jjwxc-border shadow bg-[#160a11] jjwxc-bg-card mx-auto sm:mx-0">
+            {/* Body Modal */}
+            <div className="p-4 overflow-y-auto space-y-4 text-xs">
+              <div 
+                className="p-3.5 rounded-xl border space-y-3"
+                style={{
+                  backgroundColor: activePalette?.cardBg || '#ffffff',
+                  borderColor: activePalette?.border || '#cbd5cc'
+                }}
+              >
+                <div className="flex gap-4">
                   <img
-                    src={getCoverSrc(activeNovel)}
+                    src={`/api/jjwxc/cover/${activeNovel.novelId}`}
                     alt={activeNovel.title}
-                    decoding="async"
                     referrerPolicy="no-referrer"
-                    className="w-full h-full object-cover"
-                    onError={(e) => handleImageError(e, activeNovel)}
+                    className="w-22 h-30 object-cover rounded-lg border shrink-0 shadow-md"
+                    style={{ borderColor: activePalette?.border || '#cbd5cc' }}
+                    onError={(e) => {
+                      const target = e.currentTarget;
+                      if (activeNovel.coverUrl && !target.src.includes(activeNovel.coverUrl)) {
+                        target.src = activeNovel.coverUrl;
+                      } else {
+                        target.src = 'https://static.jjwxc.net/images/cover.png';
+                      }
+                    }}
                   />
-                </div>
 
-                <div className="flex-1 space-y-2 text-xs">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-bold jjwxc-text-sub">Trạng thái:</span>
-                    <span className={`px-2.5 py-0.5 rounded border font-bold text-xs ${
-                      formatStatusVi(activeNovel.status).isCompleted
-                        ? 'jjwxc-status-completed'
-                        : 'jjwxc-status-ongoing'
-                    }`}>
-                      {formatStatusVi(activeNovel.status).label}
-                    </span>
-                    {activeNovel.wordCount && (
-                      <span className="jjwxc-text-sub">
-                        • {formatWordsVi(activeNovel.wordCount)} ({activeNovel.wordCount.trim()} chữ)
+                  <div className="space-y-1.5 flex-1 min-w-0" style={{ color: activePalette?.textMuted || '#4f6154' }}>
+                    <div>
+                      Tác giả: <strong style={{ color: activePalette?.text || '#1a231d' }}>{activeNovel.author}</strong>
+                    </div>
+                    <div>
+                      Tình trạng: <span 
+                        className="font-bold px-1.5 py-0.5 rounded border text-[11px]"
+                        style={{
+                          backgroundColor: activePalette?.isDarkTheme ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
+                          borderColor: activePalette?.border || '#cbd5cc',
+                          color: activePalette?.accent || '#2b7050'
+                        }}
+                      >
+                        {activeNovel.status.includes('完结') ? 'Đã hoàn thành' : 'Đang cập nhật'}
                       </span>
+                    </div>
+                    {activeNovel.score && (
+                      <div>
+                        Điểm tích phân: <span className="font-bold" style={{ color: activePalette?.accent || '#2b7050' }}>{activeNovel.score.trim()}</span>
+                      </div>
                     )}
-                  </div>
-
-                  <div>
-                    <span className="font-bold jjwxc-text-sub">Thể loại tác phẩm: </span>
-                    <span className="text-white jjwxc-text-main font-bold">{formatGenreVi(activeNovel.genre)}</span>
-                    <span className="text-[10px] jjwxc-text-sub ml-1 font-mono">({activeNovel.genre})</span>
-                  </div>
-
-                  {activeNovel.score && (
-                    <div>
-                      <span className="font-bold text-amber-400">Điểm tích lũy: </span>
-                      <span className="text-amber-300 font-black">{formatScoreVi(activeNovel.score)}</span>
-                      <span className="text-[10px] jjwxc-text-sub ml-1 font-mono">({activeNovel.score.trim()})</span>
-                    </div>
-                  )}
-
-                  {Boolean(activeNovel.bookmarks && Number(String(activeNovel.bookmarks).replace(/[^\d]/g, '')) > 0) && (
-                    <div>
-                      <span className="font-bold text-emerald-400">Lượt bookmark (Thâu tàng): </span>
-                      <span className="text-emerald-300 font-black">{formatBookmarksVi(activeNovel.bookmarks)}</span>
-                      <span className="text-[10px] jjwxc-text-sub ml-1 font-mono">({typeof activeNovel.bookmarks === 'number' ? activeNovel.bookmarks.toLocaleString('vi-VN') : activeNovel.bookmarks})</span>
-                    </div>
-                  )}
-
-                  {Boolean(activeNovel.bawang && Number(String(activeNovel.bawang).replace(/[^\d]/g, '')) > 0) && (
-                    <div>
-                      <span className="font-bold text-pink-400">Phiếu bá vương (Donate): </span>
-                      <span className="text-pink-300 font-black">{formatBawangVi(activeNovel.bawang)}</span>
-                      <span className="text-[10px] jjwxc-text-sub ml-1 font-mono">({typeof activeNovel.bawang === 'number' ? activeNovel.bawang.toLocaleString('vi-VN') : activeNovel.bawang})</span>
-                    </div>
-                  )}
-
-                  {Boolean(activeNovel.rating && Number(String(activeNovel.rating).replace(/[^\d.]/g, '')) > 0) && (
-                    <div>
-                      <span className="font-bold text-amber-400">Điểm đánh giá hoàn thành: </span>
-                      <span className="text-amber-300 font-black">{formatRatingVi(activeNovel.rating)} / 10 ⭐</span>
-                    </div>
-                  )}
-
-                  {activeNovel.publishDate && (
-                    <div>
-                      <span className="font-bold jjwxc-text-sub">Ngày xuất bản / Cập nhật: </span>
-                      <span className="text-white jjwxc-text-main">{activeNovel.publishDate}</span>
-                    </div>
-                  )}
-
-                  {/* Danh sách toàn bộ tag Tấn Giang của truyện */}
-                  {activeNovel.tags && activeNovel.tags.length > 0 && (
-                    <div className="pt-1">
-                      <div className="font-bold jjwxc-text-sub mb-1.5 flex items-center gap-1.5">
-                        <Tag className="w-3.5 h-3.5 text-emerald-500" />
-                        <span>Tag nội dung Tấn Giang (内容标签):</span>
+                    {activeNovel.wordCount && (
+                      <div>
+                        Số chữ: <span style={{ color: activePalette?.text || '#1a231d' }}>{activeNovel.wordCount.trim()}</span>
                       </div>
-                      <div className="flex flex-wrap gap-1.5">
-                        {activeNovel.tags.map((t, idx) => {
-                          const { vi, zh } = getTagDisplayName(t);
-                          const core = getCoreTagConfig(t);
-                          return (
-                            <button
-                              key={idx}
-                              onClick={() => {
-                                setActiveNovel(null);
-                                setHubMode('tags');
-                                setSelectedTagId(core ? core.id : zh);
-                                window.scrollTo({ top: 120, behavior: 'smooth' });
-                              }}
-                              className="px-2.5 py-1 rounded-md border text-[11px] font-bold flex items-center gap-1 transition-all shadow-xs jjwxc-tag-pill"
-                              title={`Xem BXH tag: ${vi} (${zh})`}
-                            >
-                              <Hash className="w-3 h-3 opacity-70" />
-                              <span>{vi}</span>
-                              <span className="text-[10px] opacity-60">({zh})</span>
-                            </button>
-                          );
-                        })}
-                      </div>
+                    )}
+
+                    <div className="pt-2 flex flex-wrap items-center gap-2">
+                      <button
+                        onClick={(e) => handleCopyChinese(activeNovel.title, activeNovel.novelId, e)}
+                        className="px-2.5 py-1.5 rounded-md border font-semibold flex items-center gap-1 transition-all active:scale-95 shadow-xs hover:opacity-90"
+                        style={{
+                          backgroundColor: activePalette?.accent || '#2b7050',
+                          borderColor: activePalette?.border || '#cbd5cc',
+                          color: activePalette?.accentText || '#ffffff'
+                        }}
+                      >
+                        {copiedId === activeNovel.novelId ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                        <span>{copiedId === activeNovel.novelId ? 'Đã chép' : 'Sao chép tên'}</span>
+                      </button>
+
+                      <a
+                        href={activeNovel.jjwxcUrl || `https://www.jjwxc.net/onebook.php?novelid=${activeNovel.novelId}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-2.5 py-1.5 rounded-md border font-semibold flex items-center gap-1 transition-all hover:opacity-90 shadow-xs"
+                        style={{
+                          backgroundColor: activePalette?.cardBg || '#ffffff',
+                          borderColor: activePalette?.border || '#cbd5cc',
+                          color: activePalette?.text || '#1a231d'
+                        }}
+                      >
+                        <span>Mở link gốc</span>
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </a>
                     </div>
-                  )}
-
-                  <div className="pt-2 flex flex-wrap items-center gap-2">
-                    <button
-                      onClick={(e) => handleCopyChinese(activeNovel.title, activeNovel.novelId, e)}
-                      className="px-3 py-1.5 rounded-lg border border-[#3b1828] jjwxc-border bg-[#160a11] jjwxc-bg-card hover:bg-[#210e19] jjwxc-bg-surface text-white jjwxc-text-main font-bold flex items-center gap-1.5 transition-all text-xs"
-                    >
-                      {copiedId === activeNovel.novelId ? (
-                        <>
-                          <Check className="w-3.5 h-3.5 text-emerald-400" />
-                          <span>Đã sao chép</span>
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="w-3.5 h-3.5" />
-                          <span>Copy tên gốc</span>
-                        </>
-                      )}
-                    </button>
-
-                    <button
-                      onClick={(e) => handleCopyChinese(activeNovel.novelId, 'modal-id-' + activeNovel.novelId, e)}
-                      className="px-3 py-1.5 rounded-lg border text-xs font-bold flex items-center gap-1.5 transition-all jjwxc-action-btn"
-                    >
-                      {copiedId === 'modal-id-' + activeNovel.novelId ? (
-                        <>
-                          <Check className="w-3.5 h-3.5 text-emerald-400" />
-                          <span>Đã chép ID</span>
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="w-3.5 h-3.5" />
-                          <span>Copy ID truyện</span>
-                        </>
-                      )}
-                    </button>
-
-                    <a
-                      href={activeNovel.jjwxcUrl || `https://www.jjwxc.net/onebook.php?novelid=${activeNovel.novelId}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="px-3 py-1.5 rounded-lg border text-xs font-bold flex items-center gap-1.5 transition-all jjwxc-action-btn"
-                    >
-                      <span>Mở trên Tấn Giang</span>
-                      <ExternalLink className="w-3.5 h-3.5" />
-                    </a>
-
-                    <button
-                      onClick={(e) => toggleSaveNovel(activeNovel.novelId, e)}
-                      className={`px-3 py-1.5 rounded-lg border font-bold flex items-center gap-1.5 transition-all text-xs ${
-                        savedNovelIds.includes(activeNovel.novelId)
-                          ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400'
-                          : 'bg-[#160a11] jjwxc-bg-card border-[#3b1828] jjwxc-border jjwxc-text-sub hover:text-white jjwxc-text-main'
-                      }`}
-                    >
-                      <Bookmark className="w-3.5 h-3.5" />
-                      <span>{savedNovelIds.includes(activeNovel.novelId) ? 'Đã lưu theo dõi' : 'Lưu theo dõi'}</span>
-                    </button>
                   </div>
                 </div>
               </div>
 
-              {/* Phần Giới thiệu tác phẩm */}
+              {/* Giới thiệu tác phẩm */}
               <div>
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="text-xs font-bold uppercase tracking-wider jjwxc-text-sub flex items-center gap-1.5">
-                    <BookOpen className="w-4 h-4 text-emerald-500" />
-                    Giới thiệu tác phẩm:
-                  </h4>
-
-                  <button
-                    onClick={(e) => {
-                      const textToCopy = cleanHtmlText(activeNovel.intro);
-                      handleCopyChinese(textToCopy, 'intro-' + activeNovel.novelId, e);
-                    }}
-                    className="px-2.5 py-1 rounded-lg border border-[#3b1828] jjwxc-border bg-[#160a11] jjwxc-bg-card text-xs font-bold jjwxc-text-sub hover:text-white jjwxc-text-main flex items-center gap-1.5 transition-all"
-                  >
-                    {copiedId === 'intro-' + activeNovel.novelId ? (
-                      <>
-                        <Check className="w-3 h-3 text-emerald-400" />
-                        <span>Đã chép giới thiệu</span>
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="w-3 h-3" />
-                        <span>Chép giới thiệu</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-
-                {/* Khung nội dung giới thiệu đã làm sạch tags HTML (giữ nguyên gốc) */}
-                <div className="p-4 sm:p-5 rounded-xl bg-[#210e19] jjwxc-bg-surface border border-[#3b1828] jjwxc-border text-sm leading-relaxed text-white jjwxc-text-main whitespace-pre-line font-sans shadow-inner max-h-96 overflow-y-auto pr-2">
+                <h4 className="font-bold mb-1.5" style={{ color: activePalette?.textMuted || '#4f6154' }}>
+                  Giới thiệu tác phẩm:
+                </h4>
+                <div 
+                  className="p-3.5 rounded-xl border leading-relaxed whitespace-pre-line text-xs max-h-60 overflow-y-auto font-sans shadow-inner"
+                  style={{
+                    backgroundColor: activePalette?.cardBg || '#ffffff',
+                    borderColor: activePalette?.border || '#cbd5cc',
+                    color: activePalette?.text || '#1a231d',
+                    lineHeight: '1.75'
+                  }}
+                >
                   {isLoadingIntro ? (
-                    <div className="flex items-center gap-2 py-8 justify-center jjwxc-text-sub text-xs">
-                      <RefreshCw className="w-4 h-4 animate-spin text-emerald-500" />
-                      <span>Đang tải giới thiệu đầy đủ từ Tấn Giang...</span>
+                    <div className="py-4 text-center flex items-center justify-center gap-2 opacity-70">
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      <span>Đang tải giới thiệu từ Tấn Giang...</span>
                     </div>
                   ) : (
-                    cleanHtmlText(activeNovel.intro) || 'Tác phẩm chưa có phần giới thiệu công khai trên Tấn Giang.'
+                    novelIntro || activeNovel.intro || 'Chưa có thông tin giới thiệu.'
                   )}
                 </div>
               </div>
-            </div>
-
-            {/* Footer Modal */}
-            <div className="p-4 border-t border-[#3b1828] jjwxc-border bg-[#210e19] jjwxc-bg-surface flex items-center justify-between">
-              <span className="text-xs jjwxc-text-sub">
-                Đường dẫn gốc: <code className="text-white jjwxc-text-main font-mono">onebook.php?novelid={activeNovel.novelId}</code>
-              </span>
-              <button
-                onClick={() => setActiveNovel(null)}
-                className="px-5 py-2 rounded-xl border text-xs font-bold transition-all shadow-md jjwxc-btn-close cursor-pointer"
-              >
-                Đóng lại
-              </button>
             </div>
           </div>
         </div>
@@ -1558,3 +598,4 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
     </div>
   );
 };
+
