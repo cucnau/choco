@@ -18,6 +18,7 @@ import {
 } from '../data/jjwxcRankingsData';
 import { Story } from '../types';
 import { extractPaletteFromImage, CanvaPalette } from '../lib/coverColorExtractor';
+import { getNovelCoverUrl, handleCoverError } from '../utils/coverImage';
 
 interface JjwxcRankingsHubProps {
   currentStory?: Story | null;
@@ -62,7 +63,7 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
   // Tự động phân tích màu sắc từ ảnh bìa và tải giới thiệu đầy đủ khi mở modal truyện
   useEffect(() => {
     if (activeNovel) {
-      const coverSrc = `/api/jjwxc/cover/${activeNovel.novelId}`;
+      const coverSrc = getNovelCoverUrl(activeNovel.novelId, activeNovel.coverUrl);
       extractPaletteFromImage(coverSrc, activeNovel.novelId).then(palette => {
         setActivePalette(palette);
       });
@@ -365,19 +366,12 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
 
                   {/* Bìa truyện */}
                   <img
-                    src={`/api/jjwxc/cover/${novel.novelId}`}
+                    src={getNovelCoverUrl(novel.novelId, novel.coverUrl)}
                     alt={novel.title}
                     loading="lazy"
                     referrerPolicy="no-referrer"
                     className="w-11 h-15 object-cover rounded-md border border-border-custom shrink-0 group-hover:scale-102 transition-transform bg-bg-surface"
-                    onError={(e) => {
-                      const target = e.currentTarget;
-                      if (novel.coverUrl && !target.src.includes(novel.coverUrl)) {
-                        target.src = novel.coverUrl;
-                      } else {
-                        target.src = 'https://static.jjwxc.net/images/cover.png';
-                      }
-                    }}
+                    onError={(e) => handleCoverError(e, novel.novelId, novel.coverUrl)}
                   />
 
                   {/* Chi tiết truyện */}
@@ -492,19 +486,12 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
               >
                 <div className="flex gap-4">
                   <img
-                    src={`/api/jjwxc/cover/${activeNovel.novelId}`}
+                    src={getNovelCoverUrl(activeNovel.novelId, activeNovel.coverUrl)}
                     alt={activeNovel.title}
                     referrerPolicy="no-referrer"
                     className="w-22 h-30 object-cover rounded-lg border shrink-0 shadow-md"
                     style={{ borderColor: activePalette?.border || '#cbd5cc' }}
-                    onError={(e) => {
-                      const target = e.currentTarget;
-                      if (activeNovel.coverUrl && !target.src.includes(activeNovel.coverUrl)) {
-                        target.src = activeNovel.coverUrl;
-                      } else {
-                        target.src = 'https://static.jjwxc.net/images/cover.png';
-                      }
-                    }}
+                    onError={(e) => handleCoverError(e, activeNovel.novelId, activeNovel.coverUrl)}
                   />
 
                   <div className="space-y-1.5 flex-1 min-w-0" style={{ color: activePalette?.textMuted || '#4f6154' }}>
