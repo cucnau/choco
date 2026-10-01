@@ -445,30 +445,43 @@ async function fetchRealCoverFromJjwxc(novelId: string): Promise<{ buffer: Buffe
     }
   }
 
-  // 2. Tìm URL bìa gốc từ trang chi tiết tác phẩm (onebook.php)
+  // 2. Tìm URL bìa gốc từ file dữ liệu JSON trước hoặc cào trang onebook.php
   let coverUrl = `https://i9-static.jjwxc.net/novelimage.php?novelid=${novelId}`;
   try {
-    const pageRes = await fetch(`https://www.jjwxc.net/onebook.php?novelid=${novelId}`, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-        'Referer': 'https://www.jjwxc.net/'
+    if (fs.existsSync(JJWXC_DATA_PATH)) {
+      const rawData = JSON.parse(fs.readFileSync(JJWXC_DATA_PATH, 'utf-8'));
+      for (const k in rawData.rankings) {
+        const found = (rawData.rankings[k].items || []).find((it: any) => it.novelId === novelId);
+        if (found && found.coverUrl && found.coverUrl.startsWith('http')) {
+          coverUrl = found.coverUrl;
+          break;
+        }
       }
-    });
+    }
 
-    if (pageRes.ok) {
-      const html = await pageRes.text();
-      const tagMatch = html.match(/<img[^>]+class=[\"']noveldefaultimage[\"'][^>]*>/i);
-      if (tagMatch) {
-        const tag = tagMatch[0];
-        const srcM = tag.match(/\ssrc=[\"']([^\"']+)[\"']/i);
-        const _srcM = tag.match(/\s_src=[\"']([^\"']+)[\"']/i);
-        const srcVal = srcM ? srcM[1] : '';
-        const _srcVal = _srcM ? _srcM[1] : '';
+    if (coverUrl.includes('novelimage.php')) {
+      const pageRes = await fetch(`https://www.jjwxc.net/onebook.php?novelid=${novelId}`, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+          'Referer': 'https://www.jjwxc.net/'
+        }
+      });
 
-        if (srcVal && !srcVal.includes('loading') && !srcVal.includes('default') && (srcVal.startsWith('http') || srcVal.startsWith('//'))) {
-          coverUrl = srcVal.startsWith('//') ? 'https:' + srcVal : srcVal;
-        } else if (_srcVal && (_srcVal.startsWith('http') || _srcVal.startsWith('//'))) {
-          coverUrl = _srcVal.startsWith('//') ? 'https:' + _srcVal : _srcVal;
+      if (pageRes.ok) {
+        const html = await pageRes.text();
+        const tagMatch = html.match(/<img[^>]+class=[\"']noveldefaultimage[\"'][^>]*>/i);
+        if (tagMatch) {
+          const tag = tagMatch[0];
+          const srcM = tag.match(/\ssrc=[\"']([^\"']+)[\"']/i);
+          const _srcM = tag.match(/\s_src=[\"']([^\"']+)[\"']/i);
+          const srcVal = srcM ? srcM[1] : '';
+          const _srcVal = _srcM ? _srcM[1] : '';
+
+          if (srcVal && !srcVal.includes('loading') && !srcVal.includes('default') && (srcVal.startsWith('http') || srcVal.startsWith('//'))) {
+            coverUrl = srcVal.startsWith('//') ? 'https:' + srcVal : srcVal;
+          } else if (_srcVal && (_srcVal.startsWith('http') || _srcVal.startsWith('//'))) {
+            coverUrl = _srcVal.startsWith('//') ? 'https:' + _srcVal : _srcVal;
+          }
         }
       }
     }
