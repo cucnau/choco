@@ -18,7 +18,7 @@ import {
 } from '../data/jjwxcRankingsData';
 import { Story } from '../types';
 import { extractPaletteFromImage, CanvaPalette } from '../lib/coverColorExtractor';
-import { getNovelCoverUrl, handleCoverError } from '../utils/coverImage';
+import { getNovelCoverUrl, getCorsCoverUrl, handleCoverError } from '../utils/coverImage';
 
 interface JjwxcRankingsHubProps {
   currentStory?: Story | null;
@@ -63,7 +63,7 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
   // Tự động phân tích màu sắc từ ảnh bìa và tải giới thiệu đầy đủ khi mở modal truyện
   useEffect(() => {
     if (activeNovel) {
-      const coverSrc = getNovelCoverUrl(activeNovel.novelId, activeNovel.coverUrl);
+      const coverSrc = getCorsCoverUrl(activeNovel.novelId, activeNovel.coverUrl);
       extractPaletteFromImage(coverSrc, activeNovel.novelId).then(palette => {
         setActivePalette(palette);
       });

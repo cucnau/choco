@@ -29,7 +29,16 @@ export const StoryCard: React.FC<StoryCardProps> = ({
             <img
               src={effectiveStory.coverUrl}
               alt={effectiveStory.title}
+              referrerPolicy="no-referrer"
               className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+              onError={(e) => {
+                const target = e.currentTarget;
+                if (!target.src.includes('wsrv.nl') && effectiveStory.coverUrl?.startsWith('http')) {
+                  target.src = `https://wsrv.nl/?url=${encodeURIComponent(effectiveStory.coverUrl)}`;
+                } else {
+                  target.src = 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&q=80&w=300';
+                }
+              }}
             />
           </div>
         ) : (

@@ -73,10 +73,15 @@ export const RankingSection: React.FC<RankingSectionProps> = ({
                 <img
                   src={story.coverUrl}
                   alt={story.title}
+                  referrerPolicy="no-referrer"
                   className="w-10 h-14 object-cover border border-[#2d1822] shrink-0 group-hover:border-[#5e2f46] transition"
                   onError={(e) => {
-                    (e.target as HTMLImageElement).src =
-                      'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&q=80&w=300';
+                    const target = e.currentTarget;
+                    if (!target.src.includes('wsrv.nl') && story.coverUrl?.startsWith('http')) {
+                      target.src = `https://wsrv.nl/?url=${encodeURIComponent(story.coverUrl)}`;
+                    } else {
+                      target.src = 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&q=80&w=300';
+                    }
                   }}
                 />
 
