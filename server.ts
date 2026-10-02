@@ -429,6 +429,17 @@ if (!fs.existsSync(COVERS_CACHE_DIR)) {
 const pendingCoverFetches = new Map<string, Promise<{ buffer: Buffer; contentType: string } | null>>();
 
 async function fetchRealCoverFromJjwxc(novelId: string): Promise<{ buffer: Buffer; contentType: string } | null> {
+  // 0. Kiểm tra file tĩnh trong thư mục public/covers trước tiên
+  const staticCoverPath = path.join(process.cwd(), 'public', 'covers', `${novelId}.jpg`);
+  if (fs.existsSync(staticCoverPath)) {
+    try {
+      const buffer = fs.readFileSync(staticCoverPath);
+      if (buffer.length > 500) {
+        return { buffer, contentType: 'image/jpeg' };
+      }
+    } catch (e) {}
+  }
+
   const metaPath = path.join(COVERS_CACHE_DIR, `${novelId}.meta`);
   const dataPath = path.join(COVERS_CACHE_DIR, `${novelId}.bin`);
 

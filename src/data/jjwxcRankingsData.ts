@@ -52,7 +52,7 @@ export const JJWXC_RANK_CATEGORIES: JjwxcRankCategoryConfig[] = [
     metricLabel: 'Điểm tích lũy (Xếp theo Bá Vương Phiếu)'
   },
   {
-    id: 'wanjie_jinbang',
+    id: 'wanjie',
     name: '完结金榜',
     nameViGuide: 'Truyện Đã Hoàn',
     fullName: '完结金榜 (Top truyện hoàn thành bán chạy 30 ngày)',
@@ -63,7 +63,7 @@ export const JJWXC_RANK_CATEGORIES: JjwxcRankCategoryConfig[] = [
     metricLabel: 'Điểm tích lũy (Xếp theo Doanh thu hoàn)'
   },
   {
-    id: 'vip_jinbang',
+    id: 'vip',
     name: 'VIP金榜',
     nameViGuide: 'Bán Chạy Tuần',
     fullName: 'VIP金榜 (Top truyện VIP bán chạy)',
@@ -120,16 +120,17 @@ export const JJWXC_RANK_CATEGORIES: JjwxcRankCategoryConfig[] = [
 ];
 
 export interface JjwxcRealDataset {
-  crawledAt: string;
-  source: string;
-  rankings: Record<string, {
-    id: string;
-    name: string;
-    fullName: string;
-    desc: string;
+  metadata?: {
+    generatedAt: string;
+    source: string;
     channel: string;
+    version: string;
+  };
+  rankings: Record<string, {
+    title: string;
+    subtitle: string;
     items: JjwxcNovel[];
   }>;
 }
 
-export const initialRealRankingsData = rawData as JjwxcRealDataset;
+export const initialRealRankingsData = rawData as unknown as JjwxcRealDataset;
