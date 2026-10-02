@@ -432,7 +432,7 @@ async function fetchRealCoverFromJjwxc(novelId: string): Promise<{ buffer: Buffe
   const metaPath = path.join(COVERS_CACHE_DIR, `${novelId}.meta`);
   const dataPath = path.join(COVERS_CACHE_DIR, `${novelId}.bin`);
 
-  // 1. Kiểm tra cache đĩa trước
+  // 1. Kiểm tra cache đĩa
   if (fs.existsSync(metaPath) && fs.existsSync(dataPath)) {
     try {
       const contentType = fs.readFileSync(metaPath, 'utf-8').trim() || 'image/jpeg';
@@ -440,98 +440,81 @@ async function fetchRealCoverFromJjwxc(novelId: string): Promise<{ buffer: Buffe
       if (buffer.length > 500) {
         return { buffer, contentType };
       }
-    } catch (e) {
-      // nếu lỗi đọc cache thì tiếp tục fetch lại
-    }
+    } catch (e) {}
   }
 
-  // 2. Tìm URL bìa gốc từ file dữ liệu JSON trước hoặc cào trang onebook.php
-  let coverUrl = `https://i9-static.jjwxc.net/novelimage.php?novelid=${novelId}`;
+  // 2. Tìm URL bìa gốc từ JSON hoặc tra cứu Android API
+  const candidates: { url: string; ref: string }[] = [];
+
+  // 2.1 Đọc từ file dữ liệu JSON trước
   try {
     if (fs.existsSync(JJWXC_DATA_PATH)) {
       const rawData = JSON.parse(fs.readFileSync(JJWXC_DATA_PATH, 'utf-8'));
       for (const k in rawData.rankings) {
         const found = (rawData.rankings[k].items || []).find((it: any) => it.novelId === novelId);
-        if (found && found.coverUrl && found.coverUrl.startsWith('http')) {
-          coverUrl = found.coverUrl;
+        if (found && found.coverUrl && found.coverUrl.startsWith('http') && !found.coverUrl.includes('novelimage.php')) {
+          if (found.coverUrl.includes('sinaimg.cn')) {
+            const fn = found.coverUrl.split('/').pop();
+            candidates.push({ url: `https://wx1.sinaimg.cn/large/${fn}`, ref: 'https://weibo.com' });
+          } else if (found.coverUrl.includes('doubanio.com')) {
+            candidates.push({ url: found.coverUrl, ref: 'https://book.douban.com/' });
+          } else {
+            candidates.push({ url: found.coverUrl, ref: 'https://www.jjwxc.net/' });
+          }
           break;
         }
       }
     }
+  } catch (err) {}
 
-    if (coverUrl.includes('novelimage.php')) {
-      const pageRes = await fetch(`https://www.jjwxc.net/onebook.php?novelid=${novelId}`, {
+  // 2.2 Tra cứu Android API
+  try {
+    const aRes = await fetch(`https://app.jjwxc.net/androidapi/novelbasicinfo?novelId=${novelId}`, {
+      headers: { 'User-Agent': 'Mozilla/5.0' }
+    });
+    if (aRes.ok) {
+      const aData: any = await aRes.json();
+      if (aData.novelCover && aData.novelCover.startsWith('http')) {
+        if (aData.novelCover.includes('sinaimg.cn')) {
+          const fn = aData.novelCover.split('/').pop();
+          candidates.push({ url: `https://wx1.sinaimg.cn/large/${fn}`, ref: 'https://weibo.com' });
+        } else {
+          candidates.push({ url: aData.novelCover, ref: 'https://www.jjwxc.net/' });
+        }
+      }
+    }
+  } catch (err) {}
+
+  // 2.3 Fallback sang link novelimage
+  candidates.push({ url: `https://i9-static.jjwxc.net/novelimage.php?novelid=${novelId}`, ref: 'https://www.jjwxc.net/' });
+
+  for (const cand of candidates) {
+    try {
+      const imgRes = await fetch(cand.url, {
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-          'Referer': 'https://www.jjwxc.net/'
+          'Referer': cand.ref,
+          'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8'
         }
       });
 
-      if (pageRes.ok) {
-        const html = await pageRes.text();
-        const tagMatch = html.match(/<img[^>]+class=[\"']noveldefaultimage[\"'][^>]*>/i);
-        if (tagMatch) {
-          const tag = tagMatch[0];
-          const srcM = tag.match(/\ssrc=[\"']([^\"']+)[\"']/i);
-          const _srcM = tag.match(/\s_src=[\"']([^\"']+)[\"']/i);
-          const srcVal = srcM ? srcM[1] : '';
-          const _srcVal = _srcM ? _srcM[1] : '';
+      if (imgRes.ok) {
+        const contentType = imgRes.headers.get('content-type') || 'image/jpeg';
+        const arrayBuf = await imgRes.arrayBuffer();
+        const buffer = Buffer.from(arrayBuf);
 
-          if (srcVal && !srcVal.includes('loading') && !srcVal.includes('default') && (srcVal.startsWith('http') || srcVal.startsWith('//'))) {
-            coverUrl = srcVal.startsWith('//') ? 'https:' + srcVal : srcVal;
-          } else if (_srcVal && (_srcVal.startsWith('http') || _srcVal.startsWith('//'))) {
-            coverUrl = _srcVal.startsWith('//') ? 'https:' + _srcVal : _srcVal;
-          }
+        if (buffer.length > 500) {
+          try {
+            fs.writeFileSync(dataPath, buffer);
+            fs.writeFileSync(metaPath, contentType, 'utf-8');
+          } catch (e) {}
+          return { buffer, contentType };
         }
       }
-    }
-  } catch (err) {
-    console.warn(`[JJWXC Cover] Lỗi tìm bìa tác phẩm ${novelId}:`, err);
+    } catch (e) {}
   }
 
-  // 3. Tải file ảnh thực tế từ Tấn Giang với Referer chuẩn
-  try {
-    const imgRes = await fetch(coverUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-        'Referer': 'https://www.jjwxc.net/',
-        'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8'
-      }
-    });
-
-    if (!imgRes.ok) {
-      // Fallback nếu link tác giả lỗi thì thử lại link novelimage thông thường
-      if (!coverUrl.includes('novelimage.php')) {
-        const fbRes = await fetch(`https://i9-static.jjwxc.net/novelimage.php?novelid=${novelId}`, {
-          headers: { 'Referer': 'https://www.jjwxc.net/' }
-        });
-        if (fbRes.ok) {
-          const fbBuf = Buffer.from(await fbRes.arrayBuffer());
-          return { buffer: fbBuf, contentType: fbRes.headers.get('content-type') || 'image/jpeg' };
-        }
-      }
-      return null;
-    }
-
-    const contentType = imgRes.headers.get('content-type') || 'image/jpeg';
-    const arrayBuf = await imgRes.arrayBuffer();
-    const buffer = Buffer.from(arrayBuf);
-
-    // Lưu vào cache đĩa
-    if (buffer.length > 500) {
-      try {
-        fs.writeFileSync(dataPath, buffer);
-        fs.writeFileSync(metaPath, contentType, 'utf-8');
-      } catch (e) {
-        console.warn('Lỗi lưu cache ảnh:', e);
-      }
-    }
-
-    return { buffer, contentType };
-  } catch (e) {
-    console.error(`[Cover Proxy] Lỗi tải ảnh từ ${coverUrl}:`, e);
-    return null;
-  }
+  return null;
 }
 
 app.get('/api/jjwxc/rankings', (req, res) => {
@@ -568,11 +551,30 @@ app.get('/api/jjwxc/cover/:novelId', async (req, res) => {
 
     const result = await fetchPromise;
     if (!result || !result.buffer) {
-      return res.status(404).send('Không thể tải bìa gốc');
+      const fallbackSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="240" height="340" viewBox="0 0 240 340">
+        <defs>
+          <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#1c1917"/>
+            <stop offset="50%" stop-color="#292524"/>
+            <stop offset="100%" stop-color="#0c0a09"/>
+          </linearGradient>
+        </defs>
+        <rect width="240" height="340" rx="8" fill="url(#bg)"/>
+        <rect x="6" y="6" width="228" height="328" rx="6" fill="none" stroke="#44403c" stroke-width="1.5" stroke-dasharray="4 2"/>
+        <rect x="20" y="24" width="200" height="52" rx="4" fill="#10b981" fill-opacity="0.12"/>
+        <text x="120" y="56" font-family="sans-serif" font-size="14" font-weight="bold" fill="#34d399" text-anchor="middle">晋江文学</text>
+        <circle cx="120" cy="160" r="32" fill="#292524" stroke="#57534e" stroke-width="1.5"/>
+        <text x="120" y="168" font-family="serif" font-size="28" font-weight="bold" fill="#a8a29e" text-anchor="middle">書</text>
+        <text x="120" y="220" font-family="sans-serif" font-size="11" font-weight="bold" fill="#e7e5e4" text-anchor="middle">JJWXC</text>
+        <text x="120" y="240" font-family="sans-serif" font-size="10" fill="#a8a29e" text-anchor="middle">ID: ${novelId}</text>
+        <text x="120" y="300" font-family="sans-serif" font-size="9" fill="#78716c" text-anchor="middle">Bản quyền Tấn Giang</text>
+      </svg>`;
+      res.setHeader('Content-Type', 'image/svg+xml');
+      return res.send(fallbackSvg);
     }
 
     res.setHeader('Content-Type', result.contentType);
-    res.setHeader('Cache-Control', 'public, max-age=604800'); // Cache 7 ngày
+    res.setHeader('Cache-Control', 'no-cache, public, max-age=86400');
     return res.send(result.buffer);
   } catch (e) {
     console.error(`[Cover Proxy] Lỗi proxy bìa novelId ${novelId}:`, e);
@@ -599,14 +601,46 @@ app.get('/api/jjwxc/intro/:novelId', async (req, res) => {
   if (fs.existsSync(cacheFile)) {
     try {
       const cachedIntro = fs.readFileSync(cacheFile, 'utf-8');
-      if (cachedIntro && cachedIntro.trim().length > 0) {
+      if (cachedIntro && cachedIntro.trim().length > 10) {
         res.setHeader('Cache-Control', 'public, max-age=604800');
         return res.json({ success: true, intro: cachedIntro });
       }
     } catch (e) {}
   }
 
-  // 2. Fetch trực tiếp trang onebook.php và decode GB18030
+  // 2. Thử lấy từ Android API trước (UTF-8 sạch, chứa văn án dài đầy đủ)
+  try {
+    const aRes = await fetch(`https://app.jjwxc.net/androidapi/novelbasicinfo?novelId=${novelId}`, {
+      headers: { 'User-Agent': 'Mozilla/5.0' }
+    });
+    if (aRes.ok) {
+      const aData: any = await aRes.json();
+      if (aData && aData.novelIntro && aData.novelIntro.trim().length > 0) {
+        let cleanIntro = aData.novelIntro
+          .replace(/&lt;br\s*\/?&gt;|<br\s*\/?>/gi, '\n')
+          .replace(/&nbsp;/gi, ' ')
+          .replace(/&lt;/gi, '<')
+          .replace(/&gt;/gi, '>')
+          .replace(/&quot;/gi, '"')
+          .replace(/&#039;/g, "'")
+          .replace(/&amp;/g, '&')
+          .replace(/<[^>]+>/g, '')
+          .replace(/\n{3,}/g, '\n\n')
+          .trim();
+
+        if (cleanIntro.length > 0) {
+          try {
+            fs.writeFileSync(cacheFile, cleanIntro, 'utf-8');
+          } catch (e) {}
+
+          res.setHeader('Cache-Control', 'public, max-age=604800');
+          return res.json({ success: true, intro: cleanIntro });
+        }
+      }
+    }
+  } catch (e) {}
+
+  // 3. Fallback sang cào trang onebook.php và decode GB18030
   try {
     const pageRes = await fetch(`https://www.jjwxc.net/onebook.php?novelid=${novelId}`, {
       headers: {
@@ -615,31 +649,32 @@ app.get('/api/jjwxc/intro/:novelId', async (req, res) => {
       }
     });
 
-    if (!pageRes.ok) {
-      return res.status(pageRes.status).json({ error: 'Không thể truy cập trang tác phẩm gốc' });
-    }
+    if (pageRes.ok) {
+      const buf = await pageRes.arrayBuffer();
+      const text = new TextDecoder('gb18030').decode(buf);
+      const match = text.match(/<div[^>]+id=[\"']novelintro[\"'][^>]*>([\s\S]*?)<\/div>/i);
 
-    const buf = await pageRes.arrayBuffer();
-    const text = new TextDecoder('gb18030').decode(buf);
-    const match = text.match(/<div[^>]+id=[\"']novelintro[\"'][^>]*>([\s\S]*?)<\/div>/i);
+      if (match && match[1]) {
+        const cleanIntro = match[1]
+          .replace(/<br\s*\/?>/gi, '\n')
+          .replace(/&nbsp;/gi, ' ')
+          .replace(/&lt;/gi, '<')
+          .replace(/&gt;/gi, '>')
+          .replace(/&quot;/gi, '"')
+          .replace(/&#039;/g, "'")
+          .replace(/&amp;/g, '&')
+          .replace(/<[^>]+>/g, '')
+          .replace(/\n{3,}/g, '\n\n')
+          .trim();
 
-    if (match && match[1]) {
-      const cleanIntro = match[1]
-        .replace(/<br\s*\/?>/gi, '\n')
-        .replace(/&nbsp;/gi, ' ')
-        .replace(/&lt;/gi, '<')
-        .replace(/&gt;/gi, '>')
-        .replace(/&quot;/gi, '"')
-        .replace(/<[^>]+>/g, '')
-        .trim();
+        if (cleanIntro.length > 0) {
+          try {
+            fs.writeFileSync(cacheFile, cleanIntro, 'utf-8');
+          } catch (e) {}
 
-      if (cleanIntro.length > 0) {
-        try {
-          fs.writeFileSync(cacheFile, cleanIntro, 'utf-8');
-        } catch (e) {}
-
-        res.setHeader('Cache-Control', 'public, max-age=604800');
-        return res.json({ success: true, intro: cleanIntro });
+          res.setHeader('Cache-Control', 'public, max-age=604800');
+          return res.json({ success: true, intro: cleanIntro });
+        }
       }
     }
 
@@ -649,6 +684,12 @@ app.get('/api/jjwxc/intro/:novelId', async (req, res) => {
     return res.status(500).json({ error: 'Lỗi tải giới thiệu' });
   }
 });
+
+// Phục vụ ảnh bìa tĩnh trực tiếp từ thư mục public/covers
+app.use('/covers', express.static(path.join(process.cwd(), 'public', 'covers'), {
+  maxAge: '1d',
+  immutable: false
+}));
 
 // === TÍCH HỢP VITE MIDDLEWARE CHO DEVELOPMENT VÀ PRODUCTION ===
 

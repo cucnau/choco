@@ -1,58 +1,24 @@
 /**
- * Tiện ích tải ảnh bìa Tấn Giang thông minh & tương thích 100% cả Preview, Localhost và GitHub Pages
+ * Tiện ích tải ảnh bìa Tấn Giang thông minh, đảm bảo 100% BÌA ĐÚNG của từng tác phẩm
  */
 
 /**
- * Tạo URL ảnh bìa tối ưu theo từng nguồn máy chủ
+ * Tạo URL ảnh bìa chuẩn xác nhất của tác phẩm từ Tấn Giang
+ * Đi thẳng qua asset tĩnh nội bộ (/covers/:novelId.jpg)
  */
-export function getNovelCoverUrl(novelId: string, customCoverUrl?: string): string {
-  const targetUrl = (customCoverUrl && customCoverUrl.startsWith('http'))
-    ? customCoverUrl
-    : `https://i9-static.jjwxc.net/novelimage.php?novelid=${novelId}`;
-
-  // Nếu là ảnh từ các CDN mở (JD, ImgDB, GTI...) -> Tải trực tiếp cực nhanh
-  if (targetUrl.includes('360buyimg.com') || targetUrl.includes('imgdb.cn') || targetUrl.includes('gti.asia')) {
-    return targetUrl;
-  }
-
-  // Nếu đang ở Preview / Fullstack và có backend
-  const isBrowser = typeof window !== 'undefined';
-  const isStatic = isBrowser && (
-    window.location.hostname.includes('github.io') ||
-    window.location.protocol === 'file:'
-  );
-
-  // Trên GitHub Pages, dùng CDN Cloudflare Image Proxy (wsrv.nl)
-  if (isStatic) {
-    return `https://wsrv.nl/?url=${encodeURIComponent(targetUrl)}`;
-  }
-
-  // Môi trường Preview / Dev: dùng proxy backend của app hoặc wsrv.nl
-  if (targetUrl.includes('jjwxc.net')) {
-    return `/api/jjwxc/cover/${novelId}`;
-  }
-
-  return targetUrl;
+export function getNovelCoverUrl(novelId: string, _customCoverUrl?: string): string {
+  return `/covers/${novelId}.jpg`;
 }
 
 /**
  * Lấy URL ảnh bìa hỗ trợ CORS (dùng cho canvas trích xuất màu Canva)
  */
-export function getCorsCoverUrl(novelId: string, customCoverUrl?: string): string {
-  const targetUrl = (customCoverUrl && customCoverUrl.startsWith('http'))
-    ? customCoverUrl
-    : `https://i9-static.jjwxc.net/novelimage.php?novelid=${novelId}`;
-
-  if (typeof window !== 'undefined' && !window.location.hostname.includes('github.io') && !window.location.protocol.includes('file')) {
-    return `/api/jjwxc/cover/${novelId}`;
-  }
-
-  return `https://wsrv.nl/?url=${encodeURIComponent(targetUrl)}`;
+export function getCorsCoverUrl(novelId: string, _customCoverUrl?: string): string {
+  return `/covers/${novelId}.jpg`;
 }
 
 /**
- * Xử lý lỗi tải ảnh bìa đa tầng (Multi-tier Smart Fallback)
- * Luôn đảm bảo hiển thị ảnh bìa tốt nhất dù ở bất kỳ mạng nào
+ * Xử lý lỗi tải ảnh bìa: Thử fallback sang Proxy Backend nếu file tĩnh chưa kịp nạp
  */
 export function handleCoverError(
   e: React.SyntheticEvent<HTMLImageElement, Event>,
@@ -60,35 +26,27 @@ export function handleCoverError(
   customCoverUrl?: string
 ) {
   const target = e.currentTarget;
-  const originalCoverUrl = customCoverUrl || `https://i9-static.jjwxc.net/novelimage.php?novelid=${novelId}`;
   const currentSrc = target.src;
 
-  // Tầng 1: Nếu link /api/ lỗi hoặc link trực tiếp lỗi, thử qua CDN wsrv.nl
-  if (currentSrc.includes('/api/jjwxc/cover/') || (!currentSrc.includes('wsrv.nl') && !currentSrc.includes('images.weserv.nl'))) {
-    target.src = `https://wsrv.nl/?url=${encodeURIComponent(originalCoverUrl)}`;
+  // Nếu file tĩnh bị lỗi, fallback sang proxy API
+  if (currentSrc.includes('/covers/')) {
+    target.src = `/api/jjwxc/cover/${novelId}`;
     return;
   }
 
-  // Tầng 2: Nếu wsrv.nl lỗi, thử trực tiếp link gốc không qua proxy
-  if (currentSrc.includes('wsrv.nl') && originalCoverUrl.startsWith('http')) {
-    target.src = originalCoverUrl;
+  // Nếu API proxy cũng lỗi, fallback sang Cloudflare Image Proxy
+  if (currentSrc.includes('/api/jjwxc/cover/')) {
+    if (customCoverUrl && customCoverUrl.startsWith('http')) {
+      target.src = `https://wsrv.nl/?url=${encodeURIComponent(customCoverUrl)}`;
+      return;
+    }
+    const targetUrl = `https://i9-static.jjwxc.net/novelimage.php?novelid=${novelId}`;
+    target.src = `https://wsrv.nl/?url=${encodeURIComponent(targetUrl)}`;
     return;
-  }
-
-  // Tầng 3: Thử qua images.weserv.nl
-  if (!currentSrc.includes('images.weserv.nl')) {
-    target.src = `https://images.weserv.nl/?url=${encodeURIComponent(originalCoverUrl)}`;
-    return;
-  }
-
-  // Tầng 4: Thử link novelimage chuẩn
-  if (!currentSrc.includes('novelimage.php')) {
-    target.src = `https://i9-static.jjwxc.net/novelimage.php?novelid=${novelId}`;
-    return;
-  }
-
-  // Tầng cuối: Fallback về ảnh placeholder Tấn Giang
-  if (!currentSrc.includes('static.jjwxc.net/images/cover.png')) {
-    target.src = 'https://static.jjwxc.net/images/cover.png';
   }
 }
+
+
+
+
+

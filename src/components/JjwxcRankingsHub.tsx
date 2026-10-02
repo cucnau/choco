@@ -68,31 +68,24 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
         setActivePalette(palette);
       });
 
-      // Nếu truyện đã có sẵn văn án giới thiệu
-      if (activeNovel.intro && activeNovel.intro.trim().length > 0) {
-        setNovelIntro(activeNovel.intro);
-        setIsLoadingIntro(false);
-      } else {
-        // Tự động lấy trực tiếp từ trang onebook.php của Tấn Giang
-        setIsLoadingIntro(true);
-        setNovelIntro('');
-        fetch(`/api/jjwxc/intro/${activeNovel.novelId}`)
-          .then(res => res.json())
-          .then(data => {
-            if (data && data.intro) {
-              setNovelIntro(data.intro);
-              activeNovel.intro = data.intro;
-            } else {
-              setNovelIntro('Chưa có thông tin giới thiệu.');
-            }
-          })
-          .catch(() => {
-            setNovelIntro('Chưa có thông tin giới thiệu.');
-          })
-          .finally(() => {
-            setIsLoadingIntro(false);
-          });
-      }
+      // Luôn tải văn án đầy đủ trực tiếp từ API Tấn Giang
+      setIsLoadingIntro(true);
+      setNovelIntro('');
+      fetch(`/api/jjwxc/intro/${activeNovel.novelId}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.intro && data.intro.trim().length > 0) {
+            setNovelIntro(data.intro);
+          } else {
+            setNovelIntro(activeNovel.intro || 'Chưa có thông tin giới thiệu chi tiết.');
+          }
+        })
+        .catch(() => {
+          setNovelIntro(activeNovel.intro || 'Chưa có thông tin giới thiệu chi tiết.');
+        })
+        .finally(() => {
+          setIsLoadingIntro(false);
+        });
     } else {
       setActivePalette(null);
       setNovelIntro('');
@@ -263,26 +256,35 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
             {JJWXC_RANK_CATEGORIES.map(category => {
               const isSelected = selectedRankId === category.id;
+              const count = dataset.rankings?.[category.id]?.items?.length;
               return (
                 <button
                   key={category.id}
                   onClick={() => setSelectedRankId(category.id)}
-                  className={`px-3 py-1.5 rounded-lg border text-xs whitespace-nowrap transition-all ${
+                  className={`px-3 py-1.5 rounded-lg border text-xs whitespace-nowrap transition-all flex items-center gap-1.5 ${
                     isSelected
                       ? 'border-emerald-500/80 bg-emerald-500/15 text-emerald-400 font-bold shadow-xs'
                       : 'border-border-custom/70 bg-bg-card/70 hover:bg-bg-card text-text-sub hover:text-text-main'
                   }`}
                 >
-                  {category.nameViGuide}
+                  <span>{category.nameViGuide}</span>
+                  {count !== undefined && (
+                    <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${isSelected ? 'bg-emerald-500/25 text-emerald-300' : 'bg-bg-surface text-text-sub'}`}>
+                      {count}
+                    </span>
+                  )}
                 </button>
               );
             })}
           </div>
 
           {/* Tiêu chí xếp hạng của bảng hiện tại */}
-          <div className="text-[11px] text-text-sub bg-bg-card/40 px-3 py-1.5 rounded-lg border border-border-custom/60 flex items-center justify-between">
-            <span>📌 {currentCategoryConfig.desc}</span>
-            <span className="font-mono text-[10px] opacity-75">{currentCategoryConfig.channel}</span>
+          <div className="text-[11px] text-text-sub bg-bg-card/60 px-3 py-2 rounded-lg border border-border-custom/80 flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 shadow-2xs">
+            <div className="flex items-center gap-1.5 flex-1 min-w-0">
+              <span className="font-semibold text-text-main shrink-0">📌 Tiêu chí BXH:</span>
+              <span className="text-emerald-400 font-medium truncate">{currentCategoryConfig.sortCriteria || currentCategoryConfig.desc}</span>
+            </div>
+            <span className="font-mono text-[10px] text-text-sub/70 shrink-0 self-end sm:self-auto">{currentCategoryConfig.channel}</span>
           </div>
         </div>
       )}
@@ -350,71 +352,73 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
           <p className="text-xs">Không tìm thấy truyện phù hợp</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
-          {filteredNovels.map((novel, index) => {
-            const isSaved = savedNovelIds.includes(novel.novelId);
+        <div className="space-y-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+            {filteredNovels.map((novel, index) => {
+              const isSaved = savedNovelIds.includes(novel.novelId);
 
-            return (
-              <div
-                key={`${novel.novelId}-${index}`}
-                onClick={() => setActiveNovel(novel)}
-                className="group rounded-xl border border-border-custom/80 bg-bg-card hover:bg-bg-surface hover:border-emerald-500/50 transition-all p-3 flex items-center justify-between gap-3 cursor-pointer shadow-xs"
-              >
-                {/* Thứ hạng + Bìa + Thông tin chính */}
-                <div className="flex items-center gap-3 min-w-0 flex-1">
-                  {getRankBadge(novel.rank)}
-
-                  {/* Bìa truyện */}
-                  <img
-                    src={getNovelCoverUrl(novel.novelId, novel.coverUrl)}
-                    alt={novel.title}
-                    loading="lazy"
-                    referrerPolicy="no-referrer"
-                    className="w-11 h-15 object-cover rounded-md border border-border-custom shrink-0 group-hover:scale-102 transition-transform bg-bg-surface"
-                    onError={(e) => handleCoverError(e, novel.novelId, novel.coverUrl)}
-                  />
-
-                  {/* Chi tiết truyện */}
-                  <div className="min-w-0 flex-1">
-                    <h2 
-                      className="text-sm font-bold text-text-main group-hover:text-emerald-400 transition-colors truncate"
-                      title={novel.title}
-                    >
-                      {novel.title}
-                    </h2>
-
-                    <div className="flex items-center gap-2 text-xs text-text-sub mt-1">
-                      <span className="truncate max-w-[120px]">{novel.author}</span>
-                      <span>•</span>
-                      <span className={novel.status.includes('完结') ? 'text-emerald-400' : 'text-blue-400'}>
-                        {novel.status.includes('完结') ? 'Hoàn' : 'Đang ra'}
-                      </span>
-                    </div>
-
-                    {novel.score && (
-                      <div className="text-[11px] text-text-sub/80 mt-1 truncate">
-                        <span>{selectedRankId === 'bawang' ? 'Điểm ủng hộ: ' : 'Tích phân: '}</span>
-                        <span className="text-amber-500 font-medium">{novel.score.trim()}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Bookmark nhanh */}
-                <button
-                  onClick={(e) => toggleSaveNovel(novel.novelId, e)}
-                  className={`p-2 rounded-lg border transition-all shrink-0 ${
-                    isSaved 
-                      ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400' 
-                      : 'border-transparent text-text-sub hover:text-text-main'
-                  }`}
-                  title={isSaved ? 'Bỏ lưu' : 'Lưu truyện'}
+              return (
+                <div
+                  key={`${novel.novelId}-${index}`}
+                  onClick={() => setActiveNovel(novel)}
+                  className="group rounded-xl border border-border-custom/80 bg-bg-card hover:bg-bg-surface hover:border-emerald-500/50 transition-all p-3 flex items-center justify-between gap-3 cursor-pointer shadow-xs"
                 >
-                  <Bookmark className={`w-4 h-4 ${isSaved ? 'fill-emerald-400' : ''}`} />
-                </button>
-              </div>
-            );
-          })}
+                  {/* Thứ hạng + Bìa + Thông tin chính */}
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                    {getRankBadge(novel.rank)}
+
+                    {/* Bìa truyện */}
+                    <img
+                      src={getNovelCoverUrl(novel.novelId, novel.coverUrl)}
+                      alt={novel.title}
+                      loading="lazy"
+                      referrerPolicy="no-referrer"
+                      className="w-11 h-15 object-cover rounded-md border border-border-custom shrink-0 group-hover:scale-102 transition-transform bg-bg-surface"
+                      onError={(e) => handleCoverError(e, novel.novelId, novel.coverUrl)}
+                    />
+
+                    {/* Chi tiết truyện */}
+                    <div className="min-w-0 flex-1">
+                      <h2 
+                        className="text-sm font-bold text-text-main group-hover:text-emerald-400 transition-colors truncate"
+                        title={novel.title}
+                      >
+                        {novel.title}
+                      </h2>
+
+                      <div className="flex items-center gap-2 text-xs text-text-sub mt-1">
+                        <span className="truncate max-w-[120px]">{novel.author}</span>
+                        <span>•</span>
+                        <span className={novel.status.includes('完结') ? 'text-emerald-400' : 'text-blue-400'}>
+                          {novel.status.includes('完结') ? 'Hoàn' : 'Đang ra'}
+                        </span>
+                      </div>
+
+                      {novel.score && (
+                        <div className="text-[11px] text-text-sub/80 mt-1 truncate">
+                          <span>Điểm tích lũy: </span>
+                          <span className="text-amber-500 font-medium">{novel.score.trim()}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Bookmark nhanh */}
+                  <button
+                    onClick={(e) => toggleSaveNovel(novel.novelId, e)}
+                    className={`p-2 rounded-lg border transition-all shrink-0 ${
+                      isSaved 
+                        ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400' 
+                        : 'border-transparent text-text-sub hover:text-text-main'
+                    }`}
+                    title={isSaved ? 'Bỏ lưu' : 'Lưu truyện'}
+                  >
+                    <Bookmark className={`w-4 h-4 ${isSaved ? 'fill-emerald-400' : ''}`} />
+                  </button>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
 
@@ -512,7 +516,7 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
                     </div>
                     {activeNovel.score && (
                       <div>
-                        Điểm tích phân: <span className="font-bold" style={{ color: activePalette?.accent || '#2b7050' }}>{activeNovel.score.trim()}</span>
+                        Điểm tích lũy: <span className="font-bold" style={{ color: activePalette?.accent || '#2b7050' }}>{activeNovel.score.trim()}</span>
                       </div>
                     )}
                     {activeNovel.wordCount && (
@@ -556,21 +560,27 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
 
               {/* Giới thiệu tác phẩm */}
               <div>
-                <h4 className="font-bold mb-1.5" style={{ color: activePalette?.textMuted || '#4f6154' }}>
-                  Giới thiệu tác phẩm:
+                <h4 className="font-bold mb-1.5 flex items-center justify-between" style={{ color: activePalette?.textMuted || '#4f6154' }}>
+                  <span>Giới thiệu tác phẩm:</span>
+                  {isLoadingIntro && (
+                    <span className="text-[11px] font-normal flex items-center gap-1 opacity-75">
+                      <RefreshCw className="w-3 h-3 animate-spin" />
+                      Đang tải...
+                    </span>
+                  )}
                 </h4>
                 <div 
-                  className="p-3.5 rounded-xl border leading-relaxed whitespace-pre-line text-xs max-h-60 overflow-y-auto font-sans shadow-inner"
+                  className="p-3.5 rounded-xl border leading-relaxed whitespace-pre-line text-xs max-h-72 overflow-y-auto font-sans shadow-inner selection:bg-emerald-500/30"
                   style={{
                     backgroundColor: activePalette?.cardBg || '#ffffff',
                     borderColor: activePalette?.border || '#cbd5cc',
                     color: activePalette?.text || '#1a231d',
-                    lineHeight: '1.75'
+                    lineHeight: '1.8'
                   }}
                 >
-                  {isLoadingIntro ? (
-                    <div className="py-4 text-center flex items-center justify-center gap-2 opacity-70">
-                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  {isLoadingIntro && !novelIntro ? (
+                    <div className="py-6 text-center flex items-center justify-center gap-2 opacity-70">
+                      <RefreshCw className="w-4 h-4 animate-spin" />
                       <span>Đang tải giới thiệu từ Tấn Giang...</span>
                     </div>
                   ) : (

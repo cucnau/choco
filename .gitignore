@@ -1,6 +1,12 @@
 node_modules/
-coverage/
-.DS_Store
+dist/
+.cache/
+public/covers/
+*.bin
+*.meta
 *.log
+.DS_Store
 .env*
 !.env.example
+phavan_weibo.jpg
+
