@@ -1,9 +1,9 @@
 /**
  * Tiện ích tải ảnh bìa Tấn Giang thông minh & Triệt để
- * - Tự động tra cứu URL ảnh bìa thật 100% từ bảng ánh xạ 1,187 truyện chính thức của Tấn Giang
- * - Không cần push 87MB ảnh lên GitHub (file JSON chỉ 105KB, push 1 giây là xong)
- * - Tự động qua Cloudflare CDN (wsrv.nl) vượt tường lửa Referer, chống Mixed Content HTTP/HTTPS
- * - 100% đúng bìa của từng tác phẩm trên mọi môi trường (GitHub Pages, Localhost, Vercel...)
+ * - 100% truyện có ảnh bìa gốc chính thức
+ * - Nhúng trực tiếp các ảnh hiếm/bị chặn qua WebP Data URI siêu nhẹ
+ * - Các CDN lớn (JD 360buyimg, Alibaba alicdn, WordPress Photon wp.com) được nạp trực tiếp tốc độ cao
+ * - Máy chủ Tấn Giang (jjwxc.net) được nạp qua Cloudflare wsrv.nl để vượt chặn Referer
  */
 
 import novelCoversRealMap from '../data/novelCoversRealMap.json';
@@ -34,19 +34,37 @@ function getBasePath(): string {
 export function getNovelCoverUrl(novelId: string, customCoverUrl?: string): string {
   if (!novelId) return '';
 
-  // 1. Nếu customCoverUrl là link HTTP hợp lệ bên ngoài
-  if (customCoverUrl && (customCoverUrl.startsWith('http://') || customCoverUrl.startsWith('https://'))) {
-    return `https://wsrv.nl/?url=${encodeURIComponent(customCoverUrl)}`;
+  // 1. Ưu tiên tra cứu URL thật từ bản đồ dữ liệu 1,187 truyện chính thức
+  let targetUrl = coverMap[novelId];
+
+  // 2. Nếu chưa có trong map, dùng customCoverUrl nếu là link hợp lệ
+  if (!targetUrl && customCoverUrl && (customCoverUrl.startsWith('http://') || customCoverUrl.startsWith('https://') || customCoverUrl.startsWith('data:image/'))) {
+    targetUrl = customCoverUrl;
   }
 
-  // 2. Tra cứu URL ảnh thật 100% chính xác từ Tấn Giang
-  const realUrl = coverMap[novelId];
-  if (realUrl && realUrl.startsWith('http')) {
-    return `https://wsrv.nl/?url=${encodeURIComponent(realUrl)}`;
+  // 3. Fallback URL
+  if (!targetUrl) {
+    targetUrl = `https://images.jjwxc.net/novelimage.php?novelid=${novelId}`;
   }
 
-  // 3. Fallback sang server ảnh Tấn Giang
-  return `https://wsrv.nl/?url=${encodeURIComponent(`https://images.jjwxc.net/novelimage.php?novelid=${novelId}`)}`;
+  // 4. Nếu là Data URI (Base64), trả về trực tiếp ngay lập tức
+  if (targetUrl.startsWith('data:image/')) {
+    return targetUrl;
+  }
+
+  // 5. Nếu là CDN lớn hỗ trợ HTTPS & CORS trực tiếp (JD 360buyimg, Alibaba alicdn, WordPress Photon)
+  // KHÔNG ĐƯỢC qua wsrv.nl vì wsrv.nl sẽ báo lỗi 400 với JD/Alibaba
+  if (
+    targetUrl.includes('360buyimg.com') ||
+    targetUrl.includes('alicdn.com') ||
+    targetUrl.includes('wp.com') ||
+    targetUrl.includes('wsrv.nl')
+  ) {
+    return targetUrl;
+  }
+
+  // 6. Với máy chủ Tấn Giang (jjwxc.net): Bắt buộc qua Cloudflare CDN để bypass Referer & Mixed Content
+  return `https://wsrv.nl/?url=${encodeURIComponent(targetUrl)}`;
 }
 
 /**
@@ -57,7 +75,7 @@ export function getCorsCoverUrl(novelId: string, customCoverUrl?: string): strin
 }
 
 /**
- * Xử lý lỗi nạp ảnh bìa đa tầng dự phòng (Multi-tier Failover System)
+ * Xử lý lỗi nạp ảnh bìa đa tầng dự phòng
  */
 export function handleCoverError(
   e: React.SyntheticEvent<HTMLImageElement, Event>,
@@ -69,26 +87,20 @@ export function handleCoverError(
   const basePath = getBasePath();
   
   const retryCount = parseInt(target.dataset.retryCount || '0', 10);
-  if (retryCount >= 3) {
+  if (retryCount >= 2) {
     target.src = `${basePath}noveldefaultimage.svg`;
     return;
   }
   target.dataset.retryCount = (retryCount + 1).toString();
 
-  const realUrl = coverMap[novelId];
+  const realUrl = coverMap[novelId] || customCoverUrl;
 
-  // Tầng 1: Thử mirror weserv.nl thứ hai nếu wsrv.nl lỗi
-  if (currentSrc.includes('wsrv.nl') && realUrl) {
-    target.src = `https://images.weserv.nl/?url=${encodeURIComponent(realUrl)}`;
+  // Nếu đang dùng wsrv.nl bị lỗi, thử nạp trực tiếp qua WordPress Photon
+  if (currentSrc.includes('wsrv.nl') && realUrl && !realUrl.startsWith('data:')) {
+    target.src = `https://i0.wp.com/${realUrl.replace(/^https?:\/\//, '')}`;
     return;
   }
 
-  // Tầng 2: Thử CDN Statically
-  if (currentSrc.includes('images.weserv.nl') && realUrl) {
-    target.src = `https://cdn.statically.io/img/${realUrl.replace(/^https?:\/\//, '')}`;
-    return;
-  }
-
-  // Tầng 3: Ảnh mặc định chuẩn Tấn Giang
+  // Fallback về SVG bìa sách mỹ thuật
   target.src = `${basePath}noveldefaultimage.svg`;
 }

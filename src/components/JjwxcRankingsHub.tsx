@@ -699,18 +699,6 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
                       )}
 
                       <div className="pt-2 flex flex-wrap items-center gap-2">
-                        <button
-                          onClick={(e) => handleCopyChinese(activeNovel.title, activeNovel.novelId, e)}
-                          className="px-3 py-1.5 rounded-xl font-medium flex items-center gap-1.5 transition-all active:scale-95 shadow-xs hover:opacity-90 cursor-pointer"
-                          style={{
-                            backgroundColor: activePalette?.accent || (isDarkModal ? '#38bdf8' : '#0284c7'),
-                            color: activePalette?.accentText || '#ffffff'
-                          }}
-                        >
-                          {copiedId === activeNovel.novelId ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                          <span>{copiedId === activeNovel.novelId ? 'Đã chép' : 'Sao chép tên'}</span>
-                        </button>
-
                         <a
                           href={activeNovel.jjwxcUrl || `https://www.jjwxc.net/onebook.php?novelid=${activeNovel.novelId}`}
                           target="_blank"
