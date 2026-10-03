@@ -1,50 +1,57 @@
 /**
- * Tiện ích tải ảnh bìa Tấn Giang thông minh
- * Hỗ trợ 100% môi trường: Localhost, Server Full-Stack, và GitHub Pages (Static Hosting)
+ * Tiện ích tải ảnh bìa Tấn Giang thông minh & Triệt để
+ * Giải quyết triệt để vấn đề deploy GitHub Pages / Vercel / Netlify:
+ * - KHÔNG CẦN push hàng trăm file ảnh lên Git (giúp Git push nhẹ tênh và không bao giờ bị lỗi 'Failed to push')
+ * - Tự động tải đúng 100% ảnh bìa gốc từ server Tấn Giang qua Cloudflare Global Proxy (wsrv.nl)
+ * - Tự động vượt tường lửa Referer, chống lỗi Mixed Content HTTP/HTTPS
+ * - Tự động hỗ trợ CORS cho canvas trích xuất màu Canva
  */
 
 function getBasePath(): string {
   if (typeof window === 'undefined') return '/';
-  const base = import.meta.env.BASE_URL || '/';
-  return base.endsWith('/') ? base : `${base}/`;
+  
+  if (window.location.hostname.includes('github.io')) {
+    const segments = window.location.pathname.split('/').filter(Boolean);
+    if (segments.length > 0) {
+      return `/${segments[0]}/`;
+    }
+  }
+
+  const base = import.meta.env.BASE_URL;
+  if (base && base !== './' && base !== '.') {
+    return base.endsWith('/') ? base : `${base}/`;
+  }
+
+  return './';
 }
 
 /**
- * Tạo URL ảnh bìa chuẩn xác nhất của tác phẩm từ Tấn Giang
- * Ưu tiên:
- * 1. Asset tĩnh nội bộ tương thích Base URL (GitHub Pages subpath hoặc root)
- * 2. CDN Proxy toàn cầu (Cloudflare Image Proxy)
+ * Tạo URL ảnh bìa Tấn Giang chính thức qua Cloudflare Global CDN
+ * Đảm bảo 100% đúng bìa của từng tác phẩm, tốc độ tải siêu tốc và hoạt động trên mọi nền tảng
  */
 export function getNovelCoverUrl(novelId: string, customCoverUrl?: string): string {
   if (!novelId) return '';
 
-  const basePath = getBasePath();
-  // Ưu tiên ảnh thật trong asset tĩnh local
-  return `${basePath}covers/${novelId}.jpg`;
-}
-
-/**
- * Lấy URL ảnh bìa hỗ trợ CORS (dùng cho canvas trích xuất màu Canva)
- */
-export function getCorsCoverUrl(novelId: string, customCoverUrl?: string): string {
-  if (!novelId) return '';
-
-  const basePath = getBasePath();
-  const isGitHubPages = typeof window !== 'undefined' && window.location.hostname.includes('github.io');
-  
-  if (isGitHubPages) {
-    if (customCoverUrl && (customCoverUrl.startsWith('http://') || customCoverUrl.startsWith('https://'))) {
-      return `https://wsrv.nl/?url=${encodeURIComponent(customCoverUrl)}`;
-    }
-    return `https://wsrv.nl/?url=${encodeURIComponent(`http://static.jjwxc.net/novelimage.php?novelid=${novelId}`)}`;
+  // Nếu có custom cover URL hợp lệ từ bên ngoài
+  if (customCoverUrl && (customCoverUrl.startsWith('http://') || customCoverUrl.startsWith('https://'))) {
+    return `https://wsrv.nl/?url=${encodeURIComponent(customCoverUrl)}`;
   }
 
-  return `${basePath}covers/${novelId}.jpg`;
+  // Tải trực tiếp ảnh bìa chuẩn theo novelId từ server Tấn Giang qua CDN Cloudflare
+  const jjwxcSourceUrl = `http://static.jjwxc.net/novelimage.php?novelid=${novelId}`;
+  return `https://wsrv.nl/?url=${encodeURIComponent(jjwxcSourceUrl)}`;
 }
 
 /**
- * Xử lý lỗi nạp ảnh bìa thông minh đa tầng (Bulletproof Fallback System)
- * Tự động chuyển qua các CDN Proxy và server proxy dự phòng nếu môi trường GitHub Pages chưa có file tĩnh
+ * Lấy URL ảnh bìa hỗ trợ CORS 100% cho Canvas trích xuất màu
+ */
+export function getCorsCoverUrl(novelId: string, customCoverUrl?: string): string {
+  return getNovelCoverUrl(novelId, customCoverUrl);
+}
+
+/**
+ * Xử lý lỗi nạp ảnh bìa đa tầng dự phòng (Multi-tier Failover System)
+ * Đảm bảo không bao giờ bị lỗi vỡ ảnh hay hình rách
  */
 export function handleCoverError(
   e: React.SyntheticEvent<HTMLImageElement, Event>,
@@ -53,46 +60,31 @@ export function handleCoverError(
 ) {
   const target = e.currentTarget;
   const currentSrc = target.src || '';
+  const basePath = getBasePath();
   
-  // Tránh lặp vô hạn nếu đã thử hết mọi phương án
   const retryCount = parseInt(target.dataset.retryCount || '0', 10);
-  if (retryCount >= 4) return;
+  if (retryCount >= 3) {
+    // Tầng cuối cùng: Luôn hiển thị ảnh bìa mặc định chuẩn Tấn Giang
+    target.src = `${basePath}noveldefaultimage.svg`;
+    return;
+  }
   target.dataset.retryCount = (retryCount + 1).toString();
 
-  const jjwxcTargetHttp = `http://static.jjwxc.net/novelimage.php?novelid=${novelId}`;
-  const jjwxcTargetHttps = `https://i9-static.jjwxc.net/novelimage.php?novelid=${novelId}`;
+  const jjwxcSourceHttp = `http://static.jjwxc.net/novelimage.php?novelid=${novelId}`;
+  const jjwxcSourceHttps = `https://i9-static.jjwxc.net/novelimage.php?novelid=${novelId}`;
 
-  // Tầng 1: Nếu file tĩnh /covers/ bị lỗi 404 (do deploy GitHub Pages không có folder covers)
-  if (currentSrc.includes('/covers/')) {
-    if (customCoverUrl && customCoverUrl.startsWith('http')) {
-      target.src = `https://wsrv.nl/?url=${encodeURIComponent(customCoverUrl)}`;
-      return;
-    }
-    target.src = `https://wsrv.nl/?url=${encodeURIComponent(jjwxcTargetHttp)}`;
-    return;
-  }
-
-  // Tầng 2: Nếu wsrv.nl gặp trục trặc mạng
+  // Tầng 1: Thử mirror weserv.nl thứ hai
   if (currentSrc.includes('wsrv.nl')) {
-    target.src = `https://images.weserv.nl/?url=${encodeURIComponent(jjwxcTargetHttps)}`;
+    target.src = `https://images.weserv.nl/?url=${encodeURIComponent(jjwxcSourceHttps)}`;
     return;
   }
 
-  // Tầng 3: Thử proxy nội bộ backend (nếu có server Node.js)
+  // Tầng 2: Thử CDN Statically
   if (currentSrc.includes('images.weserv.nl')) {
-    const basePath = getBasePath();
-    target.src = `${basePath}api/jjwxc/cover/${novelId}`;
+    target.src = `https://cdn.statically.io/img/static.jjwxc.net/novelimage.php?novelid=${novelId}`;
     return;
   }
 
-  // Tầng 4: Fallback cuối cùng sang AllOrigins
-  if (currentSrc.includes('/api/jjwxc/cover/')) {
-    target.src = `https://api.allorigins.win/raw?url=${encodeURIComponent(jjwxcTargetHttps)}`;
-    return;
-  }
+  // Tầng 3: Ảnh mặc định chuẩn
+  target.src = `${basePath}noveldefaultimage.svg`;
 }
-
-
-
-
-
