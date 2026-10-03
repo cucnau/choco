@@ -92,24 +92,26 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
         setActivePalette(palette);
       });
 
-      // Luôn tải văn án đầy đủ trực tiếp từ API Tấn Giang
-      setIsLoadingIntro(true);
-      setNovelIntro('');
-      fetch(`/api/jjwxc/intro/${activeNovel.novelId}`)
-        .then(res => res.json())
-        .then(data => {
-          if (data && data.intro && data.intro.trim().length > 0) {
-            setNovelIntro(data.intro);
-          } else {
-            setNovelIntro(activeNovel.intro || 'Chưa có thông tin giới thiệu chi tiết.');
-          }
-        })
-        .catch(() => {
-          setNovelIntro(activeNovel.intro || 'Chưa có thông tin giới thiệu chi tiết.');
-        })
-        .finally(() => {
-          setIsLoadingIntro(false);
-        });
+      // Hiển thị ngay văn án đầy đủ đã có sẵn trong cơ sở dữ liệu tĩnh
+      setNovelIntro(activeNovel.intro || '');
+      setIsLoadingIntro(false);
+
+      // Nếu đang chạy local/preview có backend, fetch ngầm để cập nhật bản mới nhất nếu có
+      if (typeof window !== 'undefined' && !window.location.hostname.includes('github.io')) {
+        fetch(`/api/jjwxc/intro/${activeNovel.novelId}`)
+          .then(res => {
+            if (!res.ok) throw new Error('API not available');
+            return res.json();
+          })
+          .then(data => {
+            if (data && data.intro && data.intro.trim().length > 0) {
+              setNovelIntro(data.intro);
+            }
+          })
+          .catch(() => {
+            // Không làm gì vì đã có activeNovel.intro hiển thị sẵn
+          });
+      }
     } else {
       setActivePalette(null);
       setNovelIntro('');
