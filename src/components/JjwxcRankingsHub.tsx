@@ -19,7 +19,7 @@ import {
 } from '../data/jjwxcRankingsData';
 import { CORE_JJWXC_TAGS, TAG_CATEGORY_TABS, CoreTagConfig } from '../data/jjwxcTagsData';
 import { Story } from '../types';
-import { extractPaletteFromImage, CanvaPalette } from '../lib/coverColorExtractor';
+import { extractPaletteFromImage, CanvaPalette, hexToRgba } from '../lib/coverColorExtractor';
 import { getNovelCoverUrl, getCorsCoverUrl, handleCoverError } from '../utils/coverImage';
 
 interface JjwxcRankingsHubProps {
@@ -568,176 +568,208 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
       </>
       )}
 
-      {/* Modal Chi Tiết Tối Giản khi bấm vào truyện - Tự động đồng bộ màu theo bìa (Giống Canva Photo Palette) */}
-      {activeNovel && (
-        <div 
-          className="fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-center justify-center p-4 transition-all duration-200"
-          onClick={() => setActiveNovel(null)}
-        >
+      {/* Modal Chi Tiết - Kính Mờ Cao Cấp Tự Động Thích Ứng Tone Sáng/Tối Theo Bìa Truyện */}
+      {activeNovel && (() => {
+        const isDarkModal = activePalette?.isDarkTheme ?? false;
+        const textPrimary = isDarkModal ? '#ffffff' : '#0f172a';
+        const textSecondary = isDarkModal ? '#f1f5f9' : '#334155';
+        const textMuted = isDarkModal ? '#94a3b8' : '#64748b';
+        const cardBg = isDarkModal ? 'rgba(255, 255, 255, 0.08)' : 'rgba(255, 255, 255, 0.75)';
+        const cardBorder = isDarkModal ? 'rgba(255, 255, 255, 0.12)' : 'rgba(255, 255, 255, 0.9)';
+        const statusColor = activeNovel.status.includes('完结') 
+          ? (isDarkModal ? '#34d399' : '#059669') 
+          : (isDarkModal ? '#60a5fa' : '#2563eb');
+
+        return (
           <div 
-            className="w-full max-w-lg rounded-2xl border shadow-2xl overflow-hidden flex flex-col max-h-[88vh] animate-in fade-in zoom-in-95 duration-150"
-            style={{
-              backgroundColor: activePalette?.bg || '#f4f6f4',
-              borderColor: activePalette?.border || '#cbd5cc',
-              color: activePalette?.text || '#1a231d',
-              boxShadow: activePalette 
-                ? `0 25px 60px -15px rgba(0, 0, 0, 0.7), 0 0 25px -5px ${activePalette.border}` 
-                : '0 25px 60px -15px rgba(0, 0, 0, 0.7)'
-            }}
-            onClick={(e) => e.stopPropagation()}
+            className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 transition-all duration-200"
+            onClick={() => setActiveNovel(null)}
           >
-            {/* Header Modal */}
             <div 
-              className="p-4 border-b flex items-center justify-between"
+              className="w-full max-w-lg rounded-2xl border overflow-hidden flex flex-col max-h-[88vh] animate-in fade-in zoom-in-95 duration-150"
               style={{
-                backgroundColor: activePalette?.cardBg || '#ffffff',
-                borderColor: activePalette?.border || '#cbd5cc'
+                backgroundColor: isDarkModal ? 'rgba(15, 23, 42, 0.85)' : 'rgba(255, 255, 255, 0.88)',
+                backgroundImage: isDarkModal
+                  ? `linear-gradient(135deg, ${hexToRgba(activePalette?.accent, 0.15)}, rgba(15, 23, 42, 0.78))`
+                  : `linear-gradient(135deg, rgba(255, 255, 255, 0.95), ${hexToRgba(activePalette?.bg || '#ffffff', 0.45)})`,
+                backdropFilter: 'blur(28px)',
+                WebkitBackdropFilter: 'blur(28px)',
+                borderColor: isDarkModal ? 'rgba(255, 255, 255, 0.15)' : 'rgba(255, 255, 255, 0.85)',
+                boxShadow: isDarkModal
+                  ? '0 25px 60px -15px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.12)'
+                  : '0 25px 60px -15px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.4), inset 0 1px 1px 0 rgba(255, 255, 255, 0.8)'
               }}
+              onClick={(e) => e.stopPropagation()}
             >
-              <div className="flex items-center gap-2.5 min-w-0">
-                <span 
-                  className="w-6 h-6 rounded-md flex items-center justify-center font-bold text-xs shrink-0 border"
+              {/* Header Modal */}
+              <div 
+                className="px-5 py-4 border-b flex items-center justify-between"
+                style={{ borderColor: isDarkModal ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.06)' }}
+              >
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <span 
+                    className="w-6.5 h-6.5 rounded-lg flex items-center justify-center font-bold text-xs shrink-0 shadow-xs"
+                    style={{
+                      backgroundColor: activePalette?.accent || (isDarkModal ? '#38bdf8' : '#0284c7'),
+                      color: activePalette?.accentText || '#ffffff'
+                    }}
+                  >
+                    {activeNovel.rank}
+                  </span>
+                  <h3 
+                    className="text-base font-bold truncate tracking-tight"
+                    style={{ color: textPrimary }}
+                  >
+                    {activeNovel.title}
+                  </h3>
+                </div>
+                <button
+                  onClick={() => setActiveNovel(null)}
+                  className="w-7 h-7 rounded-full flex items-center justify-center transition-all cursor-pointer"
                   style={{
-                    backgroundColor: activePalette?.accent || '#2b7050',
-                    borderColor: activePalette?.border || '#cbd5cc',
-                    color: activePalette?.accentText || '#ffffff'
+                    backgroundColor: isDarkModal ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+                    color: textMuted
+                  }}
+                  title="Đóng"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Body Modal */}
+              <div className="p-4 overflow-y-auto space-y-3.5 text-xs">
+                {/* Thẻ thông tin truyện */}
+                <div 
+                  className="p-4 rounded-2xl border space-y-3 shadow-xs"
+                  style={{
+                    backgroundColor: cardBg,
+                    borderColor: cardBorder,
+                    backdropFilter: 'blur(16px)',
+                    WebkitBackdropFilter: 'blur(16px)'
                   }}
                 >
-                  {activeNovel.rank}
-                </span>
-                <h3 
-                  className="text-base font-bold truncate tracking-tight"
-                  style={{ color: activePalette?.text || '#1a231d' }}
-                >
-                  {activeNovel.title}
-                </h3>
-              </div>
-              <button
-                onClick={() => setActiveNovel(null)}
-                className="p-1.5 rounded-lg border transition-all shrink-0 ml-2 hover:opacity-75"
-                style={{
-                  backgroundColor: activePalette?.cardBg || '#ffffff',
-                  borderColor: activePalette?.border || '#cbd5cc',
-                  color: activePalette?.textMuted || '#4f6154'
-                }}
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
+                  <div className="flex gap-4">
+                    <img
+                      src={getNovelCoverUrl(activeNovel.novelId, activeNovel.coverUrl)}
+                      alt={activeNovel.title}
+                      referrerPolicy="no-referrer"
+                      className="w-22 h-31 object-cover rounded-xl border shrink-0 shadow-md"
+                      style={{ borderColor: isDarkModal ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)' }}
+                      onError={(e) => handleCoverError(e, activeNovel.novelId, activeNovel.coverUrl)}
+                    />
 
-            {/* Body Modal */}
-            <div className="p-4 overflow-y-auto space-y-4 text-xs">
-              <div 
-                className="p-3.5 rounded-xl border space-y-3"
-                style={{
-                  backgroundColor: activePalette?.cardBg || '#ffffff',
-                  borderColor: activePalette?.border || '#cbd5cc'
-                }}
-              >
-                <div className="flex gap-4">
-                  <img
-                    src={getNovelCoverUrl(activeNovel.novelId, activeNovel.coverUrl)}
-                    alt={activeNovel.title}
-                    referrerPolicy="no-referrer"
-                    className="w-22 h-30 object-cover rounded-lg border shrink-0 shadow-md"
-                    style={{ borderColor: activePalette?.border || '#cbd5cc' }}
-                    onError={(e) => handleCoverError(e, activeNovel.novelId, activeNovel.coverUrl)}
-                  />
-
-                  <div className="space-y-1.5 flex-1 min-w-0" style={{ color: activePalette?.textMuted || '#4f6154' }}>
-                    <div>
-                      Tác giả: <strong style={{ color: activePalette?.text || '#1a231d' }}>{activeNovel.author}</strong>
-                    </div>
-                    <div>
-                      Tình trạng: <span 
-                        className="font-bold px-1.5 py-0.5 rounded border text-[11px]"
-                        style={{
-                          backgroundColor: activePalette?.isDarkTheme ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
-                          borderColor: activePalette?.border || '#cbd5cc',
-                          color: activePalette?.accent || '#2b7050'
-                        }}
-                      >
-                        {activeNovel.status.includes('完结') ? 'Đã hoàn thành' : 'Đang cập nhật'}
-                      </span>
-                    </div>
-                    {activeNovel.score && (
+                    <div className="space-y-1.5 flex-1 min-w-0" style={{ color: textMuted }}>
                       <div>
-                        Điểm tích lũy: <span className="font-bold" style={{ color: activePalette?.accent || '#2b7050' }}>{activeNovel.score.trim()}</span>
+                        <span>Tác giả: </span>
+                        <strong className="font-semibold" style={{ color: textPrimary }}>
+                          {activeNovel.author}
+                        </strong>
                       </div>
-                    )}
-                    {activeNovel.wordCount && (
                       <div>
-                        Số chữ: <span style={{ color: activePalette?.text || '#1a231d' }}>{activeNovel.wordCount.trim()}</span>
+                        <span>Tình trạng: </span>
+                        <span 
+                          className="font-semibold px-2 py-0.5 rounded-md text-[11px] inline-block border"
+                          style={{
+                            backgroundColor: isDarkModal ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.04)',
+                            borderColor: isDarkModal ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)',
+                            color: statusColor
+                          }}
+                        >
+                          {activeNovel.status.includes('完结') ? 'Đã hoàn thành' : 'Đang cập nhật'}
+                        </span>
                       </div>
-                    )}
+                      {activeNovel.score && (
+                        <div>
+                          <span>Điểm tích lũy: </span>
+                          <span 
+                            className="font-bold tracking-wide text-sm" 
+                            style={{ color: activePalette?.accent || statusColor }}
+                          >
+                            {activeNovel.score.trim()}
+                          </span>
+                        </div>
+                      )}
+                      {activeNovel.wordCount && (
+                        <div>
+                          <span>Số chữ: </span>
+                          <span className="font-medium" style={{ color: textSecondary }}>
+                            {activeNovel.wordCount.trim()}
+                          </span>
+                        </div>
+                      )}
 
-                    <div className="pt-2 flex flex-wrap items-center gap-2">
-                      <button
-                        onClick={(e) => handleCopyChinese(activeNovel.title, activeNovel.novelId, e)}
-                        className="px-2.5 py-1.5 rounded-md border font-semibold flex items-center gap-1 transition-all active:scale-95 shadow-xs hover:opacity-90"
-                        style={{
-                          backgroundColor: activePalette?.accent || '#2b7050',
-                          borderColor: activePalette?.border || '#cbd5cc',
-                          color: activePalette?.accentText || '#ffffff'
-                        }}
-                      >
-                        {copiedId === activeNovel.novelId ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                        <span>{copiedId === activeNovel.novelId ? 'Đã chép' : 'Sao chép tên'}</span>
-                      </button>
+                      <div className="pt-2 flex flex-wrap items-center gap-2">
+                        <button
+                          onClick={(e) => handleCopyChinese(activeNovel.title, activeNovel.novelId, e)}
+                          className="px-3 py-1.5 rounded-xl font-medium flex items-center gap-1.5 transition-all active:scale-95 shadow-xs hover:opacity-90 cursor-pointer"
+                          style={{
+                            backgroundColor: activePalette?.accent || (isDarkModal ? '#38bdf8' : '#0284c7'),
+                            color: activePalette?.accentText || '#ffffff'
+                          }}
+                        >
+                          {copiedId === activeNovel.novelId ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                          <span>{copiedId === activeNovel.novelId ? 'Đã chép' : 'Sao chép tên'}</span>
+                        </button>
 
-                      <a
-                        href={activeNovel.jjwxcUrl || `https://www.jjwxc.net/onebook.php?novelid=${activeNovel.novelId}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="px-2.5 py-1.5 rounded-md border font-semibold flex items-center gap-1 transition-all hover:opacity-90 shadow-xs"
-                        style={{
-                          backgroundColor: activePalette?.cardBg || '#ffffff',
-                          borderColor: activePalette?.border || '#cbd5cc',
-                          color: activePalette?.text || '#1a231d'
-                        }}
-                      >
-                        <span>Mở link gốc</span>
-                        <ExternalLink className="w-3.5 h-3.5" />
-                      </a>
+                        <a
+                          href={activeNovel.jjwxcUrl || `https://www.jjwxc.net/onebook.php?novelid=${activeNovel.novelId}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-3 py-1.5 rounded-xl font-medium border transition-all shadow-xs cursor-pointer flex items-center gap-1.5"
+                          style={{
+                            backgroundColor: isDarkModal ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 0.85)',
+                            borderColor: isDarkModal ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)',
+                            color: textSecondary
+                          }}
+                        >
+                          <span>Mở link gốc</span>
+                          <ExternalLink className="w-3.5 h-3.5 opacity-70" />
+                        </a>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Giới thiệu tác phẩm */}
-              <div>
-                <h4 className="font-bold mb-1.5 flex items-center justify-between" style={{ color: activePalette?.textMuted || '#4f6154' }}>
-                  <span>Giới thiệu tác phẩm:</span>
-                  {isLoadingIntro && (
-                    <span className="text-[11px] font-normal flex items-center gap-1 opacity-75">
-                      <RefreshCw className="w-3 h-3 animate-spin" />
-                      Đang tải...
-                    </span>
-                  )}
-                </h4>
-                <div 
-                  className="p-3.5 rounded-xl border leading-relaxed whitespace-pre-line text-xs max-h-72 overflow-y-auto font-sans shadow-inner selection:bg-emerald-500/30"
-                  style={{
-                    backgroundColor: activePalette?.cardBg || '#ffffff',
-                    borderColor: activePalette?.border || '#cbd5cc',
-                    color: activePalette?.text || '#1a231d',
-                    lineHeight: '1.8'
-                  }}
-                >
-                  {isLoadingIntro && !novelIntro ? (
-                    <div className="py-6 text-center flex items-center justify-center gap-2 opacity-70">
-                      <RefreshCw className="w-4 h-4 animate-spin" />
-                      <span>Đang tải giới thiệu từ Tấn Giang...</span>
-                    </div>
-                  ) : (
-                    novelIntro || activeNovel.intro || 'Chưa có thông tin giới thiệu.'
-                  )}
+                {/* Giới thiệu tác phẩm */}
+                <div>
+                  <h4 
+                    className="font-semibold mb-2 flex items-center justify-between text-xs"
+                    style={{ color: textPrimary }}
+                  >
+                    <span>Giới thiệu tác phẩm:</span>
+                    {isLoadingIntro && (
+                      <span className="text-[11px] font-normal flex items-center gap-1" style={{ color: textMuted }}>
+                        <RefreshCw className="w-3 h-3 animate-spin" />
+                        Đang tải...
+                      </span>
+                    )}
+                  </h4>
+                  <div 
+                    className="p-4 rounded-2xl border leading-relaxed whitespace-pre-line text-xs max-h-72 overflow-y-auto font-sans shadow-xs selection:bg-emerald-500/20"
+                    style={{
+                      backgroundColor: cardBg,
+                      borderColor: cardBorder,
+                      backdropFilter: 'blur(16px)',
+                      WebkitBackdropFilter: 'blur(16px)',
+                      color: textSecondary,
+                      lineHeight: '1.85'
+                    }}
+                  >
+                    {isLoadingIntro && !novelIntro ? (
+                      <div className="py-6 text-center flex items-center justify-center gap-2" style={{ color: textMuted }}>
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                        <span>Đang tải giới thiệu từ Tấn Giang...</span>
+                      </div>
+                    ) : (
+                      novelIntro || activeNovel.intro || 'Chưa có thông tin giới thiệu.'
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 };

@@ -33,89 +33,89 @@ export const JJWXC_RANK_CATEGORIES: JjwxcRankCategoryConfig[] = [
     id: 'zongfen',
     name: '总分排行榜',
     nameViGuide: 'Top Mọi Thời Đại',
-    fullName: '总分排行榜 (Bảng tổng điểm tích lũy lịch sử)',
+    fullName: '总分排行榜 (Bảng tổng điểm tích lũy lịch sử Đam Mỹ)',
     desc: 'Bảng xếp hạng tổng điểm tích lũy Đam Mỹ cao nhất mọi thời đại trong lịch sử Tấn Giang',
-    channel: '纯爱 (Only Đam Mỹ)',
+    channel: '纯爱频道 (Only Đam Mỹ)',
     badgeColor: 'indigo',
-    sortCriteria: 'Xếp hạng từ cao xuống thấp theo Tổng điểm tích lũy Đam Mỹ',
-    metricLabel: 'Tổng điểm tích lũy'
+    sortCriteria: 'Xếp theo tổng điểm tích lũy lịch sử (lượt click + bookmark + bình luận + điểm tiêu phí VIP) của tác phẩm Đam Mỹ',
+    metricLabel: 'Điểm tích lũy'
   },
   {
     id: 'bawang',
     name: '霸王票总榜',
-    nameViGuide: 'Được Yêu Thích Nhất',
-    fullName: '霸王票总榜 (Top ủng hộ ném mìn / đại pháo)',
-    desc: 'Bảng xếp hạng truyện Đam Mỹ được độc giả bỏ tiền thật ném mìn, đại pháo ủng hộ nhiều nhất',
-    channel: '纯爱 (Only Đam Mỹ)',
+    nameViGuide: 'Top Bá Vương Phiếu',
+    fullName: '霸王票总榜 (Bá Vương Phiếu Tổng Bảng - Ném mìn bằng tiền thật)',
+    desc: 'Bảng xếp hạng truyện Đam Mỹ nhận được nhiều Bá Vương Phiếu (ném mìn, đại pháo bằng Tấn Giang Tệ) nhất từ độc giả',
+    channel: '纯爱频道 (Only Đam Mỹ)',
     badgeColor: 'rose',
-    sortCriteria: 'Xếp hạng theo Tổng số Bá Vương Phiếu (ném mìn / đại pháo bằng tiền thật)',
-    metricLabel: 'Điểm tích lũy (Xếp theo Bá Vương Phiếu)'
+    sortCriteria: 'Xếp theo tổng giá trị tặng thưởng Bá Vương Phiếu thực tế (Địa Lôi, Thủ Lựu Đạn, Hỏa Tiễn Pháo, Thâm Thủy Tạc Đạn) của độc giả',
+    metricLabel: 'Điểm tích lũy'
   },
   {
     id: 'wanjie',
     name: '完结金榜',
-    nameViGuide: 'Truyện Đã Hoàn',
-    fullName: '完结金榜 (Top truyện hoàn thành bán chạy 30 ngày)',
-    desc: 'Bảng xếp hạng truyện Đam Mỹ đã hoàn thành bán chạy nhất trong 30 ngày qua trên Tấn Giang',
-    channel: '纯爱 (Only Đam Mỹ)',
+    nameViGuide: 'Bảng Vàng Truyện Hoàn',
+    fullName: '完结金榜 (Bảng Vàng Truyện Hoàn - Doanh thu 30 ngày sau kết thúc)',
+    desc: 'Bảng xếp hạng các tác phẩm Đam Mỹ đã hoàn thành dựa trên doanh thu đọc VIP (订阅) trong vòng 30 ngày sau khi truyện kết thúc',
+    channel: '纯爱频道 (Only Đam Mỹ)',
     badgeColor: 'emerald',
-    sortCriteria: 'Xếp hạng theo Doanh thu bán chương VIP 30 ngày của truyện Đam Mỹ đã hoàn',
-    metricLabel: 'Điểm tích lũy (Xếp theo Doanh thu hoàn)'
+    sortCriteria: 'Xếp theo doanh thu đọc trả phí (VIP订阅) trên toàn kênh trong 30 ngày sau khi tác phẩm Đam Mỹ bấm hoàn thành',
+    metricLabel: 'Điểm tích lũy'
   },
   {
     id: 'vip',
     name: 'VIP金榜',
-    nameViGuide: 'Bán Chạy Tuần',
-    fullName: 'VIP金榜 (Top truyện VIP bán chạy)',
-    desc: 'Bảng xếp hạng truyện Đam Mỹ VIP bán chạy nhất trên Tấn Giang',
-    channel: '纯爱 (Only Đam Mỹ)',
+    nameViGuide: 'VIP Kim Bảng Ngày',
+    fullName: 'VIP金榜 (VIP Kim Bảng - Biến động theo ngày)',
+    desc: 'Bảng vàng VIP thay đổi theo ngày, đo lường doanh thu đọc trả phí (VIP 24h) của các tác phẩm Đam Mỹ đang ra có chương mới nhất',
+    channel: '纯爱频道 (Only Đam Mỹ)',
     badgeColor: 'amber',
-    sortCriteria: 'Xếp hạng theo Doanh thu bán chương VIP trong tuần của truyện Đam Mỹ',
-    metricLabel: 'Điểm tích lũy (Xếp theo Doanh thu VIP)'
+    sortCriteria: 'Xếp theo doanh thu mua chương VIP thực tế theo ngày của các tác phẩm Đam Mỹ đang ra',
+    metricLabel: 'Điểm tích lũy'
   },
   {
     id: 'yuedu',
     name: '月度排行榜',
     nameViGuide: 'Bảng Xếp Hạng Tháng',
-    fullName: '月度排行榜 (Top truyện nổi bật theo tháng)',
-    desc: 'Bảng xếp hạng tác phẩm Đam Mỹ mới nổi bật nhất đăng tải từ 11 đến 40 ngày',
-    channel: '纯爱 (Only Đam Mỹ)',
+    fullName: '月度排行榜 (Top Đam Mỹ nổi bật trong tháng)',
+    desc: 'Bảng xếp hạng các tác phẩm Đam Mỹ mới nổi bật đạt tốc độ tăng trưởng tích phân cao nhất trong vòng 1-2 tháng qua',
+    channel: '纯爱频道 (Only Đam Mỹ)',
     badgeColor: 'blue',
-    sortCriteria: 'Xếp hạng theo Điểm tổng hợp tác phẩm Đam Mỹ mới (11-40 ngày)',
-    metricLabel: 'Điểm tích lũy (Xếp theo Top Tháng)'
+    sortCriteria: 'Xếp theo tốc độ tăng trưởng điểm tích lũy của tác phẩm Đam Mỹ trong chu kỳ 30 - 60 ngày',
+    metricLabel: 'Điểm tích lũy'
   },
   {
     id: 'jidu',
     name: '季度排行榜',
     nameViGuide: 'Bảng Xếp Hạng Quý',
-    fullName: '季度排行榜 (Top truyện nổi bật theo quý)',
-    desc: 'Bảng xếp hạng tác phẩm Đam Mỹ nổi bật đăng tải từ 41 đến 130 ngày trên Tấn Giang',
-    channel: '纯爱 (Only Đam Mỹ)',
+    fullName: '季度排行榜 (Top Đam Mỹ nổi bật theo quý)',
+    desc: 'Bảng xếp hạng tác phẩm Đam Mỹ xuất sắc đạt tích phân cao nhất trong vòng 1 quý (3 tháng / 90 ngày) gần nhất',
+    channel: '纯爱频道 (Only Đam Mỹ)',
     badgeColor: 'teal',
-    sortCriteria: 'Xếp hạng theo Điểm tổng hợp tác phẩm Đam Mỹ mới (41-130 ngày)',
-    metricLabel: 'Điểm tích lũy (Xếp theo Top Quý)'
+    sortCriteria: 'Xếp theo điểm số và thành tích của tác phẩm Đam Mỹ phát hành trong vòng 90 ngày',
+    metricLabel: 'Điểm tích lũy'
   },
   {
     id: 'bannian',
     name: '半年排行榜',
     nameViGuide: 'Bảng Xếp Hạng Nửa Năm',
-    fullName: '半年排行榜 (Top truyện nổi bật nửa năm)',
-    desc: 'Bảng xếp hạng tác phẩm Đam Mỹ duy trì độ hot hàng đầu trong nửa năm qua',
-    channel: '纯爱 (Only Đam Mỹ)',
+    fullName: '半年排行榜 (Top Đam Mỹ nửa năm qua)',
+    desc: 'Bảng xếp hạng tác phẩm Đam Mỹ duy trì phong độ và độ hot hàng đầu trong suốt nửa năm (6 tháng)',
+    channel: '纯爱频道 (Only Đam Mỹ)',
     badgeColor: 'cyan',
-    sortCriteria: 'Xếp hạng theo Điểm tổng hợp duy trì độ hot Đam Mỹ trong 6 tháng',
-    metricLabel: 'Điểm tích lũy (Xếp theo Top Nửa Năm)'
+    sortCriteria: 'Xếp theo điểm tổng hợp và mức độ duy trì nhiệt độ của truyện Đam Mỹ trong 6 tháng',
+    metricLabel: 'Điểm tích lũy'
   },
   {
     id: 'xinjin',
     name: '新晋作者榜',
-    nameViGuide: 'Tác Giả Mới',
-    fullName: '新晋作者榜 (Cây bút mới triển vọng)',
-    desc: 'Bảng xếp hạng tác phẩm Đam Mỹ của tác giả mới tạo tài khoản trong vòng 30 ngày',
-    channel: '纯爱 (Only Đam Mỹ)',
+    nameViGuide: 'Tân Tấn Tác Giả',
+    fullName: '新晋作者榜 (Bút mới Đam Mỹ triển vọng)',
+    desc: 'Bảng xếp hạng dành riêng cho tác giả mới viết Đam Mỹ (đăng ký tài khoản trong 30 ngày, chưa từng ký hợp đồng VIP cũ)',
+    channel: '纯爱频道 (Only Đam Mỹ)',
     badgeColor: 'green',
-    sortCriteria: 'Xếp hạng theo Điểm tăng trưởng 30 ngày đầu của tác giả mới Đam Mỹ',
-    metricLabel: 'Điểm tích lũy (Xếp theo Điểm Tân Tấn)'
+    sortCriteria: 'Xếp theo điểm tăng trưởng 30 ngày đầu của tác phẩm đầu tay do tác giả mới viết Đam Mỹ phát hành',
+    metricLabel: 'Điểm tích lũy'
   }
 ];
 
