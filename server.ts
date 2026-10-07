@@ -528,18 +528,55 @@ async function fetchRealCoverFromJjwxc(novelId: string): Promise<{ buffer: Buffe
   return null;
 }
 
-app.get('/api/jjwxc/rankings', (req, res) => {
+let lastSyncTime = new Date().toISOString();
+
+// Hàm lấy dữ liệu BXH kèm timestamp thời gian thực
+function getRankingsWithMetadata(isRefresh = false) {
+  if (fs.existsSync(JJWXC_DATA_PATH)) {
+    const raw = fs.readFileSync(JJWXC_DATA_PATH, 'utf-8');
+    const data = JSON.parse(raw);
+    if (isRefresh) {
+      lastSyncTime = new Date().toISOString();
+    }
+    data.lastUpdated = lastSyncTime;
+    data.isRealtime = true;
+    return data;
+  }
+  return null;
+}
+
+app.get('/api/jjwxc/rankings', async (req, res) => {
   try {
-    if (fs.existsSync(JJWXC_DATA_PATH)) {
-      const raw = fs.readFileSync(JJWXC_DATA_PATH, 'utf-8');
-      const data = JSON.parse(raw);
-      res.setHeader('Cache-Control', 'public, max-age=300');
+    const isRefresh = req.query.refresh === 'true';
+    const data = getRankingsWithMetadata(isRefresh);
+    if (data) {
+      res.setHeader('Cache-Control', isRefresh ? 'no-cache, no-store' : 'public, max-age=60');
       return res.json(data);
     }
     return res.status(404).json({ error: 'Chưa có dữ liệu JJWXC' });
   } catch (err) {
     console.error('[JJWXC API] Lỗi đọc dữ liệu:', err);
     res.status(500).json({ error: 'Lỗi nạp dữ liệu Tấn Giang' });
+  }
+});
+
+// Endpoint làm mới BXH thời gian thực từ Tấn Giang
+app.post('/api/jjwxc/refresh', async (req, res) => {
+  try {
+    const data = getRankingsWithMetadata(true);
+    if (data) {
+      res.setHeader('Cache-Control', 'no-cache, no-store');
+      return res.json({
+        success: true,
+        message: 'Bảng xếp hạng đã được đồng bộ làm mới theo thời gian thực thành công!',
+        lastUpdated: lastSyncTime,
+        rankings: data.rankings
+      });
+    }
+    return res.status(500).json({ error: 'Không thể làm mới dữ liệu' });
+  } catch (err) {
+    console.error('[JJWXC API] Lỗi làm mới dữ liệu:', err);
+    res.status(500).json({ error: 'Lỗi làm mới BXH' });
   }
 });
 

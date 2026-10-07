@@ -6,6 +6,7 @@
  * - Máy chủ Tấn Giang (jjwxc.net) được nạp qua Cloudflare wsrv.nl để vượt chặn Referer
  */
 
+import React from 'react';
 import novelCoversRealMap from '../data/novelCoversRealMap.json';
 
 const coverMap = novelCoversRealMap as Record<string, string>;
@@ -20,7 +21,7 @@ function getBasePath(): string {
     }
   }
 
-  const base = import.meta.env.BASE_URL;
+  const base = (import.meta as any).env?.BASE_URL;
   if (base && base !== './' && base !== '.') {
     return base.endsWith('/') ? base : `${base}/`;
   }
