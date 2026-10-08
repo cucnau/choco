@@ -438,13 +438,9 @@ export default function App() {
         setSelectedGameId(null);
         const parts = cleanRoute.split('/');
         if (parts.length > 1 && parts[1]) {
-          if (parts[1] === 'tags' || parts[1] === 'tag' || parts[1] === 'the-loai') {
-            setRankingHubMode('tags');
-            if (parts[2]) {
-              setSelectedTagId(parts[2]);
-            }
+          if (parts[1] === 'wuxianliu' || parts[1] === 'vo-han-luu' || parts[1] === 'tags' || parts[1] === 'tag') {
+            setSelectedTagId('wuxianliu');
           } else {
-            setRankingHubMode('ranks');
             setSelectedRankId(parts[1]);
           }
         }

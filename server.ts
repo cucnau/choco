@@ -415,6 +415,7 @@ app.post('/api/conversations/:id/messages', (req, res) => {
 // === API TRÍCH XUẤT DỮ LIỆU THẬT & PROXY BÌA GỐC TẤN GIANG (JJWXC) ===
 
 const JJWXC_DATA_PATH = path.join(process.cwd(), 'src', 'data', 'jjwxcRealData.json');
+const JJWXC_WUXIANLIU_DATA_PATH = path.join(process.cwd(), 'src', 'data', 'jjwxcWuxianliuRankingsData.json');
 const COVERS_CACHE_DIR = path.join(process.cwd(), '.cache', 'jjwxc_covers');
 
 if (!fs.existsSync(COVERS_CACHE_DIR)) {
@@ -557,6 +558,22 @@ app.get('/api/jjwxc/rankings', async (req, res) => {
   } catch (err) {
     console.error('[JJWXC API] Lỗi đọc dữ liệu:', err);
     res.status(500).json({ error: 'Lỗi nạp dữ liệu Tấn Giang' });
+  }
+});
+
+// Endpoint lấy BXH Vô Hạn Lưu 200 truyện theo 6 tiêu chí gốc của Tấn Giang
+app.get('/api/jjwxc/wuxianliu', async (req, res) => {
+  try {
+    if (fs.existsSync(JJWXC_WUXIANLIU_DATA_PATH)) {
+      const raw = fs.readFileSync(JJWXC_WUXIANLIU_DATA_PATH, 'utf-8');
+      const data = JSON.parse(raw);
+      res.setHeader('Cache-Control', 'public, max-age=300');
+      return res.json(data);
+    }
+    return res.status(404).json({ error: 'Chưa có dữ liệu Vô Hạn Lưu' });
+  } catch (err) {
+    console.error('[JJWXC API] Lỗi nạp BXH Vô Hạn Lưu:', err);
+    res.status(500).json({ error: 'Lỗi nạp BXH Vô Hạn Lưu' });
   }
 });
 

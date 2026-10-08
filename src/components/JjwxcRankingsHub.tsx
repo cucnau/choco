@@ -7,11 +7,11 @@ import {
   BookOpen, 
   X, 
   RefreshCw,
-  Tag as TagIcon,
   CheckCircle2,
   Info,
   BookText,
-  Palette
+  Palette,
+  Layers
 } from 'lucide-react';
 import { 
   JjwxcNovel, 
@@ -19,7 +19,12 @@ import {
   initialRealRankingsData, 
   JjwxcRankCategoryConfig 
 } from '../data/jjwxcRankingsData';
-import { CORE_JJWXC_TAGS, TAG_CATEGORY_TABS } from '../data/jjwxcTagsData';
+import { 
+  initialWuxianliuRankingsData, 
+  WUXIANLIU_CRITERIA_LIST, 
+  WuxianliuCriteriaConfig, 
+  WuxianliuDataset 
+} from '../data/jjwxcWuxianliuData';
 import { Story } from '../types';
 import { extractPaletteFromImage, CanvaPalette, hexToRgba } from '../lib/coverColorExtractor';
 import { getNovelCoverUrl, getCorsCoverUrl, handleCoverError } from '../utils/coverImage';
@@ -35,29 +40,58 @@ interface JjwxcRankingsHubProps {
   onRankingChange?: (mode: 'ranks' | 'tags', rankId?: string, tagId?: string) => void;
 }
 
+// Định dạng số đầy đủ, chuyển đổi 亿/万 thành chữ số trọn vẹn có dấu phẩy phân cách
+function formatScoreToFullDigits(val?: string): string {
+  if (!val) return '';
+  const str = String(val).trim();
+  if (/^[\d,]+$/.test(str)) {
+    const n = Number(str.replace(/,/g, ''));
+    return !isNaN(n) && n > 0 ? n.toLocaleString('en-US') : str;
+  }
+  if (str.includes('亿')) {
+    const num = parseFloat(str.replace(/亿/g, '').replace(/,/g, ''));
+    if (!isNaN(num)) {
+      return Math.round(num * 100_000_000).toLocaleString('en-US');
+    }
+  }
+  if (str.includes('万') || str.toLowerCase().includes('w')) {
+    const num = parseFloat(str.replace(/万|w/gi, '').replace(/,/g, ''));
+    if (!isNaN(num)) {
+      return Math.round(num * 10_000).toLocaleString('en-US');
+    }
+  }
+  return str;
+}
+
 export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
   selectedRankId: propRankId,
-  hubMode: propHubMode = 'ranks',
+  selectedTagId,
   onRankingChange
 }) => {
-  // Chế độ xem: Bảng Xếp Hạng hoặc Tra cứu theo Tag Tấn Giang
-  const [hubMode, setHubMode] = useState<'ranks' | 'tags'>(propHubMode);
-  // Bảng xếp hạng đang chọn (Mặc định Tổng phân bảng - Top Mọi Thời Đại)
+  // Nhóm BXH: 'general' (BXH Tổng Hợp) hoặc 'wuxianliu' (BXH Vô Hạn Lưu 200 truyện)
+  const [bxhGroup, setBxhGroup] = useState<'general' | 'wuxianliu'>(
+    selectedTagId === 'wuxianliu' ? 'wuxianliu' : 'general'
+  );
+
+  // Tiêu chí sắp xếp cho BXH Vô Hạn Lưu (theo đúng 6 tiêu chí trong ảnh Tấn Giang)
+  const [selectedWuxianliuCriteria, setSelectedWuxianliuCriteria] = useState<string>('score');
+
+  // Bảng xếp hạng đang chọn của nhóm Tổng Hợp (Mặc định Tổng phân bảng - Top Mọi Thời Đại)
   const [selectedRankId, setSelectedRankId] = useState<string>(propRankId || 'zongfen');
-  // Tag đang chọn
-  const [selectedTagCategory, setSelectedTagCategory] = useState<string>('all');
-  const [tagSearchQuery, setTagSearchQuery] = useState<string>('');
 
   useEffect(() => {
     if (propRankId) setSelectedRankId(propRankId);
   }, [propRankId]);
 
   useEffect(() => {
-    if (propHubMode) setHubMode(propHubMode);
-  }, [propHubMode]);
+    if (selectedTagId === 'wuxianliu') {
+      setBxhGroup('wuxianliu');
+    }
+  }, [selectedTagId]);
 
   // Dữ liệu bảng xếp hạng & Thời gian thực
   const [dataset, setDataset] = useState(initialRealRankingsData);
+  const [wuxianliuDataset, setWuxianliuDataset] = useState<WuxianliuDataset>(initialWuxianliuRankingsData);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [lastUpdatedText, setLastUpdatedText] = useState<string>('Vừa xong');
   const [refreshToast, setRefreshToast] = useState<string | null>(null);
@@ -93,10 +127,21 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
     );
   }, [selectedRankId]);
 
+  // Tiêu chí Vô Hạn Lưu đang chọn
+  const currentWuxianliuCriteriaConfig: WuxianliuCriteriaConfig = useMemo(() => {
+    return (
+      WUXIANLIU_CRITERIA_LIST.find(c => c.id === selectedWuxianliuCriteria) || WUXIANLIU_CRITERIA_LIST[0]
+    );
+  }, [selectedWuxianliuCriteria]);
+
   const rawNovelList: JjwxcNovel[] = useMemo(() => {
+    if (bxhGroup === 'wuxianliu') {
+      const wRank = wuxianliuDataset.rankings?.[selectedWuxianliuCriteria];
+      return wRank?.items || [];
+    }
     const rankObj = dataset.rankings?.[selectedRankId];
     return rankObj?.items || [];
-  }, [dataset, selectedRankId]);
+  }, [bxhGroup, wuxianliuDataset, selectedWuxianliuCriteria, dataset, selectedRankId]);
 
   // Tự động phân tích màu sắc từ ảnh bìa của truyện Quán Quân (Top 1) để tạo hào quang tinh tế toàn trang
   useEffect(() => {
@@ -107,7 +152,7 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
         setThemePalette(palette);
       });
     }
-  }, [selectedRankId, rawNovelList]);
+  }, [bxhGroup, selectedRankId, selectedWuxianliuCriteria, rawNovelList]);
 
   // Tự động phân tích màu sắc từ ảnh bìa khi mở modal chi tiết truyện
   useEffect(() => {
@@ -168,6 +213,16 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
         } else {
           res = await fetch('/api/jjwxc/rankings');
         }
+
+        // Cập nhật ngầm dữ liệu BXH Vô Hạn Lưu
+        fetch('/api/jjwxc/wuxianliu')
+          .then(r => r.ok ? r.json() : null)
+          .then(wData => {
+            if (wData && wData.rankings) {
+              setWuxianliuDataset(wData);
+            }
+          })
+          .catch(() => {});
       }
 
       if (res && res.ok) {
@@ -329,7 +384,7 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
             <Trophy className="w-4 h-4" />
           </div>
           <h1 className="text-lg font-bold text-text-main tracking-tight">
-            Tấn Giang (JJWXC) - Đam Mỹ
+            Tấn Giang
           </h1>
 
           {/* Badge Thời Gian Thực */}
@@ -359,43 +414,7 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Nút chuyển đổi BXH / Thẻ Tag */}
-          <div className="flex items-center rounded-lg border border-border-custom bg-bg-surface p-0.5 text-xs">
-            <button
-              onClick={() => {
-                setHubMode('ranks');
-                onRankingChange?.('ranks', selectedRankId);
-              }}
-              className="px-2.5 py-1 rounded transition-all flex items-center gap-1.5"
-              style={hubMode === 'ranks' ? {
-                backgroundColor: 'rgba(255, 255, 255, 0.08)',
-                color: primaryAccent,
-                fontWeight: 'bold',
-                boxShadow: `0 0 8px ${hexToRgba(primaryAccent, 0.25)}`
-              } : { color: 'var(--text-sub)' }}
-            >
-              <Trophy className="w-3.5 h-3.5" />
-              <span>Bảng Xếp Hạng</span>
-            </button>
-            <button
-              onClick={() => {
-                setHubMode('tags');
-                onRankingChange?.('tags', undefined, 'wuxianliu');
-              }}
-              className="px-2.5 py-1 rounded transition-all flex items-center gap-1.5"
-              style={hubMode === 'tags' ? {
-                backgroundColor: 'rgba(255, 255, 255, 0.08)',
-                color: primaryAccent,
-                fontWeight: 'bold',
-                boxShadow: `0 0 8px ${hexToRgba(primaryAccent, 0.25)}`
-              } : { color: 'var(--text-sub)' }}
-            >
-              <TagIcon className="w-3.5 h-3.5" />
-              <span>Thẻ Tag</span>
-            </button>
-          </div>
-
-          {savedNovelIds.length > 0 && hubMode === 'ranks' && (
+          {savedNovelIds.length > 0 && (
             <button
               onClick={() => setShowSavedOnly(!showSavedOnly)}
               className="text-xs px-2.5 py-1.5 rounded-lg border transition-all flex items-center gap-1.5 cursor-pointer"
@@ -416,176 +435,199 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
           )}
 
           {/* Nút Làm Mới thời gian thực */}
-          {hubMode === 'ranks' && (
-            <button
-              onClick={() => fetchRankings(true)}
-              disabled={isLoading}
-              className="p-1.5 rounded-lg border border-border-custom bg-bg-card hover:bg-bg-surface text-text-sub hover:text-text-main transition-all cursor-pointer group"
-              title="Làm mới BXH từ Tấn Giang theo thời gian thực"
-            >
-              <RefreshCw 
-                className={`w-3.5 h-3.5 transition-transform duration-300 ${isLoading ? 'animate-spin' : 'group-hover:rotate-180'}`}
-                style={{ color: primaryAccent }}
-              />
-            </button>
-          )}
+          <button
+            onClick={() => fetchRankings(true)}
+            disabled={isLoading}
+            className="p-1.5 rounded-lg border border-border-custom bg-bg-card hover:bg-bg-surface text-text-sub hover:text-text-main transition-all cursor-pointer group"
+            title="Làm mới BXH từ Tấn Giang theo thời gian thực"
+          >
+            <RefreshCw 
+              className={`w-3.5 h-3.5 transition-transform duration-300 ${isLoading ? 'animate-spin' : 'group-hover:rotate-180'}`}
+              style={{ color: primaryAccent }}
+            />
+          </button>
         </div>
       </div>
 
-      {/* NẾU ĐANG Ở CHẾ ĐỘ THẺ TAG */}
-      {hubMode === 'tags' ? (
-        <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-            <div className="relative flex-1 max-w-xs">
-              <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-text-sub" />
-              <input
-                type="text"
-                value={tagSearchQuery}
-                onChange={(e) => setTagSearchQuery(e.target.value)}
-                placeholder="Tìm tag tiếng Trung, Hán Việt..."
-                className="w-full pl-8 pr-7 py-1.5 text-xs rounded-lg border border-border-custom bg-bg-surface text-text-main focus:outline-none"
-                style={{ borderColor: tagSearchQuery ? primaryAccent : undefined }}
-              />
-              {tagSearchQuery && (
-                <button 
-                  onClick={() => setTagSearchQuery('')}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-text-sub hover:text-text-main cursor-pointer"
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              )}
-            </div>
-
-            <div className="flex items-center gap-1 overflow-x-auto pb-1 scrollbar-none">
-              {TAG_CATEGORY_TABS.map(tab => (
-                <button
-                  key={tab.id}
-                  onClick={() => setSelectedTagCategory(tab.id)}
-                  className="px-2.5 py-1 rounded-lg border text-xs whitespace-nowrap transition-all cursor-pointer"
-                  style={selectedTagCategory === tab.id ? {
-                    borderColor: primaryAccent,
-                    backgroundColor: hexToRgba(primaryAccent, 0.15),
-                    color: primaryAccent,
-                    fontWeight: 'bold'
-                  } : {
-                    borderColor: 'rgba(255, 255, 255, 0.1)',
-                    backgroundColor: 'rgba(255, 255, 255, 0.04)',
-                    color: 'var(--text-sub)'
-                  }}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5">
-            {CORE_JJWXC_TAGS
-              .filter(tag => {
-                if (selectedTagCategory !== 'all' && tag.category !== selectedTagCategory) return false;
-                if (tagSearchQuery.trim()) {
-                  const q = tagSearchQuery.toLowerCase().trim();
-                  return (
-                    tag.nameVi.toLowerCase().includes(q) ||
-                    tag.zh.toLowerCase().includes(q) ||
-                    (tag.aliases && tag.aliases.some(a => a.toLowerCase().includes(q)))
-                  );
-                }
-                return true;
-              })
-              .map(tag => (
-                <a
-                  key={tag.id}
-                  href={tag.jjwxcUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="group rounded-xl border border-border-custom/80 bg-bg-card hover:bg-bg-surface p-3 transition-all flex flex-col justify-between shadow-xs"
-                >
-                  <div>
-                    <div className="flex items-center justify-between gap-1.5">
-                      <span className="text-xs font-bold text-text-main group-hover:text-emerald-400 transition-colors">
-                        {tag.nameVi}
-                      </span>
-                      <ExternalLink className="w-3 h-3 text-text-sub opacity-50 group-hover:opacity-100 transition-all shrink-0" />
-                    </div>
-                    <div className="text-[11px] text-text-sub font-chinese mt-0.5">
-                      {tag.zh}
-                    </div>
-                  </div>
-                  <div className="mt-2.5 pt-2 border-t border-border-custom/40 flex items-center justify-between text-[10px] text-text-sub/70">
-                    <span className="capitalize">{tag.category}</span>
-                    <span style={{ color: primaryAccent }} className="font-medium">Xem Tấn Giang ↗</span>
-                  </div>
-                </a>
-              ))}
-          </div>
-        </div>
-      ) : (
-        <>
-
-      {/* Thanh tab các BXH dạng cuộn ngang */}
+      {/* Thanh chọn nhóm Bảng Xếp Hạng: BXH Tổng Hợp & BXH Vô Hạn Lưu */}
       {!showSavedOnly && (
-        <div className="space-y-2">
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-            {JJWXC_RANK_CATEGORIES.map(category => {
-              const isSelected = selectedRankId === category.id;
-              const count = dataset.rankings?.[category.id]?.items?.length;
-              return (
-                <button
-                  key={category.id}
-                  onClick={() => setSelectedRankId(category.id)}
-                  className="px-3 py-1.5 rounded-lg border text-xs whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer"
-                  style={isSelected ? {
-                    borderColor: primaryAccent,
-                    backgroundColor: hexToRgba(primaryAccent, 0.18),
-                    color: primaryAccent,
-                    fontWeight: 'bold',
-                    boxShadow: `0 0 12px ${hexToRgba(primaryAccent, 0.3)}`
-                  } : {
-                    borderColor: 'rgba(255, 255, 255, 0.1)',
-                    backgroundColor: 'rgba(255, 255, 255, 0.03)',
-                    color: 'var(--text-sub)'
-                  }}
-                >
-                  <span>{category.nameViGuide}</span>
-                  {count !== undefined && (
-                    <span 
-                      className="text-[10px] px-1.5 py-0.2 rounded-full font-sans"
+        <div className="space-y-2.5">
+          <div className="flex items-center gap-1.5 p-1 rounded-xl bg-bg-surface border border-border-custom text-xs w-fit">
+            <button
+              onClick={() => {
+                setBxhGroup('general');
+                onRankingChange?.('ranks', selectedRankId);
+              }}
+              className="px-3 py-1.5 rounded-lg font-medium transition-all cursor-pointer flex items-center gap-1.5"
+              style={bxhGroup === 'general' ? {
+                backgroundColor: hexToRgba(primaryAccent, 0.2),
+                color: primaryAccent,
+                fontWeight: 'bold',
+                boxShadow: `0 0 10px ${hexToRgba(primaryAccent, 0.2)}`
+              } : {
+                color: 'var(--text-sub)'
+              }}
+            >
+              <Trophy className="w-3.5 h-3.5" />
+              <span>BXH Tổng Hợp</span>
+            </button>
+
+            <button
+              onClick={() => {
+                setBxhGroup('wuxianliu');
+                onRankingChange?.('ranks', 'wuxianliu');
+              }}
+              className="px-3 py-1.5 rounded-lg font-medium transition-all cursor-pointer flex items-center gap-1.5"
+              style={bxhGroup === 'wuxianliu' ? {
+                backgroundColor: hexToRgba(primaryAccent, 0.2),
+                color: primaryAccent,
+                fontWeight: 'bold',
+                boxShadow: `0 0 10px ${hexToRgba(primaryAccent, 0.2)}`
+              } : {
+                color: 'var(--text-sub)'
+              }}
+            >
+              <Layers className="w-3.5 h-3.5" />
+              <span>BXH Vô Hạn Lưu</span>
+              <span 
+                className="text-[10px] px-1.5 py-0.2 rounded-full font-sans font-bold"
+                style={{
+                  backgroundColor: hexToRgba(primaryAccent, 0.25),
+                  color: primaryAccent
+                }}
+              >
+                200
+              </span>
+            </button>
+          </div>
+
+          {/* NẾU Ở NHÓM BXH TỔNG HỢP */}
+          {bxhGroup === 'general' ? (
+            <div className="space-y-2">
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+                {JJWXC_RANK_CATEGORIES.map(category => {
+                  const isSelected = selectedRankId === category.id;
+                  const count = dataset.rankings?.[category.id]?.items?.length;
+                  return (
+                    <button
+                      key={category.id}
+                      onClick={() => {
+                        setSelectedRankId(category.id);
+                        onRankingChange?.('ranks', category.id);
+                      }}
+                      className="px-3 py-1.5 rounded-lg border text-xs whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer"
                       style={isSelected ? {
-                        backgroundColor: hexToRgba(primaryAccent, 0.3),
-                        color: '#ffffff'
+                        borderColor: primaryAccent,
+                        backgroundColor: hexToRgba(primaryAccent, 0.18),
+                        color: primaryAccent,
+                        fontWeight: 'bold',
+                        boxShadow: `0 0 12px ${hexToRgba(primaryAccent, 0.3)}`
                       } : {
-                        backgroundColor: 'var(--bg-surface)',
+                        borderColor: 'rgba(255, 255, 255, 0.1)',
+                        backgroundColor: 'rgba(255, 255, 255, 0.03)',
                         color: 'var(--text-sub)'
                       }}
                     >
-                      {count}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
+                      <span>{category.nameViGuide}</span>
+                      {count !== undefined && (
+                        <span 
+                          className="text-[10px] px-1.5 py-0.2 rounded-full font-sans"
+                          style={isSelected ? {
+                            backgroundColor: hexToRgba(primaryAccent, 0.3),
+                            color: '#ffffff'
+                          } : {
+                            backgroundColor: 'var(--bg-surface)',
+                            color: 'var(--text-sub)'
+                          }}
+                        >
+                          {count}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
 
-          {/* Tiêu chí xếp hạng của bảng hiện tại */}
-          <div 
-            className="text-[11px] text-text-sub px-3 py-2 rounded-lg border flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 shadow-2xs transition-colors duration-500"
-            style={{
-              backgroundColor: 'rgba(255, 255, 255, 0.03)',
-              borderColor: hexToRgba(primaryAccent, 0.3)
-            }}
-          >
-            <div className="flex items-center gap-1.5 flex-1 min-w-0">
-              <Info className="w-3.5 h-3.5 shrink-0" style={{ color: primaryAccent }} />
-              <span className="font-semibold text-text-main shrink-0">Tiêu chí BXH:</span>
-              <span className="font-medium truncate" style={{ color: primaryAccent }}>
-                {currentCategoryConfig.sortCriteria || currentCategoryConfig.desc}
-              </span>
+              {/* Tiêu chí xếp hạng của bảng hiện tại */}
+              <div 
+                className="text-[11px] text-text-sub px-3 py-2 rounded-lg border flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 shadow-2xs transition-colors duration-500"
+                style={{
+                  backgroundColor: 'rgba(255, 255, 255, 0.03)',
+                  borderColor: hexToRgba(primaryAccent, 0.3)
+                }}
+              >
+                <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                  <Info className="w-3.5 h-3.5 shrink-0" style={{ color: primaryAccent }} />
+                  <span className="font-semibold text-text-main shrink-0">Tiêu chí BXH:</span>
+                  <span className="font-medium truncate" style={{ color: primaryAccent }}>
+                    {currentCategoryConfig.sortCriteria || currentCategoryConfig.desc}
+                  </span>
+                </div>
+              </div>
             </div>
-            <span className="font-mono text-[10px] text-text-sub/70 shrink-0 self-end sm:self-auto">
-              {currentCategoryConfig.channel}
-            </span>
-          </div>
+          ) : (
+            /* NẾU Ở NHÓM BXH VÔ HẠN LƯU (200 TRUYỆN - 6 TIÊU CHÍ GỐC TẤN GIANG) */
+            <div className="space-y-2">
+              {/* Các mục chọn 6 tiêu chí xếp hạng dạng cuộn ngang */}
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+                {WUXIANLIU_CRITERIA_LIST.map(crit => {
+                  const isSel = selectedWuxianliuCriteria === crit.id;
+                  return (
+                    <button
+                      key={crit.id}
+                      onClick={() => setSelectedWuxianliuCriteria(crit.id)}
+                      className="px-3 py-1.5 rounded-lg border text-xs whitespace-nowrap transition-all cursor-pointer font-medium flex items-center gap-1.5"
+                      style={isSel ? {
+                        borderColor: primaryAccent,
+                        backgroundColor: hexToRgba(primaryAccent, 0.18),
+                        color: primaryAccent,
+                        fontWeight: 'bold',
+                        boxShadow: `0 0 12px ${hexToRgba(primaryAccent, 0.3)}`
+                      } : {
+                        borderColor: 'rgba(255, 255, 255, 0.1)',
+                        backgroundColor: 'rgba(255, 255, 255, 0.03)',
+                        color: 'var(--text-sub)'
+                      }}
+                    >
+                      <span>{crit.name}</span>
+                      <span 
+                        className="text-[10px] px-1.5 py-0.2 rounded-full font-sans"
+                        style={isSel ? {
+                          backgroundColor: hexToRgba(primaryAccent, 0.3),
+                          color: '#ffffff'
+                        } : {
+                          backgroundColor: 'var(--bg-surface)',
+                          color: 'var(--text-sub)'
+                        }}
+                      >
+                        200
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Tiêu chí BXH Vô Hạn Lưu của Tấn Giang */}
+              <div 
+                className="text-[11px] text-text-sub px-3 py-2 rounded-lg border flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 shadow-2xs transition-colors duration-500"
+                style={{
+                  backgroundColor: 'rgba(255, 255, 255, 0.03)',
+                  borderColor: hexToRgba(primaryAccent, 0.3)
+                }}
+              >
+                <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                  <Info className="w-3.5 h-3.5 shrink-0" style={{ color: primaryAccent }} />
+                  <span className="font-semibold text-text-main shrink-0">Tiêu chí BXH:</span>
+                  <span className="font-medium truncate" style={{ color: primaryAccent }}>
+                    {currentWuxianliuCriteriaConfig.desc}
+                  </span>
+                </div>
+                <span className="text-[10px] font-sans px-2 py-0.5 rounded-full border border-border-custom bg-bg-surface text-text-sub shrink-0 self-end sm:self-auto font-medium">
+                  200 tác phẩm
+                </span>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -633,7 +675,7 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
               fontWeight: 'bold'
             } : { color: 'var(--text-sub)' }}
           >
-            Hoàn
+            Hoàn thành
           </button>
           <button
             onClick={() => setStatusFilter('ongoing')}
@@ -701,20 +743,38 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
                         <span className="truncate max-w-[120px]">{novel.author}</span>
                         <span>•</span>
                         <span className={novel.status.includes('完结') ? 'text-emerald-400 font-medium' : 'text-blue-400 font-medium'}>
-                          {novel.status.includes('完结') ? 'Hoàn' : 'Đang ra'}
+                          {novel.status.includes('完结') ? 'Hoàn thành' : 'Đang ra'}
                         </span>
                       </div>
 
-                      {novel.score && (
-                        <div className="text-[11px] text-text-sub/80 mt-1 truncate">
-                          <span>Điểm tích lũy: </span>
-                          <span 
-                            className="font-medium"
-                            style={{ color: isTop1 ? primaryAccent : '#f59e0b' }}
-                          >
-                            {novel.score.trim()}
-                          </span>
-                        </div>
+                      {/* Hiển thị thông số:
+                          - Mục 'Số chữ': CHỈ hiện số chữ, KHÔNG hiện điểm tích lũy.
+                          - Tất cả các mục khác: CHỈ hiện điểm tích lũy viết hẳn tất cả số ra, KHÔNG ngoặc số chữ.
+                      */}
+                      {bxhGroup === 'wuxianliu' && selectedWuxianliuCriteria === 'word_count' ? (
+                        novel.wordCount ? (
+                          <div className="text-[11px] text-text-sub/80 mt-1 truncate">
+                            <span>Số chữ: </span>
+                            <span 
+                              className="font-medium"
+                              style={{ color: isTop1 ? primaryAccent : '#f59e0b' }}
+                            >
+                              {formatScoreToFullDigits(novel.wordCount)} chữ
+                            </span>
+                          </div>
+                        ) : null
+                      ) : (
+                        novel.score ? (
+                          <div className="text-[11px] text-text-sub/80 mt-1 truncate">
+                            <span>Điểm tích lũy: </span>
+                            <span 
+                              className="font-medium"
+                              style={{ color: isTop1 ? primaryAccent : '#f59e0b' }}
+                            >
+                              {formatScoreToFullDigits(novel.score)}
+                            </span>
+                          </div>
+                        ) : null
                       )}
                     </div>
                   </div>
@@ -735,8 +795,6 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
             })}
           </div>
         </div>
-      )}
-      </>
       )}
 
       {/* Modal Chi Tiết - TOÀN BỘ CÁC THÀNH PHẦN THAY ĐỔI THEO MÃ MÀU TRÍCH XUẤT TỪ BÌA */}
@@ -881,7 +939,7 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
                             className="font-bold tracking-wide text-sm font-mono"
                             style={{ color: modalAccent }}
                           >
-                            {activeNovel.score.trim()}
+                            {formatScoreToFullDigits(activeNovel.score)}
                           </span>
                         </div>
                       )}

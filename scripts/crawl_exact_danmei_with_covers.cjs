@@ -25,7 +25,7 @@ const RANKING_CONFIGS = [
   {
     id: 'wanjie',
     name: '完结金榜',
-    nameViGuide: 'Truyện Đã Hoàn',
+    nameViGuide: 'Truyện Đã Hoàn Thành',
     fullName: '完结金榜 (Top truyện hoàn thành bán chạy 30 ngày)',
     desc: 'Bảng xếp hạng truyện Đam Mỹ đã hoàn thành bán chạy nhất trong 30 ngày qua trên Tấn Giang',
     channel: '纯爱 (Only Đam Mỹ)',

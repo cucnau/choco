@@ -54,8 +54,8 @@ export const JJWXC_RANK_CATEGORIES: JjwxcRankCategoryConfig[] = [
   {
     id: 'wanjie',
     name: '完结金榜',
-    nameViGuide: 'Bảng Vàng Truyện Hoàn',
-    fullName: '完结金榜 (Bảng Vàng Truyện Hoàn - Doanh thu 30 ngày sau kết thúc)',
+    nameViGuide: 'Bảng Vàng Truyện Đã Hoàn Thành',
+    fullName: '完结金榜 (Bảng Vàng Truyện Đã Hoàn Thành - Doanh thu 30 ngày sau kết thúc)',
     desc: 'Bảng xếp hạng các tác phẩm Đam Mỹ đã hoàn thành dựa trên doanh thu đọc VIP (订阅) trong vòng 30 ngày sau khi truyện kết thúc',
     channel: '纯爱频道 (Only Đam Mỹ)',
     badgeColor: 'emerald',
