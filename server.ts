@@ -458,22 +458,41 @@ async function fetchRealCoverFromJjwxc(novelId: string): Promise<{ buffer: Buffe
   // 2. Tìm URL bìa gốc từ JSON hoặc tra cứu Android API
   const candidates: { url: string; ref: string }[] = [];
 
+  // 2.0 Tra cứu trực tiếp từ novelCoversRealMap.json
+  try {
+    const coversMapPath = path.join(process.cwd(), 'src', 'data', 'novelCoversRealMap.json');
+    if (fs.existsSync(coversMapPath)) {
+      const cMap = JSON.parse(fs.readFileSync(coversMapPath, 'utf-8'));
+      if (cMap[novelId] && cMap[novelId].startsWith('http') && !cMap[novelId].includes('novelimage.php')) {
+        const cUrl = cMap[novelId];
+        if (cUrl.includes('sinaimg.cn')) {
+          const fn = cUrl.split('/').pop();
+          candidates.push({ url: `https://wx1.sinaimg.cn/large/${fn}`, ref: 'https://weibo.com' });
+        } else {
+          candidates.push({ url: cUrl, ref: 'https://www.jjwxc.net/' });
+        }
+      }
+    }
+  } catch (err) {}
+
   // 2.1 Đọc từ file dữ liệu JSON trước
   try {
-    if (fs.existsSync(JJWXC_DATA_PATH)) {
-      const rawData = JSON.parse(fs.readFileSync(JJWXC_DATA_PATH, 'utf-8'));
-      for (const k in rawData.rankings) {
-        const found = (rawData.rankings[k].items || []).find((it: any) => it.novelId === novelId);
-        if (found && found.coverUrl && found.coverUrl.startsWith('http') && !found.coverUrl.includes('novelimage.php')) {
-          if (found.coverUrl.includes('sinaimg.cn')) {
-            const fn = found.coverUrl.split('/').pop();
-            candidates.push({ url: `https://wx1.sinaimg.cn/large/${fn}`, ref: 'https://weibo.com' });
-          } else if (found.coverUrl.includes('doubanio.com')) {
-            candidates.push({ url: found.coverUrl, ref: 'https://book.douban.com/' });
-          } else {
-            candidates.push({ url: found.coverUrl, ref: 'https://www.jjwxc.net/' });
+    for (const dPath of [JJWXC_DATA_PATH, JJWXC_WUXIANLIU_DATA_PATH]) {
+      if (fs.existsSync(dPath)) {
+        const rawData = JSON.parse(fs.readFileSync(dPath, 'utf-8'));
+        for (const k in rawData.rankings) {
+          const found = (rawData.rankings[k].items || []).find((it: any) => it.novelId === novelId);
+          if (found && found.coverUrl && found.coverUrl.startsWith('http') && !found.coverUrl.includes('novelimage.php')) {
+            if (found.coverUrl.includes('sinaimg.cn')) {
+              const fn = found.coverUrl.split('/').pop();
+              candidates.push({ url: `https://wx1.sinaimg.cn/large/${fn}`, ref: 'https://weibo.com' });
+            } else if (found.coverUrl.includes('doubanio.com')) {
+              candidates.push({ url: found.coverUrl, ref: 'https://book.douban.com/' });
+            } else {
+              candidates.push({ url: found.coverUrl, ref: 'https://www.jjwxc.net/' });
+            }
+            break;
           }
-          break;
         }
       }
     }
@@ -638,6 +657,7 @@ app.get('/api/jjwxc/cover/:novelId', async (req, res) => {
       return res.send(fallbackSvg);
     }
 
+    res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Content-Type', result.contentType);
     res.setHeader('Cache-Control', 'no-cache, public, max-age=86400');
     return res.send(result.buffer);

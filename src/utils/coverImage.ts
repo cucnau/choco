@@ -53,7 +53,12 @@ export function getNovelCoverUrl(novelId: string, customCoverUrl?: string): stri
     return targetUrl;
   }
 
-  // 5. Nếu là CDN lớn hỗ trợ HTTPS & CORS trực tiếp (JD 360buyimg, Alibaba alicdn, WordPress Photon)
+  // 5. Nếu là Sina Weibo (sinaimg.cn): wsrv.nl thường chặn hoặc lỗi 404, dùng server proxy
+  if (targetUrl.includes('sinaimg.cn')) {
+    return `/api/jjwxc/cover/${novelId}`;
+  }
+
+  // 6. Nếu là CDN lớn hỗ trợ HTTPS & CORS trực tiếp (JD 360buyimg, Alibaba alicdn, WordPress Photon)
   // KHÔNG ĐƯỢC qua wsrv.nl vì wsrv.nl sẽ báo lỗi 400 với JD/Alibaba
   if (
     targetUrl.includes('360buyimg.com') ||
@@ -64,7 +69,7 @@ export function getNovelCoverUrl(novelId: string, customCoverUrl?: string): stri
     return targetUrl;
   }
 
-  // 6. Với máy chủ Tấn Giang (jjwxc.net): Bắt buộc qua Cloudflare CDN để bypass Referer & Mixed Content
+  // 7. Với máy chủ Tấn Giang (jjwxc.net): Bắt buộc qua Cloudflare CDN để bypass Referer & Mixed Content
   return `https://wsrv.nl/?url=${encodeURIComponent(targetUrl)}`;
 }
 
@@ -88,16 +93,21 @@ export function handleCoverError(
   const basePath = getBasePath();
   
   const retryCount = parseInt(target.dataset.retryCount || '0', 10);
-  if (retryCount >= 2) {
+  if (retryCount >= 3) {
     target.src = `${basePath}noveldefaultimage.svg`;
     return;
   }
   target.dataset.retryCount = (retryCount + 1).toString();
 
-  const realUrl = coverMap[novelId] || customCoverUrl;
+  // Tầng dự phòng 1: Thử server proxy nội bộ (bảo đảm vượt tường lửa Referer)
+  if (!currentSrc.includes('/api/jjwxc/cover/')) {
+    target.src = `/api/jjwxc/cover/${novelId}`;
+    return;
+  }
 
-  // Nếu đang dùng wsrv.nl bị lỗi, thử nạp trực tiếp qua WordPress Photon
-  if (currentSrc.includes('wsrv.nl') && realUrl && !realUrl.startsWith('data:')) {
+  // Tầng dự phòng 2: Thử qua WordPress Photon nếu có URL thật
+  const realUrl = coverMap[novelId] || customCoverUrl;
+  if (realUrl && !realUrl.startsWith('data:') && !currentSrc.includes('i0.wp.com')) {
     target.src = `https://i0.wp.com/${realUrl.replace(/^https?:\/\//, '')}`;
     return;
   }

@@ -11,13 +11,18 @@ import {
   Info,
   BookText,
   Palette,
-  Layers
+  Layers,
+  Share2,
+  ImagePlus
 } from 'lucide-react';
+import { NovelShareModal } from './NovelShareModal';
 import { 
   JjwxcNovel, 
   JJWXC_RANK_CATEGORIES, 
   initialRealRankingsData, 
-  JjwxcRankCategoryConfig 
+  JjwxcRankCategoryConfig,
+  getRankSlug,
+  getRankIdFromSlug
 } from '../data/jjwxcRankingsData';
 import { 
   initialWuxianliuRankingsData, 
@@ -69,22 +74,33 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
   onRankingChange
 }) => {
   // Nhóm BXH: 'general' (BXH Tổng Hợp) hoặc 'wuxianliu' (BXH Vô Hạn Lưu 200 truyện)
-  const [bxhGroup, setBxhGroup] = useState<'general' | 'wuxianliu'>(
-    selectedTagId === 'wuxianliu' ? 'wuxianliu' : 'general'
-  );
+  const [bxhGroup, setBxhGroup] = useState<'general' | 'wuxianliu'>(() => {
+    if (selectedTagId === 'wuxianliu' || selectedTagId === 'vohanluu') return 'wuxianliu';
+    if (propRankId && (propRankId === 'vohanluu' || propRankId === 'wuxianliu')) return 'wuxianliu';
+    return 'general';
+  });
 
   // Tiêu chí sắp xếp cho BXH Vô Hạn Lưu (theo đúng 6 tiêu chí trong ảnh Tấn Giang)
   const [selectedWuxianliuCriteria, setSelectedWuxianliuCriteria] = useState<string>('score');
 
   // Bảng xếp hạng đang chọn của nhóm Tổng Hợp (Mặc định Tổng phân bảng - Top Mọi Thời Đại)
-  const [selectedRankId, setSelectedRankId] = useState<string>(propRankId || 'zongfen');
+  const [selectedRankId, setSelectedRankId] = useState<string>(() => {
+    return propRankId ? getRankIdFromSlug(propRankId) : 'zongfen';
+  });
 
   useEffect(() => {
-    if (propRankId) setSelectedRankId(propRankId);
+    if (propRankId) {
+      const realId = getRankIdFromSlug(propRankId);
+      if (realId === 'wuxianliu' || propRankId === 'vohanluu') {
+        setBxhGroup('wuxianliu');
+      } else {
+        setSelectedRankId(realId);
+      }
+    }
   }, [propRankId]);
 
   useEffect(() => {
-    if (selectedTagId === 'wuxianliu') {
+    if (selectedTagId === 'wuxianliu' || selectedTagId === 'vohanluu') {
       setBxhGroup('wuxianliu');
     }
   }, [selectedTagId]);
@@ -105,6 +121,7 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
   const [activePalette, setActivePalette] = useState<CanvaPalette | null>(null);
   const [novelIntro, setNovelIntro] = useState<string>('');
   const [isLoadingIntro, setIsLoadingIntro] = useState<boolean>(false);
+  const [shareNovel, setShareNovel] = useState<JjwxcNovel | null>(null);
 
   // Bảng màu trang web thích ứng theo truyện Quán Quân (Top 1) của BXH đang chọn
   const [themePalette, setThemePalette] = useState<CanvaPalette | null>(null);
@@ -271,7 +288,7 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
   // Toàn bộ truyện đã bookmark
   const allSavedNovels: JjwxcNovel[] = useMemo(() => {
     const map = new Map<string, JjwxcNovel>();
-    Object.values(dataset.rankings || {}).forEach((r: any) => {
+    [...Object.values(dataset.rankings || {}), ...Object.values(wuxianliuDataset.rankings || {})].forEach((r: any) => {
       r.items?.forEach((n: JjwxcNovel) => {
         if (savedNovelIds.includes(n.novelId) && !map.has(n.novelId)) {
           map.set(n.novelId, n);
@@ -279,7 +296,7 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
       });
     });
     return Array.from(map.values());
-  }, [dataset, savedNovelIds]);
+  }, [dataset, wuxianliuDataset, savedNovelIds]);
 
   // Danh sách sau lọc
   const filteredNovels = useMemo(() => {
@@ -456,7 +473,8 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
             <button
               onClick={() => {
                 setBxhGroup('general');
-                onRankingChange?.('ranks', selectedRankId);
+                const cat = JJWXC_RANK_CATEGORIES.find(c => c.id === selectedRankId);
+                onRankingChange?.('ranks', cat?.slug || 'tongphan');
               }}
               className="px-3 py-1.5 rounded-lg font-medium transition-all cursor-pointer flex items-center gap-1.5"
               style={bxhGroup === 'general' ? {
@@ -475,7 +493,7 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
             <button
               onClick={() => {
                 setBxhGroup('wuxianliu');
-                onRankingChange?.('ranks', 'wuxianliu');
+                onRankingChange?.('ranks', 'vohanluu', 'vohanluu');
               }}
               className="px-3 py-1.5 rounded-lg font-medium transition-all cursor-pointer flex items-center gap-1.5"
               style={bxhGroup === 'wuxianliu' ? {
@@ -513,7 +531,7 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
                       key={category.id}
                       onClick={() => {
                         setSelectedRankId(category.id);
-                        onRankingChange?.('ranks', category.id);
+                        onRankingChange?.('ranks', category.slug);
                       }}
                       className="px-3 py-1.5 rounded-lg border text-xs whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer"
                       style={isSelected ? {
@@ -653,41 +671,66 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
           )}
         </div>
 
-        {/* Lọc trạng thái */}
-        <div className="flex items-center rounded-lg border border-border-custom bg-bg-surface p-0.5 text-xs shrink-0">
+        {/* Nút Tạo ảnh truyện ngoài BXH & Lọc trạng thái */}
+        <div className="flex items-center gap-2 flex-wrap shrink-0">
           <button
-            onClick={() => setStatusFilter('all')}
-            className="px-2 py-1 rounded transition-all cursor-pointer"
-            style={statusFilter === 'all' ? {
-              backgroundColor: 'rgba(255, 255, 255, 0.08)',
-              color: primaryAccent,
-              fontWeight: 'bold'
-            } : { color: 'var(--text-sub)' }}
+            onClick={() => {
+              setShareNovel({
+                novelId: 'custom',
+                title: 'Tên truyện',
+                author: 'Tác giả',
+                genre: 'Đam mỹ • Vô hạn lưu',
+                status: 'Đã hoàn thành',
+                wordCount: '',
+                score: '',
+                coverUrl: '',
+                intro: '',
+                jjwxcUrl: ''
+              });
+            }}
+            className="px-3 py-1.5 rounded-lg border border-border-custom bg-bg-surface hover:bg-bg-card text-text-main flex items-center gap-1.5 transition-all cursor-pointer font-medium hover:border-amber-400 shrink-0"
+            title="Tự điền thông tin và tải bìa để tạo ảnh chia sẻ truyện ngoài BXH"
           >
-            Tất cả
+            <ImagePlus className="w-3.5 h-3.5 text-amber-400" />
+            <span>Tự tạo ảnh truyện</span>
           </button>
-          <button
-            onClick={() => setStatusFilter('completed')}
-            className="px-2 py-1 rounded transition-all cursor-pointer"
-            style={statusFilter === 'completed' ? {
-              backgroundColor: 'rgba(255, 255, 255, 0.08)',
-              color: primaryAccent,
-              fontWeight: 'bold'
-            } : { color: 'var(--text-sub)' }}
-          >
-            Hoàn thành
-          </button>
-          <button
-            onClick={() => setStatusFilter('ongoing')}
-            className="px-2 py-1 rounded transition-all cursor-pointer"
-            style={statusFilter === 'ongoing' ? {
-              backgroundColor: 'rgba(255, 255, 255, 0.08)',
-              color: primaryAccent,
-              fontWeight: 'bold'
-            } : { color: 'var(--text-sub)' }}
-          >
-            Đang ra
-          </button>
+
+          {/* Lọc trạng thái */}
+          <div className="flex items-center rounded-lg border border-border-custom bg-bg-surface p-0.5 text-xs shrink-0">
+            <button
+              onClick={() => setStatusFilter('all')}
+              className="px-2 py-1 rounded transition-all cursor-pointer"
+              style={statusFilter === 'all' ? {
+                backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                color: primaryAccent,
+                fontWeight: 'bold'
+              } : { color: 'var(--text-sub)' }}
+            >
+              Tất cả
+            </button>
+            <button
+              onClick={() => setStatusFilter('completed')}
+              className="px-2 py-1 rounded transition-all cursor-pointer"
+              style={statusFilter === 'completed' ? {
+                backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                color: primaryAccent,
+                fontWeight: 'bold'
+              } : { color: 'var(--text-sub)' }}
+            >
+              Hoàn thành
+            </button>
+            <button
+              onClick={() => setStatusFilter('ongoing')}
+              className="px-2 py-1 rounded transition-all cursor-pointer"
+              style={statusFilter === 'ongoing' ? {
+                backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                color: primaryAccent,
+                fontWeight: 'bold'
+              } : { color: 'var(--text-sub)' }}
+            >
+              Đang ra
+            </button>
+          </div>
         </div>
       </div>
 
@@ -779,17 +822,34 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
                     </div>
                   </div>
 
-                  <button
-                    onClick={(e) => toggleSaveNovel(novel.novelId, e)}
-                    className={`p-2 rounded-lg border transition-all shrink-0 cursor-pointer ${
-                      isSaved 
-                        ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400' 
-                        : 'border-transparent text-text-sub hover:text-text-main'
-                    }`}
-                    title={isSaved ? 'Bỏ lưu' : 'Lưu truyện'}
-                  >
-                    <Bookmark className={`w-4 h-4 ${isSaved ? 'fill-emerald-400' : ''}`} />
-                  </button>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const coverSrc = getCorsCoverUrl(novel.novelId, novel.coverUrl);
+                        extractPaletteFromImage(coverSrc, novel.novelId).then(p => {
+                          setActivePalette(p);
+                        });
+                        setShareNovel(novel);
+                      }}
+                      className="p-2 rounded-lg border border-transparent text-text-sub hover:text-text-main transition-all cursor-pointer hover:bg-white/5"
+                      title="Tạo ảnh chia sẻ truyện"
+                    >
+                      <Share2 className="w-4 h-4" />
+                    </button>
+
+                    <button
+                      onClick={(e) => toggleSaveNovel(novel.novelId, e)}
+                      className={`p-2 rounded-lg border transition-all shrink-0 cursor-pointer ${
+                        isSaved 
+                          ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400' 
+                          : 'border-transparent text-text-sub hover:text-text-main'
+                      }`}
+                      title={isSaved ? 'Bỏ lưu' : 'Lưu truyện'}
+                    >
+                      <Bookmark className={`w-4 h-4 ${isSaved ? 'fill-emerald-400' : ''}`} />
+                    </button>
+                  </div>
                 </div>
               );
             })}
@@ -953,6 +1013,15 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
                         </div>
                       )}
 
+                      {activeNovel.favorites && (
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-xs shrink-0" style={{ color: textMuted }}>Lượt lưu truyện:</span>
+                          <span className="font-medium" style={{ color: textSecondary }}>
+                            {activeNovel.favorites}
+                          </span>
+                        </div>
+                      )}
+
                       {/* Hiển thị Dải Mã Màu Bìa Phân Tích Được (Palette Swatches) */}
                       {activePalette?.colors && activePalette.colors.length > 0 && (
                         <div className="flex items-center gap-2 pt-1">
@@ -978,18 +1047,32 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
 
                       {/* Các nút hành động chính */}
                       <div className="pt-2 flex flex-wrap items-center gap-2.5">
-                        <a
-                          href={activeNovel.jjwxcUrl || `https://www.jjwxc.net/onebook.php?novelid=${activeNovel.novelId}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                        <button
+                          onClick={() => setShareNovel(activeNovel)}
                           className="px-4 py-2 rounded-xl font-bold text-white transition-all shadow-md cursor-pointer flex items-center gap-2 hover:opacity-95 active:scale-95"
                           style={{
                             background: activePalette?.accentGradient || `linear-gradient(135deg, ${modalAccent}, ${modalSecondary})`,
                             boxShadow: `0 4px 16px ${hexToRgba(modalAccent, 0.4)}`
                           }}
+                          title="Tạo ảnh chia sẻ truyện tùy chỉnh tiếng Việt & màu sắc"
+                        >
+                          <Share2 className="w-3.5 h-3.5 text-white/90" />
+                          <span>Chia sẻ ảnh</span>
+                        </button>
+
+                        <a
+                          href={activeNovel.jjwxcUrl || `https://www.jjwxc.net/onebook.php?novelid=${activeNovel.novelId}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-3.5 py-2 rounded-xl font-medium border transition-all cursor-pointer flex items-center gap-2"
+                          style={{
+                            backgroundColor: isLight ? 'rgba(255, 255, 255, 0.7)' : 'rgba(255, 255, 255, 0.1)',
+                            borderColor: cardBorder,
+                            color: textPrimary
+                          }}
                         >
                           <span>Mở link gốc</span>
-                          <ExternalLink className="w-3.5 h-3.5 text-white/90" />
+                          <ExternalLink className="w-3.5 h-3.5 opacity-80" />
                         </a>
 
                         <button
@@ -1051,6 +1134,20 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
           </div>
         );
       })()}
+      {/* Modal tạo ảnh chia sẻ truyện tùy chỉnh */}
+      {shareNovel && (
+        <NovelShareModal
+          novel={shareNovel}
+          rankingTitle={
+            bxhGroup === 'wuxianliu'
+              ? `BXH Vô Hạn Lưu • ${currentWuxianliuCriteriaConfig?.name || 'Tấn Giang'}`
+              : currentCategoryConfig?.nameViGuide || currentCategoryConfig?.name || 'Tấn Giang'
+          }
+          palette={activePalette}
+          novelIntro={novelIntro}
+          onClose={() => setShareNovel(null)}
+        />
+      )}
     </div>
   );
 };

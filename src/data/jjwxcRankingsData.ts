@@ -18,6 +18,7 @@ export interface JjwxcNovel {
 
 export interface JjwxcRankCategoryConfig {
   id: string;
+  slug: string;           // Slug tiếng Việt trên link URL (kiểu vohanluu, tongphan, hoanthanh...)
   name: string;           // Tên chữ Hán gốc
   nameViGuide: string;    // Chú thích loại bảng để độc giả Việt hiểu
   fullName: string;
@@ -31,6 +32,7 @@ export interface JjwxcRankCategoryConfig {
 export const JJWXC_RANK_CATEGORIES: JjwxcRankCategoryConfig[] = [
   {
     id: 'zongfen',
+    slug: 'tongphan',
     name: '总分排行榜',
     nameViGuide: 'Top Mọi Thời Đại',
     fullName: '总分排行榜 (Bảng tổng điểm tích lũy lịch sử Đam Mỹ)',
@@ -42,6 +44,7 @@ export const JJWXC_RANK_CATEGORIES: JjwxcRankCategoryConfig[] = [
   },
   {
     id: 'bawang',
+    slug: 'bavuong',
     name: '霸王票总榜',
     nameViGuide: 'Top Bá Vương Phiếu',
     fullName: '霸王票总榜 (Bá Vương Phiếu Tổng Bảng - Ném mìn bằng tiền thật)',
@@ -53,6 +56,7 @@ export const JJWXC_RANK_CATEGORIES: JjwxcRankCategoryConfig[] = [
   },
   {
     id: 'wanjie',
+    slug: 'hoanthanh',
     name: '完结金榜',
     nameViGuide: 'Bảng Vàng Truyện Đã Hoàn Thành',
     fullName: '完结金榜 (Bảng Vàng Truyện Đã Hoàn Thành - Doanh thu 30 ngày sau kết thúc)',
@@ -64,6 +68,7 @@ export const JJWXC_RANK_CATEGORIES: JjwxcRankCategoryConfig[] = [
   },
   {
     id: 'vip',
+    slug: 'vip',
     name: 'VIP金榜',
     nameViGuide: 'VIP Kim Bảng Ngày',
     fullName: 'VIP金榜 (VIP Kim Bảng - Biến động theo ngày)',
@@ -75,6 +80,7 @@ export const JJWXC_RANK_CATEGORIES: JjwxcRankCategoryConfig[] = [
   },
   {
     id: 'yuedu',
+    slug: 'thang',
     name: '月度排行榜',
     nameViGuide: 'Bảng Xếp Hạng Tháng',
     fullName: '月度排行榜 (Top Đam Mỹ nổi bật trong tháng)',
@@ -86,6 +92,7 @@ export const JJWXC_RANK_CATEGORIES: JjwxcRankCategoryConfig[] = [
   },
   {
     id: 'jidu',
+    slug: 'quy',
     name: '季度排行榜',
     nameViGuide: 'Bảng Xếp Hạng Quý',
     fullName: '季度排行榜 (Top Đam Mỹ nổi bật theo quý)',
@@ -97,6 +104,7 @@ export const JJWXC_RANK_CATEGORIES: JjwxcRankCategoryConfig[] = [
   },
   {
     id: 'bannian',
+    slug: 'nuanam',
     name: '半年排行榜',
     nameViGuide: 'Bảng Xếp Hạng Nửa Năm',
     fullName: '半年排行榜 (Top Đam Mỹ nửa năm qua)',
@@ -108,6 +116,7 @@ export const JJWXC_RANK_CATEGORIES: JjwxcRankCategoryConfig[] = [
   },
   {
     id: 'xinjin',
+    slug: 'tantan',
     name: '新晋作者榜',
     nameViGuide: 'Tân Tấn Tác Giả',
     fullName: '新晋作者榜 (Bút mới Đam Mỹ triển vọng)',
@@ -118,6 +127,47 @@ export const JJWXC_RANK_CATEGORIES: JjwxcRankCategoryConfig[] = [
     metricLabel: 'Điểm tích lũy'
   }
 ];
+
+export function getRankSlug(rankId: string): string {
+  if (rankId === 'wuxianliu' || rankId === 'vohanluu') return 'vohanluu';
+  const cat = JJWXC_RANK_CATEGORIES.find(c => c.id === rankId || c.slug === rankId);
+  return cat?.slug || rankId;
+}
+
+export function getRankIdFromSlug(slug: string): string {
+  if (!slug) return 'zongfen';
+  const clean = slug.toLowerCase().replace(/-/g, '');
+  if (clean === 'vohanluu' || clean === 'wuxianliu') return 'wuxianliu';
+  
+  // Mapping từ slug tiếng Việt sang id hệ thống
+  const slugToIdMap: Record<string, string> = {
+    'tongphan': 'zongfen',
+    'tongdiem': 'zongfen',
+    'zongfen': 'zongfen',
+    'bavuong': 'bawang',
+    'bawang': 'bawang',
+    'hoanthanh': 'wanjie',
+    'dahoanthanh': 'wanjie',
+    'wanjie': 'wanjie',
+    'vip': 'vip',
+    'thang': 'yuedu',
+    'nguyetdo': 'yuedu',
+    'docnhieu': 'yuedu',
+    'yuedu': 'yuedu',
+    'quy': 'jidu',
+    'jidu': 'jidu',
+    'nuanam': 'bannian',
+    'bannian': 'bannian',
+    'tantan': 'xinjin',
+    'tacgiamoi': 'xinjin',
+    'xinjin': 'xinjin'
+  };
+
+  if (slugToIdMap[clean]) return slugToIdMap[clean];
+
+  const cat = JJWXC_RANK_CATEGORIES.find(c => c.slug === clean || c.slug === slug || c.id === slug || c.id === clean);
+  return cat ? cat.id : slug;
+}
 
 export interface JjwxcRealDataset {
   metadata?: {

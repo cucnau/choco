@@ -56,6 +56,7 @@ import { AuthModal } from './components/AuthModal';
 import { UserSettingsModal } from './components/UserSettingsModal';
 import { GamesHub } from './components/GamesHub';
 import { JjwxcRankingsHub } from './components/JjwxcRankingsHub';
+import { getRankSlug, getRankIdFromSlug } from './data/jjwxcRankingsData';
 import { initAntiCopyProtection } from './lib/antiCopyProtection';
 
 export default function App() {
@@ -438,10 +439,14 @@ export default function App() {
         setSelectedGameId(null);
         const parts = cleanRoute.split('/');
         if (parts.length > 1 && parts[1]) {
-          if (parts[1] === 'wuxianliu' || parts[1] === 'vo-han-luu' || parts[1] === 'tags' || parts[1] === 'tag') {
-            setSelectedTagId('wuxianliu');
+          const rawSlug = parts[1].toLowerCase().replace(/-/g, '');
+          if (rawSlug === 'wuxianliu' || rawSlug === 'vohanluu' || rawSlug === 'tags' || rawSlug === 'tag') {
+            setSelectedTagId('vohanluu');
+            setRankingHubMode('tags');
           } else {
-            setSelectedRankId(parts[1]);
+            const mappedRankId = getRankIdFromSlug(parts[1]);
+            setSelectedRankId(mappedRankId);
+            setRankingHubMode('ranks');
           }
         }
         return;
@@ -1328,12 +1333,16 @@ export default function App() {
             hubMode={rankingHubMode}
             onRankingChange={(newMode, newRankId, newTagId) => {
               setRankingHubMode(newMode);
-              if (newMode === 'tags') {
-                if (newTagId) setSelectedTagId(newTagId);
-                navigateTo(newTagId && newTagId !== 'wuxianliu' ? `/bxh/tags/${newTagId}` : '/bxh/tags');
+              if (newMode === 'tags' || newRankId === 'vohanluu' || newRankId === 'wuxianliu' || newTagId === 'vohanluu' || newTagId === 'wuxianliu') {
+                setSelectedTagId('vohanluu');
+                navigateTo('/bxh/vohanluu');
               } else {
-                if (newRankId) setSelectedRankId(newRankId);
-                navigateTo(newRankId && newRankId !== 'vip_jinbang' ? `/bxh/${newRankId}` : '/bxh');
+                if (newRankId) {
+                  const realId = getRankIdFromSlug(newRankId);
+                  setSelectedRankId(realId);
+                }
+                const slug = getRankSlug(newRankId || selectedRankId);
+                navigateTo(slug ? `/bxh/${slug}` : '/bxh');
               }
             }}
           />

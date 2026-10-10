@@ -7,7 +7,7 @@ const SORT_CRITERIA_LIST = [
     sortType: '2',
     name: 'Điểm tích lũy',
     nameZh: '积分',
-    desc: 'Bảng xếp hạng Vô Hạn Lưu xếp theo điểm tích lũy (tích phân) cao nhất lịch sử trên Tấn Giang',
+    desc: 'Xếp theo tổng điểm tích lũy (tích phân) cao nhất lịch sử trên Tấn Giang',
     metricLabel: 'Điểm tích lũy'
   },
   {
@@ -60,6 +60,44 @@ if (fs.existsSync(COVERS_MAP_PATH)) {
   } catch (e) {}
 }
 
+// Lấy map điểm chính xác từ jjwxcRealData.json nếu có
+const REAL_DATA_PATH = path.join(__dirname, '../src/data/jjwxcRealData.json');
+let exactRealScores = {};
+if (fs.existsSync(REAL_DATA_PATH)) {
+  try {
+    const rd = JSON.parse(fs.readFileSync(REAL_DATA_PATH, 'utf-8'));
+    for (const k in rd.rankings) {
+      for (const it of rd.rankings[k].items || []) {
+        if (it.novelId && it.score && /^[\d,]+$/.test(it.score)) {
+          exactRealScores[it.novelId] = it.score;
+        }
+      }
+    }
+  } catch (e) {}
+}
+
+function formatToFullNumber(val) {
+  if (!val) return '';
+  const str = String(val).trim();
+  if (/^[\d,]+$/.test(str)) {
+    const n = Number(str.replace(/,/g, ''));
+    return !isNaN(n) && n > 0 ? n.toLocaleString('en-US') : str;
+  }
+  if (str.includes('亿')) {
+    const num = parseFloat(str.replace(/亿/g, '').replace(/,/g, ''));
+    if (!isNaN(num)) {
+      return Math.round(num * 100_000_000).toLocaleString('en-US');
+    }
+  }
+  if (str.includes('万') || str.toLowerCase().includes('w')) {
+    const num = parseFloat(str.replace(/万|w/gi, '').replace(/,/g, ''));
+    if (!isNaN(num)) {
+      return Math.round(num * 10_000).toLocaleString('en-US');
+    }
+  }
+  return str;
+}
+
 async function fetchAssortPage(sortType, page, retries = 3) {
   const url = `https://m.jjwxc.net/assort?xx2=2&bq=83&sortType=${sortType}&page=${page}`;
   for (let i = 0; i < retries; i++) {
@@ -84,35 +122,32 @@ async function fetchAssortPage(sortType, page, retries = 3) {
   return null;
 }
 
-function parseAssortHtml(html, startRank = 1) {
+// Bóc đúng 50 truyện DUY NHẤT của 1 trang, không bị duplicate do Tấn Giang render 2 table trùng lặp
+function parseAssortPage(html) {
   if (!html) return [];
-  // Regex bóc tách danh sách truyện:
-  // <tr><td>《<a ... href="/book2/(\d+)">TITLE</a>》 --- <a href="/wapauthor/(\d+)">AUTHOR</a></td></tr>
   const rowRegex = /href=[\"']\/book2\/(\d+)[\"'][^>]*>([^<]+)<\/a>》\s*---\s*<a\s+href=[\"']\/wapauthor\/(\d+)[\"'][^>]*>([^<]+)<\/a>/gi;
   const list = [];
+  const seenThisPage = new Set();
   let m;
-  let currentRank = startRank;
 
   while ((m = rowRegex.exec(html)) !== null) {
     const novelId = m[1].trim();
-    const title = m[2].trim();
-    const authorId = m[3].trim();
-    const author = m[4].trim();
-
-    list.push({
-      rank: currentRank++,
-      novelId,
-      title,
-      author,
-      authorId,
-      genre: '原创-纯爱-无限流',
-      status: '连载',
-      wordCount: '',
-      score: '',
-      intro: '',
-      coverUrl: coversMap[novelId] || `https://i9-static.jjwxc.net/novelimage.php?novelid=${novelId}`,
-      jjwxcUrl: `https://www.jjwxc.net/onebook.php?novelid=${novelId}`
-    });
+    if (!seenThisPage.has(novelId)) {
+      seenThisPage.add(novelId);
+      list.push({
+        novelId,
+        title: m[2].trim(),
+        authorId: m[3].trim(),
+        author: m[4].trim(),
+        genre: '原创-纯爱-无限流',
+        status: '连载',
+        wordCount: '',
+        score: '',
+        intro: '',
+        coverUrl: coversMap[novelId] || `https://i9-static.jjwxc.net/novelimage.php?novelid=${novelId}`,
+        jjwxcUrl: `https://www.jjwxc.net/onebook.php?novelid=${novelId}`
+      });
+    }
   }
 
   return list;
@@ -122,7 +157,7 @@ async function fetchNovelBasicInfo(novelId) {
   try {
     const res = await fetch(`https://app.jjwxc.net/androidapi/novelbasicinfo?novelId=${novelId}`, {
       headers: { 'User-Agent': 'Mozilla/5.0 (Linux; Android 12)' },
-      signal: AbortSignal.timeout(5000)
+      signal: AbortSignal.timeout(6000)
     });
     if (!res.ok) return null;
     const data = await res.json();
@@ -133,7 +168,7 @@ async function fetchNovelBasicInfo(novelId) {
 }
 
 async function main() {
-  console.log('🚀 Bắt đầu crawl BXH Vô Hạn Lưu (200 truyện x 6 tiêu chí Tấn Giang)...');
+  console.log('🚀 Bắt đầu crawl BXH Vô Hạn Lưu chuẩn xác 200 truyện duy nhất cho 6 tiêu chí...');
   const result = {
     metadata: {
       tag: '无限流',
@@ -153,21 +188,31 @@ async function main() {
   for (const criterion of SORT_CRITERIA_LIST) {
     console.log(`\n📌 Đang cào tiêu chí: ${criterion.name} (${criterion.nameZh}) - sortType: ${criterion.sortType}...`);
     
-    // Page 1: 1 - 100
-    const htmlPage1 = await fetchAssortPage(criterion.sortType, 1);
-    const itemsPage1 = parseAssortHtml(htmlPage1, 1);
-    console.log(`   + Trang 1: Bóc được ${itemsPage1.length} truyện`);
+    const criterionItems = [];
+    const criterionSeen = new Set();
 
-    // Page 2: 101 - 200
-    await new Promise(r => setTimeout(r, 600));
-    const htmlPage2 = await fetchAssortPage(criterion.sortType, 2);
-    const itemsPage2 = parseAssortHtml(htmlPage2, 101);
-    console.log(`   + Trang 2: Bóc được ${itemsPage2.length} truyện`);
+    // Mỗi trang có 50 truyện -> Cào 4 trang (page 1, 2, 3, 4) để đủ 200 truyện chuẩn
+    for (let page = 1; page <= 4; page++) {
+      const html = await fetchAssortPage(criterion.sortType, page);
+      const items = parseAssortPage(html);
+      let added = 0;
+      for (const item of items) {
+        if (!criterionSeen.has(item.novelId)) {
+          criterionSeen.add(item.novelId);
+          criterionItems.push({
+            ...item,
+            rank: criterionItems.length + 1
+          });
+          allNovelIds.add(item.novelId);
+          added++;
+        }
+      }
+      console.log(`   + Trang ${page}: Bóc được ${items.length} truyện (thêm mới: ${added}) -> Tổng tích lũy: ${criterionItems.length}`);
+      await new Promise(r => setTimeout(r, 400));
+    }
 
-    const fullItems = [...itemsPage1, ...itemsPage2].slice(0, 200);
-    console.log(`   => Tổng tiêu chí "${criterion.name}": ${fullItems.length}/200 truyện`);
-
-    fullItems.forEach(item => allNovelIds.add(item.novelId));
+    const final200 = criterionItems.slice(0, 200);
+    console.log(`   => Tiêu chí "${criterion.name}": Đủ ${final200.length} truyện duy nhất!`);
 
     result.rankings[criterion.id] = {
       id: criterion.id,
@@ -176,24 +221,17 @@ async function main() {
       nameZh: criterion.nameZh,
       desc: criterion.desc,
       metricLabel: criterion.metricLabel,
-      total: fullItems.length,
-      items: fullItems
+      total: final200.length,
+      items: final200
     };
   }
 
-  console.log(`\n📚 Tổng số tiểu thuyết Vô Hạn Lưu thu thập được: ${allNovelIds.size} truyện duy nhất.`);
-  console.log('⚡ Tiến hành bổ sung bìa và văn án chi tiết cho top truyện...');
+  console.log(`\n📚 Tổng cộng thu thập được: ${allNovelIds.size} tiểu thuyết Vô Hạn Lưu duy nhất.`);
+  console.log('⚡ Tiến hành nạp ĐẦY ĐỦ THÔNG TIN THẬT & BÌA THẬT 100% cho toàn bộ các truyện...');
 
-  // Bổ sung chi tiết cho các truyện (ưu tiên top 50 mỗi bảng)
-  const priorityIds = new Set();
-  for (const criterion of SORT_CRITERIA_LIST) {
-    result.rankings[criterion.id].items.slice(0, 40).forEach(i => priorityIds.add(i.novelId));
-  }
-  console.log(`🎯 Số truyện ưu tiên cập nhật chi tiết cao: ${priorityIds.size}`);
-
+  const idArray = Array.from(allNovelIds);
   let processedCount = 0;
-  const idArray = Array.from(priorityIds);
-  const CHUNK_SIZE = 5;
+  const CHUNK_SIZE = 8; // Batch 8 request đồng thời
 
   for (let i = 0; i < idArray.length; i += CHUNK_SIZE) {
     const chunk = idArray.slice(i, i + CHUNK_SIZE);
@@ -203,37 +241,72 @@ async function main() {
         let cover = info.novelCover || info.originalCover || '';
         if (cover.startsWith('//')) cover = 'https:' + cover;
         else if (cover.startsWith('http://')) cover = 'https://' + cover.slice(7);
-        if (cover) coversMap[novelId] = cover;
+        if (cover) {
+          coversMap[novelId] = cover;
+        }
 
-        let intro = info.novelIntro ? info.novelIntro.replace(/&lt;br\s*\/?&gt;|<br\s*\/?>/gi, '\n').replace(/&nbsp;/gi, ' ').replace(/<[^>]+>/g, '').trim() : '';
+        let intro = info.novelIntro ? info.novelIntro
+          .replace(/&lt;br\s*\/?&gt;|<br\s*\/?>/gi, '\n')
+          .replace(/&nbsp;/gi, ' ')
+          .replace(/&quot;/gi, '"')
+          .replace(/&amp;/gi, '&')
+          .replace(/<[^>]+>/g, '')
+          .trim() : '';
+
+        // Điểm số: ưu tiên lấy điểm chuẩn xác từng đơn vị trực tiếp từ Tấn Giang
+        let exactScore = exactRealScores[novelId];
+        if (!exactScore) {
+          try {
+            const bRes = await fetch('https://m.jjwxc.net/book2/' + novelId, {
+              headers: { 'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X)' },
+              signal: AbortSignal.timeout(4000)
+            });
+            if (bRes.ok) {
+              const bBuf = await bRes.arrayBuffer();
+              const bText = new TextDecoder('gb18030').decode(bBuf);
+              const bM = bText.match(/作品积分[：:\s]*([\d,]+)/);
+              if (bM) {
+                const n = Number(bM[1].replace(/,/g, ''));
+                if (!isNaN(n) && n > 0) exactScore = n.toLocaleString('en-US');
+              }
+            }
+          } catch (e) {}
+        }
+        let fullScore = exactScore || formatToFullNumber(info.novelScore || '');
+        let fullWordCount = formatToFullNumber(info.novelSize || info.novelsizeformat || '');
+        let isDone = (info.novelStep === '2' || info.novelStep === 2);
 
         novelDetailsMap.set(novelId, {
+          title: info.novelName || undefined,
+          author: info.authorName || undefined,
           coverUrl: cover || coversMap[novelId] || `https://i9-static.jjwxc.net/novelimage.php?novelid=${novelId}`,
           intro: intro,
-          wordCount: info.novelSize || (info.novelsizeformat ? info.novelsizeformat : ''),
-          score: info.novelScore || '',
-          favorites: info.novelbefavoritedcount || info.novelbefavoritedcountformat || '',
+          wordCount: fullWordCount,
+          score: fullScore,
+          favorites: formatToFullNumber(info.novelbefavoritedcount || info.novelbefavoritedcountformat || ''),
           reviewScore: info.novelReviewScore || '',
-          status: info.novelStep === '2' ? '完结' : '连载',
+          status: isDone ? '完结' : '连载',
           genre: info.novelClass || '原创-纯爱-无限流'
         });
       }
     }));
 
     processedCount += chunk.length;
-    if (processedCount % 20 === 0 || processedCount >= idArray.length) {
+    if (processedCount % 40 === 0 || processedCount >= idArray.length) {
       console.log(`   Đã nạp chi tiết: ${processedCount}/${idArray.length}`);
     }
-    await new Promise(r => setTimeout(r, 300));
+    await new Promise(r => setTimeout(r, 200));
   }
 
-  // Gắn ngược lại thông tin đã làm giàu vào các items của từng tiêu chí
+  console.log('🔄 Đang gắn thông tin đầy đủ vào toàn bộ danh sách 6 tiêu chí...');
   for (const criterion of SORT_CRITERIA_LIST) {
     result.rankings[criterion.id].items = result.rankings[criterion.id].items.map(item => {
       const details = novelDetailsMap.get(item.novelId);
       if (details) {
         return {
           ...item,
+          title: details.title || item.title,
+          author: details.author || item.author,
           coverUrl: details.coverUrl || item.coverUrl,
           intro: details.intro || item.intro,
           wordCount: details.wordCount || item.wordCount,
