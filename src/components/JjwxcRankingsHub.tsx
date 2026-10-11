@@ -1045,11 +1045,12 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
                             {novelTags.map((tag, tIdx) => (
                               <span 
                                 key={tIdx}
-                                className="text-[11px] font-medium px-2 py-0.5 rounded-full border transition-all"
+                                className="text-[11px] font-medium px-2.5 py-0.5 rounded-full border transition-all whitespace-nowrap shrink-0 inline-flex items-center"
                                 style={{
                                   backgroundColor: hexToRgba(modalSecondary, isLight ? 0.12 : 0.22),
                                   borderColor: hexToRgba(modalSecondary, 0.4),
-                                  color: isLight ? '#0f172a' : modalSecondary
+                                  color: isLight ? '#0f172a' : modalSecondary,
+                                  whiteSpace: 'nowrap'
                                 }}
                               >
                                 {tag}

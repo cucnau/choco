@@ -514,14 +514,15 @@ export const NovelShareModal: React.FC<NovelShareModalProps> = ({
                       <span className="font-medium truncate">{editAuthor}</span>
                     </div>
 
-                    <div className="flex flex-wrap gap-1.5 pt-0.5">
+                    <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
                       {editStatus && (
                         <span 
-                          className="text-[10px] font-semibold px-2 py-0.5 rounded-full border"
+                          className="text-[10px] font-semibold px-2.5 py-0.5 rounded-full border shrink-0 whitespace-nowrap inline-flex items-center"
                           style={{
                             backgroundColor: editStatus.includes('Hoàn') ? 'rgba(16, 185, 129, 0.2)' : hexToRgba(tagColor, 0.2),
                             borderColor: editStatus.includes('Hoàn') ? 'rgba(16, 185, 129, 0.45)' : hexToRgba(tagColor, 0.45),
-                            color: editStatus.includes('Hoàn') ? '#10b981' : tagColor
+                            color: editStatus.includes('Hoàn') ? '#10b981' : tagColor,
+                            whiteSpace: 'nowrap'
                           }}
                         >
                           {editStatus}
@@ -531,11 +532,13 @@ export const NovelShareModal: React.FC<NovelShareModalProps> = ({
                       {splitTagList(editGenre).map((tagItem, idx) => (
                         <span 
                           key={idx}
-                          className="text-[10px] font-medium px-2 py-0.5 rounded-full border shrink-0"
+                          className="text-[10px] font-medium px-2.5 py-0.5 rounded-full border shrink-0 whitespace-nowrap inline-flex items-center"
                           style={{
                             backgroundColor: hexToRgba(tagColor, 0.15),
                             borderColor: hexToRgba(tagColor, 0.35),
-                            color: isLightBackground ? '#0f172a' : tagColor
+                            color: isLightBackground ? '#0f172a' : tagColor,
+                            whiteSpace: 'nowrap',
+                            lineHeight: '1.3'
                           }}
                         >
                           {tagItem}
