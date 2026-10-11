@@ -166,19 +166,20 @@ export async function extractPaletteFromImage(
   imageSrc: string,
   cacheKey?: string
 ): Promise<CanvaPalette> {
-  const key = cacheKey || imageSrc;
-  if (paletteCache.has(key)) {
+  const isDataUri = imageSrc.startsWith('data:');
+  const key = cacheKey && !isDataUri ? cacheKey : (isDataUri ? `data_${imageSrc.slice(0, 40)}_${imageSrc.length}` : imageSrc);
+  if (!isDataUri && paletteCache.has(key)) {
     return paletteCache.get(key)!;
   }
 
   // Fallback phong cách nghệ thuật nếu không nạp được ảnh
   if (!imageSrc || imageSrc.includes('.svg')) {
     const pal = buildPaletteFromCoverColors(
-      ['#fef08a', '#38bdf8', '#f43f5e', '#0284c7', '#ffffff'],
-      '#fef3c7',
-      '#e0f2fe',
-      '#0284c7',
-      '#f43f5e'
+      ['#f59e0b', '#06b6d4', '#10b981', '#ec4899', '#8b5cf6', '#3b82f6'],
+      '#f59e0b',
+      '#06b6d4',
+      '#ec4899',
+      '#10b981'
     );
     paletteCache.set(key, pal);
     return pal;
@@ -217,10 +218,10 @@ export async function extractPaletteFromImage(
         const g = imgData[idx + 1];
         const b = imgData[idx + 2];
 
-        // Lượng tử hóa theo nấc 18 để bắt trọn sắc thái
-        const qR = Math.round(r / 18) * 18;
-        const qG = Math.round(g / 18) * 18;
-        const qB = Math.round(b / 18) * 18;
+        // Lượng tử hóa theo nấc 16 để bắt trọn sắc thái
+        const qR = Math.round(r / 16) * 16;
+        const qG = Math.round(g / 16) * 16;
+        const qB = Math.round(b / 16) * 16;
         const bucketKey = `${qR},${qG},${qB}`;
 
         const existing = colorBuckets.get(bucketKey);
@@ -263,27 +264,34 @@ export async function extractPaletteFromImage(
 
     if (rawClusters.length === 0) {
       const pal = buildPaletteFromCoverColors(
-        ['#fef08a', '#38bdf8', '#f43f5e', '#0284c7', '#ffffff'],
-        '#fef3c7',
-        '#e0f2fe',
-        '#0284c7',
-        '#f43f5e'
+        ['#f59e0b', '#06b6d4', '#10b981', '#ec4899', '#8b5cf6', '#3b82f6'],
+        '#f59e0b',
+        '#06b6d4',
+        '#ec4899',
+        '#10b981'
       );
       paletteCache.set(key, pal);
       return pal;
     }
 
-    // 1. Sắp xếp theo diện tích chiếm trên tranh (Pixel Count) để tìm màu nền 1 & 2
+    // 1. Sắp xếp theo diện tích chiếm trên tranh (Pixel Count)
     rawClusters.sort((a, b) => b.count - a.count);
-    const dominantCluster = rawClusters[0];
+
+    // Tránh để màu đen xì lề ảnh (bright < 28) chiếm ưu thế làm dominant nếu có các màu có sắc thái khác
+    const nonPureBlackClusters = rawClusters.filter(c => c.bright >= 28);
+    const dominantCluster = nonPureBlackClusters.length > 0 ? nonPureBlackClusters[0] : rawClusters[0];
     const dominantHex = dominantCluster.hex;
 
     // Lọc các màu riêng biệt (Distinct)
-    const distinctColors: Cluster[] = [];
+    const distinctColors: Cluster[] = [dominantCluster];
     for (const c of rawClusters) {
+      if (c.hex === dominantHex) continue;
+      // Tránh đưa màu đen xì vào nếu đã có nhiều màu
+      if (c.bright < 20 && distinctColors.length >= 3) continue;
+
       let isDuplicate = false;
       for (const ex of distinctColors) {
-        if (colorDistance(c.r, c.g, c.b, ex.r, ex.g, ex.b) < 36) {
+        if (colorDistance(c.r, c.g, c.b, ex.r, ex.g, ex.b) < 32) {
           isDuplicate = true;
           break;
         }
@@ -291,19 +299,19 @@ export async function extractPaletteFromImage(
       if (!isDuplicate) {
         distinctColors.push(c);
       }
-      if (distinctColors.length >= 6) break;
+      if (distinctColors.length >= 7) break;
     }
 
     const colors = distinctColors.map(c => c.hex);
 
     // Màu nền thứ 2 của tranh
-    const secondBgCluster = distinctColors.find(c => c.hex !== dominantHex) || distinctColors[0];
+    const secondBgCluster = distinctColors.find(c => c.hex !== dominantHex && c.bright >= 30) || distinctColors[1] || distinctColors[0];
     const secondaryBgHex = secondBgCluster.hex;
 
-    // 2. Tìm màu điểm nhấn (Accent - màu bão hòa nhất trên tranh, ví dụ dưa hấu đỏ, biển xanh, hoa, quả)
+    // 2. Tìm màu điểm nhấn (Accent - màu bão hòa nhất trên tranh)
     const sortedBySat = [...distinctColors].sort((a, b) => b.sat - a.sat);
-    const topAccent = sortedBySat.find(c => c.sat > 0.22) || sortedBySat[0];
-    const secondAccent = sortedBySat.find(c => c !== topAccent && c.sat > 0.18) || distinctColors[1] || topAccent;
+    const topAccent = sortedBySat.find(c => c.sat > 0.20 && c.bright > 40) || sortedBySat[0];
+    const secondAccent = sortedBySat.find(c => c !== topAccent && c.sat > 0.15) || distinctColors[1] || topAccent;
 
     const accentHex = topAccent.hex;
     const secondaryHex = secondAccent.hex;
@@ -316,17 +324,21 @@ export async function extractPaletteFromImage(
       secondaryHex
     );
 
-    paletteCache.set(key, palette);
+    if (!isDataUri) {
+      paletteCache.set(key, palette);
+    }
     return palette;
   } catch {
     const pal = buildPaletteFromCoverColors(
-      ['#fef08a', '#38bdf8', '#f43f5e', '#0284c7', '#ffffff'],
-      '#fef3c7',
-      '#e0f2fe',
-      '#0284c7',
-      '#f43f5e'
+      ['#f59e0b', '#06b6d4', '#10b981', '#ec4899', '#8b5cf6', '#3b82f6'],
+      '#f59e0b',
+      '#06b6d4',
+      '#ec4899',
+      '#10b981'
     );
-    paletteCache.set(key, pal);
+    if (!isDataUri) {
+      paletteCache.set(key, pal);
+    }
     return pal;
   }
 }

@@ -14,6 +14,8 @@ export interface JjwxcNovel {
   intro: string;          // Văn án gốc tiếng Trung của tác giả
   coverUrl: string;       // Bìa gốc từ server JJWXC
   jjwxcUrl: string;       // Link truyện gốc trên JJWXC
+  tags?: string[];        // Các tag nhãn thực tế của truyện
+  favorites?: string;     // Số lượt lưu bookmark thực tế
 }
 
 export interface JjwxcRankCategoryConfig {

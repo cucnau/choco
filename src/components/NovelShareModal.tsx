@@ -6,8 +6,9 @@ import {
 } from 'lucide-react';
 import { toPng } from 'html-to-image';
 import { JjwxcNovel } from '../data/jjwxcRankingsData';
-import { CanvaPalette, extractPaletteFromImage, hexToRgba } from '../lib/coverColorExtractor';
+import { CanvaPalette, extractPaletteFromImage, hexToRgba, hexToRgb } from '../lib/coverColorExtractor';
 import { getCorsCoverUrl } from '../utils/coverImage';
+import { splitTagList } from '../utils/tagUtils';
 
 interface NovelShareModalProps {
   novel: JjwxcNovel;
@@ -15,6 +16,15 @@ interface NovelShareModalProps {
   palette: CanvaPalette | null;
   novelIntro?: string;
   onClose: () => void;
+}
+
+function getLuminance(hex: string): number {
+  try {
+    const [r, g, b] = hexToRgb(hex);
+    return 0.299 * r + 0.587 * g + 0.114 * b;
+  } catch {
+    return 128;
+  }
 }
 
 export const NovelShareModal: React.FC<NovelShareModalProps> = ({
@@ -37,12 +47,27 @@ export const NovelShareModal: React.FC<NovelShareModalProps> = ({
       : ['#f59e0b', '#06b6d4', '#10b981', '#ec4899', '#8b5cf6', '#64748b']
   );
 
-  // Mã màu riêng cho từng phần theo màu bìa
-  const [cardBgColor, setCardBgColor] = useState<string>(palette?.dominant || extractedColors[0]);
-  const [titleColor, setTitleColor] = useState<string>(palette?.accent || extractedColors[1] || '#ffffff');
-  const [badgeColor, setBadgeColor] = useState<string>(palette?.accent || extractedColors[0] || '#f59e0b');
-  const [tagColor, setTagColor] = useState<string>(palette?.secondary || extractedColors[2] || '#06b6d4');
-  const [introBoxColor, setIntroBoxColor] = useState<string>(palette?.dominant || extractedColors[0]);
+  // Mã màu riêng cho từng phần hoàn toàn từ màu bìa
+  // Nền gradient được chọn trực tiếp 2 màu từ bảng màu bìa
+  const [cardBgColor1, setCardBgColor1] = useState<string>(
+    palette?.dominant || extractedColors[0]
+  );
+  const [cardBgColor2, setCardBgColor2] = useState<string>(
+    palette?.secondaryBg || extractedColors[1] || extractedColors[0]
+  );
+
+  const [titleColor, setTitleColor] = useState<string>(
+    palette?.accent || extractedColors[1] || '#ffffff'
+  );
+  const [badgeColor, setBadgeColor] = useState<string>(
+    palette?.accent || extractedColors[0] || '#f59e0b'
+  );
+  const [tagColor, setTagColor] = useState<string>(
+    palette?.secondary || extractedColors[2] || '#06b6d4'
+  );
+  const [introBoxColor, setIntroBoxColor] = useState<string>(
+    palette?.dominant || extractedColors[0]
+  );
 
   // Bật / Tắt huy hiệu thứ hạng
   const [showRankingBadge, setShowRankingBadge] = useState<boolean>(!isCustomNovel && !!novel.rank);
@@ -55,14 +80,13 @@ export const NovelShareModal: React.FC<NovelShareModalProps> = ({
     : (novel.status || 'Đang cập nhật');
   const [editTitle, setEditTitle] = useState(novel.title || 'Tên truyện');
   const [editAuthor, setEditAuthor] = useState(novel.author || 'Tác giả');
-  const [editGenre, setEditGenre] = useState(
-    novel.genre
-      ? novel.genre.replace(/原创-/g, '').replace(/纯爱-/g, 'Đam mỹ • ').replace(/无限流/g, 'Vô hạn lưu')
-      : 'Đam mỹ • Vô hạn lưu'
-  );
+  const initialTagsString = novel.tags && novel.tags.length > 0
+    ? splitTagList(novel.tags).join(', ')
+    : (novel.genre ? splitTagList(novel.genre).join(', ') : 'Đam mỹ, Vô hạn lưu');
+  const [editGenre, setEditGenre] = useState(initialTagsString);
   const [editStatus, setEditStatus] = useState(initialStatus);
 
-  // Số chữ & Điểm số (với truyện custom hoặc trên bxh cho phép sửa/điền)
+  // Số chữ & Điểm số
   const rawWordCount = String(novel.wordCount || '').replace(/chữ/gi, '').trim();
   const [editWordCount, setEditWordCount] = useState(rawWordCount ? `${rawWordCount} chữ` : '');
   const [editScore, setEditScore] = useState(novel.score ? novel.score.trim() : '');
@@ -148,13 +172,22 @@ export const NovelShareModal: React.FC<NovelShareModalProps> = ({
     if (palette?.colors && palette.colors.length > 0) {
       setExtractedColors(palette.colors);
     }
-    if (palette?.dominant) setCardBgColor(palette.dominant);
+    if (palette?.dominant) {
+      setCardBgColor1(palette.dominant);
+      setIntroBoxColor(palette.dominant);
+    }
+    if (palette?.secondaryBg) {
+      setCardBgColor2(palette.secondaryBg);
+    } else if (palette?.colors && palette.colors.length > 1) {
+      setCardBgColor2(palette.colors[1]);
+    }
     if (palette?.accent) {
       setTitleColor(palette.accent);
       setBadgeColor(palette.accent);
     }
-    if (palette?.secondary) setTagColor(palette.secondary);
-    if (palette?.dominant) setIntroBoxColor(palette.dominant);
+    if (palette?.secondary) {
+      setTagColor(palette.secondary);
+    }
   }, [palette]);
 
   // Xử lý khi người dùng tải ảnh từ máy tính lên
@@ -171,15 +204,16 @@ export const NovelShareModal: React.FC<NovelShareModalProps> = ({
 
         // Tự động phân tích dải màu từ ảnh vừa tải lên
         try {
-          const newPalette = await extractPaletteFromImage(dataUri, 'uploaded_cover');
+          const newPalette = await extractPaletteFromImage(dataUri);
           if (newPalette && newPalette.colors && newPalette.colors.length > 0) {
             setExtractedColors(newPalette.colors);
-            setCardBgColor(newPalette.dominant);
+            setCardBgColor1(newPalette.dominant);
+            setCardBgColor2(newPalette.secondaryBg || newPalette.colors[1] || newPalette.dominant);
             setTitleColor(newPalette.accent);
             setBadgeColor(newPalette.accent);
             setTagColor(newPalette.secondary);
             setIntroBoxColor(newPalette.dominant);
-            showToast('Đã tự động trích xuất bảng màu từ ảnh bìa mới');
+            showToast('Đã trích xuất màu từ ảnh bìa');
           }
         } catch (err) {
           console.warn('Lỗi phân tích màu bìa tải lên:', err);
@@ -193,11 +227,10 @@ export const NovelShareModal: React.FC<NovelShareModalProps> = ({
   const handleResetToDefault = () => {
     setEditTitle(novel.title || 'Tên truyện');
     setEditAuthor(novel.author || 'Tác giả');
-    setEditGenre(
-      novel.genre
-        ? novel.genre.replace(/原创-/g, '').replace(/纯爱-/g, 'Đam mỹ • ').replace(/无限流/g, 'Vô hạn lưu')
-        : 'Đam mỹ • Vô hạn lưu'
-    );
+    const defaultTags = novel.tags && novel.tags.length > 0
+      ? splitTagList(novel.tags).join(', ')
+      : (novel.genre ? splitTagList(novel.genre).join(', ') : 'Đam mỹ, Vô hạn lưu');
+    setEditGenre(defaultTags);
     setEditStatus(initialStatus);
     setEditScore(novel.score ? novel.score.trim() : '');
     setEditWordCount(rawWordCount ? `${rawWordCount} chữ` : '');
@@ -210,15 +243,38 @@ export const NovelShareModal: React.FC<NovelShareModalProps> = ({
     if (palette?.colors && palette.colors.length > 0) {
       setExtractedColors(palette.colors);
     }
-    if (palette?.dominant) setCardBgColor(palette.dominant);
+    if (palette?.dominant) {
+      setCardBgColor1(palette.dominant);
+      setIntroBoxColor(palette.dominant);
+    }
+    if (palette?.secondaryBg) {
+      setCardBgColor2(palette.secondaryBg);
+    } else if (palette?.colors && palette.colors.length > 1) {
+      setCardBgColor2(palette.colors[1]);
+    }
     if (palette?.accent) {
       setTitleColor(palette.accent);
       setBadgeColor(palette.accent);
     }
     if (palette?.secondary) setTagColor(palette.secondary);
-    if (palette?.dominant) setIntroBoxColor(palette.dominant);
 
     showToast('Đã khôi phục các thông số về mặc định');
+  };
+
+  // Tính toán độ tương phản chuẩn dựa trên 2 màu nền được chọn từ bìa
+  const avgBgLuminance = (getLuminance(cardBgColor1) + getLuminance(cardBgColor2)) / 2;
+  const isLightBackground = avgBgLuminance > 145;
+
+  const cardTheme = {
+    // Gradient hoàn toàn tạo từ 2 mã màu bìa mà người dùng tự chọn
+    background: `linear-gradient(155deg, ${cardBgColor1} 0%, ${cardBgColor2} 100%)`,
+    textColor: isLightBackground ? '#0f172a' : '#fafafa',
+    textMutedColor: isLightBackground ? '#334155' : '#cbd5e1',
+    borderInnerColor: isLightBackground ? 'rgba(0, 0, 0, 0.12)' : 'rgba(255, 255, 255, 0.15)',
+    introBoxBg: isLightBackground ? 'rgba(255, 255, 255, 0.65)' : hexToRgba(introBoxColor, 0.28),
+    introBoxBorder: isLightBackground ? 'rgba(0, 0, 0, 0.15)' : hexToRgba(introBoxColor, 0.45),
+    introBoxText: isLightBackground ? '#0f172a' : '#f4f4f5',
+    cardBorder: isLightBackground ? 'rgba(0, 0, 0, 0.18)' : 'rgba(255, 255, 255, 0.3)'
   };
 
   // Tạo ảnh PNG chất lượng cao
@@ -274,13 +330,19 @@ export const NovelShareModal: React.FC<NovelShareModalProps> = ({
     }
   };
 
-  // Danh sách các mục cho phép đổi màu theo màu bìa
+  // Danh sách các mục cho phép đổi màu hoàn toàn theo màu bìa
   const colorCustomizableSections = [
     {
-      id: 'cardBg',
-      label: 'Nền thẻ',
-      currentColor: cardBgColor,
-      setter: setCardBgColor
+      id: 'cardBg1',
+      label: 'Nền gradient 1',
+      currentColor: cardBgColor1,
+      setter: setCardBgColor1
+    },
+    {
+      id: 'cardBg2',
+      label: 'Nền gradient 2',
+      currentColor: cardBgColor2,
+      setter: setCardBgColor2
     },
     {
       id: 'title',
@@ -290,13 +352,13 @@ export const NovelShareModal: React.FC<NovelShareModalProps> = ({
     },
     {
       id: 'badge',
-      label: 'Huy hiệu hạng',
+      label: 'Huy hiệu',
       currentColor: badgeColor,
       setter: setBadgeColor
     },
     {
       id: 'tag',
-      label: 'Nhãn thể loại',
+      label: 'Tag',
       currentColor: tagColor,
       setter: setTagColor
     },
@@ -384,33 +446,26 @@ export const NovelShareModal: React.FC<NovelShareModalProps> = ({
               </span>
             </div>
 
-            {/* VÙNG CHỤP HÌNH THẺ CARD */}
+            {/* VÙNG CHỤP HÌNH THẺ CARD - NỀN GRADIENT 100% TỪ MÀU BÌA ĐƯỢC CHỌN */}
             <div className="w-full overflow-hidden flex justify-center py-2">
               <div
                 ref={cardRef}
                 className="relative w-full max-w-[460px] rounded-3xl overflow-hidden p-5 sm:p-6 transition-all duration-300 shadow-2xl flex flex-col gap-4 font-sans"
                 style={{
-                  background: `linear-gradient(155deg, ${hexToRgba(cardBgColor, 0.45)} 0%, #100f15 60%, #09080c 100%)`,
-                  borderColor: hexToRgba(cardBgColor, 0.6),
+                  background: cardTheme.background,
+                  borderColor: cardTheme.cardBorder,
                   borderWidth: '1.5px',
                   borderStyle: 'solid',
-                  color: '#fafafa',
-                  boxShadow: `0 20px 50px -10px ${hexToRgba(cardBgColor, 0.45)}`
+                  color: cardTheme.textColor,
+                  boxShadow: `0 20px 50px -10px ${hexToRgba(cardBgColor1, 0.45)}`
                 }}
               >
-                {/* Vầng hào quang Ambient */}
-                <div 
-                  className="absolute -top-20 -right-20 w-64 h-64 rounded-full blur-[80px] pointer-events-none opacity-50"
-                  style={{ backgroundColor: cardBgColor }}
-                />
-                <div 
-                  className="absolute -bottom-20 -left-20 w-64 h-64 rounded-full blur-[80px] pointer-events-none opacity-35"
-                  style={{ backgroundColor: badgeColor }}
-                />
-
                 {/* Header Thẻ Card: Chỉ hiện khi bật showRankingBadge */}
                 {showRankingBadge && (
-                  <div className="relative z-10 flex items-center justify-start border-b pb-3 border-white/10">
+                  <div 
+                    className="relative z-10 flex items-center justify-start border-b pb-3"
+                    style={{ borderColor: cardTheme.borderInnerColor }}
+                  >
                     <span 
                       className="px-2.5 py-1 rounded-xl text-xs font-bold text-white shadow-sm flex items-center gap-1"
                       style={{ backgroundColor: badgeColor }}
@@ -424,11 +479,11 @@ export const NovelShareModal: React.FC<NovelShareModalProps> = ({
                 {/* Thân thẻ: Bìa & Thông số */}
                 <div className="relative z-10 flex gap-4 items-start">
                   <div 
-                    className="relative shrink-0 w-28 sm:w-32 aspect-3/4 rounded-2xl overflow-hidden shadow-xl border bg-black/30 flex items-center justify-center" 
-                    style={{ borderColor: hexToRgba(cardBgColor, 0.6) }}
+                    className="relative shrink-0 w-28 sm:w-32 aspect-3/4 rounded-2xl overflow-hidden shadow-xl border bg-white/10 flex items-center justify-center" 
+                    style={{ borderColor: cardTheme.cardBorder }}
                   >
                     {isLoadingCover ? (
-                      <div className="w-full h-full bg-black/40 animate-pulse flex items-center justify-center text-xs text-white">
+                      <div className="w-full h-full bg-white/15 animate-pulse flex items-center justify-center text-xs text-white">
                         Đang nạp bìa...
                       </div>
                     ) : coverDataUrl ? (
@@ -440,7 +495,7 @@ export const NovelShareModal: React.FC<NovelShareModalProps> = ({
                       />
                     ) : (
                       <div className="p-3 text-center text-zinc-400 text-xs flex flex-col items-center gap-1">
-                        <ImageIcon className="w-6 h-6 text-zinc-500" />
+                        <ImageIcon className="w-6 h-6 text-zinc-400" />
                         <span>Chưa có bìa</span>
                       </div>
                     )}
@@ -454,7 +509,7 @@ export const NovelShareModal: React.FC<NovelShareModalProps> = ({
                       {editTitle}
                     </h3>
 
-                    <div className="flex items-center gap-1.5 text-xs text-zinc-300">
+                    <div className="flex items-center gap-1.5 text-xs" style={{ color: cardTheme.textMutedColor }}>
                       <Feather className="w-3.5 h-3.5 shrink-0" style={{ color: tagColor }} />
                       <span className="font-medium truncate">{editAuthor}</span>
                     </div>
@@ -466,32 +521,36 @@ export const NovelShareModal: React.FC<NovelShareModalProps> = ({
                           style={{
                             backgroundColor: editStatus.includes('Hoàn') ? 'rgba(16, 185, 129, 0.2)' : hexToRgba(tagColor, 0.2),
                             borderColor: editStatus.includes('Hoàn') ? 'rgba(16, 185, 129, 0.45)' : hexToRgba(tagColor, 0.45),
-                            color: editStatus.includes('Hoàn') ? '#34d399' : tagColor
+                            color: editStatus.includes('Hoàn') ? '#10b981' : tagColor
                           }}
                         >
                           {editStatus}
                         </span>
                       )}
 
-                      {editGenre && (
+                      {splitTagList(editGenre).map((tagItem, idx) => (
                         <span 
-                          className="text-[10px] px-2 py-0.5 rounded-full border truncate max-w-[170px]"
+                          key={idx}
+                          className="text-[10px] font-medium px-2 py-0.5 rounded-full border shrink-0"
                           style={{
                             backgroundColor: hexToRgba(tagColor, 0.15),
                             borderColor: hexToRgba(tagColor, 0.35),
-                            color: tagColor
+                            color: isLightBackground ? '#0f172a' : tagColor
                           }}
                         >
-                          {editGenre}
+                          {tagItem}
                         </span>
-                      )}
+                      ))}
                     </div>
 
                     <div className="pt-1.5 space-y-1 text-xs">
                       {editScore && (
                         <div className="flex items-baseline gap-1.5 truncate">
-                          <span className="text-[11px] shrink-0 text-zinc-400">Điểm tích lũy:</span>
-                          <span className="font-bold font-mono text-xs" style={{ color: titleColor }}>
+                          <span className="text-[11px] shrink-0" style={{ color: cardTheme.textMutedColor }}>Điểm tích lũy:</span>
+                          <span 
+                            className="font-bold font-mono text-xs" 
+                            style={{ color: titleColor }}
+                          >
                             {editScore}
                           </span>
                         </div>
@@ -499,8 +558,8 @@ export const NovelShareModal: React.FC<NovelShareModalProps> = ({
 
                       {editWordCount && (
                         <div className="flex items-baseline gap-1.5 truncate">
-                          <span className="text-[11px] shrink-0 text-zinc-400">Số chữ:</span>
-                          <span className="font-medium text-zinc-200">
+                          <span className="text-[11px] shrink-0" style={{ color: cardTheme.textMutedColor }}>Số chữ:</span>
+                          <span className="font-medium" style={{ color: cardTheme.textColor }}>
                             {editWordCount}
                           </span>
                         </div>
@@ -514,16 +573,19 @@ export const NovelShareModal: React.FC<NovelShareModalProps> = ({
                   <div 
                     className="relative z-10 p-3.5 rounded-2xl border backdrop-blur-md text-xs leading-relaxed"
                     style={{
-                      backgroundColor: hexToRgba(introBoxColor, 0.18),
-                      borderColor: hexToRgba(introBoxColor, 0.35),
-                      color: '#fafafa'
+                      backgroundColor: cardTheme.introBoxBg,
+                      borderColor: cardTheme.introBoxBorder,
+                      color: cardTheme.introBoxText
                     }}
                   >
-                    <div className="flex items-center gap-1 font-bold text-[11px] mb-1.5" style={{ color: titleColor }}>
+                    <div 
+                      className="flex items-center gap-1 font-bold text-[11px] mb-1.5" 
+                      style={{ color: titleColor }}
+                    >
                       <AlignLeft className="w-3 h-3" />
                       <span>Giới thiệu:</span>
                     </div>
-                    <p className="line-clamp-4 text-[11.5px] opacity-95 whitespace-pre-line text-zinc-200">
+                    <p className="line-clamp-4 text-[11.5px] opacity-95 whitespace-pre-line leading-relaxed">
                       {editIntro}
                     </p>
                   </div>
@@ -534,16 +596,16 @@ export const NovelShareModal: React.FC<NovelShareModalProps> = ({
                   <div 
                     className="relative z-10 p-3 rounded-2xl border backdrop-blur-md text-xs"
                     style={{
-                      backgroundColor: hexToRgba(tagColor, 0.12),
+                      backgroundColor: hexToRgba(tagColor, 0.15),
                       borderColor: hexToRgba(tagColor, 0.35),
-                      color: '#fafafa'
+                      color: cardTheme.textColor
                     }}
                   >
                     <div className="flex items-center gap-1 font-bold text-[11px] mb-1" style={{ color: tagColor }}>
                       <MessageSquareQuote className="w-3.5 h-3.5" />
                       <span>Nhận xét:</span>
                     </div>
-                    <p className="text-[11.5px] italic opacity-95 text-zinc-200">
+                    <p className="text-[11.5px] italic opacity-95">
                       "{editReview}"
                     </p>
                   </div>
@@ -605,7 +667,7 @@ export const NovelShareModal: React.FC<NovelShareModalProps> = ({
               </button>
             </div>
 
-            {/* MỤC: TẢI ẢNH BÌA LÊN (CHO CẢ TRUYỆN TRÊN BXH VÀ NGOÀI BXH) */}
+            {/* MỤC: TẢI ẢNH BÌA LÊN */}
             <div className="p-3.5 rounded-2xl border border-zinc-800 bg-[#1a1922] space-y-2.5">
               <div className="flex items-center justify-between">
                 <label className="text-xs font-bold text-white flex items-center gap-1.5">
@@ -643,10 +705,11 @@ export const NovelShareModal: React.FC<NovelShareModalProps> = ({
                     const url = e.target.value.trim();
                     setCoverDataUrl(url);
                     if (url) {
-                      extractPaletteFromImage(url, 'url_cover').then(newPalette => {
-                        if (newPalette?.colors) {
+                      extractPaletteFromImage(url).then(newPalette => {
+                        if (newPalette?.colors && newPalette.colors.length > 0) {
                           setExtractedColors(newPalette.colors);
-                          setCardBgColor(newPalette.dominant);
+                          setCardBgColor1(newPalette.dominant);
+                          setCardBgColor2(newPalette.secondaryBg || newPalette.colors[1] || newPalette.dominant);
                           setTitleColor(newPalette.accent);
                           setBadgeColor(newPalette.accent);
                           setTagColor(newPalette.secondary);
@@ -688,12 +751,12 @@ export const NovelShareModal: React.FC<NovelShareModalProps> = ({
               )}
             </div>
 
-            {/* MỤC: TỰ SỬA TỪNG PHẦN THEO MÀU BÌA */}
+            {/* MỤC: ĐỔI MÀU THEO MÀU BÌA */}
             <div className="p-3.5 rounded-2xl border border-zinc-800 bg-[#1a1922] space-y-3">
               <div className="flex items-center justify-between">
                 <label className="text-xs font-bold text-white flex items-center gap-1.5">
                   <Palette className="w-3.5 h-3.5 text-amber-400" />
-                  <span>Đổi màu từng phần theo màu bìa</span>
+                  <span>Đổi màu theo màu bìa</span>
                 </label>
               </div>
 
@@ -725,6 +788,16 @@ export const NovelShareModal: React.FC<NovelShareModalProps> = ({
                           </button>
                         );
                       })}
+
+                      <label className="relative w-6 h-6 rounded-lg border border-zinc-700 overflow-hidden cursor-pointer shrink-0 hover:scale-110 transition-transform" title="Chọn màu tự do">
+                        <input 
+                          type="color" 
+                          value={section.currentColor} 
+                          onChange={(e) => section.setter(e.target.value)} 
+                          className="absolute -top-2 -left-2 w-10 h-10 cursor-pointer opacity-0"
+                        />
+                        <div className="w-full h-full" style={{ backgroundColor: section.currentColor }} />
+                      </label>
                     </div>
                   </div>
                 ))}
@@ -778,49 +851,51 @@ export const NovelShareModal: React.FC<NovelShareModalProps> = ({
                 </div>
               </div>
 
-              {/* Thể loại */}
+              {/* Tag của truyện */}
               <div>
                 <label className="text-[11px] font-semibold text-zinc-200 flex items-center gap-1 mb-1">
                   <Tag className="w-3 h-3 text-amber-400" />
-                  <span>Thể loại:</span>
+                  <span>Tag:</span>
                 </label>
                 <input
                   type="text"
                   value={editGenre}
                   onChange={(e) => setEditGenre(e.target.value)}
-                  placeholder="Đam mỹ, Vô hạn lưu..."
+                  placeholder="Ví dụ: Vô hạn lưu, Kinh dị, Sảng văn..."
                   className="w-full px-3 py-2 rounded-xl border border-zinc-700 bg-[#0c0b10] text-white text-xs focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400/30"
                 />
               </div>
 
-              {/* Điểm tích lũy & Số chữ */}
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="text-[11px] font-semibold text-zinc-200 flex items-center gap-1 mb-1">
-                    <span>Điểm tích lũy:</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={editScore}
-                    onChange={(e) => setEditScore(e.target.value)}
-                    placeholder="Ví dụ: 57,830,731,776"
-                    className="w-full px-3 py-2 rounded-xl border border-zinc-700 bg-[#0c0b10] text-white text-xs focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400/30 font-mono"
-                  />
-                </div>
+              {/* Điểm tích lũy & Số chữ: Chỉ hiển thị với truyện tự tạo */}
+              {isCustomNovel && (
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-[11px] font-semibold text-zinc-200 flex items-center gap-1 mb-1">
+                      <span>Điểm tích lũy:</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={editScore}
+                      onChange={(e) => setEditScore(e.target.value)}
+                      placeholder="Ví dụ: 57,830,731,776"
+                      className="w-full px-3 py-2 rounded-xl border border-zinc-700 bg-[#0c0b10] text-white text-xs focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400/30 font-mono"
+                    />
+                  </div>
 
-                <div>
-                  <label className="text-[11px] font-semibold text-zinc-200 flex items-center gap-1 mb-1">
-                    <span>Số chữ:</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={editWordCount}
-                    onChange={(e) => setEditWordCount(e.target.value)}
-                    placeholder="Ví dụ: 1,500,000 chữ"
-                    className="w-full px-3 py-2 rounded-xl border border-zinc-700 bg-[#0c0b10] text-white text-xs focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400/30"
-                  />
+                  <div>
+                    <label className="text-[11px] font-semibold text-zinc-200 flex items-center gap-1 mb-1">
+                      <span>Số chữ:</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={editWordCount}
+                      onChange={(e) => setEditWordCount(e.target.value)}
+                      placeholder="Ví dụ: 1,500,000 chữ"
+                      className="w-full px-3 py-2 rounded-xl border border-zinc-700 bg-[#0c0b10] text-white text-xs focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400/30"
+                    />
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Giới thiệu */}
               <div>

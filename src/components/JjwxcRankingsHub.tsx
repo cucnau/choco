@@ -33,6 +33,7 @@ import {
 import { Story } from '../types';
 import { extractPaletteFromImage, CanvaPalette, hexToRgba } from '../lib/coverColorExtractor';
 import { getNovelCoverUrl, getCorsCoverUrl, handleCoverError } from '../utils/coverImage';
+import { splitTagList } from '../utils/tagUtils';
 
 interface JjwxcRankingsHubProps {
   currentStory?: Story | null;
@@ -120,6 +121,7 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
   const [activeNovel, setActiveNovel] = useState<JjwxcNovel | null>(null);
   const [activePalette, setActivePalette] = useState<CanvaPalette | null>(null);
   const [novelIntro, setNovelIntro] = useState<string>('');
+  const [novelTags, setNovelTags] = useState<string[]>([]);
   const [isLoadingIntro, setIsLoadingIntro] = useState<boolean>(false);
   const [shareNovel, setShareNovel] = useState<JjwxcNovel | null>(null);
 
@@ -183,6 +185,12 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
       setNovelIntro(activeNovel.intro || '');
       setIsLoadingIntro(false);
 
+      // Lấy danh sách tag của truyện từ dữ liệu tĩnh
+      const initialTags = activeNovel.tags && activeNovel.tags.length > 0
+        ? splitTagList(activeNovel.tags)
+        : splitTagList(activeNovel.genre);
+      setNovelTags(initialTags);
+
       // Nếu đang chạy local/preview có backend, fetch ngầm để cập nhật bản mới nhất nếu có
       if (typeof window !== 'undefined' && !window.location.hostname.includes('github.io')) {
         fetch(`/api/jjwxc/intro/${activeNovel.novelId}`)
@@ -194,12 +202,16 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
             if (data && data.intro && data.intro.trim().length > 0) {
               setNovelIntro(data.intro);
             }
+            if (data && data.tags && data.tags.length > 0) {
+              setNovelTags(splitTagList(data.tags));
+            }
           })
           .catch(() => {});
       }
     } else {
       setActivePalette(null);
       setNovelIntro('');
+      setNovelTags([]);
       setIsLoadingIntro(false);
     }
   }, [activeNovel]);
@@ -830,7 +842,10 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
                         extractPaletteFromImage(coverSrc, novel.novelId).then(p => {
                           setActivePalette(p);
                         });
-                        setShareNovel(novel);
+                        setShareNovel({
+                          ...novel,
+                          tags: novel.tags && novel.tags.length > 0 ? novel.tags : splitTagList(novel.genre)
+                        });
                       }}
                       className="p-2 rounded-lg border border-transparent text-text-sub hover:text-text-main transition-all cursor-pointer hover:bg-white/5"
                       title="Tạo ảnh chia sẻ truyện"
@@ -1022,6 +1037,28 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
                         </div>
                       )}
 
+                      {/* Hiển thị mục Tag của truyện từng ô riêng biệt */}
+                      {novelTags.length > 0 && (
+                        <div className="flex items-start gap-2 pt-1">
+                          <span className="text-xs shrink-0 mt-0.5" style={{ color: textMuted }}>Tag:</span>
+                          <div className="flex flex-wrap gap-1.5">
+                            {novelTags.map((tag, tIdx) => (
+                              <span 
+                                key={tIdx}
+                                className="text-[11px] font-medium px-2 py-0.5 rounded-full border transition-all"
+                                style={{
+                                  backgroundColor: hexToRgba(modalSecondary, isLight ? 0.12 : 0.22),
+                                  borderColor: hexToRgba(modalSecondary, 0.4),
+                                  color: isLight ? '#0f172a' : modalSecondary
+                                }}
+                              >
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
                       {/* Hiển thị Dải Mã Màu Bìa Phân Tích Được (Palette Swatches) */}
                       {activePalette?.colors && activePalette.colors.length > 0 && (
                         <div className="flex items-center gap-2 pt-1">
@@ -1048,7 +1085,7 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
                       {/* Các nút hành động chính */}
                       <div className="pt-2 flex flex-wrap items-center gap-2.5">
                         <button
-                          onClick={() => setShareNovel(activeNovel)}
+                          onClick={() => setShareNovel({ ...activeNovel, tags: novelTags })}
                           className="px-4 py-2 rounded-xl font-bold text-white transition-all shadow-md cursor-pointer flex items-center gap-2 hover:opacity-95 active:scale-95"
                           style={{
                             background: activePalette?.accentGradient || `linear-gradient(135deg, ${modalAccent}, ${modalSecondary})`,
@@ -1139,12 +1176,14 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
         <NovelShareModal
           novel={shareNovel}
           rankingTitle={
-            bxhGroup === 'wuxianliu'
-              ? `BXH Vô Hạn Lưu • ${currentWuxianliuCriteriaConfig?.name || 'Tấn Giang'}`
-              : currentCategoryConfig?.nameViGuide || currentCategoryConfig?.name || 'Tấn Giang'
+            shareNovel.novelId === 'custom'
+              ? 'Chia sẻ truyện'
+              : (bxhGroup === 'wuxianliu'
+                  ? `BXH Vô Hạn Lưu • ${currentWuxianliuCriteriaConfig?.name || 'Tấn Giang'}`
+                  : currentCategoryConfig?.nameViGuide || currentCategoryConfig?.name || 'Tấn Giang')
           }
-          palette={activePalette}
-          novelIntro={novelIntro}
+          palette={shareNovel.novelId === 'custom' ? null : activePalette}
+          novelIntro={shareNovel.novelId === 'custom' ? '' : novelIntro}
           onClose={() => setShareNovel(null)}
         />
       )}

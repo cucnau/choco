@@ -683,23 +683,36 @@ app.get('/api/jjwxc/intro/:novelId', async (req, res) => {
 
   // 1. Kiểm tra cache file
   const cacheFile = path.join(INTROS_CACHE_DIR, `${novelId}.txt`);
+  const tagsMapPath = path.join(process.cwd(), 'src/data/novelTagsRealMap.json');
+  let fallbackTags: string[] = [];
+  try {
+    if (fs.existsSync(tagsMapPath)) {
+      const tagsMap = JSON.parse(fs.readFileSync(tagsMapPath, 'utf-8'));
+      if (tagsMap[novelId]) fallbackTags = tagsMap[novelId];
+    }
+  } catch (e) {}
+
   if (fs.existsSync(cacheFile)) {
     try {
       const cachedIntro = fs.readFileSync(cacheFile, 'utf-8');
       if (cachedIntro && cachedIntro.trim().length > 10) {
         res.setHeader('Cache-Control', 'public, max-age=604800');
-        return res.json({ success: true, intro: cachedIntro });
+        return res.json({ success: true, intro: cachedIntro, tags: fallbackTags });
       }
     } catch (e) {}
   }
 
-  // 2. Thử lấy từ Android API trước (UTF-8 sạch, chứa văn án dài đầy đủ)
+  // 2. Thử lấy từ Android API trước (UTF-8 sạch, chứa văn án dài đầy đủ & tags)
   try {
     const aRes = await fetch(`https://app.jjwxc.net/androidapi/novelbasicinfo?novelId=${novelId}`, {
       headers: { 'User-Agent': 'Mozilla/5.0' }
     });
     if (aRes.ok) {
       const aData: any = await aRes.json();
+      const tags = aData.novelTags
+        ? aData.novelTags.split(',').map((t: string) => t.trim()).filter(Boolean)
+        : fallbackTags;
+
       if (aData && aData.novelIntro && aData.novelIntro.trim().length > 0) {
         let cleanIntro = aData.novelIntro
           .replace(/&lt;br\s*\/?&gt;|<br\s*\/?>/gi, '\n')
@@ -719,7 +732,7 @@ app.get('/api/jjwxc/intro/:novelId', async (req, res) => {
           } catch (e) {}
 
           res.setHeader('Cache-Control', 'public, max-age=604800');
-          return res.json({ success: true, intro: cleanIntro });
+          return res.json({ success: true, intro: cleanIntro, tags });
         }
       }
     }
