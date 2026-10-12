@@ -885,7 +885,7 @@ export default function App() {
 
   return (
     <div 
-      className={`min-h-screen font-['Alegreya',serif] text-base flex flex-col transition-colors duration-300 ${selectedStory ? 'preserve-story-theme' : ''} ${getStoryThemeClass(selectedStory)}`}
+      className={`min-h-screen w-full max-w-full overflow-x-hidden font-['Alegreya',serif] text-base flex flex-col transition-colors duration-300 ${selectedStory ? 'preserve-story-theme' : ''} ${getStoryThemeClass(selectedStory)}`}
       style={getStoryBgStyle(selectedStory)}
     >
       {/* Header */}

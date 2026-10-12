@@ -11,33 +11,56 @@
 export function splitTagList(rawText: string | string[] | undefined): string[] {
   if (!rawText) return [];
 
-  const rawArray: string[] = Array.isArray(rawText) 
-    ? rawText 
-    : String(rawText).split(/[,，•/;\n|]+/);
-
   const result: string[] = [];
   const seen = new Set<string>();
+
+  const addTag = (val: string) => {
+    const trimmed = String(val).trim();
+    if (trimmed && !seen.has(trimmed)) {
+      seen.add(trimmed);
+      result.push(trimmed);
+    }
+  };
+
+  if (Array.isArray(rawText)) {
+    for (const item of rawText) {
+      if (!item) continue;
+      addTag(String(item));
+    }
+    return result;
+  }
+
+  const str = String(rawText).trim();
+  if (!str) return [];
+
+  // Nếu chuỗi chứa các dấu phân cách phổ biến
+  const hasDelimiter = /[,，•/;\n|]/.test(str);
+  let rawArray: string[];
+
+  if (hasDelimiter) {
+    rawArray = str.split(/[,，•/;\n|]+/);
+  } else if (/\s+/.test(str)) {
+    // Nếu ngăn cách bằng khoảng trắng
+    rawArray = str.split(/\s+/);
+  } else if (str.includes('-')) {
+    // Nếu là dạng novelClass kiểu "原创-纯爱-架空历史-爱情"
+    rawArray = str.split('-');
+  } else {
+    rawArray = [str];
+  }
 
   for (const item of rawArray) {
     if (!item) continue;
     const trimmed = String(item).trim();
     if (!trimmed) continue;
 
-    // Nếu là dạng chuỗi nối gạch ngang (như novelClass "原创-纯爱-架空历史-爱情")
-    if (trimmed.includes('-')) {
+    if (trimmed.includes('-') && (trimmed.includes('原创') || trimmed.includes('衍生') || trimmed.includes('纯爱'))) {
       const parts = trimmed.split('-');
       for (const p of parts) {
-        const cleanP = p.trim();
-        if (cleanP && !seen.has(cleanP)) {
-          seen.add(cleanP);
-          result.push(cleanP);
-        }
+        addTag(p);
       }
     } else {
-      if (!seen.has(trimmed)) {
-        seen.add(trimmed);
-        result.push(trimmed);
-      }
+      addTag(trimmed);
     }
   }
 

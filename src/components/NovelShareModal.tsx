@@ -9,6 +9,7 @@ import { JjwxcNovel } from '../data/jjwxcRankingsData';
 import { CanvaPalette, extractPaletteFromImage, hexToRgba, hexToRgb } from '../lib/coverColorExtractor';
 import { getCorsCoverUrl } from '../utils/coverImage';
 import { splitTagList } from '../utils/tagUtils';
+import novelTagsRealMap from '../data/novelTagsRealMap.json';
 
 interface NovelShareModalProps {
   novel: JjwxcNovel;
@@ -36,9 +37,16 @@ export const NovelShareModal: React.FC<NovelShareModalProps> = ({
 }) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [activeTab, setActiveTab] = useState<'preview' | 'edit'>('preview');
 
   const isCustomNovel = novel.novelId === 'custom' || !novel.novelId;
+  const [activeTab, setActiveTab] = useState<'preview' | 'edit'>(isCustomNovel ? 'edit' : 'preview');
+
+  // Lấy tag gốc thực tế của truyện: ưu tiên novel.tags -> novelTagsRealMap -> genre gốc (Tự tạo ảnh để trống)
+  const realTagsList = isCustomNovel
+    ? []
+    : ((novel.tags && novel.tags.length > 0)
+        ? novel.tags
+        : ((novelTagsRealMap as Record<string, string[]>)[novel.novelId] || (novel.genre ? splitTagList(novel.genre) : [])));
 
   // Danh sách các mã màu trích xuất từ bìa
   const [extractedColors, setExtractedColors] = useState<string[]>(
@@ -69,36 +77,40 @@ export const NovelShareModal: React.FC<NovelShareModalProps> = ({
     palette?.dominant || extractedColors[0]
   );
 
-  // Bật / Tắt huy hiệu thứ hạng
+  // Bật / Tắt huy hiệu thứ hạng (Tự tạo ảnh mặc định không bật và để trống)
   const [showRankingBadge, setShowRankingBadge] = useState<boolean>(!isCustomNovel && !!novel.rank);
-  const defaultRankingLabel = novel.rank ? `#${novel.rank} • ${rankingTitle}` : (rankingTitle || '#1 • Đề cử');
+  const defaultRankingLabel = isCustomNovel
+    ? ''
+    : (novel.rank ? `#${novel.rank} • ${rankingTitle}` : (rankingTitle || '#1 • Đề cử'));
   const [editRankingLabel, setEditRankingLabel] = useState<string>(defaultRankingLabel);
 
-  // Dữ liệu người dùng được phép chỉnh sửa
-  const initialStatus = novel.status?.includes('完结') || novel.status === 'Đã hoàn thành'
-    ? 'Đã hoàn thành' 
-    : (novel.status || 'Đang cập nhật');
-  const [editTitle, setEditTitle] = useState(novel.title || 'Tên truyện');
-  const [editAuthor, setEditAuthor] = useState(novel.author || 'Tác giả');
-  const initialTagsString = novel.tags && novel.tags.length > 0
-    ? splitTagList(novel.tags).join(', ')
-    : (novel.genre ? splitTagList(novel.genre).join(', ') : 'Đam mỹ, Vô hạn lưu');
+  // Dữ liệu người dùng được phép chỉnh sửa: Khi tự tạo ảnh thì ĐỂ TRỐNG TOÀN BỘ, không điền mẫu
+  const initialStatus = isCustomNovel
+    ? ''
+    : (novel.status?.includes('完结') || novel.status === 'Đã hoàn thành'
+        ? 'Đã hoàn thành' 
+        : (novel.status || 'Đang cập nhật'));
+  const [editTitle, setEditTitle] = useState(isCustomNovel ? '' : (novel.title || ''));
+  const [editAuthor, setEditAuthor] = useState(isCustomNovel ? '' : (novel.author || ''));
+  const initialTagsString = (!isCustomNovel && realTagsList.length > 0)
+    ? splitTagList(realTagsList).join(', ')
+    : '';
   const [editGenre, setEditGenre] = useState(initialTagsString);
   const [editStatus, setEditStatus] = useState(initialStatus);
 
-  // Số chữ & Điểm số
-  const rawWordCount = String(novel.wordCount || '').replace(/chữ/gi, '').trim();
+  // Số chữ & Điểm số (Tự tạo ảnh để trống)
+  const rawWordCount = isCustomNovel ? '' : String(novel.wordCount || '').replace(/chữ/gi, '').trim();
   const [editWordCount, setEditWordCount] = useState(rawWordCount ? `${rawWordCount} chữ` : '');
-  const [editScore, setEditScore] = useState(novel.score ? novel.score.trim() : '');
+  const [editScore, setEditScore] = useState(isCustomNovel ? '' : (novel.score ? novel.score.trim() : ''));
 
-  // Giới thiệu
+  // Giới thiệu (Tự tạo ảnh để trống hoàn toàn)
   const [editIntro, setEditIntro] = useState(
-    novelIntro || novel.intro || 'Một tác phẩm đặc sắc và lôi cuốn đáng đọc.'
+    isCustomNovel ? '' : (novelIntro || novel.intro || '')
   );
   const [editReview, setEditReview] = useState('');
   const [showReview, setShowReview] = useState(false);
 
-  // Ảnh bìa
+  // Ảnh bìa (Tự tạo ảnh để trống link bìa)
   const [coverDataUrl, setCoverDataUrl] = useState<string>('');
   const [isLoadingCover, setIsLoadingCover] = useState(false);
 
@@ -116,6 +128,13 @@ export const NovelShareModal: React.FC<NovelShareModalProps> = ({
   useEffect(() => {
     let isMounted = true;
 
+    // Khi tự tạo ảnh (isCustomNovel), để trống hoàn toàn ảnh bìa ban đầu
+    if (isCustomNovel) {
+      setCoverDataUrl('');
+      setIsLoadingCover(false);
+      return;
+    }
+
     if (!novel.coverUrl && !novel.novelId) {
       setCoverDataUrl('');
       return;
@@ -130,7 +149,7 @@ export const NovelShareModal: React.FC<NovelShareModalProps> = ({
     const loadCover = async () => {
       const proxyUrl = `/api/jjwxc/cover/${novel.novelId}`;
       const fallbackUrl = getCorsCoverUrl(novel.novelId, novel.coverUrl);
-      const urlsToTry = novel.novelId === 'custom' ? [novel.coverUrl, fallbackUrl] : [proxyUrl, fallbackUrl];
+      const urlsToTry = [proxyUrl, fallbackUrl];
 
       for (const url of urlsToTry) {
         if (!url) continue;
@@ -225,20 +244,35 @@ export const NovelShareModal: React.FC<NovelShareModalProps> = ({
 
   // Khôi phục mặc định
   const handleResetToDefault = () => {
-    setEditTitle(novel.title || 'Tên truyện');
-    setEditAuthor(novel.author || 'Tác giả');
-    const defaultTags = novel.tags && novel.tags.length > 0
-      ? splitTagList(novel.tags).join(', ')
-      : (novel.genre ? splitTagList(novel.genre).join(', ') : 'Đam mỹ, Vô hạn lưu');
-    setEditGenre(defaultTags);
-    setEditStatus(initialStatus);
-    setEditScore(novel.score ? novel.score.trim() : '');
-    setEditWordCount(rawWordCount ? `${rawWordCount} chữ` : '');
-    setEditRankingLabel(defaultRankingLabel);
-    setShowRankingBadge(!isCustomNovel && !!novel.rank);
-    setEditIntro(novelIntro || novel.intro || '');
-    setEditReview('');
-    setShowReview(false);
+    if (isCustomNovel) {
+      setEditTitle('');
+      setEditAuthor('');
+      setEditGenre('');
+      setEditStatus('');
+      setEditScore('');
+      setEditWordCount('');
+      setEditRankingLabel('');
+      setShowRankingBadge(false);
+      setEditIntro('');
+      setEditReview('');
+      setShowReview(false);
+      setCoverDataUrl('');
+    } else {
+      setEditTitle(novel.title || '');
+      setEditAuthor(novel.author || '');
+      const defaultTags = realTagsList.length > 0
+        ? splitTagList(realTagsList).join(', ')
+        : '';
+      setEditGenre(defaultTags);
+      setEditStatus(initialStatus);
+      setEditScore(novel.score ? novel.score.trim() : '');
+      setEditWordCount(rawWordCount ? `${rawWordCount} chữ` : '');
+      setEditRankingLabel(defaultRankingLabel);
+      setShowRankingBadge(!isCustomNovel && !!novel.rank);
+      setEditIntro(novelIntro || novel.intro || '');
+      setEditReview('');
+      setShowReview(false);
+    }
 
     if (palette?.colors && palette.colors.length > 0) {
       setExtractedColors(palette.colors);
@@ -283,9 +317,13 @@ export const NovelShareModal: React.FC<NovelShareModalProps> = ({
     try {
       setIsExporting(true);
       const dataUrl = await toPng(cardRef.current, {
-        quality: 0.98,
+        quality: 1,
         pixelRatio: 2,
-        cacheBust: true
+        cacheBust: true,
+        style: {
+          transform: 'none',
+          boxSizing: 'border-box'
+        }
       });
       return dataUrl;
     } catch (err) {
@@ -370,6 +408,8 @@ export const NovelShareModal: React.FC<NovelShareModalProps> = ({
     }
   ];
 
+  const parsedTags = splitTagList(editGenre);
+
   return (
     <div 
       className="fixed inset-0 z-70 bg-black/85 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 overflow-y-auto"
@@ -377,38 +417,38 @@ export const NovelShareModal: React.FC<NovelShareModalProps> = ({
     >
       {/* Khung Modal chính */}
       <div 
-        className="relative w-full max-w-4xl bg-[#131217] border border-zinc-700/80 rounded-3xl shadow-[0_25px_80px_rgba(0,0,0,0.85)] overflow-hidden flex flex-col max-h-[92vh] text-zinc-100 animate-in fade-in zoom-in-95 duration-200"
+        className="relative w-full max-w-4xl bg-[#131217] border border-zinc-700/80 rounded-2xl sm:rounded-3xl shadow-[0_25px_80px_rgba(0,0,0,0.85)] overflow-hidden flex flex-col h-[94vh] sm:h-auto max-h-[94vh] sm:max-h-[92vh] text-zinc-100 animate-in fade-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header Modal */}
-        <div className="px-5 py-3.5 border-b border-zinc-800 flex items-center justify-between bg-[#191821]">
-          <div className="flex items-center gap-2.5">
+        <div className="px-3.5 sm:px-5 py-3 border-b border-zinc-800 flex items-center justify-between bg-[#191821] shrink-0">
+          <div className="flex items-center gap-2 min-w-0">
             <div 
-              className="w-8 h-8 rounded-xl flex items-center justify-center text-white font-bold shadow-md"
+              className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center text-white font-bold shadow-md shrink-0"
               style={{ backgroundColor: badgeColor }}
             >
-              <ImageIcon className="w-4 h-4" />
+              <ImageIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </div>
-            <h2 className="text-sm sm:text-base font-bold text-white">
+            <h2 className="text-xs sm:text-base font-bold text-white truncate">
               {isCustomNovel ? 'Tự tạo ảnh chia sẻ truyện' : 'Tạo ảnh chia sẻ truyện'}
             </h2>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             {/* Switch Tabs trên mobile */}
             <div className="flex sm:hidden rounded-lg border border-zinc-700 bg-zinc-900 p-0.5 text-xs">
               <button
                 onClick={() => setActiveTab('preview')}
-                className={`px-2.5 py-1 rounded text-xs transition-all ${
-                  activeTab === 'preview' ? 'bg-zinc-800 font-medium text-white shadow-xs' : 'text-zinc-400'
+                className={`px-2.5 py-1 rounded text-xs transition-all font-medium ${
+                  activeTab === 'preview' ? 'bg-amber-500 font-bold text-black shadow-xs' : 'text-zinc-400'
                 }`}
               >
                 Xem trước
               </button>
               <button
                 onClick={() => setActiveTab('edit')}
-                className={`px-2.5 py-1 rounded text-xs transition-all ${
-                  activeTab === 'edit' ? 'bg-zinc-800 font-medium text-white shadow-xs' : 'text-zinc-400'
+                className={`px-2.5 py-1 rounded text-xs transition-all font-medium ${
+                  activeTab === 'edit' ? 'bg-amber-500 font-bold text-black shadow-xs' : 'text-zinc-400'
                 }`}
               >
                 Chỉnh sửa
@@ -417,7 +457,7 @@ export const NovelShareModal: React.FC<NovelShareModalProps> = ({
 
             <button
               onClick={onClose}
-              className="w-8 h-8 rounded-full flex items-center justify-center text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors cursor-pointer"
+              className="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors cursor-pointer"
               title="Đóng"
             >
               <X className="w-4 h-4" />
@@ -427,14 +467,14 @@ export const NovelShareModal: React.FC<NovelShareModalProps> = ({
 
         {/* Thông báo Toast */}
         {toastMessage && (
-          <div className="absolute top-16 left-1/2 -translate-x-1/2 z-30 px-4 py-2 rounded-xl bg-emerald-600 text-white text-xs font-medium shadow-xl flex items-center gap-2 animate-in fade-in slide-in-from-top-2 duration-200">
+          <div className="absolute top-14 sm:top-16 left-1/2 -translate-x-1/2 z-30 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl bg-emerald-600 text-white text-xs font-medium shadow-xl flex items-center gap-2 animate-in fade-in slide-in-from-top-2 duration-200">
             <Check className="w-3.5 h-3.5" />
             <span>{toastMessage}</span>
           </div>
         )}
 
         {/* Nội dung 2 cột: Preview bên trái, Chỉnh sửa bên phải */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-5 grid grid-cols-1 lg:grid-cols-12 gap-5">
+        <div className="flex-1 overflow-y-auto p-3 sm:p-5 grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5">
           {/* CỘT 1: KHUNG HÌNH XEM TRƯỚC */}
           <div className={`lg:col-span-7 flex flex-col items-center justify-start ${
             activeTab === 'edit' ? 'hidden sm:flex' : 'flex'
@@ -442,15 +482,15 @@ export const NovelShareModal: React.FC<NovelShareModalProps> = ({
             <div className="w-full flex items-center justify-between mb-2 px-1 text-xs text-zinc-300">
               <span className="flex items-center gap-1.5 font-semibold text-white">
                 <Eye className="w-3.5 h-3.5 text-amber-400" />
-                <span>Khung ảnh xuất</span>
+                <span>Khung ảnh xuất (Ảnh sắc nét)</span>
               </span>
             </div>
 
             {/* VÙNG CHỤP HÌNH THẺ CARD - NỀN GRADIENT 100% TỪ MÀU BÌA ĐƯỢC CHỌN */}
-            <div className="w-full overflow-hidden flex justify-center py-2">
+            <div className="w-full overflow-x-auto flex justify-center py-1 sm:py-2">
               <div
                 ref={cardRef}
-                className="relative w-full max-w-[460px] rounded-3xl overflow-hidden p-5 sm:p-6 transition-all duration-300 shadow-2xl flex flex-col gap-4 font-sans"
+                className="relative w-full max-w-[460px] rounded-2xl sm:rounded-3xl overflow-hidden p-4 sm:p-6 transition-all duration-300 shadow-2xl flex flex-col gap-3.5 sm:gap-4 font-sans shrink-0"
                 style={{
                   background: cardTheme.background,
                   borderColor: cardTheme.cardBorder,
@@ -463,7 +503,7 @@ export const NovelShareModal: React.FC<NovelShareModalProps> = ({
                 {/* Header Thẻ Card: Chỉ hiện khi bật showRankingBadge */}
                 {showRankingBadge && (
                   <div 
-                    className="relative z-10 flex items-center justify-start border-b pb-3"
+                    className="relative z-10 flex items-center justify-start border-b pb-2.5 sm:pb-3"
                     style={{ borderColor: cardTheme.borderInnerColor }}
                   >
                     <span 
@@ -477,9 +517,9 @@ export const NovelShareModal: React.FC<NovelShareModalProps> = ({
                 )}
 
                 {/* Thân thẻ: Bìa & Thông số */}
-                <div className="relative z-10 flex gap-4 items-start">
+                <div className="relative z-10 flex gap-3 sm:gap-4 items-start">
                   <div 
-                    className="relative shrink-0 w-28 sm:w-32 aspect-3/4 rounded-2xl overflow-hidden shadow-xl border bg-white/10 flex items-center justify-center" 
+                    className="relative shrink-0 w-24 sm:w-32 aspect-3/4 rounded-xl sm:rounded-2xl overflow-hidden shadow-xl border bg-white/10 flex items-center justify-center" 
                     style={{ borderColor: cardTheme.cardBorder }}
                   >
                     {isLoadingCover ? (
@@ -502,43 +542,65 @@ export const NovelShareModal: React.FC<NovelShareModalProps> = ({
                   </div>
 
                   <div className="flex-1 min-w-0 space-y-2">
-                    <h3 
-                      className="font-bold text-base sm:text-lg leading-snug tracking-tight line-clamp-2" 
-                      style={{ color: titleColor }}
-                    >
-                      {editTitle}
-                    </h3>
+                    {editTitle && (
+                      <h3 
+                        className="font-bold text-sm sm:text-lg leading-snug tracking-tight line-clamp-2" 
+                        style={{ color: titleColor }}
+                      >
+                        {editTitle}
+                      </h3>
+                    )}
 
-                    <div className="flex items-center gap-1.5 text-xs" style={{ color: cardTheme.textMutedColor }}>
-                      <Feather className="w-3.5 h-3.5 shrink-0" style={{ color: tagColor }} />
-                      <span className="font-medium truncate">{editAuthor}</span>
-                    </div>
+                    {editAuthor && (
+                      <div className="flex items-center gap-1.5 text-xs" style={{ color: cardTheme.textMutedColor }}>
+                        <Feather className="w-3.5 h-3.5 shrink-0" style={{ color: tagColor }} />
+                        <span className="font-medium truncate">{editAuthor}</span>
+                      </div>
+                    )}
 
-                    <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                    {/* MỤC TAG VÀ TÌNH TRẠNG: HIỂN THỊ TỪNG Ô RIÊNG BIỆT KHÔNG BỊ DÍNH KHI XUẤT ẢNH */}
+                    <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', marginTop: '4px' }}>
                       {editStatus && (
                         <span 
-                          className="text-[10px] font-semibold px-2.5 py-0.5 rounded-full border shrink-0 whitespace-nowrap inline-flex items-center"
                           style={{
+                            display: 'inline-block',
+                            marginRight: '6px',
+                            marginBottom: '6px',
+                            padding: '2px 9px',
+                            borderRadius: '9999px',
+                            border: `1px solid ${editStatus.includes('Hoàn') ? 'rgba(16, 185, 129, 0.5)' : hexToRgba(tagColor, 0.5)}`,
                             backgroundColor: editStatus.includes('Hoàn') ? 'rgba(16, 185, 129, 0.2)' : hexToRgba(tagColor, 0.2),
-                            borderColor: editStatus.includes('Hoàn') ? 'rgba(16, 185, 129, 0.45)' : hexToRgba(tagColor, 0.45),
                             color: editStatus.includes('Hoàn') ? '#10b981' : tagColor,
-                            whiteSpace: 'nowrap'
+                            fontSize: '10.5px',
+                            fontWeight: 600,
+                            lineHeight: '1.35',
+                            verticalAlign: 'middle',
+                            whiteSpace: 'nowrap',
+                            boxSizing: 'border-box'
                           }}
                         >
                           {editStatus}
                         </span>
                       )}
 
-                      {splitTagList(editGenre).map((tagItem, idx) => (
+                      {parsedTags.map((tagItem, idx) => (
                         <span 
                           key={idx}
-                          className="text-[10px] font-medium px-2.5 py-0.5 rounded-full border shrink-0 whitespace-nowrap inline-flex items-center"
                           style={{
-                            backgroundColor: hexToRgba(tagColor, 0.15),
-                            borderColor: hexToRgba(tagColor, 0.35),
+                            display: 'inline-block',
+                            marginRight: '6px',
+                            marginBottom: '6px',
+                            padding: '2px 9px',
+                            borderRadius: '9999px',
+                            border: `1px solid ${hexToRgba(tagColor, 0.45)}`,
+                            backgroundColor: hexToRgba(tagColor, 0.18),
                             color: isLightBackground ? '#0f172a' : tagColor,
+                            fontSize: '10.5px',
+                            fontWeight: 500,
+                            lineHeight: '1.35',
+                            verticalAlign: 'middle',
                             whiteSpace: 'nowrap',
-                            lineHeight: '1.3'
+                            boxSizing: 'border-box'
                           }}
                         >
                           {tagItem}
@@ -546,7 +608,7 @@ export const NovelShareModal: React.FC<NovelShareModalProps> = ({
                       ))}
                     </div>
 
-                    <div className="pt-1.5 space-y-1 text-xs">
+                    <div className="pt-1 space-y-1 text-xs">
                       {editScore && (
                         <div className="flex items-baseline gap-1.5 truncate">
                           <span className="text-[11px] shrink-0" style={{ color: cardTheme.textMutedColor }}>Điểm tích lũy:</span>
@@ -574,7 +636,7 @@ export const NovelShareModal: React.FC<NovelShareModalProps> = ({
                 {/* Giới thiệu */}
                 {editIntro && (
                   <div 
-                    className="relative z-10 p-3.5 rounded-2xl border backdrop-blur-md text-xs leading-relaxed"
+                    className="relative z-10 p-3 sm:p-3.5 rounded-xl sm:rounded-2xl border backdrop-blur-md text-xs leading-relaxed"
                     style={{
                       backgroundColor: cardTheme.introBoxBg,
                       borderColor: cardTheme.introBoxBorder,
@@ -597,7 +659,7 @@ export const NovelShareModal: React.FC<NovelShareModalProps> = ({
                 {/* Nhận xét cá nhân */}
                 {showReview && editReview && (
                   <div 
-                    className="relative z-10 p-3 rounded-2xl border backdrop-blur-md text-xs"
+                    className="relative z-10 p-3 rounded-xl sm:rounded-2xl border backdrop-blur-md text-xs"
                     style={{
                       backgroundColor: hexToRgba(tagColor, 0.15),
                       borderColor: hexToRgba(tagColor, 0.35),
@@ -617,11 +679,11 @@ export const NovelShareModal: React.FC<NovelShareModalProps> = ({
             </div>
 
             {/* Các nút tải xuống / sao chép */}
-            <div className="w-full flex items-center gap-3 mt-3">
+            <div className="w-full flex items-center gap-2.5 sm:gap-3 mt-3">
               <button
                 onClick={handleDownload}
                 disabled={isExporting}
-                className="flex-1 py-3 px-4 rounded-xl font-bold text-xs flex items-center justify-center gap-2 text-white shadow-lg transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+                className="flex-1 py-2.5 sm:py-3 px-3 sm:px-4 rounded-xl font-bold text-xs flex items-center justify-center gap-2 text-white shadow-lg transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
                 style={{ 
                   backgroundColor: badgeColor,
                   boxShadow: `0 4px 18px ${hexToRgba(badgeColor, 0.45)}`
@@ -634,7 +696,7 @@ export const NovelShareModal: React.FC<NovelShareModalProps> = ({
               <button
                 onClick={handleCopy}
                 disabled={isExporting}
-                className="py-3 px-4 rounded-xl font-semibold text-xs border border-zinc-700 bg-[#201f29] hover:bg-[#2a2936] text-white flex items-center gap-1.5 transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+                className="py-2.5 sm:py-3 px-3 sm:px-4 rounded-xl font-semibold text-xs border border-zinc-700 bg-[#201f29] hover:bg-[#2a2936] text-white flex items-center gap-1.5 transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer shrink-0"
               >
                 {isCopied ? (
                   <>
@@ -644,7 +706,8 @@ export const NovelShareModal: React.FC<NovelShareModalProps> = ({
                 ) : (
                   <>
                     <Copy className="w-4 h-4 text-zinc-300" />
-                    <span>Sao chép ảnh</span>
+                    <span className="hidden xs:inline">Sao chép ảnh</span>
+                    <span className="xs:hidden">Sao chép</span>
                   </>
                 )}
               </button>
@@ -652,13 +715,13 @@ export const NovelShareModal: React.FC<NovelShareModalProps> = ({
           </div>
 
           {/* CỘT 2: BỘ CÔNG CỤ TÙY CHỈNH */}
-          <div className={`lg:col-span-5 flex flex-col gap-4 ${
+          <div className={`lg:col-span-5 flex flex-col gap-3.5 ${
             activeTab === 'preview' ? 'hidden sm:flex' : 'flex'
           }`}>
-            <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
+            <div className="flex items-center justify-between border-b border-zinc-800 pb-2 shrink-0">
               <span className="text-xs font-bold text-white flex items-center gap-1.5">
                 <Sliders className="w-4 h-4 text-amber-400" />
-                <span>Tùy chỉnh</span>
+                <span>Tùy chỉnh thẻ truyện</span>
               </span>
               <button
                 onClick={handleResetToDefault}
@@ -671,7 +734,7 @@ export const NovelShareModal: React.FC<NovelShareModalProps> = ({
             </div>
 
             {/* MỤC: TẢI ẢNH BÌA LÊN */}
-            <div className="p-3.5 rounded-2xl border border-zinc-800 bg-[#1a1922] space-y-2.5">
+            <div className="p-3 sm:p-3.5 rounded-2xl border border-zinc-800 bg-[#1a1922] space-y-2.5">
               <div className="flex items-center justify-between">
                 <label className="text-xs font-bold text-white flex items-center gap-1.5">
                   <ImageIcon className="w-3.5 h-3.5 text-amber-400" />
@@ -754,8 +817,8 @@ export const NovelShareModal: React.FC<NovelShareModalProps> = ({
               )}
             </div>
 
-            {/* MỤC: ĐỔI MÀU THEO MÀU BÌA */}
-            <div className="p-3.5 rounded-2xl border border-zinc-800 bg-[#1a1922] space-y-3">
+            {/* MỤC: ĐỔI MÀU THEO MÀU BÌA - TỐI ƯU CỰC ĐẸP TRÊN DI ĐỘNG */}
+            <div className="p-3 sm:p-3.5 rounded-2xl border border-zinc-800 bg-[#1a1922] space-y-2.5">
               <div className="flex items-center justify-between">
                 <label className="text-xs font-bold text-white flex items-center gap-1.5">
                   <Palette className="w-3.5 h-3.5 text-amber-400" />
@@ -766,8 +829,11 @@ export const NovelShareModal: React.FC<NovelShareModalProps> = ({
               {/* Danh sách từng mục kèm dải mã màu bìa để chọn trực tiếp */}
               <div className="space-y-2">
                 {colorCustomizableSections.map((section) => (
-                  <div key={section.id} className="flex items-center justify-between gap-2 p-1.5 rounded-xl bg-[#111016] border border-zinc-800/80">
-                    <span className="text-[11px] font-medium text-zinc-300 shrink-0 w-24">
+                  <div 
+                    key={section.id} 
+                    className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 p-2 rounded-xl bg-[#111016] border border-zinc-800/80"
+                  >
+                    <span className="text-[11px] font-semibold text-zinc-300 shrink-0">
                       {section.label}:
                     </span>
 
@@ -781,7 +847,7 @@ export const NovelShareModal: React.FC<NovelShareModalProps> = ({
                             className="w-6 h-6 rounded-lg border transition-all cursor-pointer flex items-center justify-center hover:scale-110 active:scale-95"
                             style={{
                               backgroundColor: hex,
-                              borderColor: isSelected ? '#ffffff' : 'rgba(255, 255, 255, 0.2)',
+                              borderColor: isSelected ? '#ffffff' : 'rgba(255, 255, 255, 0.25)',
                               boxShadow: isSelected ? `0 0 10px ${hexToRgba(hex, 0.8)}` : undefined
                             }}
                           >
@@ -808,7 +874,7 @@ export const NovelShareModal: React.FC<NovelShareModalProps> = ({
             </div>
 
             {/* MỤC: CHỈNH SỬA THÔNG TIN */}
-            <div className="space-y-3 text-xs overflow-y-auto pr-1 max-h-[380px]">
+            <div className="space-y-2.5 text-xs">
               {/* Tên truyện */}
               <div>
                 <label className="text-[11px] font-semibold text-zinc-200 flex items-center gap-1 mb-1">
@@ -825,7 +891,7 @@ export const NovelShareModal: React.FC<NovelShareModalProps> = ({
               </div>
 
               {/* Tác giả & Tình trạng */}
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div>
                   <label className="text-[11px] font-semibold text-zinc-200 flex items-center gap-1 mb-1">
                     <Feather className="w-3 h-3 text-amber-400" />
@@ -858,20 +924,20 @@ export const NovelShareModal: React.FC<NovelShareModalProps> = ({
               <div>
                 <label className="text-[11px] font-semibold text-zinc-200 flex items-center gap-1 mb-1">
                   <Tag className="w-3 h-3 text-amber-400" />
-                  <span>Tag:</span>
+                  <span>Tag truyện:</span>
                 </label>
                 <input
                   type="text"
                   value={editGenre}
                   onChange={(e) => setEditGenre(e.target.value)}
-                  placeholder="Ví dụ: Vô hạn lưu, Kinh dị, Sảng văn..."
+                  placeholder="Ví dụ: 强强, 无限流, 爽文..."
                   className="w-full px-3 py-2 rounded-xl border border-zinc-700 bg-[#0c0b10] text-white text-xs focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400/30"
                 />
               </div>
 
               {/* Điểm tích lũy & Số chữ: Chỉ hiển thị với truyện tự tạo */}
               {isCustomNovel && (
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <div>
                     <label className="text-[11px] font-semibold text-zinc-200 flex items-center gap-1 mb-1">
                       <span>Điểm tích lũy:</span>
@@ -907,7 +973,7 @@ export const NovelShareModal: React.FC<NovelShareModalProps> = ({
                   <span>Giới thiệu:</span>
                 </label>
                 <textarea
-                  rows={4}
+                  rows={3}
                   value={editIntro}
                   onChange={(e) => setEditIntro(e.target.value)}
                   placeholder="Nhập nội dung giới thiệu..."
@@ -940,6 +1006,28 @@ export const NovelShareModal: React.FC<NovelShareModalProps> = ({
                   />
                 )}
               </div>
+
+              {/* Thanh nút hành động nhanh trên mobile khi đang ở tab Chỉnh sửa */}
+              <div className="flex sm:hidden items-center gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('preview')}
+                  className="flex-1 py-2.5 px-3 rounded-xl border border-zinc-700 bg-[#201f29] text-white font-semibold text-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <Eye className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Xem trước ảnh</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDownload}
+                  disabled={isExporting}
+                  className="flex-1 py-2.5 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 text-white shadow-md cursor-pointer"
+                  style={{ backgroundColor: badgeColor }}
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>{isExporting ? 'Đang tạo...' : 'Tải ảnh PNG'}</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -947,3 +1035,4 @@ export const NovelShareModal: React.FC<NovelShareModalProps> = ({
     </div>
   );
 };
+

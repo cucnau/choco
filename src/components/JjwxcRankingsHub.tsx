@@ -34,6 +34,7 @@ import { Story } from '../types';
 import { extractPaletteFromImage, CanvaPalette, hexToRgba } from '../lib/coverColorExtractor';
 import { getNovelCoverUrl, getCorsCoverUrl, handleCoverError } from '../utils/coverImage';
 import { splitTagList } from '../utils/tagUtils';
+import novelTagsRealMap from '../data/novelTagsRealMap.json';
 
 interface JjwxcRankingsHubProps {
   currentStory?: Story | null;
@@ -185,10 +186,11 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
       setNovelIntro(activeNovel.intro || '');
       setIsLoadingIntro(false);
 
-      // Lấy danh sách tag của truyện từ dữ liệu tĩnh
-      const initialTags = activeNovel.tags && activeNovel.tags.length > 0
+      // Lấy danh sách tag của truyện từ dữ liệu tĩnh (ưu tiên novel.tags -> novelTagsRealMap -> genre)
+      const mapTags = (novelTagsRealMap as Record<string, string[]>)[activeNovel.novelId];
+      const initialTags = (activeNovel.tags && activeNovel.tags.length > 0)
         ? splitTagList(activeNovel.tags)
-        : splitTagList(activeNovel.genre);
+        : (mapTags && mapTags.length > 0 ? mapTags : (activeNovel.genre ? splitTagList(activeNovel.genre) : []));
       setNovelTags(initialTags);
 
       // Nếu đang chạy local/preview có backend, fetch ngầm để cập nhật bản mới nhất nếu có
@@ -370,16 +372,18 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
   const primaryAccent = themePalette?.accent || '#10b981';
 
   return (
-    <div className="relative w-full max-w-5xl mx-auto px-4 py-6 font-mono text-text-main space-y-4">
-      {/* Hiệu ứng Hào quang Aurora biến chuyển mượt mà theo màu ảnh bìa Top 1 BXH */}
-      <div 
-        className="absolute -top-16 -left-16 w-96 h-96 rounded-full blur-3xl opacity-20 pointer-events-none transition-all duration-1000 -z-10"
-        style={{ backgroundColor: themePalette?.glow || 'rgba(16, 185, 129, 0.2)' }}
-      />
-      <div 
-        className="absolute top-44 -right-16 w-80 h-80 rounded-full blur-3xl opacity-15 pointer-events-none transition-all duration-1000 -z-10"
-        style={{ backgroundColor: themePalette?.glowSubtle || 'rgba(16, 185, 129, 0.15)' }}
-      />
+    <div className="relative w-full max-w-5xl mx-auto px-3 sm:px-4 py-4 sm:py-6 font-mono text-text-main space-y-4 overflow-x-hidden">
+      {/* Hiệu ứng Hào quang Aurora biến chuyển mượt mà theo màu ảnh bìa Top 1 BXH - bọc overflow-hidden chống tràn ngang mobile */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none -z-10">
+        <div 
+          className="absolute -top-16 -left-16 w-96 h-96 rounded-full blur-3xl opacity-20 transition-all duration-1000"
+          style={{ backgroundColor: themePalette?.glow || 'rgba(16, 185, 129, 0.2)' }}
+        />
+        <div 
+          className="absolute top-44 -right-16 w-80 h-80 rounded-full blur-3xl opacity-15 transition-all duration-1000"
+          style={{ backgroundColor: themePalette?.glowSubtle || 'rgba(16, 185, 129, 0.15)' }}
+        />
+      </div>
 
       {/* Thông báo toast khi làm mới thời gian thực */}
       {refreshToast && (
@@ -480,15 +484,15 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
 
       {/* Thanh chọn nhóm Bảng Xếp Hạng: BXH Tổng Hợp & BXH Vô Hạn Lưu */}
       {!showSavedOnly && (
-        <div className="space-y-2.5">
-          <div className="flex items-center gap-1.5 p-1 rounded-xl bg-bg-surface border border-border-custom text-xs w-fit">
+        <div className="space-y-2.5 w-full max-w-full min-w-0">
+          <div className="flex items-center gap-1.5 p-1 rounded-xl bg-bg-surface border border-border-custom text-xs w-fit max-w-full overflow-x-auto scrollbar-none">
             <button
               onClick={() => {
                 setBxhGroup('general');
                 const cat = JJWXC_RANK_CATEGORIES.find(c => c.id === selectedRankId);
                 onRankingChange?.('ranks', cat?.slug || 'tongphan');
               }}
-              className="px-3 py-1.5 rounded-lg font-medium transition-all cursor-pointer flex items-center gap-1.5"
+              className="px-3 py-1.5 rounded-lg font-medium transition-all cursor-pointer flex items-center gap-1.5 shrink-0"
               style={bxhGroup === 'general' ? {
                 backgroundColor: hexToRgba(primaryAccent, 0.2),
                 color: primaryAccent,
@@ -507,7 +511,7 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
                 setBxhGroup('wuxianliu');
                 onRankingChange?.('ranks', 'vohanluu', 'vohanluu');
               }}
-              className="px-3 py-1.5 rounded-lg font-medium transition-all cursor-pointer flex items-center gap-1.5"
+              className="px-3 py-1.5 rounded-lg font-medium transition-all cursor-pointer flex items-center gap-1.5 shrink-0"
               style={bxhGroup === 'wuxianliu' ? {
                 backgroundColor: hexToRgba(primaryAccent, 0.2),
                 color: primaryAccent,
@@ -533,8 +537,8 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
 
           {/* NẾU Ở NHÓM BXH TỔNG HỢP */}
           {bxhGroup === 'general' ? (
-            <div className="space-y-2">
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+            <div className="space-y-2 w-full max-w-full min-w-0">
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none w-full max-w-full min-w-0">
                 {JJWXC_RANK_CATEGORIES.map(category => {
                   const isSelected = selectedRankId === category.id;
                   const count = dataset.rankings?.[category.id]?.items?.length;
@@ -545,7 +549,7 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
                         setSelectedRankId(category.id);
                         onRankingChange?.('ranks', category.slug);
                       }}
-                      className="px-3 py-1.5 rounded-lg border text-xs whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer"
+                      className="px-3 py-1.5 rounded-lg border text-xs whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer shrink-0"
                       style={isSelected ? {
                         borderColor: primaryAccent,
                         backgroundColor: hexToRgba(primaryAccent, 0.18),
@@ -580,7 +584,7 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
 
               {/* Tiêu chí xếp hạng của bảng hiện tại */}
               <div 
-                className="text-[11px] text-text-sub px-3 py-2 rounded-lg border flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 shadow-2xs transition-colors duration-500"
+                className="text-[11px] text-text-sub px-3 py-2 rounded-lg border flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 shadow-2xs transition-colors duration-500 w-full max-w-full"
                 style={{
                   backgroundColor: 'rgba(255, 255, 255, 0.03)',
                   borderColor: hexToRgba(primaryAccent, 0.3)
@@ -597,16 +601,16 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
             </div>
           ) : (
             /* NẾU Ở NHÓM BXH VÔ HẠN LƯU (200 TRUYỆN - 6 TIÊU CHÍ GỐC TẤN GIANG) */
-            <div className="space-y-2">
+            <div className="space-y-2 w-full max-w-full min-w-0">
               {/* Các mục chọn 6 tiêu chí xếp hạng dạng cuộn ngang */}
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none w-full max-w-full min-w-0">
                 {WUXIANLIU_CRITERIA_LIST.map(crit => {
                   const isSel = selectedWuxianliuCriteria === crit.id;
                   return (
                     <button
                       key={crit.id}
                       onClick={() => setSelectedWuxianliuCriteria(crit.id)}
-                      className="px-3 py-1.5 rounded-lg border text-xs whitespace-nowrap transition-all cursor-pointer font-medium flex items-center gap-1.5"
+                      className="px-3 py-1.5 rounded-lg border text-xs whitespace-nowrap transition-all cursor-pointer font-medium flex items-center gap-1.5 shrink-0"
                       style={isSel ? {
                         borderColor: primaryAccent,
                         backgroundColor: hexToRgba(primaryAccent, 0.18),
@@ -639,7 +643,7 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
 
               {/* Tiêu chí BXH Vô Hạn Lưu của Tấn Giang */}
               <div 
-                className="text-[11px] text-text-sub px-3 py-2 rounded-lg border flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 shadow-2xs transition-colors duration-500"
+                className="text-[11px] text-text-sub px-3 py-2 rounded-lg border flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 shadow-2xs transition-colors duration-500 w-full max-w-full"
                 style={{
                   backgroundColor: 'rgba(255, 255, 255, 0.03)',
                   borderColor: hexToRgba(primaryAccent, 0.3)
@@ -661,38 +665,38 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
         </div>
       )}
 
-      {/* Thanh tìm kiếm & lọc nhanh gọn */}
-      <div className="flex items-center justify-between gap-3 text-xs">
-        <div className="relative flex-1 max-w-xs">
+      {/* Thanh tìm kiếm & lọc nhanh gọn - Tối ưu 100% cho mobile */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs w-full max-w-full">
+        <div className="relative w-full sm:max-w-xs min-w-0">
           <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-text-sub" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Tìm tên truyện, tác giả..."
-            className="w-full pl-8 pr-7 py-1.5 text-xs rounded-lg border border-border-custom bg-bg-surface text-text-main focus:outline-none"
+            className="w-full pl-8 pr-7 py-2 sm:py-1.5 text-xs rounded-lg border border-border-custom bg-bg-surface text-text-main focus:outline-none"
             style={{ borderColor: searchQuery ? primaryAccent : undefined }}
           />
           {searchQuery && (
             <button 
               onClick={() => setSearchQuery('')}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-text-sub hover:text-text-main cursor-pointer"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-text-sub hover:text-text-main cursor-pointer"
             >
-              <X className="w-3 h-3" />
+              <X className="w-3.5 h-3.5" />
             </button>
           )}
         </div>
 
         {/* Nút Tạo ảnh truyện ngoài BXH & Lọc trạng thái */}
-        <div className="flex items-center gap-2 flex-wrap shrink-0">
+        <div className="flex items-center justify-between sm:justify-end gap-2 flex-wrap w-full sm:w-auto">
           <button
             onClick={() => {
               setShareNovel({
                 novelId: 'custom',
-                title: 'Tên truyện',
-                author: 'Tác giả',
-                genre: 'Đam mỹ • Vô hạn lưu',
-                status: 'Đã hoàn thành',
+                title: '',
+                author: '',
+                genre: '',
+                status: '',
                 wordCount: '',
                 score: '',
                 coverUrl: '',
@@ -700,7 +704,7 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
                 jjwxcUrl: ''
               });
             }}
-            className="px-3 py-1.5 rounded-lg border border-border-custom bg-bg-surface hover:bg-bg-card text-text-main flex items-center gap-1.5 transition-all cursor-pointer font-medium hover:border-amber-400 shrink-0"
+            className="flex-1 sm:flex-none px-3 py-1.5 rounded-lg border border-border-custom bg-bg-surface hover:bg-bg-card text-text-main flex items-center justify-center gap-1.5 transition-all cursor-pointer font-medium hover:border-amber-400 text-xs shrink-0"
             title="Tự điền thông tin và tải bìa để tạo ảnh chia sẻ truyện ngoài BXH"
           >
             <ImagePlus className="w-3.5 h-3.5 text-amber-400" />
@@ -842,9 +846,13 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
                         extractPaletteFromImage(coverSrc, novel.novelId).then(p => {
                           setActivePalette(p);
                         });
+                        const mapTags = (novelTagsRealMap as Record<string, string[]>)[novel.novelId];
+                        const realTags = (novel.tags && novel.tags.length > 0)
+                          ? novel.tags
+                          : (mapTags && mapTags.length > 0 ? mapTags : (novel.genre ? splitTagList(novel.genre) : []));
                         setShareNovel({
                           ...novel,
-                          tags: novel.tags && novel.tags.length > 0 ? novel.tags : splitTagList(novel.genre)
+                          tags: realTags
                         });
                       }}
                       className="p-2 rounded-lg border border-transparent text-text-sub hover:text-text-main transition-all cursor-pointer hover:bg-white/5"
@@ -895,7 +903,7 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
 
         return (
           <div 
-            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 transition-all duration-300"
+            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-md flex items-center justify-center p-2.5 sm:p-4 transition-all duration-300"
             onClick={() => setActiveNovel(null)}
           >
             {/* Vầng hào quang Ambient phát sáng từ mã màu bìa */}
@@ -906,7 +914,7 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
 
             {/* Container Modal - MANG ĐÚNG MÀU SẮC ĐỒNG ĐIỆU CỦA TRANH BÌA */}
             <div 
-              className="relative w-full max-w-lg rounded-3xl overflow-hidden flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-200 z-10 shadow-[0_25px_70px_-15px_rgba(0,0,0,0.4)]"
+              className="relative w-full max-w-lg rounded-2xl sm:rounded-3xl overflow-hidden flex flex-col h-[92vh] sm:h-auto max-h-[92vh] sm:max-h-[90vh] animate-in fade-in zoom-in-95 duration-200 z-10 shadow-[0_25px_70px_-15px_rgba(0,0,0,0.4)]"
               style={{
                 background: modalBg,
                 borderColor: cardBorder,
@@ -918,12 +926,12 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
             >
               {/* Header Modal */}
               <div 
-                className="px-5 py-4 border-b flex items-center justify-between"
+                className="px-4 py-3 sm:px-5 sm:py-4 border-b flex items-center justify-between shrink-0"
                 style={{ borderColor: cardBorder }}
               >
-                <div className="flex items-center gap-3 min-w-0">
+                <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
                   <span 
-                    className="w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs shrink-0 text-white shadow-md font-sans"
+                    className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center font-bold text-xs shrink-0 text-white shadow-md font-sans"
                     style={{
                       background: activePalette?.accentGradient || `linear-gradient(135deg, ${modalAccent}, ${modalSecondary})`,
                       boxShadow: `0 4px 14px ${hexToRgba(modalAccent, 0.45)}`
@@ -932,7 +940,7 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
                     #{activeNovel.rank}
                   </span>
                   <h3 
-                    className="text-base sm:text-lg font-bold truncate tracking-tight"
+                    className="text-sm sm:text-lg font-bold truncate tracking-tight"
                     style={{ color: textPrimary }}
                   >
                     {activeNovel.title}
@@ -940,7 +948,7 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
                 </div>
                 <button
                   onClick={() => setActiveNovel(null)}
-                  className="w-8 h-8 rounded-full flex items-center justify-center transition-all cursor-pointer shadow-2xs hover:scale-105 active:scale-95"
+                  className="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center transition-all cursor-pointer shadow-2xs hover:scale-105 active:scale-95 shrink-0"
                   style={{
                     backgroundColor: isLight ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.15)',
                     color: textPrimary
@@ -952,16 +960,16 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
               </div>
 
               {/* Body Modal */}
-              <div className="p-4 sm:p-5 overflow-y-auto space-y-4 text-xs font-sans">
+              <div className="p-3.5 sm:p-5 overflow-y-auto space-y-3.5 sm:space-y-4 text-xs font-sans">
                 {/* Thẻ thông tin truyện & Bìa - Mang màu sắc của bìa */}
                 <div 
-                  className="p-4 rounded-2xl border shadow-sm transition-colors duration-500 backdrop-blur-md"
+                  className="p-3.5 sm:p-4 rounded-xl sm:rounded-2xl border shadow-sm transition-colors duration-500 backdrop-blur-md"
                   style={{
                     backgroundColor: cardBg,
                     borderColor: cardBorder
                   }}
                 >
-                  <div className="flex flex-col sm:flex-row gap-4">
+                  <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                     {/* Bìa truyện với ánh hào quang tỏa ra từ chính bìa */}
                     <div className="relative shrink-0 self-center sm:self-start">
                       <img
@@ -974,7 +982,7 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
                         src={getNovelCoverUrl(activeNovel.novelId, activeNovel.coverUrl)}
                         alt={activeNovel.title}
                         referrerPolicy="no-referrer"
-                        className="relative z-10 w-28 h-40 object-cover rounded-xl border shrink-0 shadow-xl"
+                        className="relative z-10 w-24 h-34 sm:w-28 sm:h-40 object-cover rounded-xl border shrink-0 shadow-xl"
                         style={{ borderColor: cardBorder }}
                         onError={(e) => handleCoverError(e, activeNovel.novelId, activeNovel.coverUrl)}
                       />
@@ -1041,16 +1049,25 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
                       {novelTags.length > 0 && (
                         <div className="flex items-start gap-2 pt-1">
                           <span className="text-xs shrink-0 mt-0.5" style={{ color: textMuted }}>Tag:</span>
-                          <div className="flex flex-wrap gap-1.5">
+                          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center' }}>
                             {novelTags.map((tag, tIdx) => (
                               <span 
                                 key={tIdx}
-                                className="text-[11px] font-medium px-2.5 py-0.5 rounded-full border transition-all whitespace-nowrap shrink-0 inline-flex items-center"
                                 style={{
-                                  backgroundColor: hexToRgba(modalSecondary, isLight ? 0.12 : 0.22),
-                                  borderColor: hexToRgba(modalSecondary, 0.4),
+                                  display: 'inline-block',
+                                  marginRight: '6px',
+                                  marginBottom: '6px',
+                                  padding: '2px 9px',
+                                  borderRadius: '9999px',
+                                  border: `1px solid ${hexToRgba(modalSecondary, 0.45)}`,
+                                  backgroundColor: hexToRgba(modalSecondary, isLight ? 0.14 : 0.22),
                                   color: isLight ? '#0f172a' : modalSecondary,
-                                  whiteSpace: 'nowrap'
+                                  fontSize: '11px',
+                                  fontWeight: 500,
+                                  lineHeight: '1.35',
+                                  verticalAlign: 'middle',
+                                  whiteSpace: 'nowrap',
+                                  boxSizing: 'border-box'
                                 }}
                               >
                                 {tag}
@@ -1084,10 +1101,10 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
                       )}
 
                       {/* Các nút hành động chính */}
-                      <div className="pt-2 flex flex-wrap items-center gap-2.5">
+                      <div className="pt-2 flex flex-wrap sm:flex-nowrap items-center gap-2">
                         <button
                           onClick={() => setShareNovel({ ...activeNovel, tags: novelTags })}
-                          className="px-4 py-2 rounded-xl font-bold text-white transition-all shadow-md cursor-pointer flex items-center gap-2 hover:opacity-95 active:scale-95"
+                          className="w-full sm:w-auto px-4 py-2.5 rounded-xl font-bold text-white transition-all shadow-md cursor-pointer flex items-center justify-center gap-2 hover:opacity-95 active:scale-95"
                           style={{
                             background: activePalette?.accentGradient || `linear-gradient(135deg, ${modalAccent}, ${modalSecondary})`,
                             boxShadow: `0 4px 16px ${hexToRgba(modalAccent, 0.4)}`
@@ -1102,7 +1119,7 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
                           href={activeNovel.jjwxcUrl || `https://www.jjwxc.net/onebook.php?novelid=${activeNovel.novelId}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="px-3.5 py-2 rounded-xl font-medium border transition-all cursor-pointer flex items-center gap-2"
+                          className="flex-1 sm:flex-none px-3.5 py-2.5 rounded-xl font-medium border transition-all cursor-pointer flex items-center justify-center gap-2 text-xs"
                           style={{
                             backgroundColor: isLight ? 'rgba(255, 255, 255, 0.7)' : 'rgba(255, 255, 255, 0.1)',
                             borderColor: cardBorder,
@@ -1115,7 +1132,7 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
 
                         <button
                           onClick={(e) => toggleSaveNovel(activeNovel.novelId, e)}
-                          className="px-3.5 py-2 rounded-xl font-medium border transition-all cursor-pointer flex items-center gap-2"
+                          className="flex-1 sm:flex-none px-3.5 py-2.5 rounded-xl font-medium border transition-all cursor-pointer flex items-center justify-center gap-2 text-xs"
                           style={{
                             backgroundColor: isLight ? 'rgba(255, 255, 255, 0.7)' : 'rgba(255, 255, 255, 0.1)',
                             borderColor: cardBorder,
