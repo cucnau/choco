@@ -1100,47 +1100,49 @@ export const JjwxcRankingsHub: React.FC<JjwxcRankingsHubProps> = ({
                         </div>
                       )}
 
-                      {/* Các nút hành động chính */}
-                      <div className="pt-2 flex flex-wrap sm:flex-nowrap items-center gap-2">
+                      {/* Các nút hành động chính: Chỉ hiển thị icon đồng bộ */}
+                      <div className="pt-2 flex items-center gap-2">
                         <button
                           onClick={() => setShareNovel({ ...activeNovel, tags: novelTags })}
-                          className="w-full sm:w-auto px-4 py-2.5 rounded-xl font-bold text-white transition-all shadow-md cursor-pointer flex items-center justify-center gap-2 hover:opacity-95 active:scale-95"
+                          className="p-2.5 rounded-xl font-bold text-white transition-all shadow-md cursor-pointer flex items-center justify-center hover:opacity-95 active:scale-95 shrink-0"
                           style={{
                             background: activePalette?.accentGradient || `linear-gradient(135deg, ${modalAccent}, ${modalSecondary})`,
                             boxShadow: `0 4px 16px ${hexToRgba(modalAccent, 0.4)}`
                           }}
-                          title="Tạo ảnh chia sẻ truyện tùy chỉnh tiếng Việt & màu sắc"
+                          title="Chia sẻ ảnh"
+                          aria-label="Chia sẻ ảnh"
                         >
-                          <Share2 className="w-3.5 h-3.5 text-white/90" />
-                          <span>Chia sẻ ảnh</span>
+                          <Share2 className="w-4 h-4 text-white" />
                         </button>
 
                         <a
                           href={activeNovel.jjwxcUrl || `https://www.jjwxc.net/onebook.php?novelid=${activeNovel.novelId}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex-1 sm:flex-none px-3.5 py-2.5 rounded-xl font-medium border transition-all cursor-pointer flex items-center justify-center gap-2 text-xs"
+                          className="p-2.5 rounded-xl font-medium border transition-all cursor-pointer flex items-center justify-center hover:opacity-95 active:scale-95 shrink-0"
                           style={{
                             backgroundColor: isLight ? 'rgba(255, 255, 255, 0.7)' : 'rgba(255, 255, 255, 0.1)',
                             borderColor: cardBorder,
                             color: textPrimary
                           }}
+                          title="Mở link gốc Tấn Giang"
+                          aria-label="Mở link gốc Tấn Giang"
                         >
-                          <span>Mở link gốc</span>
-                          <ExternalLink className="w-3.5 h-3.5 opacity-80" />
+                          <ExternalLink className="w-4 h-4 opacity-80" />
                         </a>
 
                         <button
                           onClick={(e) => toggleSaveNovel(activeNovel.novelId, e)}
-                          className="flex-1 sm:flex-none px-3.5 py-2.5 rounded-xl font-medium border transition-all cursor-pointer flex items-center justify-center gap-2 text-xs"
+                          className="p-2.5 rounded-xl font-medium border transition-all cursor-pointer flex items-center justify-center hover:opacity-95 active:scale-95 shrink-0"
                           style={{
                             backgroundColor: isLight ? 'rgba(255, 255, 255, 0.7)' : 'rgba(255, 255, 255, 0.1)',
                             borderColor: cardBorder,
                             color: savedNovelIds.includes(activeNovel.novelId) ? modalAccent : textSecondary
                           }}
+                          title={savedNovelIds.includes(activeNovel.novelId) ? 'Đã lưu truyện' : 'Lưu truyện'}
+                          aria-label={savedNovelIds.includes(activeNovel.novelId) ? 'Đã lưu truyện' : 'Lưu truyện'}
                         >
-                          <Bookmark className={`w-3.5 h-3.5 ${savedNovelIds.includes(activeNovel.novelId) ? 'fill-current' : ''}`} />
-                          <span>{savedNovelIds.includes(activeNovel.novelId) ? 'Đã lưu' : 'Lưu truyện'}</span>
+                          <Bookmark className={`w-4 h-4 ${savedNovelIds.includes(activeNovel.novelId) ? 'fill-current' : ''}`} />
                         </button>
                       </div>
                     </div>
