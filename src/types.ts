@@ -120,10 +120,10 @@ export interface StoryTheme {
   chapterCustomBtnTextColor?: string;
 
   // Viền & Hiệu ứng
-  borderStyle?: 'solid' | 'double' | 'dashed' | 'dotted' | 'dash-dot' | 'sketch' | 'stitched' | 'gradient' | 'stamp' | 'film' | 'groove' | 'ridge' | 'offset' | 'wavy' | 'scallop' | 'curly' | 'hand-dashed' | 'none';
+  borderStyle?: 'solid' | 'double' | 'dashed' | 'dotted' | 'dash-dot' | 'stitched' | 'gradient' | 'stamp' | 'film' | 'groove' | 'ridge' | 'offset' | 'none';
   borderWidth?: 'thin' | 'medium' | 'thick' | 'heavy' | 'bold' | 'frame';
   borderRadius?: 'none' | 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'leaf' | 'chamfer' | 'ticket' | 'petal' | 'tab';
-  borderCornerAccent?: 'none' | 'brackets' | 'vintage' | 'rivets' | 'dots' | 'crosshairs' | 'washi' | 'sparkle' | 'heart' | 'botanical' | 'artdeco' | 'bow' | 'ribbon-corner' | 'ribbon-top-bow' | 'paperclip';
+  borderCornerAccent?: 'none' | 'brackets' | 'vintage' | 'rivets' | 'dots' | 'crosshairs' | 'washi' | 'sparkle' | 'heart' | 'botanical' | 'artdeco' | 'paperclip';
   borderGlow?: 'none' | 'soft' | 'neon' | 'shadow' | 'soft-depth' | 'gradient-aura' | 'isometric';
   customBorderGradientColor2?: string;
   customBorderGlowColor1?: string;
@@ -221,10 +221,10 @@ export interface Story {
 
   readingEffect?: 'none' | 'rain' | 'snow' | 'glitch' | 'star' | 'leaf' | 'cherry_blossom' | 'firefly' | 'soap_bubble' | 'ginkgo' | 'fireworks' | 'fire_sparks' | 'sci_fi_hud' | 'fruits' | 'ocean' | 'butterflies' | 'feathers' | 'lightning' | 'fog'; // Hiệu ứng đọc truyện
   readingEffectColor?: string; // Tùy chỉnh màu sắc cho hiệu ứng (đặc biệt là Sci-Fi HUD)
-  borderStyle?: 'solid' | 'double' | 'dashed' | 'dotted' | 'dash-dot' | 'sketch' | 'stitched' | 'gradient' | 'stamp' | 'film' | 'groove' | 'ridge' | 'offset' | 'wavy' | 'scallop' | 'curly' | 'hand-dashed' | 'none'; // Kiểu nét đường viền
+  borderStyle?: 'solid' | 'double' | 'dashed' | 'dotted' | 'dash-dot' | 'stitched' | 'gradient' | 'stamp' | 'film' | 'groove' | 'ridge' | 'offset' | 'none'; // Kiểu nét đường viền
   borderWidth?: 'thin' | 'medium' | 'thick' | 'heavy' | 'bold' | 'frame'; // Độ dày đường viền
   borderRadius?: 'none' | 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'leaf' | 'chamfer' | 'ticket' | 'petal' | 'tab'; // Kiểu bo góc viền đa dạng
-  borderCornerAccent?: 'none' | 'brackets' | 'vintage' | 'rivets' | 'dots' | 'crosshairs' | 'washi' | 'sparkle' | 'heart' | 'botanical' | 'artdeco' | 'bow' | 'ribbon-corner' | 'ribbon-top-bow' | 'paperclip'; // Trang trí góc viền nghệ thuật
+  borderCornerAccent?: 'none' | 'brackets' | 'vintage' | 'rivets' | 'dots' | 'crosshairs' | 'washi' | 'sparkle' | 'heart' | 'botanical' | 'artdeco' | 'paperclip'; // Trang trí góc viền nghệ thuật
   borderGlow?: 'none' | 'soft' | 'neon' | 'shadow' | 'soft-depth' | 'gradient-aura' | 'isometric'; // Hiệu ứng phát sáng / đổ bóng viền
   customBorderGradientColor2?: string; // Màu thứ 2 cho Viền Gradient đa sắc
   customBorderGlowColor1?: string; // Màu thứ 1 cho Hào quang Gradient
@@ -243,10 +243,10 @@ export interface Story {
   chapterCustomBtnBgColor?: string;
   chapterCustomBtnTextColor?: string;
   chapterCustomBtnSecondaryBgColor?: string;
-  chapterBorderStyle?: 'solid' | 'double' | 'dashed' | 'dotted' | 'dash-dot' | 'sketch' | 'stitched' | 'gradient' | 'stamp' | 'film' | 'groove' | 'ridge' | 'offset' | 'wavy' | 'scallop' | 'curly' | 'hand-dashed' | 'none';
+  chapterBorderStyle?: 'solid' | 'double' | 'dashed' | 'dotted' | 'dash-dot' | 'stitched' | 'gradient' | 'stamp' | 'film' | 'groove' | 'ridge' | 'offset' | 'none';
   chapterBorderWidth?: 'thin' | 'medium' | 'thick' | 'heavy' | 'bold' | 'frame';
   chapterBorderRadius?: 'none' | 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'leaf' | 'chamfer' | 'ticket' | 'petal' | 'tab';
-  chapterBorderCornerAccent?: 'none' | 'brackets' | 'vintage' | 'rivets' | 'dots' | 'crosshairs' | 'washi' | 'sparkle' | 'heart' | 'botanical' | 'artdeco' | 'bow' | 'ribbon-corner' | 'ribbon-top-bow' | 'paperclip';
+  chapterBorderCornerAccent?: 'none' | 'brackets' | 'vintage' | 'rivets' | 'dots' | 'crosshairs' | 'washi' | 'sparkle' | 'heart' | 'botanical' | 'artdeco' | 'paperclip';
   chapterBorderGlow?: 'none' | 'soft' | 'neon' | 'shadow' | 'soft-depth' | 'gradient-aura' | 'isometric';
   chapterCustomBorderGradientColor2?: string;
   chapterCustomBorderGlowColor1?: string;
